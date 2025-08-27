@@ -19,7 +19,7 @@ const buttonVariants = cva(
         ghost: "hover:bg-accent hover:text-accent-foreground",
         link: "text-primary underline-offset-4 hover:underline",
         hero: "hero-gradient text-white shadow-lg glow-shadow hover:shadow-xl transition-smooth font-semibold",
-        reward: "bg-reward-gold text-reward-purple hover:bg-reward-gold/90 font-semibold shadow-md",
+        reward: "bg-reward-gold text-primary-foreground hover:bg-reward-gold/90 font-semibold shadow-md",
       },
       size: {
         default: "h-10 px-4 py-2",

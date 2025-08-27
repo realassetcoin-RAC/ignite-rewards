@@ -35,7 +35,7 @@ export default {
 				},
 				reward: {
 					gold: 'hsl(var(--reward-gold))',
-					purple: 'hsl(var(--reward-purple))',
+					orange: 'hsl(var(--reward-orange))',
 					light: 'hsl(var(--reward-light))'
 				},
 				destructive: {
