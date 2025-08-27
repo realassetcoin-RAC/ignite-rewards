@@ -26,11 +26,17 @@ export default {
 				foreground: 'hsl(var(--foreground))',
 				primary: {
 					DEFAULT: 'hsl(var(--primary))',
-					foreground: 'hsl(var(--primary-foreground))'
+					foreground: 'hsl(var(--primary-foreground))',
+					glow: 'hsl(var(--primary-glow))'
 				},
 				secondary: {
 					DEFAULT: 'hsl(var(--secondary))',
 					foreground: 'hsl(var(--secondary-foreground))'
+				},
+				reward: {
+					gold: 'hsl(var(--reward-gold))',
+					purple: 'hsl(var(--reward-purple))',
+					light: 'hsl(var(--reward-light))'
 				},
 				destructive: {
 					DEFAULT: 'hsl(var(--destructive))',
