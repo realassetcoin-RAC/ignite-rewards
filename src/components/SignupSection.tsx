@@ -6,7 +6,7 @@ import { Card } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Mail, User, Phone, MapPin, CreditCard, Store } from "lucide-react";
-import racCardImage from "@/assets/rac-card.jpg";
+import racCardImage from "@/assets/rac-nft-card.jpg";
 
 const SignupSection = () => {
   const [customerFormData, setCustomerFormData] = useState({
