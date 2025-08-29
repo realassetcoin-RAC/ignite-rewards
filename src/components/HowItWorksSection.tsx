@@ -1,30 +1,24 @@
 import { Card } from "@/components/ui/card";
-import { UserPlus, ShoppingBag, Trophy, Lock } from "lucide-react";
+import { UserPlus, ShoppingBag, Trophy } from "lucide-react";
 
 const steps = [
   {
     icon: UserPlus,
     step: "01",
     title: "Sign Up Free",
-    description: "Users can get started without any initial cost. The program is designed for seamless, free onboarding to encourage widespread adoption and participation."
+    description: "Create your account in under 2 minutes. No hidden fees, no credit card required. Just your email and you're in!"
   },
   {
     icon: ShoppingBag,
     step: "02", 
     title: "Shop & Earn",
-    description: "Participants can engage in activities, such as shopping on an affiliated platform, to earn the governance token, $RAC. This system incentivizes engagement and provides a clear path to gaining influence within the DAO."
-  },
-  {
-    icon: Lock,
-    step: "03",
-    title: "Lock Against a Program",
-    description: "With their earned $RAC tokens, users can lock them within one of the program's offerings. This action demonstrates long-term commitment and grants them specific benefits, such as voting power or eligibility for passive income."
+    description: "Make purchases at any of our 500+ partner locations or online. Every dollar spent earns you valuable reward points automatically."
   },
   {
     icon: Trophy,
-    step: "04",
-    title: "Redeem Over Time to Unlock Value",
-    description: "As tokens remain locked, users can progressively redeem or unlock value from their commitment. This can take the form of passive income distributions, fractional ownership of NFTs, or other rewards, ensuring a clear return on their long-term participation."
+    step: "03",
+    title: "Redeem Rewards",
+    description: "Use your points for discounts, free products, exclusive experiences, or cash back. The choice is yours!"
   }
 ];
 
@@ -37,11 +31,11 @@ const HowItWorksSection = () => {
             How It <span className="text-primary">Works</span>
           </h2>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-            Getting started is simple. Follow these four easy steps to begin earning rewards today.
+            Getting started is simple. Follow these three easy steps to begin earning rewards today.
           </p>
         </div>
         
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-6">
+        <div className="grid md:grid-cols-3 gap-8 lg:gap-12">
           {steps.map((step, index) => (
             <div key={index} className="relative">
               <Card className="p-8 card-gradient card-shadow border-0 text-center relative z-10">
