@@ -14,11 +14,13 @@ const HeroSection = () => {
       <div className="relative z-10 max-w-7xl mx-auto px-6 py-24 lg:py-32">
         <div className="text-center text-white">
           <div className="flex items-center justify-center mb-8">
-            <img 
-              src={pointbridgeLogo} 
-              alt="PointBridge Logo" 
-              className="h-16 lg:h-20 mr-4"
-            />
+            <div className="bg-black/20 backdrop-blur-sm rounded-2xl p-4 mr-4">
+              <img 
+                src={pointbridgeLogo} 
+                alt="PointBridge Logo" 
+                className="h-12 lg:h-16"
+              />
+            </div>
             <h1 className="text-5xl lg:text-7xl font-bold leading-tight">
               <span className="text-primary">Point</span>Bridge
             </h1>

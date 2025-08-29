@@ -185,7 +185,7 @@ const SignupSection = () => {
             <TabsTrigger value="customer" className="text-lg py-3">
               <CreditCard className="w-5 h-5 mr-2" />
               Customer Signup
-            </TabsTrigger>
+            </TabsTrigger> 
             <TabsTrigger value="merchant" className="text-lg py-3">
               <Building2 className="w-5 h-5 mr-2" />
               Merchant Signup
