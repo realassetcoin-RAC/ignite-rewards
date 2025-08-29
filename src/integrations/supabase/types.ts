@@ -14,16 +14,261 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      merchant_cards: {
+        Row: {
+          assigned_at: string
+          card_id: string
+          id: string
+          is_active: boolean | null
+          merchant_id: string
+        }
+        Insert: {
+          assigned_at?: string
+          card_id: string
+          id?: string
+          is_active?: boolean | null
+          merchant_id: string
+        }
+        Update: {
+          assigned_at?: string
+          card_id?: string
+          id?: string
+          is_active?: boolean | null
+          merchant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "merchant_cards_card_id_fkey"
+            columns: ["card_id"]
+            isOneToOne: false
+            referencedRelation: "virtual_cards"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "merchant_cards_merchant_id_fkey"
+            columns: ["merchant_id"]
+            isOneToOne: false
+            referencedRelation: "merchants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      merchant_subscriptions: {
+        Row: {
+          amount: number | null
+          created_at: string
+          end_date: string | null
+          id: string
+          merchant_id: string
+          plan: Database["public"]["Enums"]["subscription_plan"]
+          start_date: string
+          status: string | null
+          stripe_subscription_id: string | null
+        }
+        Insert: {
+          amount?: number | null
+          created_at?: string
+          end_date?: string | null
+          id?: string
+          merchant_id: string
+          plan: Database["public"]["Enums"]["subscription_plan"]
+          start_date?: string
+          status?: string | null
+          stripe_subscription_id?: string | null
+        }
+        Update: {
+          amount?: number | null
+          created_at?: string
+          end_date?: string | null
+          id?: string
+          merchant_id?: string
+          plan?: Database["public"]["Enums"]["subscription_plan"]
+          start_date?: string
+          status?: string | null
+          stripe_subscription_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "merchant_subscriptions_merchant_id_fkey"
+            columns: ["merchant_id"]
+            isOneToOne: false
+            referencedRelation: "merchants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      merchants: {
+        Row: {
+          address: string | null
+          annual_fee: number | null
+          business_name: string
+          business_type: string | null
+          city: string | null
+          contact_email: string | null
+          country: string | null
+          created_at: string
+          id: string
+          monthly_fee: number | null
+          phone: string | null
+          status: Database["public"]["Enums"]["merchant_status"] | null
+          subscription_end_date: string | null
+          subscription_plan:
+            | Database["public"]["Enums"]["subscription_plan"]
+            | null
+          subscription_start_date: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          address?: string | null
+          annual_fee?: number | null
+          business_name: string
+          business_type?: string | null
+          city?: string | null
+          contact_email?: string | null
+          country?: string | null
+          created_at?: string
+          id?: string
+          monthly_fee?: number | null
+          phone?: string | null
+          status?: Database["public"]["Enums"]["merchant_status"] | null
+          subscription_end_date?: string | null
+          subscription_plan?:
+            | Database["public"]["Enums"]["subscription_plan"]
+            | null
+          subscription_start_date?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          address?: string | null
+          annual_fee?: number | null
+          business_name?: string
+          business_type?: string | null
+          city?: string | null
+          contact_email?: string | null
+          country?: string | null
+          created_at?: string
+          id?: string
+          monthly_fee?: number | null
+          phone?: string | null
+          status?: Database["public"]["Enums"]["merchant_status"] | null
+          subscription_end_date?: string | null
+          subscription_plan?:
+            | Database["public"]["Enums"]["subscription_plan"]
+            | null
+          subscription_start_date?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          email: string
+          full_name: string | null
+          id: string
+          role: Database["public"]["Enums"]["app_role"] | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          full_name?: string | null
+          id: string
+          role?: Database["public"]["Enums"]["app_role"] | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          full_name?: string | null
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"] | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      virtual_cards: {
+        Row: {
+          annual_fee: number | null
+          card_name: string
+          card_type: Database["public"]["Enums"]["card_type"]
+          created_at: string
+          created_by: string | null
+          description: string | null
+          features: Json | null
+          id: string
+          image_url: string | null
+          is_active: boolean | null
+          monthly_fee: number | null
+          one_time_fee: number | null
+          pricing_type: Database["public"]["Enums"]["pricing_type"]
+          subscription_plan:
+            | Database["public"]["Enums"]["subscription_plan"]
+            | null
+          updated_at: string
+        }
+        Insert: {
+          annual_fee?: number | null
+          card_name: string
+          card_type: Database["public"]["Enums"]["card_type"]
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          features?: Json | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean | null
+          monthly_fee?: number | null
+          one_time_fee?: number | null
+          pricing_type?: Database["public"]["Enums"]["pricing_type"]
+          subscription_plan?:
+            | Database["public"]["Enums"]["subscription_plan"]
+            | null
+          updated_at?: string
+        }
+        Update: {
+          annual_fee?: number | null
+          card_name?: string
+          card_type?: Database["public"]["Enums"]["card_type"]
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          features?: Json | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean | null
+          monthly_fee?: number | null
+          one_time_fee?: number | null
+          pricing_type?: Database["public"]["Enums"]["pricing_type"]
+          subscription_plan?:
+            | Database["public"]["Enums"]["subscription_plan"]
+            | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "merchant" | "customer"
+      card_type: "rewards" | "loyalty" | "membership" | "gift"
+      merchant_status: "active" | "suspended" | "pending" | "cancelled"
+      pricing_type: "free" | "one_time" | "subscription"
+      subscription_plan: "basic" | "premium" | "enterprise"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +395,12 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "merchant", "customer"],
+      card_type: ["rewards", "loyalty", "membership", "gift"],
+      merchant_status: ["active", "suspended", "pending", "cancelled"],
+      pricing_type: ["free", "one_time", "subscription"],
+      subscription_plan: ["basic", "premium", "enterprise"],
+    },
   },
 } as const
