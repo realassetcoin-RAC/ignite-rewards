@@ -416,8 +416,8 @@ const SignupSection = () => {
               <div>
                 <h3 className="text-2xl font-bold mb-4 text-foreground">Choose Your Plan</h3>
                 <div className="relative">
-                  <Card className="p-6 card-gradient card-shadow border-0 h-[520px] flex flex-col">
-                    <div className="relative flex-1 flex flex-col justify-center">
+                  <Card className="p-6 card-gradient card-shadow border-0">
+                    <div className="relative">
                       <div className="absolute top-1/2 -left-4 -translate-y-1/2">
                         <Button
                           variant="ghost"
@@ -440,29 +440,27 @@ const SignupSection = () => {
                       </div>
                     </div>
                     
-                    <div className="border-t border-white/20 pt-4 mt-4">
-                      <div className="text-center">
-                        <div className="flex items-center justify-center gap-2 mb-4">
-                          <h4 className="text-2xl font-bold text-foreground">{merchantPlans[selectedPlan].name}</h4>
-                          {merchantPlans[selectedPlan].popular && (
-                            <Badge className="bg-primary text-primary-foreground">
-                              <Star className="w-3 h-3 mr-1" />
-                              Popular
-                            </Badge>
-                          )}
-                        </div>
-                        <div className="text-3xl font-bold text-primary mb-6">
-                          ${merchantPlans[selectedPlan].price}<span className="text-lg text-muted-foreground">/{merchantPlans[selectedPlan].period}</span>
-                        </div>
-                        
-                        <div className="space-y-3">
-                          {merchantPlans[selectedPlan].features.map((feature, index) => (
-                            <div key={index} className="flex items-center justify-center">
-                              <Check className="w-4 h-4 text-primary mr-2 flex-shrink-0" />
-                              <span className="text-muted-foreground">{feature}</span>
-                            </div>
-                          ))}
-                        </div>
+                    <div className="text-center">
+                      <div className="flex items-center justify-center gap-2 mb-4">
+                        <h4 className="text-2xl font-bold text-foreground">{merchantPlans[selectedPlan].name}</h4>
+                        {merchantPlans[selectedPlan].popular && (
+                          <Badge className="bg-primary text-primary-foreground">
+                            <Star className="w-3 h-3 mr-1" />
+                            Popular
+                          </Badge>
+                        )}
+                      </div>
+                      <div className="text-3xl font-bold text-primary mb-6">
+                        ${merchantPlans[selectedPlan].price}<span className="text-lg text-muted-foreground">/{merchantPlans[selectedPlan].period}</span>
+                      </div>
+                      
+                      <div className="space-y-3">
+                        {merchantPlans[selectedPlan].features.map((feature, index) => (
+                          <div key={index} className="flex items-center justify-center">
+                            <Check className="w-4 h-4 text-primary mr-2 flex-shrink-0" />
+                            <span className="text-muted-foreground">{feature}</span>
+                          </div>
+                        ))}
                       </div>
                     </div>
                   </Card>
@@ -472,15 +470,15 @@ const SignupSection = () => {
 
             {/* Merchant Form */}
             <div className="space-y-6">
-              <Card className="p-6 card-gradient card-shadow border-0 h-[520px] flex flex-col">
+              <Card className="p-6 card-gradient card-shadow border-0">
                 <CardHeader className="px-0 pt-0">
                   <CardTitle>Business Details</CardTitle>
                   <CardDescription>
                     Tell us about your business to get started with PointBridge
                   </CardDescription>
                 </CardHeader>
-                <CardContent className="px-0 pb-0 flex-1 flex flex-col">
-                  <form onSubmit={handleMerchantSubmit} className="space-y-4 flex-1 flex flex-col">
+                <CardContent className="px-0 pb-0">
+                  <form onSubmit={handleMerchantSubmit} className="space-y-4">
                     <div className="space-y-2">
                       <Label htmlFor="businessName">Business Name *</Label>
                       <Input
@@ -551,8 +549,6 @@ const SignupSection = () => {
                         placeholder="Enter your industry"
                       />
                     </div>
-                    
-                    <div className="flex-1"></div>
                     
                     <Button type="submit" className="w-full mt-6" variant="hero">
                       Subscribe to {merchantPlans[selectedPlan].name} - ${merchantPlans[selectedPlan].price}/month
