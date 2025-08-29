@@ -10,8 +10,7 @@ const Footer = () => {
               PointBridge
             </h3>
             <p className="text-white/80 mb-6 max-w-md">
-              Join our decentralized rewards ecosystem where your engagement earns $RAC tokens. 
-              The future of value is here!
+              Join our decentralized rewards ecosystem where your engagement earns $RAC tokens. The Future of Value Is Here!
             </p>
             <div className="flex space-x-4">
               <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center hover:bg-white/30 transition-colors cursor-pointer">
