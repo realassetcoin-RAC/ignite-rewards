@@ -80,7 +80,7 @@ const merchantPlans = [
 const SignupSection = () => {
   const { toast } = useToast();
   const [selectedCard, setSelectedCard] = useState(0);
-  const [selectedPlan, setSelectedPlan] = useState("professional");
+  const [selectedPlan, setSelectedPlan] = useState(0);
   
   const [customerForm, setCustomerForm] = useState({
     name: "",
@@ -151,7 +151,7 @@ const SignupSection = () => {
       return;
     }
 
-    const plan = merchantPlans.find(p => p.id === selectedPlan);
+    const plan = merchantPlans[selectedPlan];
     
     toast({
       title: "Proceeding to Checkout",
@@ -166,6 +166,14 @@ const SignupSection = () => {
 
   const prevCard = () => {
     setSelectedCard((prev) => (prev - 1 + virtualCards.length) % virtualCards.length);
+  };
+
+  const nextPlan = () => {
+    setSelectedPlan((prev) => (prev + 1) % merchantPlans.length);
+  };
+
+  const prevPlan = () => {
+    setSelectedPlan((prev) => (prev - 1 + merchantPlans.length) % merchantPlans.length);
   };
 
   return (
@@ -206,24 +214,24 @@ const SignupSection = () => {
                           alt={virtualCards[selectedCard].name}
                           className="w-full h-48 object-cover rounded-lg mb-4"
                         />
-                        <div className="absolute top-2 left-2">
+                        <div className="absolute top-1/2 -left-4 -translate-y-1/2">
                           <Button
-                            variant="secondary"
+                            variant="ghost"
                             size="icon"
                             onClick={prevCard}
-                            className="h-8 w-8"
+                            className="h-10 w-10 bg-black/20 hover:bg-black/40 border-0 text-white"
                           >
-                            <ChevronLeft className="h-4 w-4" />
+                            <ChevronLeft className="h-5 w-5" />
                           </Button>
                         </div>
-                        <div className="absolute top-2 right-2">
+                        <div className="absolute top-1/2 -right-4 -translate-y-1/2">
                           <Button
-                            variant="secondary"
+                            variant="ghost"
                             size="icon"
                             onClick={nextCard}
-                            className="h-8 w-8"
+                            className="h-10 w-10 bg-black/20 hover:bg-black/40 border-0 text-white"
                           >
-                            <ChevronRight className="h-4 w-4" />
+                            <ChevronRight className="h-5 w-5" />
                           </Button>
                         </div>
                       </div>
@@ -325,46 +333,58 @@ const SignupSection = () => {
             <div className="grid lg:grid-cols-2 gap-8">
               {/* Subscription Plans */}
               <div className="space-y-6">
-                <h3 className="text-2xl font-bold mb-4 text-foreground">Choose Your Plan</h3>
-                <div className="space-y-4">
-                  {merchantPlans.map((plan) => (
-                    <Card 
-                      key={plan.id}
-                      className={`p-6 card-gradient card-shadow border-0 cursor-pointer transition-smooth ${
-                        selectedPlan === plan.id ? 'ring-2 ring-primary' : ''
-                      }`}
-                      onClick={() => setSelectedPlan(plan.id)}
-                    >
-                      <div className="flex justify-between items-start mb-4">
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <h4 className="text-xl font-bold text-foreground">{plan.name}</h4>
-                            {plan.popular && (
-                              <Badge className="bg-primary text-primary-foreground">
-                                <Star className="w-3 h-3 mr-1" />
-                                Popular
-                              </Badge>
-                            )}
-                          </div>
-                          <div className="text-2xl font-bold text-primary">
-                            ${plan.price}<span className="text-base text-muted-foreground">/{plan.period}</span>
-                          </div>
+                <div>
+                  <h3 className="text-2xl font-bold mb-4 text-foreground">Choose Your Plan</h3>
+                  <div className="relative">
+                    <Card className="p-6 card-gradient card-shadow border-0">
+                      <div className="relative">
+                        <div className="absolute top-1/2 -left-4 -translate-y-1/2">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={prevPlan}
+                            className="h-10 w-10 bg-black/20 hover:bg-black/40 border-0 text-white"
+                          >
+                            <ChevronLeft className="h-5 w-5" />
+                          </Button>
                         </div>
-                        <div className={`w-4 h-4 rounded-full border-2 ${
-                          selectedPlan === plan.id ? 'bg-primary border-primary' : 'border-muted'
-                        }`} />
+                        <div className="absolute top-1/2 -right-4 -translate-y-1/2">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={nextPlan}
+                            className="h-10 w-10 bg-black/20 hover:bg-black/40 border-0 text-white"
+                          >
+                            <ChevronRight className="h-5 w-5" />
+                          </Button>
+                        </div>
                       </div>
                       
-                      <div className="space-y-2">
-                        {plan.features.map((feature, index) => (
-                          <div key={index} className="flex items-center">
-                            <Check className="w-4 h-4 text-primary mr-2 flex-shrink-0" />
-                            <span className="text-muted-foreground text-sm">{feature}</span>
-                          </div>
-                        ))}
+                      <div className="text-center">
+                        <div className="flex items-center justify-center gap-2 mb-4">
+                          <h4 className="text-2xl font-bold text-foreground">{merchantPlans[selectedPlan].name}</h4>
+                          {merchantPlans[selectedPlan].popular && (
+                            <Badge className="bg-primary text-primary-foreground">
+                              <Star className="w-3 h-3 mr-1" />
+                              Popular
+                            </Badge>
+                          )}
+                        </div>
+                        <div className="text-3xl font-bold text-primary mb-6">
+                          ${merchantPlans[selectedPlan].price}<span className="text-lg text-muted-foreground">/{merchantPlans[selectedPlan].period}</span>
+                        </div>
+                        
+                        <div className="space-y-3">
+                          {merchantPlans[selectedPlan].features.map((feature, index) => (
+                            <div key={index} className="flex items-center justify-center">
+                              <Check className="w-4 h-4 text-primary mr-2 flex-shrink-0" />
+                              <span className="text-muted-foreground">{feature}</span>
+                            </div>
+                          ))}
+                        </div>
                       </div>
                     </Card>
-                  ))}
+                  </div>
                 </div>
               </div>
 
@@ -451,7 +471,7 @@ const SignupSection = () => {
                       </div>
                       
                       <Button type="submit" className="w-full mt-6" variant="hero">
-                        Subscribe to {merchantPlans.find(p => p.id === selectedPlan)?.name} - ${merchantPlans.find(p => p.id === selectedPlan)?.price}/month
+                        Subscribe to {merchantPlans[selectedPlan].name} - ${merchantPlans[selectedPlan].price}/month
                       </Button>
                     </form>
                   </CardContent>

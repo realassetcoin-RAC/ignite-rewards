@@ -11,7 +11,7 @@ const HeroSection = () => {
       />
       <div className="hero-gradient absolute inset-0 opacity-90" />
       
-      <div className="relative z-10 max-w-7xl mx-auto px-6 py-24 lg:py-32">
+      <div className="relative z-10 max-w-7xl mx-auto px-6 py-16 lg:py-24">
         <div className="text-center text-white">
           <div className="flex items-center justify-center mb-8">
             <div className="bg-black/20 backdrop-blur-sm rounded-2xl p-4 mr-4">
@@ -21,12 +21,12 @@ const HeroSection = () => {
                 className="h-12 lg:h-16"
               />
             </div>
-            <h1 className="text-5xl lg:text-7xl font-bold leading-tight">
+            <h1 className="text-4xl lg:text-6xl font-bold leading-tight">
               <span className="text-primary">Point</span>Bridge
             </h1>
           </div>
           
-          <h2 className="text-3xl lg:text-5xl font-bold mb-6 leading-tight">
+          <h2 className="text-2xl lg:text-4xl font-bold mb-6 leading-tight">
             The Future of Value
             <span className="block text-primary">Is Here</span>
           </h2>
