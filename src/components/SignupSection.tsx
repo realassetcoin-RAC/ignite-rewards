@@ -2,7 +2,6 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
@@ -12,7 +11,9 @@ import {
   ChevronLeft, 
   ChevronRight, 
   Star,
-  Check
+  Check,
+  Users,
+  Store
 } from "lucide-react";
 
 // Virtual card options
@@ -79,6 +80,7 @@ const merchantPlans = [
 
 const SignupSection = () => {
   const { toast } = useToast();
+  const [signupType, setSignupType] = useState<'customer' | 'merchant'>('customer');
   const [selectedCard, setSelectedCard] = useState(0);
   const [selectedPlan, setSelectedPlan] = useState(0);
   
@@ -188,298 +190,332 @@ const SignupSection = () => {
           </p>
         </div>
 
-        <Tabs defaultValue="customer" className="w-full">
-          <TabsList className="grid w-full grid-cols-2 mb-8">
-            <TabsTrigger value="customer" className="text-lg py-3">
-              <CreditCard className="w-5 h-5 mr-2" />
-              Customer Signup
-            </TabsTrigger> 
-            <TabsTrigger value="merchant" className="text-lg py-3">
-              <Building2 className="w-5 h-5 mr-2" />
-              Merchant Signup
-            </TabsTrigger>
-          </TabsList>
+        {/* Signup Type Selection Cards */}
+        <div className="grid md:grid-cols-2 gap-6 mb-12">
+          <Card 
+            className={`p-6 cursor-pointer transition-all duration-300 border-2 ${
+              signupType === 'customer' 
+                ? 'border-primary bg-primary/5 card-shadow' 
+                : 'border-border hover:border-primary/50 bg-card'
+            }`}
+            onClick={() => setSignupType('customer')}
+          >
+            <div className="text-center">
+              <div className={`w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center ${
+                signupType === 'customer' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
+              }`}>
+                <Users className="w-8 h-8" />
+              </div>
+              <h3 className="text-xl font-bold mb-2 text-foreground">Customer Signup</h3>
+              <p className="text-muted-foreground">
+                Join as a customer to earn rewards and access exclusive benefits with your virtual card
+              </p>
+            </div>
+          </Card>
 
-          <TabsContent value="customer" className="space-y-8">
-            <div className="grid lg:grid-cols-2 gap-8">
-              {/* Virtual Card Selection */}
-              <div className="space-y-6">
-                <div>
-                  <h3 className="text-2xl font-bold mb-4 text-foreground">Choose Your Virtual Card</h3>
-                  <div className="relative">
-                    <Card className="p-6 card-gradient card-shadow border-0">
-                      <div className="relative">
-                        <img 
-                          src={virtualCards[selectedCard].image}
-                          alt={virtualCards[selectedCard].name}
-                          className="w-full h-48 object-cover rounded-lg mb-4"
-                        />
-                        <div className="absolute top-1/2 -left-4 -translate-y-1/2">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={prevCard}
-                            className="h-10 w-10 bg-black/20 hover:bg-black/40 border-0 text-white"
-                          >
-                            <ChevronLeft className="h-5 w-5" />
-                          </Button>
-                        </div>
-                        <div className="absolute top-1/2 -right-4 -translate-y-1/2">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={nextCard}
-                            className="h-10 w-10 bg-black/20 hover:bg-black/40 border-0 text-white"
-                          >
-                            <ChevronRight className="h-5 w-5" />
-                          </Button>
-                        </div>
+          <Card 
+            className={`p-6 cursor-pointer transition-all duration-300 border-2 ${
+              signupType === 'merchant' 
+                ? 'border-primary bg-primary/5 card-shadow' 
+                : 'border-border hover:border-primary/50 bg-card'
+            }`}
+            onClick={() => setSignupType('merchant')}
+          >
+            <div className="text-center">
+              <div className={`w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center ${
+                signupType === 'merchant' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
+              }`}>
+                <Store className="w-8 h-8" />
+              </div>
+              <h3 className="text-xl font-bold mb-2 text-foreground">Merchant Signup</h3>
+              <p className="text-muted-foreground">
+                Partner with us as a merchant to offer rewards to your customers and grow your business
+              </p>
+            </div>
+          </Card>
+        </div>
+
+        {/* Customer Signup Content */}
+        {signupType === 'customer' && (
+          <div className="grid lg:grid-cols-2 gap-8">
+            {/* Virtual Card Selection */}
+            <div className="space-y-6">
+              <div>
+                <h3 className="text-2xl font-bold mb-4 text-foreground">Choose Your Virtual Card</h3>
+                <div className="relative">
+                  <Card className="p-6 card-gradient card-shadow border-0">
+                    <div className="relative">
+                      <img 
+                        src={virtualCards[selectedCard].image}
+                        alt={virtualCards[selectedCard].name}
+                        className="w-full h-48 object-cover rounded-lg mb-4"
+                      />
+                      <div className="absolute top-1/2 -left-4 -translate-y-1/2">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={prevCard}
+                          className="h-10 w-10 bg-black/20 hover:bg-black/40 border-0 text-white"
+                        >
+                          <ChevronLeft className="h-5 w-5" />
+                        </Button>
                       </div>
-                      
-                      <div className="text-center">
-                        <h4 className="text-xl font-bold text-foreground mb-2">
-                          {virtualCards[selectedCard].name}
-                        </h4>
-                        <div className="text-2xl font-bold text-primary mb-4">
-                          {virtualCards[selectedCard].price === 0 ? "Free" : `$${virtualCards[selectedCard].price}`}
-                        </div>
-                        <div className="space-y-2">
-                          {virtualCards[selectedCard].features.map((feature, index) => (
-                            <div key={index} className="flex items-center justify-center">
-                              <Check className="w-4 h-4 text-primary mr-2" />
-                              <span className="text-muted-foreground">{feature}</span>
-                            </div>
-                          ))}
-                        </div>
+                      <div className="absolute top-1/2 -right-4 -translate-y-1/2">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={nextCard}
+                          className="h-10 w-10 bg-black/20 hover:bg-black/40 border-0 text-white"
+                        >
+                          <ChevronRight className="h-5 w-5" />
+                        </Button>
                       </div>
-                    </Card>
-                  </div>
+                    </div>
+                    
+                    <div className="text-center">
+                      <h4 className="text-xl font-bold text-foreground mb-2">
+                        {virtualCards[selectedCard].name}
+                      </h4>
+                      <div className="text-2xl font-bold text-primary mb-4">
+                        {virtualCards[selectedCard].price === 0 ? "Free" : `$${virtualCards[selectedCard].price}`}
+                      </div>
+                      <div className="space-y-2">
+                        {virtualCards[selectedCard].features.map((feature, index) => (
+                          <div key={index} className="flex items-center justify-center">
+                            <Check className="w-4 h-4 text-primary mr-2" />
+                            <span className="text-muted-foreground">{feature}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </Card>
                 </div>
               </div>
-
-              {/* Customer Form */}
-              <div className="space-y-6">
-                <Card className="p-6 card-gradient card-shadow border-0">
-                  <CardHeader className="px-0 pt-0">
-                    <CardTitle>Customer Details</CardTitle>
-                    <CardDescription>
-                      Fill in your information to create your PointBridge account
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="px-0 pb-0">
-                    <form onSubmit={handleCustomerSubmit} className="space-y-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="name">Full Name *</Label>
-                        <Input
-                          id="name"
-                          name="name"
-                          value={customerForm.name}
-                          onChange={handleCustomerInputChange}
-                          placeholder="Enter your full name"
-                          required
-                        />
-                      </div>
-                      
-                      <div className="space-y-2">
-                        <Label htmlFor="email">Email Address *</Label>
-                        <Input
-                          id="email"
-                          name="email"
-                          type="email"
-                          value={customerForm.email}
-                          onChange={handleCustomerInputChange}
-                          placeholder="Enter your email address"
-                          required
-                        />
-                      </div>
-                      
-                      <div className="space-y-2">
-                        <Label htmlFor="phone">Phone Number</Label>
-                        <Input
-                          id="phone"
-                          name="phone"
-                          type="tel"
-                          value={customerForm.phone}
-                          onChange={handleCustomerInputChange}
-                          placeholder="Enter your phone number"
-                        />
-                      </div>
-                      
-                      <div className="space-y-2">
-                        <Label htmlFor="address">Address</Label>
-                        <Input
-                          id="address"
-                          name="address"
-                          value={customerForm.address}
-                          onChange={handleCustomerInputChange}
-                          placeholder="Enter your address"
-                        />
-                      </div>
-                      
-                      <Button type="submit" className="w-full mt-6" variant="hero">
-                        {virtualCards[selectedCard].price === 0 
-                          ? "Create Account" 
-                          : `Proceed to Checkout - $${virtualCards[selectedCard].price}`
-                        }
-                      </Button>
-                    </form>
-                  </CardContent>
-                </Card>
-              </div>
             </div>
-          </TabsContent>
 
-          <TabsContent value="merchant" className="space-y-8">
-            <div className="grid lg:grid-cols-2 gap-8">
-              {/* Subscription Plans */}
-              <div className="space-y-6">
-                <div>
-                  <h3 className="text-2xl font-bold mb-4 text-foreground">Choose Your Plan</h3>
-                  <div className="relative">
-                    <Card className="p-6 card-gradient card-shadow border-0">
-                      <div className="relative">
-                        <div className="absolute top-1/2 -left-4 -translate-y-1/2">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={prevPlan}
-                            className="h-10 w-10 bg-black/20 hover:bg-black/40 border-0 text-white"
-                          >
-                            <ChevronLeft className="h-5 w-5" />
-                          </Button>
-                        </div>
-                        <div className="absolute top-1/2 -right-4 -translate-y-1/2">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={nextPlan}
-                            className="h-10 w-10 bg-black/20 hover:bg-black/40 border-0 text-white"
-                          >
-                            <ChevronRight className="h-5 w-5" />
-                          </Button>
-                        </div>
+            {/* Customer Form */}
+            <div className="space-y-6">
+              <Card className="p-6 card-gradient card-shadow border-0">
+                <CardHeader className="px-0 pt-0">
+                  <CardTitle>Customer Details</CardTitle>
+                  <CardDescription>
+                    Fill in your information to create your PointBridge account
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="px-0 pb-0">
+                  <form onSubmit={handleCustomerSubmit} className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="name">Full Name *</Label>
+                      <Input
+                        id="name"
+                        name="name"
+                        value={customerForm.name}
+                        onChange={handleCustomerInputChange}
+                        placeholder="Enter your full name"
+                        required
+                      />
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="email">Email Address *</Label>
+                      <Input
+                        id="email"
+                        name="email"
+                        type="email"
+                        value={customerForm.email}
+                        onChange={handleCustomerInputChange}
+                        placeholder="Enter your email address"
+                        required
+                      />
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="phone">Phone Number</Label>
+                      <Input
+                        id="phone"
+                        name="phone"
+                        type="tel"
+                        value={customerForm.phone}
+                        onChange={handleCustomerInputChange}
+                        placeholder="Enter your phone number"
+                      />
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="address">Address</Label>
+                      <Input
+                        id="address"
+                        name="address"
+                        value={customerForm.address}
+                        onChange={handleCustomerInputChange}
+                        placeholder="Enter your address"
+                      />
+                    </div>
+                    
+                    <Button type="submit" className="w-full mt-6" variant="hero">
+                      {virtualCards[selectedCard].price === 0 
+                        ? "Create Account" 
+                        : `Proceed to Checkout - $${virtualCards[selectedCard].price}`
+                      }
+                    </Button>
+                  </form>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        )}
+
+        {/* Merchant Signup Content */}
+        {signupType === 'merchant' && (
+          <div className="grid lg:grid-cols-2 gap-8">
+            {/* Subscription Plans */}
+            <div className="space-y-6">
+              <div>
+                <h3 className="text-2xl font-bold mb-4 text-foreground">Choose Your Plan</h3>
+                <div className="relative">
+                  <Card className="p-6 card-gradient card-shadow border-0">
+                    <div className="relative">
+                      <div className="absolute top-1/2 -left-4 -translate-y-1/2">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={prevPlan}
+                          className="h-10 w-10 bg-black/20 hover:bg-black/40 border-0 text-white"
+                        >
+                          <ChevronLeft className="h-5 w-5" />
+                        </Button>
+                      </div>
+                      <div className="absolute top-1/2 -right-4 -translate-y-1/2">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={nextPlan}
+                          className="h-10 w-10 bg-black/20 hover:bg-black/40 border-0 text-white"
+                        >
+                          <ChevronRight className="h-5 w-5" />
+                        </Button>
+                      </div>
+                    </div>
+                    
+                    <div className="text-center">
+                      <div className="flex items-center justify-center gap-2 mb-4">
+                        <h4 className="text-2xl font-bold text-foreground">{merchantPlans[selectedPlan].name}</h4>
+                        {merchantPlans[selectedPlan].popular && (
+                          <Badge className="bg-primary text-primary-foreground">
+                            <Star className="w-3 h-3 mr-1" />
+                            Popular
+                          </Badge>
+                        )}
+                      </div>
+                      <div className="text-3xl font-bold text-primary mb-6">
+                        ${merchantPlans[selectedPlan].price}<span className="text-lg text-muted-foreground">/{merchantPlans[selectedPlan].period}</span>
                       </div>
                       
-                      <div className="text-center">
-                        <div className="flex items-center justify-center gap-2 mb-4">
-                          <h4 className="text-2xl font-bold text-foreground">{merchantPlans[selectedPlan].name}</h4>
-                          {merchantPlans[selectedPlan].popular && (
-                            <Badge className="bg-primary text-primary-foreground">
-                              <Star className="w-3 h-3 mr-1" />
-                              Popular
-                            </Badge>
-                          )}
-                        </div>
-                        <div className="text-3xl font-bold text-primary mb-6">
-                          ${merchantPlans[selectedPlan].price}<span className="text-lg text-muted-foreground">/{merchantPlans[selectedPlan].period}</span>
-                        </div>
-                        
-                        <div className="space-y-3">
-                          {merchantPlans[selectedPlan].features.map((feature, index) => (
-                            <div key={index} className="flex items-center justify-center">
-                              <Check className="w-4 h-4 text-primary mr-2 flex-shrink-0" />
-                              <span className="text-muted-foreground">{feature}</span>
-                            </div>
-                          ))}
-                        </div>
+                      <div className="space-y-3">
+                        {merchantPlans[selectedPlan].features.map((feature, index) => (
+                          <div key={index} className="flex items-center justify-center">
+                            <Check className="w-4 h-4 text-primary mr-2 flex-shrink-0" />
+                            <span className="text-muted-foreground">{feature}</span>
+                          </div>
+                        ))}
                       </div>
-                    </Card>
-                  </div>
+                    </div>
+                  </Card>
                 </div>
               </div>
-
-              {/* Merchant Form */}
-              <div className="space-y-6">
-                <Card className="p-6 card-gradient card-shadow border-0">
-                  <CardHeader className="px-0 pt-0">
-                    <CardTitle>Business Details</CardTitle>
-                    <CardDescription>
-                      Tell us about your business to get started with PointBridge
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="px-0 pb-0">
-                    <form onSubmit={handleMerchantSubmit} className="space-y-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="businessName">Business Name *</Label>
-                        <Input
-                          id="businessName"
-                          name="businessName"
-                          value={merchantForm.businessName}
-                          onChange={handleMerchantInputChange}
-                          placeholder="Enter your business name"
-                          required
-                        />
-                      </div>
-                      
-                      <div className="space-y-2">
-                        <Label htmlFor="contactName">Contact Name *</Label>
-                        <Input
-                          id="contactName"
-                          name="contactName"
-                          value={merchantForm.contactName}
-                          onChange={handleMerchantInputChange}
-                          placeholder="Enter contact person's name"
-                          required
-                        />
-                      </div>
-                      
-                      <div className="space-y-2">
-                        <Label htmlFor="merchantEmail">Email Address *</Label>
-                        <Input
-                          id="merchantEmail"
-                          name="email"
-                          type="email"
-                          value={merchantForm.email}
-                          onChange={handleMerchantInputChange}
-                          placeholder="Enter business email address"
-                          required
-                        />
-                      </div>
-                      
-                      <div className="space-y-2">
-                        <Label htmlFor="merchantPhone">Phone Number</Label>
-                        <Input
-                          id="merchantPhone"
-                          name="phone"
-                          type="tel"
-                          value={merchantForm.phone}
-                          onChange={handleMerchantInputChange}
-                          placeholder="Enter business phone number"
-                        />
-                      </div>
-                      
-                      <div className="space-y-2">
-                        <Label htmlFor="website">Website</Label>
-                        <Input
-                          id="website"
-                          name="website"
-                          value={merchantForm.website}
-                          onChange={handleMerchantInputChange}
-                          placeholder="Enter your website URL"
-                        />
-                      </div>
-                      
-                      <div className="space-y-2">
-                        <Label htmlFor="industry">Industry</Label>
-                        <Input
-                          id="industry"
-                          name="industry"
-                          value={merchantForm.industry}
-                          onChange={handleMerchantInputChange}
-                          placeholder="Enter your industry"
-                        />
-                      </div>
-                      
-                      <Button type="submit" className="w-full mt-6" variant="hero">
-                        Subscribe to {merchantPlans[selectedPlan].name} - ${merchantPlans[selectedPlan].price}/month
-                      </Button>
-                    </form>
-                  </CardContent>
-                </Card>
-              </div>
             </div>
-          </TabsContent>
-        </Tabs>
+
+            {/* Merchant Form */}
+            <div className="space-y-6">
+              <Card className="p-6 card-gradient card-shadow border-0">
+                <CardHeader className="px-0 pt-0">
+                  <CardTitle>Business Details</CardTitle>
+                  <CardDescription>
+                    Tell us about your business to get started with PointBridge
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="px-0 pb-0">
+                  <form onSubmit={handleMerchantSubmit} className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="businessName">Business Name *</Label>
+                      <Input
+                        id="businessName"
+                        name="businessName"
+                        value={merchantForm.businessName}
+                        onChange={handleMerchantInputChange}
+                        placeholder="Enter your business name"
+                        required
+                      />
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="contactName">Contact Name *</Label>
+                      <Input
+                        id="contactName"
+                        name="contactName"
+                        value={merchantForm.contactName}
+                        onChange={handleMerchantInputChange}
+                        placeholder="Enter contact person's name"
+                        required
+                      />
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="merchantEmail">Email Address *</Label>
+                      <Input
+                        id="merchantEmail"
+                        name="email"
+                        type="email"
+                        value={merchantForm.email}
+                        onChange={handleMerchantInputChange}
+                        placeholder="Enter business email address"
+                        required
+                      />
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="merchantPhone">Phone Number</Label>
+                      <Input
+                        id="merchantPhone"
+                        name="phone"
+                        type="tel"
+                        value={merchantForm.phone}
+                        onChange={handleMerchantInputChange}
+                        placeholder="Enter business phone number"
+                      />
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="website">Website</Label>
+                      <Input
+                        id="website"
+                        name="website"
+                        value={merchantForm.website}
+                        onChange={handleMerchantInputChange}
+                        placeholder="Enter your website URL"
+                      />
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="industry">Industry</Label>
+                      <Input
+                        id="industry"
+                        name="industry"
+                        value={merchantForm.industry}
+                        onChange={handleMerchantInputChange}
+                        placeholder="Enter your industry"
+                      />
+                    </div>
+                    
+                    <Button type="submit" className="w-full mt-6" variant="hero">
+                      Subscribe to {merchantPlans[selectedPlan].name} - ${merchantPlans[selectedPlan].price}/month
+                    </Button>
+                  </form>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        )}
       </div>
     </section>
   );
