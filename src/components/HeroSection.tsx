@@ -27,8 +27,7 @@ const HeroSection = () => {
           </div>
           
           <h2 className="text-2xl lg:text-4xl font-bold mb-6 leading-tight">
-            The Future of Value
-            <span className="block text-primary">Is Here</span>
+            The Future of Value Is Here
           </h2>
           
           <p className="text-xl lg:text-2xl mb-8 max-w-4xl mx-auto opacity-90 leading-relaxed">
