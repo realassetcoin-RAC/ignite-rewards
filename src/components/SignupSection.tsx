@@ -89,8 +89,11 @@ const SignupSection = () => {
     name: "",
     email: "",
     phone: "",
-    address: ""
+    city: ""
   });
+  
+  const [cityResults, setCityResults] = useState([]);
+  const [showCityDropdown, setShowCityDropdown] = useState(false);
 
   const [merchantForm, setMerchantForm] = useState({
     businessName: "",
@@ -102,9 +105,29 @@ const SignupSection = () => {
     address: ""
   });
 
-  const handleCustomerInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleCustomerInputChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setCustomerForm(prev => ({ ...prev, [name]: value }));
+    
+    if (name === 'city' && value.length > 2) {
+      try {
+        const response = await fetch(`http://api.positionstack.com/v1/forward?access_key=80aa2c1d95e736f410af2dc38df31c37&query=${encodeURIComponent(value)}&limit=5`);
+        const data = await response.json();
+        if (data.data) {
+          setCityResults(data.data);
+          setShowCityDropdown(true);
+        }
+      } catch (error) {
+        console.error('Error fetching city data:', error);
+      }
+    } else if (name === 'city') {
+      setShowCityDropdown(false);
+    }
+  };
+
+  const selectCity = (city: any) => {
+    setCustomerForm(prev => ({ ...prev, city: `${city.name}, ${city.region}, ${city.country}` }));
+    setShowCityDropdown(false);
   };
 
   const handleMerchantInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -244,12 +267,12 @@ const SignupSection = () => {
               <div>
                 <h3 className="text-2xl font-bold mb-4 text-foreground">Choose Your Virtual Card</h3>
                 <div className="relative">
-                  <Card className="p-6 card-gradient card-shadow border-0">
-                    <div className="relative">
+                  <Card className="p-6 card-gradient card-shadow border-0 h-[520px] flex flex-col">
+                    <div className="relative flex-1 flex flex-col">
                       <img 
                         src={virtualCards[selectedCard].image}
                         alt={virtualCards[selectedCard].name}
-                        className="w-full h-48 object-cover rounded-lg mb-4"
+                        className="w-full flex-1 object-cover rounded-lg mb-4"
                       />
                       <div className="absolute top-1/2 -left-4 -translate-y-1/2">
                         <Button
@@ -273,20 +296,22 @@ const SignupSection = () => {
                       </div>
                     </div>
                     
-                    <div className="text-center">
-                      <h4 className="text-xl font-bold text-foreground mb-2">
-                        {virtualCards[selectedCard].name}
-                      </h4>
-                      <div className="text-2xl font-bold text-primary mb-4">
-                        {virtualCards[selectedCard].price === 0 ? "Free" : `$${virtualCards[selectedCard].price}`}
-                      </div>
-                      <div className="space-y-2">
-                        {virtualCards[selectedCard].features.map((feature, index) => (
-                          <div key={index} className="flex items-center justify-center">
-                            <Check className="w-4 h-4 text-primary mr-2" />
-                            <span className="text-muted-foreground">{feature}</span>
-                          </div>
-                        ))}
+                    <div className="border-t border-white/20 pt-4 mt-4">
+                      <div className="text-center">
+                        <h4 className="text-xl font-bold text-foreground mb-2">
+                          {virtualCards[selectedCard].name}
+                        </h4>
+                        <div className="text-2xl font-bold text-primary mb-4">
+                          {virtualCards[selectedCard].price === 0 ? "Free" : `$${virtualCards[selectedCard].price}`}
+                        </div>
+                        <div className="space-y-2">
+                          {virtualCards[selectedCard].features.map((feature, index) => (
+                            <div key={index} className="flex items-center justify-center">
+                              <Check className="w-4 h-4 text-primary mr-2" />
+                              <span className="text-muted-foreground">{feature}</span>
+                            </div>
+                          ))}
+                        </div>
                       </div>
                     </div>
                   </Card>
@@ -296,15 +321,15 @@ const SignupSection = () => {
 
             {/* Customer Form */}
             <div className="space-y-6">
-              <Card className="p-6 card-gradient card-shadow border-0">
+              <Card className="p-6 card-gradient card-shadow border-0 h-[520px] flex flex-col">
                 <CardHeader className="px-0 pt-0">
                   <CardTitle>Customer Details</CardTitle>
                   <CardDescription>
                     Fill in your information to create your PointBridge account
                   </CardDescription>
                 </CardHeader>
-                <CardContent className="px-0 pb-0">
-                  <form onSubmit={handleCustomerSubmit} className="space-y-4">
+                <CardContent className="px-0 pb-0 flex-1 flex flex-col">
+                  <form onSubmit={handleCustomerSubmit} className="space-y-4 flex-1 flex flex-col">
                     <div className="space-y-2">
                       <Label htmlFor="name">Full Name *</Label>
                       <Input
@@ -342,16 +367,33 @@ const SignupSection = () => {
                       />
                     </div>
                     
-                    <div className="space-y-2">
-                      <Label htmlFor="address">Address</Label>
+                    <div className="space-y-2 relative">
+                      <Label htmlFor="city">City</Label>
                       <Input
-                        id="address"
-                        name="address"
-                        value={customerForm.address}
+                        id="city"
+                        name="city"
+                        value={customerForm.city}
                         onChange={handleCustomerInputChange}
-                        placeholder="Enter your address"
+                        placeholder="Enter your city"
+                        onFocus={() => customerForm.city.length > 2 && setShowCityDropdown(true)}
+                        onBlur={() => setTimeout(() => setShowCityDropdown(false), 200)}
                       />
+                      {showCityDropdown && cityResults.length > 0 && (
+                        <div className="absolute top-full left-0 right-0 bg-card border border-border rounded-md shadow-lg z-10 max-h-40 overflow-y-auto">
+                          {cityResults.map((city: any, index) => (
+                            <div
+                              key={index}
+                              className="p-2 hover:bg-muted cursor-pointer text-sm"
+                              onMouseDown={() => selectCity(city)}
+                            >
+                              {city.name}, {city.region}, {city.country}
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
+                    
+                    <div className="flex-1"></div>
                     
                     <Button type="submit" className="w-full mt-6" variant="hero">
                       {virtualCards[selectedCard].price === 0 

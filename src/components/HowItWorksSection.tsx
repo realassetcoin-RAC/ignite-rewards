@@ -30,7 +30,7 @@ const steps = [
 
 const HowItWorksSection = () => {
   return (
-    <section className="py-20 px-6 bg-reward-light">
+    <section id="how-it-works" className="py-20 px-6 bg-reward-light">
       <div className="max-w-7xl mx-auto">
         <div className="text-center mb-16">
           <h2 className="text-4xl lg:text-5xl font-bold mb-6 text-foreground">
