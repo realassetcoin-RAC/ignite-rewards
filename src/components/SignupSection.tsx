@@ -146,14 +146,14 @@ const SignupSection = () => {
           <div className="space-y-6">
             <Card className="p-8 card-gradient card-shadow border-0">
               <Tabs defaultValue="customer" className="w-full">
-                <TabsList className="grid w-full grid-cols-2 mb-8">
-                  <TabsTrigger value="customer" className="flex items-center gap-2">
+                <TabsList className="grid w-full grid-cols-2 mb-8 h-12">
+                  <TabsTrigger value="customer" className="flex items-center gap-2 text-sm">
                     <CreditCard className="w-4 h-4" />
-                    Customer (Free)
+                    Customer
                   </TabsTrigger>
-                  <TabsTrigger value="merchant" className="flex items-center gap-2">
+                  <TabsTrigger value="merchant" className="flex items-center gap-2 text-sm">
                     <Store className="w-4 h-4" />
-                    Merchant (Subscription)
+                    Merchant
                   </TabsTrigger>
                 </TabsList>
                 
