@@ -51,11 +51,22 @@ const AdminPanel = () => {
       setUser(user);
 
       // Check if user has admin role
-      const { data: profile } = await supabase
+      const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('role')
         .eq('id', user.id)
-        .single();
+        .maybeSingle();
+
+      // If no profile exists, user is not admin
+      if (profileError || !profile) {
+        toast({
+          title: "Access Denied",
+          description: "You don't have permission to access the admin panel.",
+          variant: "destructive"
+        });
+        navigate('/');
+        return;
+      }
 
       if (profile?.role !== 'admin') {
         toast({
