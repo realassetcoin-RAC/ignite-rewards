@@ -10,6 +10,8 @@ import { Separator } from "@/components/ui/separator";
 import VirtualCardManager from "@/components/admin/VirtualCardManager";
 import MerchantManager from "@/components/admin/MerchantManager";
 import UserManager from "@/components/admin/UserManager";
+import { useSecureAuth } from "@/hooks/useSecureAuth";
+import { checkRateLimit, sanitizeErrorMessage } from "@/utils/validation";
 import { 
   Shield, 
   CreditCard, 
@@ -19,13 +21,12 @@ import {
   Settings,
   LogOut,
   Home,
-  DollarSign
+  DollarSign,
+  AlertTriangle
 } from "lucide-react";
 
 const AdminPanel = () => {
-  const [user, setUser] = useState<any>(null);
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const { user, profile, isAdmin, loading, error, signOut } = useSecureAuth();
   const [stats, setStats] = useState({
     totalCards: 0,
     activeMerchants: 0,
@@ -36,68 +37,61 @@ const AdminPanel = () => {
   const { toast } = useToast();
 
   useEffect(() => {
-    checkUserAuth();
-    loadStats();
-  }, []);
-
-  const checkUserAuth = async () => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      console.log('Current user:', user);
-      
-      if (!user) {
-        console.log('No user found, redirecting to home');
+    if (!loading) {
+      if (!user || !isAdmin) {
+        if (error) {
+          toast({
+            title: "Authentication Error",
+            description: sanitizeErrorMessage(error),
+            variant: "destructive"
+          });
+        } else if (user && !isAdmin) {
+          toast({
+            title: "Access Denied",
+            description: "You don't have permission to access the admin panel.",
+            variant: "destructive"
+          });
+        }
         navigate('/');
         return;
       }
-
-      setUser(user);
-
-      // Simple admin check - hardcoded for realassetcoin@gmail.com to bypass RLS issues
-      const isAdmin = user.email === 'realassetcoin@gmail.com';
-      
-      console.log('User email:', user.email);
-      console.log('Is admin (hardcoded check):', isAdmin);
-
-      if (!isAdmin) {
-        console.log('User is not admin - access denied');
-        toast({
-          title: "Access Denied",
-          description: "You don't have permission to access the admin panel.",
-          variant: "destructive"
-        });
-        navigate('/');
-        return;
-      }
-
-      console.log('User is admin, granting access');
-      setIsAdmin(true);
-    } catch (error) {
-      console.error('Auth check error:', error);
-      navigate('/');
-    } finally {
-      setLoading(false);
+      loadStats();
     }
-  };
+  }, [user, isAdmin, loading, error, toast, navigate]);
 
+  // Rate limiting for stats loading
   const loadStats = async () => {
+    if (!checkRateLimit('loadStats', 5, 60000)) {
+      toast({
+        title: "Rate Limited",
+        description: "Too many requests. Please wait before trying again.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     try {
       // Get virtual cards count
-      const { count: cardsCount } = await (supabase as any)
+      const { count: cardsCount, error: cardsError } = await (supabase as any)
         .from('virtual_cards')
         .select('*', { count: 'exact', head: true });
 
+      if (cardsError) throw cardsError;
+
       // Get active merchants count
-      const { count: merchantsCount } = await (supabase as any)
+      const { count: merchantsCount, error: merchantsError } = await (supabase as any)
         .from('merchants')
         .select('*', { count: 'exact', head: true })
         .eq('status', 'active');
 
+      if (merchantsError) throw merchantsError;
+
       // Get total users count
-      const { count: usersCount } = await (supabase as any)
+      const { count: usersCount, error: usersError } = await (supabase as any)
         .from('profiles')
         .select('*', { count: 'exact', head: true });
+
+      if (usersError) throw usersError;
 
       setStats({
         totalCards: cardsCount || 0,
@@ -107,12 +101,25 @@ const AdminPanel = () => {
       });
     } catch (error) {
       console.error('Error loading stats:', error);
+      toast({
+        title: "Error Loading Statistics",
+        description: sanitizeErrorMessage(error),
+        variant: "destructive"
+      });
     }
   };
 
   const handleSignOut = async () => {
-    await supabase.auth.signOut();
-    navigate('/');
+    try {
+      await signOut();
+      navigate('/');
+    } catch (error) {
+      toast({
+        title: "Sign Out Error",
+        description: sanitizeErrorMessage(error),
+        variant: "destructive"
+      });
+    }
   };
 
   if (loading) {
@@ -120,14 +127,27 @@ const AdminPanel = () => {
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
-          <p className="mt-4 text-muted-foreground">Loading admin panel...</p>
+          <p className="mt-4 text-muted-foreground">Verifying admin access...</p>
         </div>
       </div>
     );
   }
 
-  if (!isAdmin) {
-    return null;
+  if (!user || !isAdmin) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="max-w-md mx-auto text-center">
+          <AlertTriangle className="h-16 w-16 text-destructive mx-auto mb-4" />
+          <h1 className="text-2xl font-bold text-foreground mb-2">Access Denied</h1>
+          <p className="text-muted-foreground mb-4">
+            You don't have permission to access the admin panel.
+          </p>
+          <Button onClick={() => navigate('/')} variant="outline">
+            Return Home
+          </Button>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -174,11 +194,19 @@ const AdminPanel = () => {
         {/* Welcome Section */}
         <div className="mb-8">
           <h2 className="text-3xl font-bold text-foreground mb-2">
-            Welcome back, {user?.email}
+            Welcome back, {profile?.full_name || user?.email}
           </h2>
           <p className="text-xl text-muted-foreground">
             Manage your PointBridge ecosystem from this central dashboard.
           </p>
+          <div className="flex items-center space-x-2 mt-2">
+            <Badge variant="outline" className="bg-primary/10 text-primary">
+              Role: {profile?.role}
+            </Badge>
+            <Badge variant="outline" className="bg-green-500/10 text-green-600">
+              Secure Session Active
+            </Badge>
+          </div>
         </div>
 
         {/* Stats Cards */}
