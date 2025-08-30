@@ -37,7 +37,7 @@ const AdminDashboard = () => {
         return;
       }
 
-      const { data: profile } = await supabase
+      const { data: profile } = await (supabase as any)
         .from("profiles")
         .select("*")
         .eq("id", user.id)
@@ -66,9 +66,9 @@ const AdminDashboard = () => {
   const loadStats = async () => {
     try {
       const [cardsResult, merchantsResult, activeResult] = await Promise.all([
-        supabase.from("virtual_cards").select("id", { count: "exact" }),
-        supabase.from("merchants").select("id", { count: "exact" }),
-        supabase.from("merchants").select("id", { count: "exact" }).eq("status", "active")
+        (supabase as any).from("virtual_cards").select("id", { count: "exact" }),
+        (supabase as any).from("merchants").select("id", { count: "exact" }),
+        (supabase as any).from("merchants").select("id", { count: "exact" }).eq("status", "active")
       ]);
 
       setStats({

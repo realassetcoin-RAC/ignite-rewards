@@ -78,7 +78,7 @@ const MerchantManager = ({ onStatsUpdate }: MerchantManagerProps) => {
         return;
       }
 
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('merchants')
         .select('*')
         .order('created_at', { ascending: false });
@@ -124,7 +124,7 @@ const MerchantManager = ({ onStatsUpdate }: MerchantManagerProps) => {
           user_id: crypto.randomUUID(), // In production, this should be selected from existing users
         };
 
-        const { error } = await supabase
+        const { error } = await (supabase as any)
           .from("merchants")
           .insert([merchantData]);
 
@@ -148,7 +148,7 @@ const MerchantManager = ({ onStatsUpdate }: MerchantManagerProps) => {
           subscription_end_date: data.subscription_end_date || null
         };
 
-        const { error } = await supabase
+        const { error } = await (supabase as any)
           .from("merchants")
           .update(updateData)
           .eq("id", selectedMerchant.id);
