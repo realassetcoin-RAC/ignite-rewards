@@ -125,6 +125,10 @@ All colors MUST be HSL.
   body {
     @apply bg-background text-foreground font-inter;
   }
+  
+  html {
+    scroll-behavior: smooth;
+  }
 }
 
 @layer utilities {

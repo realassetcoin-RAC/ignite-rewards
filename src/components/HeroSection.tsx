@@ -36,12 +36,16 @@ const HeroSection = () => {
           </p>
           
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-            <Button variant="hero" size="lg" className="text-lg px-8 py-4 h-auto">
-              Signup for Free
-            </Button>
-            <Button variant="outline" size="lg" className="text-lg px-8 py-4 h-auto border-primary/30 text-primary hover:bg-primary/10">
-              Learn More
-            </Button>
+            <a href="#signup">
+              <Button variant="hero" size="lg" className="text-lg px-8 py-4 h-auto">
+                Signup for Free
+              </Button>
+            </a>
+            <a href="#how-it-works">
+              <Button variant="outline" size="lg" className="text-lg px-8 py-4 h-auto border-primary/30 text-primary hover:bg-primary/10">
+                Learn More
+              </Button>
+            </a>
           </div>
           
           <div className="mt-12 grid grid-cols-3 gap-8 max-w-2xl mx-auto">
