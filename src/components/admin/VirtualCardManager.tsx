@@ -425,7 +425,7 @@ const VirtualCardManager = ({ onStatsUpdate }: VirtualCardManagerProps) => {
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
-                              <SelectItem value="basic">Basic - $29/month</SelectItem>
+                              <SelectItem value="basic">Basic (Free)</SelectItem>
                               <SelectItem value="premium">Premium - $99/month</SelectItem>
                               <SelectItem value="enterprise">Enterprise - $299/month</SelectItem>
                               {customPlans.map((plan) => (
@@ -491,100 +491,119 @@ const VirtualCardManager = ({ onStatsUpdate }: VirtualCardManagerProps) => {
 
                   {/* Fee Fields - conditionally disabled based on pricing type */}
                   <div className="grid grid-cols-3 gap-4">
-                    <FormField
-                      control={form.control}
-                      name="one_time_fee"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="flex items-center gap-2">
-                            One Time Fee ($)
-                            <Tooltip>
-                              <TooltipTrigger>
-                                <HelpCircle className="w-3 h-3" />
-                              </TooltipTrigger>
-                              <TooltipContent>
-                                <p>Single payment amount for one-time purchases</p>
-                              </TooltipContent>
-                            </Tooltip>
-                          </FormLabel>
-                          <FormControl>
-                            <Input 
-                              type="number" 
-                              step="0.01" 
-                              {...field} 
-                              disabled={watchPricingType === "free"}
-                              className={watchPricingType === "free" ? "opacity-50" : ""}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+                    {/* One Time Fee - Only show when pricing type is "one_time" */}
+                    {(watchPricingType === "one_time" || watchPricingType === "free") && (
+                      <FormField
+                        control={form.control}
+                        name="one_time_fee"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="flex items-center gap-2">
+                              One Time Fee ($)
+                              <Tooltip>
+                                <TooltipTrigger>
+                                  <HelpCircle className="w-3 h-3" />
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>Single payment amount for one-time purchases</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </FormLabel>
+                            <FormControl>
+                              <Input 
+                                type="number" 
+                                step="0.01" 
+                                {...field} 
+                                disabled={watchPricingType === "free"}
+                                className={watchPricingType === "free" ? "opacity-50" : ""}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    )}
 
-                    <FormField
-                      control={form.control}
-                      name="monthly_fee"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="flex items-center gap-2">
-                            Monthly Fee ($)
-                            <Tooltip>
-                              <TooltipTrigger>
-                                <HelpCircle className="w-3 h-3" />
-                              </TooltipTrigger>
-                              <TooltipContent>
-                                <p>Recurring monthly payment amount</p>
-                              </TooltipContent>
-                            </Tooltip>
-                          </FormLabel>
-                          <FormControl>
-                            <Input 
-                              type="number" 
-                              step="0.01" 
-                              {...field} 
-                              disabled={watchPricingType === "free"}
-                              className={watchPricingType === "free" ? "opacity-50" : ""}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+                    {/* Monthly Fee - Only show when pricing type is "subscription" */}
+                    {(watchPricingType === "subscription" || watchPricingType === "free") && (
+                      <FormField
+                        control={form.control}
+                        name="monthly_fee"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="flex items-center gap-2">
+                              Monthly Fee ($)
+                              <Tooltip>
+                                <TooltipTrigger>
+                                  <HelpCircle className="w-3 h-3" />
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>Recurring monthly payment amount</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </FormLabel>
+                            <FormControl>
+                              <Input 
+                                type="number" 
+                                step="0.01" 
+                                {...field} 
+                                disabled={watchPricingType === "free"}
+                                className={watchPricingType === "free" ? "opacity-50" : ""}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    )}
 
-                    <FormField
-                      control={form.control}
-                      name="annual_fee"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="flex items-center gap-2">
-                            Annual Fee ($)
-                            <Tooltip>
-                              <TooltipTrigger>
-                                <HelpCircle className="w-3 h-3" />
+                    {/* Annual Fee - Only show when pricing type is "subscription" */}
+                    {(watchPricingType === "subscription" || watchPricingType === "free") && (
+                      <FormField
+                        control={form.control}
+                        name="annual_fee"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="flex items-center gap-2">
+                              Annual Fee ($)
+                              <Tooltip>
+                                <TooltipTrigger>
+                                  <HelpCircle className="w-3 h-3" />
                               </TooltipTrigger>
-                              <TooltipContent>
-                                <p>Yearly payment amount (usually discounted from monthly)</p>
-                              </TooltipContent>
-                            </Tooltip>
-                          </FormLabel>
-                          <FormControl>
-                            <Input 
-                              type="number" 
-                              step="0.01" 
-                              {...field} 
-                              disabled={watchPricingType === "free"}
-                              className={watchPricingType === "free" ? "opacity-50" : ""}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+                                <TooltipContent>
+                                  <p>Yearly payment amount (usually discounted from monthly)</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </FormLabel>
+                            <FormControl>
+                              <Input 
+                                type="number" 
+                                step="0.01" 
+                                {...field} 
+                                disabled={watchPricingType === "free"}
+                                className={watchPricingType === "free" ? "opacity-50" : ""}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    )}
                   </div>
 
                   {watchPricingType === "free" && (
                     <p className="text-sm text-muted-foreground bg-secondary/50 p-2 rounded">
                       💡 Fee fields are locked because pricing type is set to "Free"
+                    </p>
+                  )}
+                  {watchPricingType === "one_time" && (
+                    <p className="text-sm text-muted-foreground bg-blue-50 p-2 rounded">
+                      💡 Only One Time Fee field is available for one-time pricing
+                    </p>
+                  )}
+                  {watchPricingType === "subscription" && (
+                    <p className="text-sm text-muted-foreground bg-green-50 p-2 rounded">
+                      💡 Monthly and Annual Fee fields are available for subscription pricing
                     </p>
                   )}
                 </div>

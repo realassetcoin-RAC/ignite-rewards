@@ -68,23 +68,7 @@ const MerchantManager = ({ onStatsUpdate }: MerchantManagerProps) => {
       const { data, error } = await supabase
         .from("merchants")
         .select(`
-          id,
-          business_name,
-          business_type,
-          contact_email,
-          phone,
-          city,
-          country,
-          subscription_plan,
-          status,
-          subscription_start_date,
-          subscription_end_date,
-          created_at,
-          user_id,
-          profiles:user_id (
-            full_name,
-            email
-          )
+          *
         `)
         .order("created_at", { ascending: false });
 
@@ -645,7 +629,7 @@ const MerchantManager = ({ onStatsUpdate }: MerchantManagerProps) => {
                                 </FormControl>
                                 <SelectContent>
                                   <SelectItem value="">No Plan</SelectItem>
-                                  <SelectItem value="basic">Basic - $29/month</SelectItem>
+                                  <SelectItem value="basic">Basic (Free)</SelectItem>
                                   <SelectItem value="premium">Premium - $99/month</SelectItem>
                                   <SelectItem value="enterprise">Enterprise - $299/month</SelectItem>
                                 </SelectContent>
