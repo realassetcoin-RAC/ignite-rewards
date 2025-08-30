@@ -25,13 +25,14 @@ const Auth = () => {
       }
     });
 
-    // Listen for auth changes
+    // Listen for auth changes - but don't redirect existing users
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
+        console.log('Auth event:', event, session?.user?.email);
         if (session?.user) {
           setUser(session.user);
-          // Only redirect on successful sign in, not when checking existing session
-          if (event === 'SIGNED_IN') {
+          // Only redirect on new sign in, not on token refresh or initial load
+          if (event === 'SIGNED_IN' && !user) {
             navigate("/");
           }
         } else {
