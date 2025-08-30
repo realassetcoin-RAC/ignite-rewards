@@ -53,15 +53,29 @@ const AdminPanel = () => {
 
       setUser(user);
 
-      // Check if user has admin role using edge function
-      const { data: adminCheck, error: adminError } = await supabase.functions.invoke('check-admin');
+      // Check if user has admin role - simplified approach
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', user.id)
+        .single();
 
-      console.log('Admin check result:', adminCheck);
-      console.log('Admin check error:', adminError);
+      console.log('Profile check result:', { profile, profileError, userId: user.id });
 
       // If error or not admin, deny access
-      if (adminError || !adminCheck?.isAdmin) {
-        console.log('Admin access denied:', adminError || `User role: ${adminCheck?.role}`);
+      if (profileError) {
+        console.log('Profile query failed:', profileError);
+        toast({
+          title: "Access Denied", 
+          description: "Unable to verify admin permissions.",
+          variant: "destructive"
+        });
+        navigate('/');
+        return;
+      }
+
+      if (!profile || profile.role !== 'admin') {
+        console.log('User is not admin:', profile?.role);
         toast({
           title: "Access Denied",
           description: "You don't have permission to access the admin panel.",
