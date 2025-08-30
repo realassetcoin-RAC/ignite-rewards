@@ -1,9 +1,23 @@
+import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Link } from "react-router-dom";
 import heroImage from "@/assets/hero-rewards.jpg";
 import pointbridgeLogo from "@/assets/pointbridge-logo.png";
+import AuthModal from "@/components/AuthModal";
+import { useSecureAuth } from "@/hooks/useSecureAuth";
 
 const HeroSection = () => {
+  const [authModalOpen, setAuthModalOpen] = useState(false);
+  const { user, signOut } = useSecureAuth();
+
+  const handleAuthAction = () => {
+    if (user) {
+      signOut();
+    } else {
+      setAuthModalOpen(true);
+    }
+  };
   return (
     <section className="relative overflow-hidden">
       <div 
@@ -14,12 +28,23 @@ const HeroSection = () => {
       
       <div className="relative z-10 max-w-7xl mx-auto px-6 py-16 lg:py-24">
         <div className="text-center text-white">
-          <div className="absolute top-4 right-6 z-20">
-            <Link to="/auth">
-              <Button variant="outline" size="sm" className="border-primary/30 text-primary hover:bg-primary/10">
-                Login
-              </Button>
-            </Link>
+          <div className="absolute top-4 right-6 z-20 flex items-center space-x-4">
+            {user && (
+              <div className="flex items-center space-x-2">
+                <span className="text-sm text-white/80">Welcome, {user.email}</span>
+                <Badge variant="outline" className="border-primary/30 text-primary bg-primary/10">
+                  Signed In
+                </Badge>
+              </div>
+            )}
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="border-primary/30 text-primary hover:bg-primary/10"
+              onClick={handleAuthAction}
+            >
+              {user ? 'Sign Out' : 'Login'}
+            </Button>
           </div>
           <div className="flex items-center justify-center mb-8">
             <div className="bg-black/20 backdrop-blur-sm rounded-2xl p-4 mr-4">
@@ -72,6 +97,9 @@ const HeroSection = () => {
           </div>
         </div>
       </div>
+      
+      {/* Auth Modal */}
+      <AuthModal isOpen={authModalOpen} onClose={() => setAuthModalOpen(false)} />
     </section>
   );
 };
