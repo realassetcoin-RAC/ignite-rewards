@@ -85,7 +85,7 @@ const VirtualCardManager = ({ onStatsUpdate }: VirtualCardManagerProps) => {
       }
 
       const { data, error } = await (supabase as any)
-        .from('api.virtual_cards')
+        .from('virtual_cards')
         .select('*')
         .order('created_at', { ascending: false });
 
@@ -152,7 +152,7 @@ const VirtualCardManager = ({ onStatsUpdate }: VirtualCardManagerProps) => {
 
       if (editingCard) {
         const { error } = await (supabase as any)
-          .from("api.virtual_cards")
+          .from("virtual_cards")
           .update(cardData)
           .eq("id", editingCard.id);
         
@@ -164,7 +164,7 @@ const VirtualCardManager = ({ onStatsUpdate }: VirtualCardManagerProps) => {
         });
       } else {
         const { error } = await (supabase as any)
-          .from("api.virtual_cards")
+          .from("virtual_cards")
           .insert([cardData]);
         
         if (error) throw error;
@@ -223,7 +223,7 @@ const VirtualCardManager = ({ onStatsUpdate }: VirtualCardManagerProps) => {
 
     try {
       const { error } = await (supabase as any)
-        .from("api.virtual_cards")
+        .from("virtual_cards")
         .delete()
         .eq("id", id);
 

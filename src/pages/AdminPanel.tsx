@@ -85,18 +85,18 @@ const AdminPanel = () => {
     try {
       // Get virtual cards count
       const { count: cardsCount } = await (supabase as any)
-        .from('api.virtual_cards')
+        .from('virtual_cards')
         .select('*', { count: 'exact', head: true });
 
       // Get active merchants count
       const { count: merchantsCount } = await (supabase as any)
-        .from('api.merchants')
+        .from('merchants')
         .select('*', { count: 'exact', head: true })
         .eq('status', 'active');
 
       // Get total users count
       const { count: usersCount } = await (supabase as any)
-        .from('api.profiles')
+        .from('profiles')
         .select('*', { count: 'exact', head: true });
 
       setStats({

@@ -22,7 +22,7 @@ const AdminAccess = () => {
       setUser(user);
 
       const { data: profile } = await (supabase as any)
-        .from('api.profiles')
+        .from('profiles')
         .select('role')
         .eq('id', user.id)
         .single();
