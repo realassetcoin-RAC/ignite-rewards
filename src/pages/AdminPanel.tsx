@@ -9,6 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Separator } from "@/components/ui/separator";
 import VirtualCardManager from "@/components/admin/VirtualCardManager";
 import MerchantManager from "@/components/admin/MerchantManager";
+import UserManager from "@/components/admin/UserManager";
 import { 
   Shield, 
   CreditCard, 
@@ -229,7 +230,7 @@ const AdminPanel = () => {
 
         {/* Main Admin Tabs */}
         <Tabs defaultValue="cards" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2 lg:w-auto lg:grid-cols-4">
+          <TabsList className="grid w-full grid-cols-3 lg:w-auto lg:grid-cols-5">
             <TabsTrigger value="cards" className="flex items-center space-x-2">
               <CreditCard className="h-4 w-4" />
               <span>Virtual Cards</span>
@@ -237,6 +238,10 @@ const AdminPanel = () => {
             <TabsTrigger value="merchants" className="flex items-center space-x-2">
               <Store className="h-4 w-4" />
               <span>Merchants</span>
+            </TabsTrigger>
+            <TabsTrigger value="users" className="flex items-center space-x-2">
+              <Users className="h-4 w-4" />
+              <span>Users</span>
             </TabsTrigger>
             <TabsTrigger value="analytics" className="flex items-center space-x-2">
               <BarChart3 className="h-4 w-4" />
@@ -265,6 +270,16 @@ const AdminPanel = () => {
                 Manage merchant partnerships and subscription plans.
               </p>
               <MerchantManager onStatsUpdate={loadStats} />
+            </div>
+          </TabsContent>
+
+          <TabsContent value="users" className="space-y-6">
+            <div>
+              <h3 className="text-2xl font-bold text-foreground mb-2">User Management</h3>
+              <p className="text-muted-foreground mb-6">
+                View and manage users subscribed to virtual cards and platform services.
+              </p>
+              <UserManager onStatsUpdate={loadStats} />
             </div>
           </TabsContent>
 
