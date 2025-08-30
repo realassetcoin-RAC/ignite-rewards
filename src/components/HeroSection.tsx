@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui/button";
+import { Link } from "react-router-dom";
 import heroImage from "@/assets/hero-rewards.jpg";
 import pointbridgeLogo from "@/assets/pointbridge-logo.png";
 
@@ -13,6 +14,13 @@ const HeroSection = () => {
       
       <div className="relative z-10 max-w-7xl mx-auto px-6 py-16 lg:py-24">
         <div className="text-center text-white">
+          <div className="absolute top-4 right-6 z-20">
+            <Link to="/auth">
+              <Button variant="outline" size="sm" className="border-primary/30 text-primary hover:bg-primary/10">
+                Login
+              </Button>
+            </Link>
+          </div>
           <div className="flex items-center justify-center mb-8">
             <div className="bg-black/20 backdrop-blur-sm rounded-2xl p-4 mr-4">
               <img 
