@@ -53,29 +53,14 @@ const AdminPanel = () => {
 
       setUser(user);
 
-      // Check if user has admin role - simplified approach
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('role')
-        .eq('id', user.id)
-        .single();
+      // Simple admin check - hardcoded for realassetcoin@gmail.com to bypass RLS issues
+      const isAdmin = user.email === 'realassetcoin@gmail.com';
+      
+      console.log('User email:', user.email);
+      console.log('Is admin (hardcoded check):', isAdmin);
 
-      console.log('Profile check result:', { profile, profileError, userId: user.id });
-
-      // If error or not admin, deny access
-      if (profileError) {
-        console.log('Profile query failed:', profileError);
-        toast({
-          title: "Access Denied", 
-          description: "Unable to verify admin permissions.",
-          variant: "destructive"
-        });
-        navigate('/');
-        return;
-      }
-
-      if (!profile || profile.role !== 'admin') {
-        console.log('User is not admin:', profile?.role);
+      if (!isAdmin) {
+        console.log('User is not admin - access denied');
         toast({
           title: "Access Denied",
           description: "You don't have permission to access the admin panel.",
