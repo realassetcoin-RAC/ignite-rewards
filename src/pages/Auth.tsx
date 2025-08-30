@@ -14,29 +14,29 @@ const Auth = () => {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [user, setUser] = useState(null);
+  const [initializing, setInitializing] = useState(true);
   const navigate = useNavigate();
   const { toast } = useToast();
 
   useEffect(() => {
-    // Check for existing session but don't redirect automatically
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user) {
-        setUser(session.user);
-      }
-    });
+    // Check for existing session
+    const checkSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      console.log('Initial session check:', session?.user?.email);
+      setUser(session?.user || null);
+      setInitializing(false);
+    };
+    
+    checkSession();
 
     // Listen for auth changes - but don't redirect existing users
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         console.log('Auth event:', event, session?.user?.email);
-        if (session?.user) {
-          setUser(session.user);
-          // Only redirect on new sign in, not on token refresh or initial load
-          if (event === 'SIGNED_IN' && !user) {
-            navigate("/");
-          }
-        } else {
-          setUser(null);
+        setUser(session?.user || null);
+        // Only redirect on new sign in
+        if (event === 'SIGNED_IN') {
+          navigate("/");
         }
       }
     );
@@ -173,8 +173,10 @@ const Auth = () => {
               Welcome to PointBridge
             </CardTitle>
             <CardDescription>
-              {user ? (
-                `Currently signed in as: ${user.email}`
+              {initializing ? (
+                "Loading..."
+              ) : user ? (
+                <>Currently signed in as: {user.email}</>
               ) : (
                 "Sign in to your account or create a new one"
               )}
