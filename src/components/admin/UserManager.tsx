@@ -1,12 +1,12 @@
 import { useState, useEffect } from "react";
-import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Eye, Mail, Calendar, CreditCard, User } from "lucide-react";
+import { Eye, Users, CreditCard, Calendar, Mail, User } from "lucide-react";
 
 interface UserProfile {
   id: string;
@@ -24,8 +24,11 @@ interface UserSubscription {
   subscribed: boolean;
   subscription_tier: string;
   subscription_end: string;
-  stripe_customer_id: string;
   created_at: string;
+  profiles?: {
+    full_name: string;
+    email: string;
+  } | null;
 }
 
 interface UserManagerProps {
@@ -38,36 +41,57 @@ const UserManager = ({ onStatsUpdate }: UserManagerProps) => {
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
-  const [selectedSubscription, setSelectedSubscription] = useState<UserSubscription | null>(null);
+  const [viewMode, setViewMode] = useState<"profiles" | "subscribers">("profiles");
   const { toast } = useToast();
 
   useEffect(() => {
-    loadUsers();
+    loadData();
   }, []);
 
-  const loadUsers = async () => {
+  const loadData = async () => {
     try {
-      const [usersResult, subscribersResult] = await Promise.all([
-        supabase
-          .from("profiles")
-          .select("*")
-          .order("created_at", { ascending: false }),
-        supabase
-          .from("subscribers")
-          .select("*")
-          .order("created_at", { ascending: false })
-      ]);
+      // Load user profiles
+      const { data: profilesData, error: profilesError } = await supabase
+        .from("profiles")
+        .select("*")
+        .order("created_at", { ascending: false });
 
-      if (usersResult.error) throw usersResult.error;
-      if (subscribersResult.error) throw subscribersResult.error;
+      if (profilesError) {
+        console.error("Failed to load profiles:", profilesError);
+      } else {
+        setUsers(profilesData || []);
+      }
 
-      setUsers(usersResult.data || []);
-      setSubscribers(subscribersResult.data || []);
+      // Load subscribers
+      const { data: subscribersData, error: subscribersError } = await supabase
+        .from("subscribers")
+        .select(`
+          id,
+          user_id,
+          email,
+          subscribed,
+          subscription_tier,
+          subscription_end,
+          created_at,
+          profiles:user_id (
+            full_name,
+            email
+          )
+        `)
+        .eq("subscribed", true)
+        .order("created_at", { ascending: false });
+
+      if (subscribersError) {
+        console.error("Failed to load subscribers:", subscribersError);
+      } else {
+        setSubscribers((subscribersData as any) || []);
+      }
+
     } catch (error) {
-      console.error("Failed to load users:", error);
+      console.error("Failed to load user data:", error);
       toast({
         title: "Error",
-        description: "Failed to load users and subscriptions",
+        description: "Failed to load user data. Check console for details.",
         variant: "destructive"
       });
     } finally {
@@ -77,8 +101,6 @@ const UserManager = ({ onStatsUpdate }: UserManagerProps) => {
 
   const handleViewUser = (user: UserProfile) => {
     setSelectedUser(user);
-    const subscription = subscribers.find(sub => sub.user_id === user.id || sub.email === user.email);
-    setSelectedSubscription(subscription || null);
     setDialogOpen(true);
   };
 
@@ -91,58 +113,72 @@ const UserManager = ({ onStatsUpdate }: UserManagerProps) => {
     }
   };
 
-  const getSubscriptionStatus = (user: UserProfile) => {
-    const subscription = subscribers.find(sub => sub.user_id === user.id || sub.email === user.email);
-    if (!subscription) return { status: "None", color: "outline" as const };
-    
-    if (!subscription.subscribed) return { status: "Inactive", color: "secondary" as const };
-    
-    const endDate = subscription.subscription_end ? new Date(subscription.subscription_end) : null;
-    const now = new Date();
-    
-    if (endDate && endDate < now) return { status: "Expired", color: "destructive" as const };
-    
-    return { status: subscription.subscription_tier || "Active", color: "default" as const };
-  };
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString();
+  const getTierColor = (tier: string) => {
+    switch (tier) {
+      case "premium": return "default";
+      case "basic": return "secondary";
+      case "enterprise": return "destructive";
+      default: return "outline";
+    }
   };
 
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <div>
-          <h3 className="text-lg font-medium">Platform Users</h3>
-          <p className="text-sm text-muted-foreground">
-            All registered users and their subscription status
-          </p>
+        <h3 className="text-lg font-medium">User Management</h3>
+        <div className="flex gap-2">
+          <Button
+            variant={viewMode === "profiles" ? "default" : "outline"}
+            size="sm"
+            onClick={() => setViewMode("profiles")}
+          >
+            <User className="w-4 h-4 mr-2" />
+            All Users
+          </Button>
+          <Button
+            variant={viewMode === "subscribers" ? "default" : "outline"}
+            size="sm"
+            onClick={() => setViewMode("subscribers")}
+          >
+            <CreditCard className="w-4 h-4 mr-2" />
+            Subscribers
+          </Button>
         </div>
       </div>
 
       {loading ? (
-        <div className="text-center py-8">Loading users...</div>
+        <div className="text-center py-8">
+          <Users className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
+          <p>Loading user data...</p>
+        </div>
       ) : (
         <div className="border rounded-lg">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>User</TableHead>
-                <TableHead>Role</TableHead>
-                <TableHead>Subscription</TableHead>
-                <TableHead>Registered</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {users.map((user) => {
-                const subscriptionStatus = getSubscriptionStatus(user);
-                return (
+          {viewMode === "profiles" ? (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>User</TableHead>
+                  <TableHead>Email</TableHead>
+                  <TableHead>Role</TableHead>
+                  <TableHead>Joined</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {users.map((user) => (
                   <TableRow key={user.id}>
                     <TableCell>
                       <div>
-                        <div className="font-medium">{user.full_name || user.email}</div>
-                        <div className="text-sm text-muted-foreground">{user.email}</div>
+                        <div className="font-medium">{user.full_name || "N/A"}</div>
+                        <div className="text-xs text-muted-foreground">
+                          ID: {user.id.slice(0, 8)}...
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <Mail className="w-3 h-3 text-muted-foreground" />
+                        {user.email}
                       </div>
                     </TableCell>
                     <TableCell>
@@ -151,12 +187,7 @@ const UserManager = ({ onStatsUpdate }: UserManagerProps) => {
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      <Badge variant={subscriptionStatus.color} className="capitalize">
-                        {subscriptionStatus.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      {formatDate(user.created_at)}
+                      {new Date(user.created_at).toLocaleDateString()}
                     </TableCell>
                     <TableCell className="text-right">
                       <Button 
@@ -168,42 +199,101 @@ const UserManager = ({ onStatsUpdate }: UserManagerProps) => {
                       </Button>
                     </TableCell>
                   </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
+                ))}
+              </TableBody>
+            </Table>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Subscriber</TableHead>
+                  <TableHead>Email</TableHead>
+                  <TableHead>Tier</TableHead>
+                  <TableHead>Subscription End</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Subscribed</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {subscribers.map((subscriber) => (
+                  <TableRow key={subscriber.id}>
+                    <TableCell>
+                      <div>
+                        <div className="font-medium">
+                          {subscriber.profiles?.full_name || "N/A"}
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          ID: {subscriber.id.slice(0, 8)}...
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <Mail className="w-3 h-3 text-muted-foreground" />
+                        {subscriber.email}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      {subscriber.subscription_tier ? (
+                        <Badge variant={getTierColor(subscriber.subscription_tier)} className="capitalize">
+                          {subscriber.subscription_tier}
+                        </Badge>
+                      ) : (
+                        <span className="text-muted-foreground">No tier</span>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {subscriber.subscription_end ? (
+                        <div className="flex items-center gap-2">
+                          <Calendar className="w-3 h-3 text-muted-foreground" />
+                          {new Date(subscriber.subscription_end).toLocaleDateString()}
+                        </div>
+                      ) : (
+                        "N/A"
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={subscriber.subscribed ? "default" : "secondary"}>
+                        {subscriber.subscribed ? "Active" : "Inactive"}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      {new Date(subscriber.created_at).toLocaleDateString()}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
         </div>
       )}
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-3xl">
+        <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>User Details</DialogTitle>
             <DialogDescription>
-              Complete user profile and subscription information
+              View detailed user information and activity
             </DialogDescription>
           </DialogHeader>
 
           {selectedUser && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-6">
               <Card>
                 <CardHeader>
                   <CardTitle className="text-lg flex items-center gap-2">
                     <User className="w-5 h-5" />
-                    Profile Information
+                    User Information
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
                   <div>
                     <label className="text-sm font-medium text-muted-foreground">Full Name</label>
-                    <div>{selectedUser.full_name || "Not provided"}</div>
+                    <div>{selectedUser.full_name || "Not specified"}</div>
                   </div>
                   <div>
                     <label className="text-sm font-medium text-muted-foreground">Email</label>
-                    <div className="flex items-center gap-2">
-                      <Mail className="w-4 h-4" />
-                      {selectedUser.email}
-                    </div>
+                    <div>{selectedUser.email}</div>
                   </div>
                   <div>
                     <label className="text-sm font-medium text-muted-foreground">Role</label>
@@ -215,75 +305,26 @@ const UserManager = ({ onStatsUpdate }: UserManagerProps) => {
                   </div>
                   <div>
                     <label className="text-sm font-medium text-muted-foreground">User ID</label>
-                    <div className="text-xs font-mono bg-muted p-2 rounded">
-                      {selectedUser.id}
-                    </div>
+                    <div className="font-mono text-sm">{selectedUser.id}</div>
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-muted-foreground">Registered</label>
-                    <div className="flex items-center gap-2">
-                      <Calendar className="w-4 h-4" />
-                      {formatDate(selectedUser.created_at)}
-                    </div>
+                    <label className="text-sm font-medium text-muted-foreground">Created At</label>
+                    <div>{new Date(selectedUser.created_at).toLocaleString()}</div>
                   </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg flex items-center gap-2">
-                    <CreditCard className="w-5 h-5" />
-                    Subscription Details
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  {selectedSubscription ? (
-                    <>
-                      <div>
-                        <label className="text-sm font-medium text-muted-foreground">Status</label>
-                        <div>
-                          <Badge variant={selectedSubscription.subscribed ? "default" : "secondary"}>
-                            {selectedSubscription.subscribed ? "Active" : "Inactive"}
-                          </Badge>
-                        </div>
-                      </div>
-                      <div>
-                        <label className="text-sm font-medium text-muted-foreground">Tier</label>
-                        <div>{selectedSubscription.subscription_tier || "Not specified"}</div>
-                      </div>
-                      <div>
-                        <label className="text-sm font-medium text-muted-foreground">End Date</label>
-                        <div>
-                          {selectedSubscription.subscription_end 
-                            ? formatDate(selectedSubscription.subscription_end)
-                            : "Not set"}
-                        </div>
-                      </div>
-                      <div>
-                        <label className="text-sm font-medium text-muted-foreground">Stripe Customer</label>
-                        <div className="text-xs font-mono bg-muted p-2 rounded">
-                          {selectedSubscription.stripe_customer_id || "Not available"}
-                        </div>
-                      </div>
-                      <div>
-                        <label className="text-sm font-medium text-muted-foreground">Subscribed On</label>
-                        <div className="flex items-center gap-2">
-                          <Calendar className="w-4 h-4" />
-                          {formatDate(selectedSubscription.created_at)}
-                        </div>
-                      </div>
-                    </>
-                  ) : (
-                    <div className="text-center py-6 text-muted-foreground">
-                      <CreditCard className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                      <p>No subscription information available</p>
-                      <p className="text-sm">This user hasn't subscribed to any virtual cards yet.</p>
-                    </div>
-                  )}
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground">Last Updated</label>
+                    <div>{new Date(selectedUser.updated_at).toLocaleString()}</div>
+                  </div>
                 </CardContent>
               </Card>
             </div>
           )}
+
+          <div className="flex justify-end">
+            <Button variant="outline" onClick={() => setDialogOpen(false)}>
+              Close
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

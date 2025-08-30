@@ -277,7 +277,7 @@ const AdminPanel = () => {
             <div>
               <h3 className="text-2xl font-bold text-foreground mb-2">User Management</h3>
               <p className="text-muted-foreground mb-6">
-                View and manage users subscribed to virtual cards and platform services.
+                View and manage user accounts and subscriptions.
               </p>
               <UserManager onStatsUpdate={loadStats} />
             </div>
