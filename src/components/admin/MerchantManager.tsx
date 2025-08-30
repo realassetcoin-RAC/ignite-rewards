@@ -79,7 +79,7 @@ const MerchantManager = ({ onStatsUpdate }: MerchantManagerProps) => {
       }
 
       const { data, error } = await (supabase as any)
-        .from('merchants')
+        .from('api.merchants')
         .select('*')
         .order('created_at', { ascending: false });
 
@@ -125,7 +125,7 @@ const MerchantManager = ({ onStatsUpdate }: MerchantManagerProps) => {
         };
 
         const { error } = await (supabase as any)
-          .from("merchants")
+          .from("api.merchants")
           .insert([merchantData]);
 
         if (error) throw error;
@@ -149,7 +149,7 @@ const MerchantManager = ({ onStatsUpdate }: MerchantManagerProps) => {
         };
 
         const { error } = await (supabase as any)
-          .from("merchants")
+          .from("api.merchants")
           .update(updateData)
           .eq("id", selectedMerchant.id);
 

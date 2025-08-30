@@ -52,7 +52,7 @@ const UserManager = ({ onStatsUpdate }: UserManagerProps) => {
     try {
       // Load user profiles
       const { data: profilesData, error: profilesError } = await (supabase as any)
-        .from("profiles")
+        .from("api.profiles")
         .select("*")
         .order("created_at", { ascending: false });
 
@@ -64,7 +64,7 @@ const UserManager = ({ onStatsUpdate }: UserManagerProps) => {
 
       // Load subscribers
       const { data: subscribersData, error: subscribersError } = await (supabase as any)
-        .from("subscribers")
+        .from("api.subscribers")
         .select(`
           id,
           user_id,
