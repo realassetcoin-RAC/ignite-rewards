@@ -53,35 +53,19 @@ const AdminPanel = () => {
 
       setUser(user);
 
-      // Check if user has admin role
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('role')
-        .eq('id', user.id)
-        .maybeSingle();
+      // Check if user has admin role using the is_admin function
+      const { data: isAdminResult, error: adminError } = await supabase
+        .rpc('is_admin', { user_id: user.id });
 
-      console.log('Profile data:', profile);
-      console.log('Profile error:', profileError);
+      console.log('Is admin result:', isAdminResult);
+      console.log('Admin check error:', adminError);
 
-      // If no profile exists, user is not admin
-      if (profileError || !profile) {
-        console.log('No profile found or error:', profileError);
+      // If error or not admin, deny access
+      if (adminError || !isAdminResult) {
+        console.log('Admin check failed:', adminError);
         toast({
           title: "Access Denied",
           description: "You don't have permission to access the admin panel.",
-          variant: "destructive"
-        });
-        navigate('/');
-        return;
-      }
-
-      console.log('User role:', profile?.role);
-      
-      if (profile?.role !== 'admin') {
-        console.log('User is not admin, role is:', profile?.role);
-        toast({
-          title: "Access Denied",
-          description: `Your current role is: ${profile?.role}. Admin access required.`,
           variant: "destructive"
         });
         navigate('/');
