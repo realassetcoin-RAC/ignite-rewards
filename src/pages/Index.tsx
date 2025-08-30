@@ -3,6 +3,7 @@ import BenefitsSection from "@/components/BenefitsSection";
 import HowItWorksSection from "@/components/HowItWorksSection";
 import SignupSection from "@/components/SignupSection";
 import Footer from "@/components/Footer";
+import AdminAccess from "@/components/AdminAccess";
 
 const Index = () => {
   return (
@@ -16,6 +17,7 @@ const Index = () => {
         <SignupSection />
       </main>
       <Footer />
+      <AdminAccess />
     </div>
   );
 };
