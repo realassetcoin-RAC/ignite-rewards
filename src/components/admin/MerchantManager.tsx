@@ -9,7 +9,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { useForm } from "react-hook-form";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Eye, Edit2, CreditCard, Calendar } from "lucide-react";
+import { Eye, Edit2, CreditCard, Calendar, Plus, HelpCircle } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface Merchant {
   id: string;
@@ -39,12 +41,18 @@ const MerchantManager = ({ onStatsUpdate }: MerchantManagerProps) => {
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedMerchant, setSelectedMerchant] = useState<Merchant | null>(null);
-  const [viewMode, setViewMode] = useState<"view" | "edit">("view");
+  const [viewMode, setViewMode] = useState<"view" | "edit" | "create">("view");
   const { toast } = useToast();
 
   const form = useForm({
     defaultValues: {
-      status: "",
+      business_name: "",
+      business_type: "",
+      contact_email: "",
+      phone: "",
+      city: "",
+      country: "",
+      status: "pending",
       subscription_plan: "",
       subscription_start_date: "",
       subscription_end_date: ""
@@ -94,38 +102,62 @@ const MerchantManager = ({ onStatsUpdate }: MerchantManagerProps) => {
     }
   };
 
-  const handleStatusUpdate = async (data: any) => {
-    if (!selectedMerchant) return;
-
+  const handleSubmit = async (data: any) => {
     try {
-      const updateData = {
-        status: data.status,
-        subscription_plan: data.subscription_plan,
-        subscription_start_date: data.subscription_start_date || null,
-        subscription_end_date: data.subscription_end_date || null
-      };
+      if (viewMode === "create") {
+        // For new merchants, we need a user_id - in a real app this would come from user selection
+        // For demo purposes, we'll use a placeholder
+        const merchantData = {
+          ...data,
+          user_id: crypto.randomUUID(), // In production, this should be selected from existing users
+        };
 
-      const { error } = await supabase
-        .from("merchants")
-        .update(updateData)
-        .eq("id", selectedMerchant.id);
+        const { error } = await supabase
+          .from("merchants")
+          .insert([merchantData]);
 
-      if (error) throw error;
+        if (error) throw error;
 
-      toast({
-        title: "Success",
-        description: "Merchant updated successfully"
-      });
+        toast({
+          title: "Success",
+          description: "Merchant created successfully"
+        });
+      } else if (selectedMerchant) {
+        const updateData = {
+          business_name: data.business_name,
+          business_type: data.business_type,
+          contact_email: data.contact_email,
+          phone: data.phone,
+          city: data.city,
+          country: data.country,
+          status: data.status,
+          subscription_plan: data.subscription_plan,
+          subscription_start_date: data.subscription_start_date || null,
+          subscription_end_date: data.subscription_end_date || null
+        };
+
+        const { error } = await supabase
+          .from("merchants")
+          .update(updateData)
+          .eq("id", selectedMerchant.id);
+
+        if (error) throw error;
+
+        toast({
+          title: "Success",
+          description: "Merchant updated successfully"
+        });
+      }
 
       setDialogOpen(false);
       setSelectedMerchant(null);
       loadMerchants();
       onStatsUpdate();
     } catch (error) {
-      console.error("Failed to update merchant:", error);
+      console.error("Failed to save merchant:", error);
       toast({
         title: "Error",
-        description: "Failed to update merchant",
+        description: "Failed to save merchant",
         variant: "destructive"
       });
     }
@@ -141,10 +173,34 @@ const MerchantManager = ({ onStatsUpdate }: MerchantManagerProps) => {
     setSelectedMerchant(merchant);
     setViewMode("edit");
     form.reset({
+      business_name: merchant.business_name,
+      business_type: merchant.business_type,
+      contact_email: merchant.contact_email,
+      phone: merchant.phone,
+      city: merchant.city,
+      country: merchant.country,
       status: merchant.status,
       subscription_plan: merchant.subscription_plan || "",
       subscription_start_date: merchant.subscription_start_date?.split('T')[0] || "",
       subscription_end_date: merchant.subscription_end_date?.split('T')[0] || ""
+    });
+    setDialogOpen(true);
+  };
+
+  const handleCreateMerchant = () => {
+    setSelectedMerchant(null);
+    setViewMode("create");
+    form.reset({
+      business_name: "",
+      business_type: "",
+      contact_email: "",
+      phone: "",
+      city: "",
+      country: "",
+      status: "pending",
+      subscription_plan: "",
+      subscription_start_date: "",
+      subscription_end_date: ""
     });
     setDialogOpen(true);
   };
@@ -169,10 +225,15 @@ const MerchantManager = ({ onStatsUpdate }: MerchantManagerProps) => {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h3 className="text-lg font-medium">Merchants</h3>
-      </div>
+    <TooltipProvider>
+      <div className="space-y-6">
+        <div className="flex justify-between items-center">
+          <h3 className="text-lg font-medium">Merchants</h3>
+          <Button onClick={handleCreateMerchant}>
+            <Plus className="w-4 h-4 mr-2" />
+            Add New Merchant
+          </Button>
+        </div>
 
       {loading ? (
         <div className="text-center py-8">Loading merchants...</div>
@@ -259,15 +320,18 @@ const MerchantManager = ({ onStatsUpdate }: MerchantManagerProps) => {
       )}
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
-              {viewMode === "view" ? "Merchant Details" : "Edit Merchant"}
+              {viewMode === "view" ? "Merchant Details" : 
+               viewMode === "edit" ? "Edit Merchant" : "Create New Merchant"}
             </DialogTitle>
             <DialogDescription>
               {viewMode === "view" 
                 ? "View merchant information and subscription details"
-                : "Update merchant status and subscription settings"
+                : viewMode === "edit"
+                ? "Update merchant information and subscription settings"
+                : "Create a new merchant with business details and subscription"
               }
             </DialogDescription>
           </DialogHeader>
@@ -364,98 +428,296 @@ const MerchantManager = ({ onStatsUpdate }: MerchantManagerProps) => {
                 </div>
               ) : (
                 <Form {...form}>
-                  <form onSubmit={form.handleSubmit(handleStatusUpdate)} className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                      <FormField
-                        control={form.control}
-                        name="status"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Status</FormLabel>
-                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
+                    {/* Business Information Section */}
+                    <div className="space-y-4">
+                      <h4 className="text-md font-medium">Business Information</h4>
+                      <div className="grid grid-cols-2 gap-4">
+                        <FormField
+                          control={form.control}
+                          name="business_name"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel className="flex items-center gap-2">
+                                Business Name
+                                <Tooltip>
+                                  <TooltipTrigger>
+                                    <HelpCircle className="w-3 h-3" />
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p>The official registered name of the business</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </FormLabel>
                               <FormControl>
-                                <SelectTrigger>
-                                  <SelectValue />
-                                </SelectTrigger>
+                                <Input placeholder="Enter business name" {...field} />
                               </FormControl>
-                              <SelectContent>
-                                <SelectItem value="active">Active</SelectItem>
-                                <SelectItem value="pending">Pending</SelectItem>
-                                <SelectItem value="suspended">Suspended</SelectItem>
-                                <SelectItem value="cancelled">Cancelled</SelectItem>
-                              </SelectContent>
-                            </Select>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
 
-                      <FormField
-                        control={form.control}
-                        name="subscription_plan"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Subscription Plan</FormLabel>
-                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormField
+                          control={form.control}
+                          name="business_type"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel className="flex items-center gap-2">
+                                Business Type
+                                <Tooltip>
+                                  <TooltipTrigger>
+                                    <HelpCircle className="w-3 h-3" />
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p>Type of business (e.g., Retail, Restaurant, E-commerce)</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </FormLabel>
                               <FormControl>
-                                <SelectTrigger>
-                                  <SelectValue />
-                                </SelectTrigger>
+                                <Input placeholder="Enter business type" {...field} />
                               </FormControl>
-                              <SelectContent>
-                                <SelectItem value="">No Plan</SelectItem>
-                                <SelectItem value="basic">Basic</SelectItem>
-                                <SelectItem value="premium">Premium</SelectItem>
-                                <SelectItem value="enterprise">Enterprise</SelectItem>
-                              </SelectContent>
-                            </Select>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4">
+                        <FormField
+                          control={form.control}
+                          name="contact_email"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel className="flex items-center gap-2">
+                                Contact Email
+                                <Tooltip>
+                                  <TooltipTrigger>
+                                    <HelpCircle className="w-3 h-3" />
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p>Primary business contact email address</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </FormLabel>
+                              <FormControl>
+                                <Input type="email" placeholder="business@example.com" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name="phone"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel className="flex items-center gap-2">
+                                Phone Number
+                                <Tooltip>
+                                  <TooltipTrigger>
+                                    <HelpCircle className="w-3 h-3" />
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p>Business contact phone number</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </FormLabel>
+                              <FormControl>
+                                <Input placeholder="+1 (555) 123-4567" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4">
+                        <FormField
+                          control={form.control}
+                          name="city"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel className="flex items-center gap-2">
+                                City
+                                <Tooltip>
+                                  <TooltipTrigger>
+                                    <HelpCircle className="w-3 h-3" />
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p>City where the business is located</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </FormLabel>
+                              <FormControl>
+                                <Input placeholder="Enter city" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name="country"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel className="flex items-center gap-2">
+                                Country
+                                <Tooltip>
+                                  <TooltipTrigger>
+                                    <HelpCircle className="w-3 h-3" />
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p>Country where the business is registered</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </FormLabel>
+                              <FormControl>
+                                <Input placeholder="Enter country" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
-                      <FormField
-                        control={form.control}
-                        name="subscription_start_date"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Subscription Start Date</FormLabel>
-                            <FormControl>
-                              <input 
-                                type="date" 
-                                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                                {...field}
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
+                    {/* Subscription Section */}
+                    <div className="space-y-4">
+                      <h4 className="text-md font-medium">Subscription Details</h4>
+                      <div className="grid grid-cols-2 gap-4">
+                        <FormField
+                          control={form.control}
+                          name="status"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel className="flex items-center gap-2">
+                                Status
+                                <Tooltip>
+                                  <TooltipTrigger>
+                                    <HelpCircle className="w-3 h-3" />
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p>Current merchant account status</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </FormLabel>
+                              <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                <FormControl>
+                                  <SelectTrigger>
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  <SelectItem value="active">Active</SelectItem>
+                                  <SelectItem value="pending">Pending</SelectItem>
+                                  <SelectItem value="suspended">Suspended</SelectItem>
+                                  <SelectItem value="cancelled">Cancelled</SelectItem>
+                                </SelectContent>
+                              </Select>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
 
-                      <FormField
-                        control={form.control}
-                        name="subscription_end_date"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Subscription End Date</FormLabel>
-                            <FormControl>
-                              <input 
-                                type="date" 
-                                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                                {...field}
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
+                        <FormField
+                          control={form.control}
+                          name="subscription_plan"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel className="flex items-center gap-2">
+                                Subscription Plan
+                                <Tooltip>
+                                  <TooltipTrigger>
+                                    <HelpCircle className="w-3 h-3" />
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p>The subscription plan assigned to this merchant</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </FormLabel>
+                              <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                <FormControl>
+                                  <SelectTrigger>
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  <SelectItem value="">No Plan</SelectItem>
+                                  <SelectItem value="basic">Basic - $29/month</SelectItem>
+                                  <SelectItem value="premium">Premium - $99/month</SelectItem>
+                                  <SelectItem value="enterprise">Enterprise - $299/month</SelectItem>
+                                </SelectContent>
+                              </Select>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4">
+                        <FormField
+                          control={form.control}
+                          name="subscription_start_date"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel className="flex items-center gap-2">
+                                Subscription Start Date
+                                <Tooltip>
+                                  <TooltipTrigger>
+                                    <HelpCircle className="w-3 h-3" />
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p>When the subscription begins</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </FormLabel>
+                              <FormControl>
+                                <input 
+                                  type="date" 
+                                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                                  {...field}
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name="subscription_end_date"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel className="flex items-center gap-2">
+                                Subscription End Date
+                                <Tooltip>
+                                  <TooltipTrigger>
+                                    <HelpCircle className="w-3 h-3" />
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p>When the subscription expires (optional)</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </FormLabel>
+                              <FormControl>
+                                <input 
+                                  type="date" 
+                                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                                  {...field}
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
                     </div>
 
                     <div className="flex gap-2 pt-4">
                       <Button type="submit" className="flex-1">
-                        Update Merchant
+                        {viewMode === "create" ? "Create Merchant" : "Update Merchant"}
                       </Button>
                       <Button 
                         type="button" 
@@ -472,7 +734,8 @@ const MerchantManager = ({ onStatsUpdate }: MerchantManagerProps) => {
           )}
         </DialogContent>
       </Dialog>
-    </div>
+      </div>
+    </TooltipProvider>
   );
 };
 
