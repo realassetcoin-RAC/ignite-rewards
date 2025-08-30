@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, ArrowLeft } from "lucide-react";
+import { Loader2, ArrowLeft, LogOut } from "lucide-react";
 
 const Auth = () => {
   const [email, setEmail] = useState("");
@@ -18,11 +18,10 @@ const Auth = () => {
   const { toast } = useToast();
 
   useEffect(() => {
-    // Check for existing session
+    // Check for existing session but don't redirect automatically
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session?.user) {
         setUser(session.user);
-        navigate("/");
       }
     });
 
@@ -31,7 +30,10 @@ const Auth = () => {
       (event, session) => {
         if (session?.user) {
           setUser(session.user);
-          navigate("/");
+          // Only redirect on successful sign in, not when checking existing session
+          if (event === 'SIGNED_IN') {
+            navigate("/");
+          }
         } else {
           setUser(null);
         }
@@ -40,6 +42,26 @@ const Auth = () => {
 
     return () => subscription.unsubscribe();
   }, [navigate]);
+
+  const handleSignOut = async () => {
+    setLoading(true);
+    try {
+      await supabase.auth.signOut();
+      setUser(null);
+      toast({
+        title: "Signed out",
+        description: "You have been signed out successfully.",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to sign out.",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -124,10 +146,24 @@ const Auth = () => {
     <div className="min-h-screen hero-gradient flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="mb-6 text-center">
-          <Link to="/" className="inline-flex items-center text-muted-foreground hover:text-foreground transition-colors">
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Back to Home
-          </Link>
+          <div className="flex items-center justify-between">
+            <Link to="/" className="inline-flex items-center text-muted-foreground hover:text-foreground transition-colors">
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Back to Home
+            </Link>
+            {user && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleSignOut}
+                disabled={loading}
+                className="text-muted-foreground hover:text-foreground"
+              >
+                <LogOut className="w-4 h-4 mr-2" />
+                Sign Out
+              </Button>
+            )}
+          </div>
         </div>
         
         <Card className="card-gradient border-border/50 card-shadow">
@@ -136,7 +172,11 @@ const Auth = () => {
               Welcome to PointBridge
             </CardTitle>
             <CardDescription>
-              Sign in to your account or create a new one
+              {user ? (
+                `Currently signed in as: ${user.email}`
+              ) : (
+                "Sign in to your account or create a new one"
+              )}
             </CardDescription>
           </CardHeader>
           <CardContent>
