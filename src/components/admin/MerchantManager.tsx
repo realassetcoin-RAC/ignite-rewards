@@ -26,7 +26,7 @@ interface Merchant {
   subscription_start_date: string;
   subscription_end_date: string;
   created_at: string;
-  profiles: {
+  profiles?: {
     full_name: string;
     email: string;
   } | null;
@@ -65,21 +65,49 @@ const MerchantManager = ({ onStatsUpdate }: MerchantManagerProps) => {
 
   const loadMerchants = async () => {
     try {
-      const { data, error } = await supabase
-        .from("merchants")
-        .select(`
-          *
-        `)
-        .order("created_at", { ascending: false });
+      setLoading(true);
+      
+      // First check if user is admin
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast({
+          title: "Access Denied",
+          description: "Please sign in to access admin features",
+          variant: "destructive",
+        });
+        return;
+      }
 
-      if (error) throw error;
-      setMerchants((data as any) || []);
+      const { data, error } = await supabase
+        .from('merchants')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Error loading merchants:', error);
+        if (error.code === 'PGRST301') {
+          toast({
+            title: "Access Denied",
+            description: "You don't have permission to view merchants. Admin access required.",
+            variant: "destructive",
+          });
+        } else {
+          toast({
+            title: "Error",
+            description: `Failed to load merchants: ${error.message}`,
+            variant: "destructive",
+          });
+        }
+        return;
+      }
+
+      setMerchants(data || []);
     } catch (error) {
-      console.error("Failed to load merchants:", error);
+      console.error('Error loading merchants:', error);
       toast({
         title: "Error",
-        description: "Failed to load merchants",
-        variant: "destructive"
+        description: "Failed to load merchants. Please check your connection.",
+        variant: "destructive",
       });
     } finally {
       setLoading(false);

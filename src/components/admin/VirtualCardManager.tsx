@@ -71,19 +71,49 @@ const VirtualCardManager = ({ onStatsUpdate }: VirtualCardManagerProps) => {
 
   const loadCards = async () => {
     try {
-      const { data, error } = await supabase
-        .from("virtual_cards")
-        .select("*")
-        .order("created_at", { ascending: false });
+      setLoading(true);
+      
+      // First check if user is admin
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast({
+          title: "Access Denied",
+          description: "Please sign in to access admin features",
+          variant: "destructive",
+        });
+        return;
+      }
 
-      if (error) throw error;
+      const { data, error } = await supabase
+        .from('virtual_cards')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Error loading virtual cards:', error);
+        if (error.code === 'PGRST301') {
+          toast({
+            title: "Access Denied",
+            description: "You don't have permission to view virtual cards. Admin access required.",
+            variant: "destructive",
+          });
+        } else {
+          toast({
+            title: "Error",
+            description: `Failed to load virtual cards: ${error.message}`,
+            variant: "destructive",
+          });
+        }
+        return;
+      }
+
       setCards(data || []);
     } catch (error) {
-      console.error("Failed to load cards:", error);
+      console.error('Error loading virtual cards:', error);
       toast({
-        title: "Error",
-        description: "Failed to load virtual cards",
-        variant: "destructive"
+        title: "Error", 
+        description: "Failed to load virtual cards. Please check your connection.",
+        variant: "destructive",
       });
     } finally {
       setLoading(false);
