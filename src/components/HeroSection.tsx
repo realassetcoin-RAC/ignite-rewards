@@ -37,7 +37,7 @@ const HeroSection = () => {
           
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
             <Button variant="hero" size="lg" className="text-lg px-8 py-4 h-auto">
-              Start Earning $RAC
+              Signup for Free
             </Button>
             <Button variant="outline" size="lg" className="text-lg px-8 py-4 h-auto border-primary/30 text-primary hover:bg-primary/10">
               Learn More
