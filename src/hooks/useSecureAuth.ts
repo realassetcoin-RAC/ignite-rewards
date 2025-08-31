@@ -32,12 +32,12 @@ export const useSecureAuth = () => {
 
   const checkAdminAccess = async (): Promise<boolean> => {
     try {
-      const { data, error } = await supabase.functions.invoke('check-admin');
+      const { data, error } = await supabase.rpc('is_admin');
       if (error) {
         console.error('Error checking admin access:', error);
         return false;
       }
-      return data?.isAdmin === true;
+      return data === true;
     } catch (error) {
       console.error('Admin access check failed:', error);
       return false;
@@ -46,31 +46,12 @@ export const useSecureAuth = () => {
 
   const getCurrentUserProfile = async (): Promise<UserProfile | null> => {
     try {
-      const { data, error } = await supabase.functions.invoke('check-admin');
+      const { data, error } = await supabase.rpc('get_current_user_profile');
       if (error) {
         console.error('Error fetching user profile:', error);
         return null;
       }
-      
-      if (!data?.email) {
-        return null;
-      }
-
-      // Get current user ID from session
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user?.id) {
-        return null;
-      }
-
-      // Transform the edge function response to match UserProfile interface
-      return {
-        id: user.id,
-        email: data.email,
-        full_name: data.email, // Use email as full_name for now
-        role: data.role || 'user',
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      };
+      return data?.[0] || null;
     } catch (error) {
       console.error('Profile fetch failed:', error);
       return null;
