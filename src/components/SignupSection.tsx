@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import CustomerSignupModal from "@/components/CustomerSignupModal";
-import MerchantSignupModal from "@/components/MerchantSignupModal";
+import CustomerSignupModal from "./CustomerSignupModal";
+import MerchantSignupModal from "./MerchantSignupModal";
 import { Users, Store, CreditCard, Building2 } from "lucide-react";
 
 /**
