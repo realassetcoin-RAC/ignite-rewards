@@ -14,7 +14,233 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      loyalty_transactions: {
+        Row: {
+          created_at: string
+          id: string
+          loyalty_number: string
+          merchant_id: string
+          points_earned: number
+          transaction_amount: number
+          transaction_date: string
+          transaction_reference: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          loyalty_number: string
+          merchant_id: string
+          points_earned?: number
+          transaction_amount: number
+          transaction_date?: string
+          transaction_reference?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          loyalty_number?: string
+          merchant_id?: string
+          points_earned?: number
+          transaction_amount?: number
+          transaction_date?: string
+          transaction_reference?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      merchant_subscription_plans: {
+        Row: {
+          created_at: string
+          description: string | null
+          features: Json | null
+          id: string
+          is_active: boolean | null
+          name: string
+          price_monthly: number
+          trial_days: number | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          features?: Json | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          price_monthly: number
+          trial_days?: number | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          features?: Json | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          price_monthly?: number
+          trial_days?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      referral_campaigns: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          description: string | null
+          end_date: string
+          id: string
+          is_active: boolean | null
+          name: string
+          reward_points: number
+          start_date: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          end_date: string
+          id?: string
+          is_active?: boolean | null
+          name: string
+          reward_points?: number
+          start_date: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          end_date?: string
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          reward_points?: number
+          start_date?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      user_points: {
+        Row: {
+          available_points: number | null
+          id: string
+          lifetime_points: number | null
+          total_points: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          available_points?: number | null
+          id?: string
+          lifetime_points?: number | null
+          total_points?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          available_points?: number | null
+          id?: string
+          lifetime_points?: number | null
+          total_points?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_referrals: {
+        Row: {
+          campaign_id: string | null
+          completed_at: string | null
+          created_at: string
+          id: string
+          merchant_id: string | null
+          referral_code: string
+          referred_email: string | null
+          referred_user_id: string | null
+          referrer_id: string
+          reward_points: number | null
+          rewarded_at: string | null
+          status: string | null
+          updated_at: string
+        }
+        Insert: {
+          campaign_id?: string | null
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          merchant_id?: string | null
+          referral_code: string
+          referred_email?: string | null
+          referred_user_id?: string | null
+          referrer_id: string
+          reward_points?: number | null
+          rewarded_at?: string | null
+          status?: string | null
+          updated_at?: string
+        }
+        Update: {
+          campaign_id?: string | null
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          merchant_id?: string | null
+          referral_code?: string
+          referred_email?: string | null
+          referred_user_id?: string | null
+          referrer_id?: string
+          reward_points?: number | null
+          rewarded_at?: string | null
+          status?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_referrals_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "referral_campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_wallets: {
+        Row: {
+          created_at: string
+          encrypted_seed_phrase: string
+          id: string
+          is_active: boolean | null
+          solana_address: string
+          updated_at: string
+          user_id: string
+          wallet_type: string | null
+        }
+        Insert: {
+          created_at?: string
+          encrypted_seed_phrase: string
+          id?: string
+          is_active?: boolean | null
+          solana_address: string
+          updated_at?: string
+          user_id: string
+          wallet_type?: string | null
+        }
+        Update: {
+          created_at?: string
+          encrypted_seed_phrase?: string
+          id?: string
+          is_active?: boolean | null
+          solana_address?: string
+          updated_at?: string
+          user_id?: string
+          wallet_type?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -23,6 +249,10 @@ export type Database = {
       check_admin_access: {
         Args: Record<PropertyKey, never>
         Returns: boolean
+      }
+      generate_referral_code: {
+        Args: Record<PropertyKey, never>
+        Returns: string
       }
       get_current_user_profile: {
         Args: Record<PropertyKey, never>
