@@ -51,33 +51,71 @@ const ReferralsTab = () => {
 
   const loadReferrals = async () => {
     try {
-      // Load user's referrals (simplified without merchant lookups)
+      if (!user?.id) {
+        toast({
+          title: "Authentication Error",
+          description: "User not authenticated. Please sign in.",
+          variant: "destructive",
+        });
+        setLoading(false);
+        return;
+      }
+
+      // First, try to create a referral code if the user doesn't have one
+      await ensureUserReferralCode();
+
+      // Load user's referrals
       const { data: referralData, error: referralError } = await supabase
         .from('user_referrals')
         .select('*')
-        .eq('referrer_id', user?.id)
+        .eq('referrer_id', user.id)
         .order('created_at', { ascending: false });
 
-      if (referralError && referralError.code !== 'PGRST116') {
+      if (referralError) {
         console.error('Error loading referrals:', referralError);
+        
+        let errorMessage = "Failed to load referral data";
+        switch (referralError.code) {
+          case 'PGRST301':
+            errorMessage = "You don't have permission to view referral data.";
+            break;
+          case '42501':
+            errorMessage = "Insufficient permissions to access referrals table.";
+            break;
+          case 'PGRST116':
+            errorMessage = "Referrals table not found. This feature may not be set up yet.";
+            break;
+          default:
+            errorMessage = `Failed to load referrals: ${referralError.message}`;
+        }
+        
+        toast({
+          title: "Database Error",
+          description: errorMessage,
+          variant: "destructive",
+        });
+        
+        // Set empty state instead of failing completely
+        setReferrals([]);
+        setStats({
+          totalReferrals: 0,
+          completedReferrals: 0,
+          pendingReferrals: 0,
+          totalRewards: 0,
+        });
+        setLoading(false);
+        return;
       }
 
       const referralsArray = referralData || [];
       setReferrals(referralsArray);
-      // Find user's own referral code
-      const { data: myCodeData, error: codeError } = await supabase
-        .from('user_referrals')
-        .select('referral_code')
-        .eq('referrer_id', user?.id)
-        .limit(1);
 
-      if (codeError && codeError.code !== 'PGRST116') {
-        console.error('Error loading referral code:', codeError);
+      // Find user's own referral code from the referrals
+      if (referralsArray.length > 0) {
+        setMyReferralCode(referralsArray[0].referral_code);
       }
-      
-      if (myCodeData && myCodeData.length > 0) {
-        setMyReferralCode(myCodeData[0].referral_code);
-      }
+
+      // Calculate stats
       const totalReferrals = referralsArray.length;
       const completedReferrals = referralsArray.filter(r => r.status === 'completed').length;
       const pendingReferrals = referralsArray.filter(r => r.status === 'pending').length;
@@ -93,11 +131,51 @@ const ReferralsTab = () => {
       console.error('Error loading referrals:', error);
       toast({
         title: "Error",
-        description: "Failed to load referral data",
+        description: "Failed to load referral data. Please check your connection.",
         variant: "destructive",
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const ensureUserReferralCode = async () => {
+    if (!user?.id) return;
+
+    try {
+      // Check if user already has a referral code
+      const { data: existingReferral, error: checkError } = await supabase
+        .from('user_referrals')
+        .select('referral_code')
+        .eq('referrer_id', user.id)
+        .limit(1);
+
+      if (checkError && checkError.code !== 'PGRST116') {
+        console.error('Error checking existing referral:', checkError);
+        return;
+      }
+
+      // If user doesn't have a referral code, create one
+      if (!existingReferral || existingReferral.length === 0) {
+        const referralCode = `REF${user.id.slice(-8).toUpperCase()}${Date.now().toString().slice(-4)}`;
+        
+        const { error: insertError } = await supabase
+          .from('user_referrals')
+          .insert([{
+            referrer_id: user.id,
+            referral_code: referralCode,
+            status: 'pending',
+            reward_points: 0
+          }]);
+
+        if (insertError) {
+          console.error('Error creating referral code:', insertError);
+        } else {
+          setMyReferralCode(referralCode);
+        }
+      }
+    } catch (error) {
+      console.error('Error ensuring referral code:', error);
     }
   };
 
@@ -242,7 +320,11 @@ const ReferralsTab = () => {
             </>
           ) : (
             <div className="text-center py-4">
-              <p className="text-muted-foreground">No referral code found. This should be generated automatically.</p>
+              <div className="animate-pulse">
+                <div className="h-4 bg-gray-200 rounded w-3/4 mx-auto mb-2"></div>
+                <div className="h-4 bg-gray-200 rounded w-1/2 mx-auto"></div>
+              </div>
+              <p className="text-muted-foreground mt-2">Generating your referral code...</p>
             </div>
           )}
         </CardContent>
