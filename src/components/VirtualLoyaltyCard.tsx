@@ -40,15 +40,54 @@ export const VirtualLoyaltyCard: React.FC = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      // Load from user_loyalty_cards (api schema)
-      const { data, error } = await supabase
-        .from('user_loyalty_cards')
-        .select('*')
-        .eq('user_id', user.id)
-        .single();
-
-      if (error && error.code !== 'PGRST116') {
-        console.error('Error loading loyalty card:', error);
+      // Try to load from user_loyalty_cards with multiple schema attempts
+      let loyaltyData = null;
+      let loadError = null;
+      
+      // Try public schema first
+      try {
+        console.log('Loading from public.user_loyalty_cards...');
+        const { data, error } = await supabase
+          .schema('public')
+          .from('user_loyalty_cards')
+          .select('*')
+          .eq('user_id', user.id)
+          .maybeSingle();
+          
+        if (error && error.code !== 'PGRST116') {
+          throw error;
+        }
+        
+        loyaltyData = data;
+        console.log('Loaded from public schema:', data);
+      } catch (publicError) {
+        console.warn('Public schema load failed:', publicError);
+        loadError = publicError;
+        
+        // Fallback to default schema
+        try {
+          console.log('Loading from default user_loyalty_cards...');
+          const { data, error } = await supabase
+            .from('user_loyalty_cards')
+            .select('*')
+            .eq('user_id', user.id)
+            .maybeSingle();
+            
+          if (error && error.code !== 'PGRST116') {
+            throw error;
+          }
+          
+          loyaltyData = data;
+          console.log('Loaded from default schema:', data);
+        } catch (defaultError) {
+          console.error('Default schema load also failed:', defaultError);
+          loadError = defaultError;
+        }
+      }
+      
+      // Only show error if it's not a "no rows" error and we couldn't load from either schema
+      if (loadError && loadError.code !== 'PGRST116') {
+        console.error('Error loading loyalty card:', loadError);
         toast({
           title: "Error",
           description: "Failed to load loyalty card.",
@@ -57,7 +96,7 @@ export const VirtualLoyaltyCard: React.FC = () => {
         return;
       }
 
-      setLoyaltyCard(data);
+      setLoyaltyCard(loyaltyData);
     } catch (error) {
       console.error('Error loading loyalty card:', error);
       toast({
@@ -92,50 +131,109 @@ export const VirtualLoyaltyCard: React.FC = () => {
         return;
       }
 
-      // Generate loyalty number using the database function
+      // Generate loyalty number using the database function with multiple fallbacks
       let loyaltyNumber;
-      try {
-        const { data: generatedNumber, error: numberError } = await supabase
-          .rpc('generate_loyalty_number', { user_email: user.email || '' });
-
-        if (numberError) {
-          console.error('Error generating loyalty number:', numberError);
-          throw numberError;
+      
+      // Try multiple approaches to generate loyalty number
+      const generateLoyaltyNumber = async () => {
+        const attempts = [
+          // Attempt 1: api.generate_loyalty_number with email
+          () => supabase.rpc('generate_loyalty_number', { user_email: user.email || '' }),
+          // Attempt 2: public.generate_loyalty_number with email  
+          () => supabase.schema('public').rpc('generate_loyalty_number', { user_email: user.email || '' }),
+          // Attempt 3: api.generate_loyalty_number without params
+          () => supabase.rpc('generate_loyalty_number'),
+          // Attempt 4: public.generate_loyalty_number without params
+          () => supabase.schema('public').rpc('generate_loyalty_number')
+        ];
+        
+        for (let i = 0; i < attempts.length; i++) {
+          try {
+            console.log(`Attempting loyalty number generation method ${i + 1}...`);
+            const { data: generatedNumber, error: numberError } = await attempts[i]();
+            
+            if (!numberError && generatedNumber) {
+              console.log(`Success with method ${i + 1}, generated:`, generatedNumber);
+              return generatedNumber;
+            } else if (numberError) {
+              console.warn(`Method ${i + 1} failed:`, numberError.message);
+            }
+          } catch (e) {
+            console.warn(`Method ${i + 1} exception:`, e);
+          }
         }
         
-        loyaltyNumber = generatedNumber;
-        console.log('Generated loyalty number:', loyaltyNumber);
-      } catch (rpcError) {
-        console.error('RPC call failed, using fallback:', rpcError);
-        // Fallback: generate a simple loyalty number
+        // Final fallback: client-side generation
+        console.log('All RPC methods failed, using client-side generation');
         const initial = (user.email || 'U').charAt(0).toUpperCase();
         const randomDigits = Math.floor(Math.random() * 10000000).toString().padStart(7, '0');
-        loyaltyNumber = initial + randomDigits;
-        console.log('Using fallback loyalty number:', loyaltyNumber);
+        return initial + randomDigits;
+      };
+      
+      loyaltyNumber = await generateLoyaltyNumber();
+      console.log('Final loyalty number to use:', loyaltyNumber);
+
+      // Insert into user_loyalty_cards with multiple schema attempts
+      console.log('Attempting to insert loyalty card...');
+      
+      const insertData = {
+        user_id: user.id,
+        loyalty_number: loyaltyNumber,
+        full_name: formData.full_name.trim(),
+        email: user.email || '',
+        phone: formData.phone.trim() || null,
+        is_active: true
+      };
+      
+      let insertResult = null;
+      let insertError = null;
+      
+      // Try public schema first (this is the main table now)
+      try {
+        console.log('Trying public.user_loyalty_cards...');
+        const { data, error } = await supabase
+          .schema('public')
+          .from('user_loyalty_cards')
+          .insert(insertData)
+          .select()
+          .single();
+          
+        if (error) {
+          throw error;
+        }
+        
+        insertResult = data;
+        console.log('Successfully inserted into public.user_loyalty_cards:', data);
+      } catch (publicError) {
+        console.warn('Public schema insert failed:', publicError);
+        insertError = publicError;
+        
+        // Fallback to default schema (should resolve to public anyway)
+        try {
+          console.log('Trying default schema user_loyalty_cards...');
+          const { data, error } = await supabase
+            .from('user_loyalty_cards')
+            .insert(insertData)
+            .select()
+            .single();
+            
+          if (error) {
+            throw error;
+          }
+          
+          insertResult = data;
+          console.log('Successfully inserted into user_loyalty_cards:', data);
+        } catch (defaultError) {
+          console.error('Default schema insert also failed:', defaultError);
+          throw defaultError;
+        }
+      }
+      
+      if (!insertResult) {
+        throw new Error('Failed to insert loyalty card record');
       }
 
-      // Insert into user_loyalty_cards (api schema)
-      console.log('Attempting to insert into user_loyalty_cards...');
-      const { data, error } = await supabase
-        .from('user_loyalty_cards')
-        .insert({
-          user_id: user.id,
-          loyalty_number: loyaltyNumber,
-          full_name: formData.full_name.trim(),
-          email: user.email || '',
-          phone: formData.phone.trim() || null,
-        })
-        .select()
-        .single();
-      
-      if (error) {
-        console.error('Error inserting into user_loyalty_cards:', error);
-        throw error;
-      }
-      
-      console.log('Successfully inserted into user_loyalty_cards:', data);
-
-      setLoyaltyCard(data);
+      setLoyaltyCard(insertResult);
       setShowCreateDialog(false);
       setFormData({ full_name: '', phone: '' });
       
@@ -145,16 +243,27 @@ export const VirtualLoyaltyCard: React.FC = () => {
       });
     } catch (error: any) {
       console.error('Error creating loyalty card:', error);
-      const errorMessage = error?.message || 'Failed to create virtual card';
       
-      // Don't show error toast if it's already been shown in the specific error handling above
-      if (!error?.handled) {
-        toast({
-          title: "Error",
-          description: `Failed to create virtual card: ${errorMessage}`,
-          variant: "destructive",
-        });
+      let errorMessage = 'Failed to create virtual card';
+      
+      // Provide specific error messages based on common issues
+      if (error?.code === 'PGRST301') {
+        errorMessage = 'Permission denied. Please check your account permissions.';
+      } else if (error?.code === '42501') {
+        errorMessage = 'Insufficient permissions to create loyalty card.';
+      } else if (error?.code === 'PGRST116') {
+        errorMessage = 'Loyalty card table not accessible. Please contact support.';
+      } else if (error?.code === '23505') {
+        errorMessage = 'A loyalty card already exists for your account.';
+      } else if (error?.message) {
+        errorMessage = error.message;
       }
+      
+      toast({
+        title: "Error",
+        description: errorMessage,
+        variant: "destructive",
+      });
     } finally {
       setCreating(false);
     }
