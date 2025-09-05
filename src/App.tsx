@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 // Import admin test utilities for debugging
 import '@/utils/testAdminAccess';
+import '@/utils/fixAdminUser';
 import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
 import Privacy from "./pages/Privacy";
@@ -20,6 +21,7 @@ import NotFound from "./pages/NotFound";
 import UserDashboard from "./pages/UserDashboard";
 import RoleBasedDashboard from "./components/RoleBasedDashboard";
 import AdminTestPanel from "./components/AdminTestPanel";
+import AdminDebug from "./pages/AdminDebug";
 
 const queryClient = new QueryClient();
 
@@ -44,6 +46,7 @@ const App = () => (
           <Route path="/admin-panel" element={<AdminPanel />} />
           <Route path="/admin" element={<Navigate to="/admin-panel" replace />} />
           <Route path="/admin-test" element={<AdminTestPanel />} />
+          <Route path="/admin-debug" element={<AdminDebug />} />
           <Route path="/merchant" element={<MerchantDashboard />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
