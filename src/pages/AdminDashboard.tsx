@@ -9,7 +9,10 @@ import { useToast } from "@/hooks/use-toast";
 import VirtualCardManager from "@/components/admin/VirtualCardManager";
 import MerchantManager from "@/components/admin/MerchantManager";
 import AdminUserCreator from "@/components/admin/AdminUserCreator";
-import { CreditCard, Users, Package, TrendingUp, Shield } from "lucide-react";
+import UserManager from "@/components/admin/UserManager";
+import ReferralManager from "@/components/admin/ReferralManager";
+import SubscriptionPlanManager from "@/components/admin/SubscriptionPlanManager";
+import { CreditCard, Users, Package, TrendingUp, Shield, UserCheck, Gift, Settings } from "lucide-react";
 
 const AdminDashboard = () => {
   const [user, setUser] = useState<any>(null);
@@ -202,11 +205,40 @@ const AdminDashboard = () => {
 
         {/* Management Tabs */}
         <Tabs defaultValue="cards" className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="cards">Virtual Cards</TabsTrigger>
-            <TabsTrigger value="merchants">Merchants</TabsTrigger>
-            <TabsTrigger value="admins">Admin Users</TabsTrigger>
-          </TabsList>
+          <div className="w-full tabs-container">
+            <TabsList className="tabs-list inline-flex w-full min-w-max h-auto p-1 bg-muted/70 border border-border/60 rounded-md">
+              <TabsTrigger value="cards" className="tabs-trigger flex items-center gap-2 px-4 py-2 whitespace-nowrap">
+                <CreditCard className="h-4 w-4" />
+                <span className="hidden sm:inline">Virtual Cards</span>
+                <span className="sm:hidden">Cards</span>
+              </TabsTrigger>
+              <TabsTrigger value="merchants" className="tabs-trigger flex items-center gap-2 px-4 py-2 whitespace-nowrap">
+                <Users className="h-4 w-4" />
+                <span className="hidden sm:inline">Merchants</span>
+                <span className="sm:hidden">Merchants</span>
+              </TabsTrigger>
+              <TabsTrigger value="users" className="tabs-trigger flex items-center gap-2 px-4 py-2 whitespace-nowrap">
+                <UserCheck className="h-4 w-4" />
+                <span className="hidden sm:inline">Users</span>
+                <span className="sm:hidden">Users</span>
+              </TabsTrigger>
+              <TabsTrigger value="referrals" className="tabs-trigger flex items-center gap-2 px-4 py-2 whitespace-nowrap">
+                <Gift className="h-4 w-4" />
+                <span className="hidden sm:inline">Referrals</span>
+                <span className="sm:hidden">Refs</span>
+              </TabsTrigger>
+              <TabsTrigger value="plans" className="tabs-trigger flex items-center gap-2 px-4 py-2 whitespace-nowrap">
+                <Settings className="h-4 w-4" />
+                <span className="hidden sm:inline">Plans</span>
+                <span className="sm:hidden">Plans</span>
+              </TabsTrigger>
+              <TabsTrigger value="admins" className="tabs-trigger flex items-center gap-2 px-4 py-2 whitespace-nowrap">
+                <Shield className="h-4 w-4" />
+                <span className="hidden sm:inline">Admin Users</span>
+                <span className="sm:hidden">Admins</span>
+              </TabsTrigger>
+            </TabsList>
+          </div>
           
           <TabsContent value="cards">
             <Card>
@@ -232,6 +264,48 @@ const AdminDashboard = () => {
               </CardHeader>
               <CardContent>
                 <MerchantManager onStatsUpdate={loadStats} />
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="users">
+            <Card>
+              <CardHeader>
+                <CardTitle>User Management</CardTitle>
+                <CardDescription>
+                  View and manage user profiles and subscriptions.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <UserManager onStatsUpdate={loadStats} />
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="referrals">
+            <Card>
+              <CardHeader>
+                <CardTitle>Referral Management</CardTitle>
+                <CardDescription>
+                  Monitor and manage user referrals and rewards.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ReferralManager />
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="plans">
+            <Card>
+              <CardHeader>
+                <CardTitle>Subscription Plan Management</CardTitle>
+                <CardDescription>
+                  Create and manage subscription plans for merchants.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <SubscriptionPlanManager />
               </CardContent>
             </Card>
           </TabsContent>
