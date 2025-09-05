@@ -30,7 +30,9 @@ import {
   LogOut,
   Home,
   DollarSign,
-  AlertTriangle
+  AlertTriangle,
+  Sparkles,
+  ArrowLeft
 } from "lucide-react";
 
 const AdminPanel = () => {
@@ -41,6 +43,7 @@ const AdminPanel = () => {
     totalUsers: 0,
     totalRevenue: 0
   });
+  const [isLoaded, setIsLoaded] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -49,6 +52,7 @@ const AdminPanel = () => {
     if (!loading && user && isAdmin) {
       loadStats();
     }
+    setIsLoaded(true);
   }, [user, isAdmin, loading]);
 
   // Rate limiting for stats loading
@@ -116,17 +120,33 @@ const AdminPanel = () => {
 
   return (
     <AdminDashboardWrapper>
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen hero-gradient relative overflow-hidden">
+      {/* Animated Background Elements */}
+      <div className="absolute top-20 left-20 w-72 h-72 bg-gradient-to-r from-primary/20 to-purple-500/20 rounded-full mix-blend-multiply filter blur-xl animate-pulse pointer-events-none"></div>
+      <div className="absolute top-40 right-20 w-96 h-96 bg-gradient-to-r from-purple-500/20 to-blue-500/20 rounded-full mix-blend-multiply filter blur-xl animate-pulse animation-delay-2000 pointer-events-none"></div>
+      <div className="absolute -bottom-20 left-40 w-80 h-80 bg-gradient-to-r from-blue-500/20 to-primary/20 rounded-full mix-blend-multiply filter blur-xl animate-pulse animation-delay-4000 pointer-events-none"></div>
+      
+      {/* Floating Particles */}
+      <div className="absolute top-1/4 left-1/4 w-2 h-2 bg-primary/40 rounded-full animate-bounce animation-delay-1000"></div>
+      <div className="absolute top-1/3 right-1/3 w-1 h-1 bg-purple-500/60 rounded-full animate-bounce animation-delay-3000"></div>
+      <div className="absolute bottom-1/3 left-1/3 w-1.5 h-1.5 bg-blue-500/50 rounded-full animate-bounce animation-delay-5000"></div>
+
       {/* Header */}
-      <header className="border-b border-border bg-card">
+      <header className="relative z-10 border-b border-border/50 bg-background/80 backdrop-blur-md">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2 sm:space-x-4 min-w-0">
               <div className="flex items-center space-x-2">
-                <Shield className="h-6 w-6 sm:h-8 sm:w-8 text-primary flex-shrink-0" />
-                <h1 className="text-lg sm:text-2xl font-bold text-foreground truncate">PointBridge Admin</h1>
+                <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
+                  <Sparkles className="h-5 w-5 text-primary-foreground" />
+                </div>
+                <h1 className={`text-lg sm:text-2xl font-bold text-foreground truncate ${
+                  isLoaded ? 'animate-fade-in-up' : 'opacity-0'
+                }`}>
+                  PointBridge Admin
+                </h1>
               </div>
-              <Badge variant="secondary" className="bg-primary/10 text-primary hidden sm:inline-flex">
+              <Badge variant="secondary" className="bg-primary/10 text-primary hidden sm:inline-flex animate-pulse">
                 Administrator
               </Badge>
             </div>
@@ -136,18 +156,22 @@ const AdminPanel = () => {
                 variant="ghost"
                 size="sm"
                 onClick={() => navigate('/')}
-                className="text-muted-foreground hover:text-foreground"
+                className={`group bg-background/60 backdrop-blur-md hover:bg-background/80 border-primary/30 hover:border-primary/50 transform hover:scale-105 transition-all duration-300 ${
+                  isLoaded ? 'animate-fade-in-up animation-delay-200' : 'opacity-0'
+                }`}
               >
-                <Home className="h-4 w-4 mr-2" />
+                <ArrowLeft className="h-4 w-4 mr-2 group-hover:-translate-x-1 transition-transform" />
                 Back to Site
               </Button>
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={handleSignOut}
-                className="text-muted-foreground hover:text-foreground"
+                className={`group bg-background/60 backdrop-blur-md hover:bg-background/80 border-primary/30 hover:border-primary/50 transform hover:scale-105 transition-all duration-300 ${
+                  isLoaded ? 'animate-fade-in-up animation-delay-400' : 'opacity-0'
+                }`}
               >
-                <LogOut className="h-4 w-4 mr-2" />
+                <LogOut className="h-4 w-4 mr-2 group-hover:animate-pulse" />
                 Sign Out
               </Button>
             </div>
@@ -155,9 +179,11 @@ const AdminPanel = () => {
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-6 py-8">
+      <main className="relative z-10 max-w-7xl mx-auto px-6 py-8">
         {/* Welcome Section */}
-        <div className="mb-8">
+        <div className={`mb-8 ${
+          isLoaded ? 'animate-fade-in-up animation-delay-600' : 'opacity-0'
+        }`}>
           <h2 className="text-3xl font-bold text-foreground mb-2">
             Welcome back, {profile?.full_name || user?.email}
           </h2>
@@ -175,47 +201,49 @@ const AdminPanel = () => {
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <Card className="card-gradient border-0">
+        <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8 ${
+          isLoaded ? 'animate-fade-in-up animation-delay-800' : 'opacity-0'
+        }`}>
+          <Card className="card-gradient border-primary/20 backdrop-blur-md hover:scale-105 transition-all duration-300">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Total Virtual Cards</CardTitle>
-              <CreditCard className="h-4 w-4 text-muted-foreground" />
+              <CreditCard className="h-4 w-4 text-primary" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-primary">{stats.totalCards}</div>
+              <div className="text-2xl font-bold bg-gradient-to-r from-primary to-purple-500 bg-clip-text text-transparent">{stats.totalCards}</div>
               <p className="text-xs text-muted-foreground">+2 from last month</p>
             </CardContent>
           </Card>
 
-          <Card className="card-gradient border-0">
+          <Card className="card-gradient border-primary/20 backdrop-blur-md hover:scale-105 transition-all duration-300">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Active Merchants</CardTitle>
-              <Store className="h-4 w-4 text-muted-foreground" />
+              <Store className="h-4 w-4 text-purple-500" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-primary">{stats.activeMerchants}</div>
+              <div className="text-2xl font-bold bg-gradient-to-r from-purple-500 to-blue-500 bg-clip-text text-transparent">{stats.activeMerchants}</div>
               <p className="text-xs text-muted-foreground">+5 from last month</p>
             </CardContent>
           </Card>
 
-          <Card className="card-gradient border-0">
+          <Card className="card-gradient border-primary/20 backdrop-blur-md hover:scale-105 transition-all duration-300">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Total Users</CardTitle>
-              <Users className="h-4 w-4 text-muted-foreground" />
+              <Users className="h-4 w-4 text-blue-500" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-primary">{stats.totalUsers}</div>
+              <div className="text-2xl font-bold bg-gradient-to-r from-blue-500 to-primary bg-clip-text text-transparent">{stats.totalUsers}</div>
               <p className="text-xs text-muted-foreground">+12 from last month</p>
             </CardContent>
           </Card>
 
-          <Card className="card-gradient border-0">
+          <Card className="card-gradient border-primary/20 backdrop-blur-md hover:scale-105 transition-all duration-300">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Monthly Revenue</CardTitle>
-              <DollarSign className="h-4 w-4 text-muted-foreground" />
+              <DollarSign className="h-4 w-4 text-green-500" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-primary">${stats.totalRevenue.toLocaleString()}</div>
+              <div className="text-2xl font-bold text-green-500">${stats.totalRevenue.toLocaleString()}</div>
               <p className="text-xs text-muted-foreground">+8% from last month</p>
             </CardContent>
           </Card>

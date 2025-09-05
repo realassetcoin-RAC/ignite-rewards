@@ -1,37 +1,69 @@
-import React from "react";
-import { ArrowLeft } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { ArrowLeft, Sparkles, FileText } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import Footer from "@/components/Footer";
 
 const TermsOfService = () => {
+  const [isLoaded, setIsLoaded] = useState(false);
+
+  useEffect(() => {
+    setIsLoaded(true);
+  }, []);
+
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen hero-gradient relative overflow-hidden">
+      {/* Animated Background Elements */}
+      <div className="absolute top-20 left-20 w-72 h-72 bg-gradient-to-r from-primary/20 to-purple-500/20 rounded-full mix-blend-multiply filter blur-xl animate-pulse pointer-events-none"></div>
+      <div className="absolute top-40 right-20 w-96 h-96 bg-gradient-to-r from-purple-500/20 to-blue-500/20 rounded-full mix-blend-multiply filter blur-xl animate-pulse animation-delay-2000 pointer-events-none"></div>
+      <div className="absolute -bottom-20 left-40 w-80 h-80 bg-gradient-to-r from-blue-500/20 to-primary/20 rounded-full mix-blend-multiply filter blur-xl animate-pulse animation-delay-4000 pointer-events-none"></div>
+      
+      {/* Floating Particles */}
+      <div className="absolute top-1/4 left-1/4 w-2 h-2 bg-primary/40 rounded-full animate-bounce animation-delay-1000"></div>
+      <div className="absolute top-1/3 right-1/3 w-1 h-1 bg-purple-500/60 rounded-full animate-bounce animation-delay-3000"></div>
+      <div className="absolute bottom-1/3 left-1/3 w-1.5 h-1.5 bg-blue-500/50 rounded-full animate-bounce animation-delay-5000"></div>
+
       {/* Header */}
-      <div className="container mx-auto px-4 py-6">
+      <div className="relative z-10 container mx-auto px-4 py-6">
         <Link to="/">
-          <Button variant="ghost" className="gap-2">
-            <ArrowLeft className="h-4 w-4" />
+          <Button 
+            variant="ghost" 
+            className={`gap-2 group bg-background/60 backdrop-blur-md hover:bg-background/80 border-primary/30 hover:border-primary/50 transform hover:scale-105 transition-all duration-300 ${
+              isLoaded ? 'animate-fade-in-up' : 'opacity-0'
+            }`}
+          >
+            <ArrowLeft className="h-4 w-4 group-hover:-translate-x-1 transition-transform" />
             Back to Home
           </Button>
         </Link>
       </div>
 
       {/* Hero Section */}
-      <section className="hero-gradient text-white py-20 px-6">
+      <section className="relative z-10 text-white py-20 px-6">
         <div className="max-w-4xl mx-auto text-center">
-          <h1 className="text-4xl md:text-5xl font-bold mb-6">
-            Terms of Service
-          </h1>
-          <p className="text-xl text-white/80">
+          <div className="flex items-center justify-center mb-6">
+            <div className="w-12 h-12 bg-primary rounded-lg flex items-center justify-center mr-4">
+              <FileText className="h-6 w-6 text-primary-foreground" />
+            </div>
+            <h1 className={`text-4xl md:text-5xl font-bold ${
+              isLoaded ? 'animate-fade-in-up animation-delay-200' : 'opacity-0'
+            }`}>
+              Terms of Service
+            </h1>
+          </div>
+          <p className={`text-xl text-white/80 ${
+            isLoaded ? 'animate-fade-in-up animation-delay-400' : 'opacity-0'
+          }`}>
             Last Updated: January 2025
           </p>
         </div>
       </section>
 
       {/* Content */}
-      <section className="py-16 px-6">
-        <div className="max-w-4xl mx-auto prose prose-lg dark:prose-invert">
+      <section className="relative z-10 py-16 px-6">
+        <div className={`max-w-4xl mx-auto prose prose-lg dark:prose-invert ${
+          isLoaded ? 'animate-fade-in-up animation-delay-600' : 'opacity-0'
+        }`}>
           <h2 className="text-2xl font-bold mb-4">1. Acceptance of Terms</h2>
           <p className="text-muted-foreground mb-6">
             By accessing and using PointBridge ("the Service"), you accept and agree to be bound by the terms and provision of this agreement. If you do not agree to abide by the above, please do not use this service. These Terms of Service apply to all users of the Service, including without limitation users who are browsers, vendors, customers, merchants, and/or contributors of content.
@@ -140,7 +172,9 @@ const TermsOfService = () => {
             Website: www.pointbridge.com/contact
           </p>
 
-          <div className="mt-12 p-6 bg-muted rounded-lg">
+          <div className={`mt-12 p-6 card-gradient border-primary/20 backdrop-blur-md rounded-lg ${
+            isLoaded ? 'animate-fade-in-up animation-delay-800' : 'opacity-0'
+          }`}>
             <p className="text-sm text-muted-foreground text-center">
               By using PointBridge, you acknowledge that you have read, understood, and agree to be bound by these Terms of Service.
             </p>
