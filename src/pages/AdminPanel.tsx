@@ -13,6 +13,7 @@ import ReferralCampaignManager from "@/components/admin/ReferralCampaignManager"
 import ReferralManager from "@/components/admin/ReferralManager";
 import SubscriptionPlanManager from "@/components/admin/SubscriptionPlanManager";
 import UserManager from "@/components/admin/UserManager";
+import AdminDashboardWrapper from "@/components/AdminDashboardWrapper";
 import { useSecureAuth } from "@/hooks/useSecureAuth";
 import { checkRateLimit, sanitizeErrorMessage } from "@/utils/validation";
 import { 
@@ -40,27 +41,11 @@ const AdminPanel = () => {
   const { toast } = useToast();
 
   useEffect(() => {
-    if (!loading) {
-      if (!user || !isAdmin) {
-        if (error) {
-          toast({
-            title: "Authentication Error",
-            description: sanitizeErrorMessage(error),
-            variant: "destructive"
-          });
-        } else if (user && !isAdmin) {
-          toast({
-            title: "Access Denied",
-            description: "You don't have permission to access the admin panel.",
-            variant: "destructive"
-          });
-        }
-        navigate('/');
-        return;
-      }
+    // Only load stats if we have admin access - the wrapper handles auth checks
+    if (!loading && user && isAdmin) {
       loadStats();
     }
-  }, [user, isAdmin, loading, error, toast, navigate]);
+  }, [user, isAdmin, loading]);
 
   // Rate limiting for stats loading
   const loadStats = async () => {
@@ -125,35 +110,8 @@ const AdminPanel = () => {
     }
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
-          <p className="mt-4 text-muted-foreground">Verifying admin access...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!user || !isAdmin) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="max-w-md mx-auto text-center">
-          <AlertTriangle className="h-16 w-16 text-destructive mx-auto mb-4" />
-          <h1 className="text-2xl font-bold text-foreground mb-2">Access Denied</h1>
-          <p className="text-muted-foreground mb-4">
-            You don't have permission to access the admin panel.
-          </p>
-          <Button onClick={() => navigate('/')} variant="outline">
-            Return Home
-          </Button>
-        </div>
-      </div>
-    );
-  }
-
   return (
+    <AdminDashboardWrapper>
     <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="border-b border-border bg-card">
@@ -382,6 +340,7 @@ const AdminPanel = () => {
         </Tabs>
       </main>
     </div>
+    </AdminDashboardWrapper>
   );
 };
 
