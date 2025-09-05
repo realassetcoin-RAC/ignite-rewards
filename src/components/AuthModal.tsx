@@ -159,41 +159,84 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
     setGoogleLoading(true);
     
     try {
-      const { error } = await supabase.auth.signInWithOAuth({
+      const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/`
+          redirectTo: `${window.location.origin}/`,
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent',
+          }
         }
       });
 
       if (error) {
+        console.error('Google OAuth error:', error);
         toast({
           title: "Google sign in failed",
-          description: error.message,
+          description: error.message || "Unable to connect to Google. Please try again.",
           variant: "destructive"
         });
+        setGoogleLoading(false);
+      } else if (data?.url) {
+        // Redirect to Google OAuth page
+        window.location.href = data.url;
+      } else {
+        toast({
+          title: "Configuration Error",
+          description: "Google OAuth is not properly configured. Please contact support.",
+          variant: "destructive"
+        });
+        setGoogleLoading(false);
       }
     } catch (error) {
+      console.error('Google signin error:', error);
       toast({
         title: "Error",
-        description: "Failed to sign in with Google.",
+        description: error instanceof Error ? error.message : "Failed to sign in with Google. Please try again.",
         variant: "destructive"
       });
-    } finally {
       setGoogleLoading(false);
     }
   };
 
   const handleWalletConnect = async () => {
     try {
-      await connect();
-      if (publicKey) {
-        toast({ title: "Wallet Connected", description: `Connected: ${publicKey.toBase58().slice(0,6)}...` });
+      if (!connect) {
+        toast({ 
+          title: "Wallet Not Available", 
+          description: "Please install Phantom or Solflare wallet extension", 
+          variant: "destructive" 
+        });
+        return;
       }
-      onClose();
-      navigate('/user');
+
+      await connect();
+      
+      // Wait a moment for the connection to establish
+      setTimeout(() => {
+        if (publicKey) {
+          toast({ 
+            title: "Wallet Connected", 
+            description: `Connected: ${publicKey.toBase58().slice(0,6)}...` 
+          });
+          onClose();
+          navigate('/user');
+        } else {
+          toast({ 
+            title: "Connection Failed", 
+            description: "Please try connecting your wallet again", 
+            variant: "destructive" 
+          });
+        }
+      }, 1000);
     } catch (error) {
-      toast({ title: "Error", description: "Failed to connect wallet", variant: "destructive" });
+      console.error('Wallet connection error:', error);
+      toast({ 
+        title: "Error", 
+        description: error instanceof Error ? error.message : "Failed to connect wallet", 
+        variant: "destructive" 
+      });
     }
   };
 
@@ -252,9 +295,24 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
               variant="outline"
               className="w-full border-border"
               onClick={handleWalletConnect}
-              disabled={loading}
+              disabled={loading || googleLoading}
             >
-              Connect Solana Wallet (Phantom/Solflare)
+              {connected ? (
+                <>
+                  <svg className="mr-2 h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                  </svg>
+                  Wallet Connected
+                </>
+              ) : (
+                <>
+                  <svg className="mr-2 h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M4 4a2 2 0 00-2 2v1h16V6a2 2 0 00-2-2H4z" />
+                    <path fillRule="evenodd" d="M18 9H2v5a2 2 0 002 2h12a2 2 0 002-2V9zM4 13a1 1 0 011-1h1a1 1 0 110 2H5a1 1 0 01-1-1zm5-1a1 1 0 100 2h1a1 1 0 100-2H9z" clipRule="evenodd" />
+                  </svg>
+                  Connect Solana Wallet (Phantom/Solflare)
+                </>
+              )}
             </Button>
             
             <div className="relative">
@@ -341,9 +399,24 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
               variant="outline"
               className="w-full border-border"
               onClick={handleWalletConnect}
-              disabled={loading}
+              disabled={loading || googleLoading}
             >
-              Connect Solana Wallet (Phantom/Solflare)
+              {connected ? (
+                <>
+                  <svg className="mr-2 h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                  </svg>
+                  Wallet Connected
+                </>
+              ) : (
+                <>
+                  <svg className="mr-2 h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M4 4a2 2 0 00-2 2v1h16V6a2 2 0 00-2-2H4z" />
+                    <path fillRule="evenodd" d="M18 9H2v5a2 2 0 002 2h12a2 2 0 002-2V9zM4 13a1 1 0 011-1h1a1 1 0 110 2H5a1 1 0 01-1-1zm5-1a1 1 0 100 2h1a1 1 0 100-2H9z" clipRule="evenodd" />
+                  </svg>
+                  Connect Solana Wallet (Phantom/Solflare)
+                </>
+              )}
             </Button>
             
             <div className="relative">
