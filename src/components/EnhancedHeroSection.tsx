@@ -86,6 +86,21 @@ const EnhancedHeroSection = () => {
     return "U";
   };
 
+  const getDashboardUrl = () => {
+    const userRole = profile?.role;
+    
+    switch (userRole) {
+      case 'admin':
+        return '/admin-panel';
+      case 'merchant':
+        return '/merchant';
+      case 'customer':
+      case 'user':
+      default:
+        return '/user';
+    }
+  };
+
   return (
     <div className="relative min-h-screen flex items-center justify-center overflow-hidden">
       {/* Enhanced Dynamic Background */}
@@ -155,7 +170,7 @@ const EnhancedHeroSection = () => {
                       </div>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem asChild>
-                        <a href="/dashboard" className="cursor-pointer">
+                        <a href={getDashboardUrl()} className="cursor-pointer">
                           <User className="mr-2 h-4 w-4" />
                           My Dashboard
                         </a>

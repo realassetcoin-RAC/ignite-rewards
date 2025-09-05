@@ -45,6 +45,25 @@ const HeroSection = () => {
     }
     return user?.email?.charAt(0).toUpperCase() || 'U';
   };
+
+  /**
+   * Get the appropriate dashboard URL based on user role
+   * @returns {string} Dashboard URL for the user's role
+   */
+  const getDashboardUrl = () => {
+    const userRole = profile?.role;
+    
+    switch (userRole) {
+      case 'admin':
+        return '/admin-panel';
+      case 'merchant':
+        return '/merchant';
+      case 'customer':
+      case 'user':
+      default:
+        return '/user';
+    }
+  };
   return (
     <section className="relative overflow-hidden">
       <div className="hero-gradient absolute inset-0 opacity-90" />
@@ -112,7 +131,7 @@ const HeroSection = () => {
                     </div>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem asChild className="cursor-pointer">
-                      <a href="/dashboard">
+                      <a href={getDashboardUrl()}>
                         <User className="mr-2 h-4 w-4" />
                         <span>My Dashboard</span>
                       </a>
