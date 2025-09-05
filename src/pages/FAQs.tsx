@@ -1,5 +1,5 @@
-import React from "react";
-import { ChevronDown, ChevronUp, ArrowLeft } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { ChevronDown, ChevronUp, ArrowLeft, Sparkles, HelpCircle } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import Footer from "@/components/Footer";
@@ -11,6 +11,12 @@ import {
 } from "@/components/ui/accordion";
 
 const FAQs = () => {
+  const [isLoaded, setIsLoaded] = useState(false);
+
+  useEffect(() => {
+    setIsLoaded(true);
+  }, []);
+
   const faqs = [
     {
       question: "What is PointBridge?",
@@ -55,41 +61,67 @@ const FAQs = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen hero-gradient relative overflow-hidden">
+      {/* Animated Background Elements */}
+      <div className="absolute top-20 left-20 w-72 h-72 bg-gradient-to-r from-primary/20 to-purple-500/20 rounded-full mix-blend-multiply filter blur-xl animate-pulse pointer-events-none"></div>
+      <div className="absolute top-40 right-20 w-96 h-96 bg-gradient-to-r from-purple-500/20 to-blue-500/20 rounded-full mix-blend-multiply filter blur-xl animate-pulse animation-delay-2000 pointer-events-none"></div>
+      <div className="absolute -bottom-20 left-40 w-80 h-80 bg-gradient-to-r from-blue-500/20 to-primary/20 rounded-full mix-blend-multiply filter blur-xl animate-pulse animation-delay-4000 pointer-events-none"></div>
+      
+      {/* Floating Particles */}
+      <div className="absolute top-1/4 left-1/4 w-2 h-2 bg-primary/40 rounded-full animate-bounce animation-delay-1000"></div>
+      <div className="absolute top-1/3 right-1/3 w-1 h-1 bg-purple-500/60 rounded-full animate-bounce animation-delay-3000"></div>
+      <div className="absolute bottom-1/3 left-1/3 w-1.5 h-1.5 bg-blue-500/50 rounded-full animate-bounce animation-delay-5000"></div>
+
       {/* Header */}
-      <div className="container mx-auto px-4 py-6">
+      <div className="relative z-10 container mx-auto px-4 py-6">
         <Link to="/">
-          <Button variant="ghost" className="gap-2">
-            <ArrowLeft className="h-4 w-4" />
+          <Button 
+            variant="ghost" 
+            className={`gap-2 group bg-background/60 backdrop-blur-md hover:bg-background/80 border-primary/30 hover:border-primary/50 transform hover:scale-105 transition-all duration-300 ${
+              isLoaded ? 'animate-fade-in-up' : 'opacity-0'
+            }`}
+          >
+            <ArrowLeft className="h-4 w-4 group-hover:-translate-x-1 transition-transform" />
             Back to Home
           </Button>
         </Link>
       </div>
 
       {/* Hero Section */}
-      <section className="hero-gradient text-white py-20 px-6">
+      <section className="relative z-10 text-white py-20 px-6">
         <div className="max-w-4xl mx-auto text-center">
-          <h1 className="text-4xl md:text-5xl font-bold mb-6">
-            Frequently Asked Questions
-          </h1>
-          <p className="text-xl text-white/80">
+          <div className="flex items-center justify-center mb-6">
+            <div className="w-12 h-12 bg-primary rounded-lg flex items-center justify-center mr-4">
+              <HelpCircle className="h-6 w-6 text-primary-foreground" />
+            </div>
+            <h1 className={`text-4xl md:text-5xl font-bold ${
+              isLoaded ? 'animate-fade-in-up animation-delay-200' : 'opacity-0'
+            }`}>
+              Frequently Asked Questions
+            </h1>
+          </div>
+          <p className={`text-xl text-white/80 ${
+            isLoaded ? 'animate-fade-in-up animation-delay-400' : 'opacity-0'
+          }`}>
             Everything you need to know about PointBridge and the $RAC token ecosystem
           </p>
         </div>
       </section>
 
       {/* FAQ Content */}
-      <section className="py-16 px-6">
+      <section className="relative z-10 py-16 px-6">
         <div className="max-w-4xl mx-auto">
-          <Accordion type="single" collapsible className="space-y-4">
+          <Accordion type="single" collapsible className={`space-y-4 ${
+            isLoaded ? 'animate-fade-in-up animation-delay-600' : 'opacity-0'
+          }`}>
             {faqs.map((faq, index) => (
               <AccordionItem 
                 key={index} 
                 value={`item-${index}`}
-                className="bg-card border rounded-lg px-6"
+                className="card-gradient border-primary/20 backdrop-blur-md rounded-lg px-6 hover:scale-[1.02] transition-all duration-300"
               >
-                <AccordionTrigger className="hover:no-underline py-6">
-                  <span className="text-left text-lg font-medium">
+                <AccordionTrigger className="hover:no-underline py-6 group">
+                  <span className="text-left text-lg font-medium group-hover:text-primary transition-colors">
                     {faq.question}
                   </span>
                 </AccordionTrigger>
@@ -101,13 +133,16 @@ const FAQs = () => {
           </Accordion>
 
           {/* Contact Section */}
-          <div className="mt-16 text-center bg-muted rounded-lg p-8">
-            <h2 className="text-2xl font-bold mb-4">Still have questions?</h2>
+          <div className={`mt-16 text-center card-gradient border-primary/20 backdrop-blur-md rounded-lg p-8 ${
+            isLoaded ? 'animate-fade-in-up animation-delay-800' : 'opacity-0'
+          }`}>
+            <h2 className="text-2xl font-bold mb-4 bg-gradient-to-r from-primary to-purple-500 bg-clip-text text-transparent">Still have questions?</h2>
             <p className="text-muted-foreground mb-6">
               Our support team is here to help you with any questions or concerns you may have.
             </p>
-            <Button size="lg" className="gap-2">
+            <Button size="lg" className="gap-2 group bg-gradient-to-r from-primary to-purple-500 hover:from-primary/90 hover:to-purple-500/90 transform hover:scale-105 transition-all duration-300">
               Contact Support
+              <HelpCircle className="h-4 w-4 group-hover:animate-bounce" />
             </Button>
           </div>
         </div>
