@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -40,15 +40,15 @@ const SolanaWalletManager = () => {
     if (user) {
       loadUserWallet();
     }
-  }, [user]);
+  }, [user, loadUserWallet]);
 
   useEffect(() => {
     if (wallet) {
       loadWalletBalance();
     }
-  }, [wallet]);
+  }, [wallet, loadWalletBalance]);
 
-  const loadUserWallet = async () => {
+  const loadUserWallet = useCallback(async () => {
     try {
       const { data, error } = await supabase
         .from('user_wallets')
@@ -68,9 +68,9 @@ const SolanaWalletManager = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user?.id]);
 
-  const loadWalletBalance = async () => {
+  const loadWalletBalance = useCallback(async () => {
     if (!wallet) return;
 
     try {
@@ -82,7 +82,7 @@ const SolanaWalletManager = () => {
       console.error('Error loading wallet balance:', error);
       setBalance(0);
     }
-  };
+  }, [wallet]);
 
   const generateWallet = async () => {
     setCreating(true);

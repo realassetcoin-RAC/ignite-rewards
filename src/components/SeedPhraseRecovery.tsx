@@ -10,10 +10,15 @@ import { Keypair } from "@solana/web3.js";
 import * as bip39 from "bip39";
 import { Key, Shield, AlertTriangle } from "lucide-react";
 
+interface RecoveredUser {
+  id: string;
+  email: string;
+}
+
 interface SeedPhraseRecoveryProps {
   isOpen: boolean;
   onClose: () => void;
-  onSuccess: (user: any) => void;
+  onSuccess: (user: RecoveredUser) => void;
 }
 
 const SeedPhraseRecovery: React.FC<SeedPhraseRecoveryProps> = ({ 
@@ -96,7 +101,7 @@ const SeedPhraseRecovery: React.FC<SeedPhraseRecoveryProps> = ({
       }
 
       onClose();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Recovery error:', error);
       
       // Log failed recovery attempt if we have wallet address
@@ -116,9 +121,10 @@ const SeedPhraseRecovery: React.FC<SeedPhraseRecoveryProps> = ({
         }
       }
       
+      const errorMessage = error instanceof Error ? error.message : "Failed to recover account. Please check your seed phrase.";
       toast({
         title: "Recovery Failed",
-        description: error.message || "Failed to recover account. Please check your seed phrase.",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {

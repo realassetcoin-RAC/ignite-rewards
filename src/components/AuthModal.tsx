@@ -184,7 +184,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
     }
   };
 
-  const handleRecoverySuccess = (recoveredUser: any) => {
+  const handleRecoverySuccess = (recoveredUser: { id: string; email: string }) => {
     toast({
       title: "Account Recovered",
       description: "Your account has been recovered using your seed phrase. You can now sign in normally.",
