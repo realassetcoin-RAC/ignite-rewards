@@ -197,18 +197,6 @@ const EnhancedHeroSection = () => {
       <div className="relative z-10 text-center px-4 max-w-6xl mx-auto">
         <div className="space-y-8">
           {/* Hero Badge with Animation */}
-          <div className="flex justify-center">
-            <Badge 
-              variant="outline" 
-              className={`px-6 py-3 text-sm bg-background/60 backdrop-blur-md border-primary/30 hover:bg-background/80 transition-all duration-500 transform hover:scale-105 ${
-                isLoaded ? 'animate-fade-in-up' : 'opacity-0'
-              }`}
-            >
-              <Sparkles className="h-4 w-4 mr-2 animate-spin" />
-              Next-Generation Loyalty Platform
-              <Zap className="h-4 w-4 ml-2 text-primary" />
-            </Badge>
-          </div>
 
           {/* Main Headline with Enhanced Typography */}
           <div className="space-y-6">
