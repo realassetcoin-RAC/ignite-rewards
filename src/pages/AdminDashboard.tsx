@@ -14,6 +14,7 @@ import { CreditCard, Users, Package, TrendingUp, Shield } from "lucide-react";
 const AdminDashboard = () => {
   const [user, setUser] = useState<any>(null);
   const [profile, setProfile] = useState<any>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [stats, setStats] = useState({
     totalCards: 0,
     totalMerchants: 0,
@@ -26,7 +27,6 @@ const AdminDashboard = () => {
 
   useEffect(() => {
     checkAuth();
-    loadStats();
   }, []);
 
   const checkAuth = async () => {
@@ -56,6 +56,9 @@ const AdminDashboard = () => {
 
       setUser(user);
       setProfile(profile);
+      setIsAdmin(true);
+      // Only load stats after confirming admin privileges
+      await loadStats();
     } catch (error) {
       console.error("Auth check failed:", error);
       navigate("/");
