@@ -40,11 +40,44 @@ const ReferralManager = () => {
         .from('user_referrals')
         .select('*')
         .order('created_at', { ascending: false });
-      if (error) throw error;
-      setReferrals(data || []);
-    } catch (error) {
+      
+      if (error) {
+        console.error('Failed to load referrals:', error);
+        
+        // Provide more specific error messages
+        if (error.message?.includes('permission denied')) {
+          toast({ 
+            title: 'Access Denied', 
+            description: 'You don\'t have permission to view referrals. Please contact an administrator.', 
+            variant: 'destructive' 
+          });
+        } else if (error.message?.includes('relation') && error.message?.includes('does not exist')) {
+          toast({ 
+            title: 'Database Error', 
+            description: 'The referrals table is not properly configured. Please run the database migrations.', 
+            variant: 'destructive' 
+          });
+        } else {
+          toast({ 
+            title: 'Error', 
+            description: `Failed to load referrals: ${error.message}`, 
+            variant: 'destructive' 
+          });
+        }
+        
+        // Still show empty state instead of crashing
+        setReferrals([]);
+      } else {
+        setReferrals(data || []);
+      }
+    } catch (error: any) {
       console.error('Failed to load referrals:', error);
-      toast({ title: 'Error', description: 'Failed to load referrals', variant: 'destructive' });
+      toast({ 
+        title: 'Error', 
+        description: 'An unexpected error occurred while loading referrals', 
+        variant: 'destructive' 
+      });
+      setReferrals([]);
     } finally {
       setLoading(false);
     }

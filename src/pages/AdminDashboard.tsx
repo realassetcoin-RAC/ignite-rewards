@@ -69,20 +69,56 @@ const AdminDashboard = () => {
 
   const loadStats = async () => {
     try {
+      // Initialize stats with defaults
+      const newStats = {
+        totalCards: 0,
+        totalMerchants: 0,
+        activeMerchants: 0,
+        totalRevenue: 0
+      };
+
       const [cardsResult, merchantsResult, activeResult] = await Promise.all([
         supabase.from("virtual_cards").select("id", { count: "exact" }),
         supabase.from("merchants").select("id", { count: "exact" }),
         supabase.from("merchants").select("id", { count: "exact" }).eq("status", "active")
       ]);
 
-      setStats({
-        totalCards: cardsResult.count || 0,
-        totalMerchants: merchantsResult.count || 0,
-        activeMerchants: activeResult.count || 0,
-        totalRevenue: 0 // Calculate based on subscriptions
-      });
+      // Update stats only for successful queries
+      if (!cardsResult.error) {
+        newStats.totalCards = cardsResult.count || 0;
+      } else {
+        console.error("Error loading virtual cards:", cardsResult.error);
+      }
+
+      if (!merchantsResult.error) {
+        newStats.totalMerchants = merchantsResult.count || 0;
+      } else {
+        console.error("Error loading merchants:", merchantsResult.error);
+      }
+
+      if (!activeResult.error) {
+        newStats.activeMerchants = activeResult.count || 0;
+      } else {
+        console.error("Error loading active merchants:", activeResult.error);
+      }
+
+      setStats(newStats);
+
+      // Show error toast if all queries failed
+      if (cardsResult.error && merchantsResult.error && activeResult.error) {
+        toast({
+          title: "Error Loading Statistics",
+          description: "Unable to load dashboard statistics. Some data may be unavailable.",
+          variant: "destructive"
+        });
+      }
     } catch (error) {
       console.error("Failed to load stats:", error);
+      toast({
+        title: "Error Loading Statistics",
+        description: "An unexpected error occurred while loading statistics.",
+        variant: "destructive"
+      });
     }
   };
 

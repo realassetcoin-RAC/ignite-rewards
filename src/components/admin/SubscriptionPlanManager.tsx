@@ -50,11 +50,44 @@ const SubscriptionPlanManager = () => {
         .from('merchant_subscription_plans')
         .select('*')
         .order('created_at', { ascending: false });
-      if (error) throw error;
-      setPlans(data || []);
-    } catch (error) {
+      
+      if (error) {
+        console.error('Failed to load plans:', error);
+        
+        // Provide more specific error messages
+        if (error.message?.includes('permission denied')) {
+          toast({ 
+            title: 'Access Denied', 
+            description: 'You don\'t have permission to view subscription plans. Please contact an administrator.', 
+            variant: 'destructive' 
+          });
+        } else if (error.message?.includes('relation') && error.message?.includes('does not exist')) {
+          toast({ 
+            title: 'Database Error', 
+            description: 'The subscription plans table is not properly configured. Please run the database migrations.', 
+            variant: 'destructive' 
+          });
+        } else {
+          toast({ 
+            title: 'Error', 
+            description: `Failed to load plans: ${error.message}`, 
+            variant: 'destructive' 
+          });
+        }
+        
+        // Still show empty state instead of crashing
+        setPlans([]);
+      } else {
+        setPlans(data || []);
+      }
+    } catch (error: any) {
       console.error('Failed to load plans:', error);
-      toast({ title: 'Error', description: 'Failed to load plans', variant: 'destructive' });
+      toast({ 
+        title: 'Error', 
+        description: 'An unexpected error occurred while loading plans', 
+        variant: 'destructive' 
+      });
+      setPlans([]);
     } finally {
       setLoading(false);
     }

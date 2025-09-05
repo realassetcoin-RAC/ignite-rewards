@@ -70,12 +70,24 @@ const AdminPanel = () => {
     }
 
     try {
+      // Initialize stats with defaults
+      const newStats = {
+        totalCards: 0,
+        activeMerchants: 0,
+        totalUsers: 0,
+        totalRevenue: 0
+      };
+
       // Get virtual cards count
       const { count: cardsCount, error: cardsError } = await supabase
         .from('virtual_cards')
         .select('*', { count: 'exact', head: true });
 
-      if (cardsError) throw cardsError;
+      if (cardsError) {
+        console.error('Error loading virtual cards count:', cardsError);
+      } else {
+        newStats.totalCards = cardsCount || 0;
+      }
 
       // Get active merchants count
       const { count: merchantsCount, error: merchantsError } = await supabase
@@ -83,23 +95,39 @@ const AdminPanel = () => {
         .select('*', { count: 'exact', head: true })
         .eq('status', 'active');
 
-      if (merchantsError) throw merchantsError;
+      if (merchantsError) {
+        console.error('Error loading merchants count:', merchantsError);
+      } else {
+        newStats.activeMerchants = merchantsCount || 0;
+      }
 
       // Get total users count
       const { count: usersCount, error: usersError } = await supabase
         .from('profiles')
         .select('*', { count: 'exact', head: true });
 
-      if (usersError) throw usersError;
+      if (usersError) {
+        console.error('Error loading users count:', usersError);
+      } else {
+        newStats.totalUsers = usersCount || 0;
+      }
 
-      setStats({
-        totalCards: cardsCount || 0,
-        activeMerchants: merchantsCount || 0,
-        totalUsers: usersCount || 0,
-        totalRevenue: 12450 // Placeholder - would come from real revenue calculation
-      });
+      // Calculate revenue (placeholder for now)
+      newStats.totalRevenue = 12450;
+
+      // Update stats even if some queries failed
+      setStats(newStats);
+      
+      // Only show error if all queries failed
+      if (cardsError && merchantsError && usersError) {
+        toast({
+          title: "Error Loading Statistics",
+          description: "Some statistics could not be loaded. Please check your permissions.",
+          variant: "destructive"
+        });
+      }
     } catch (error) {
-      console.error('Error loading stats:', error);
+      console.error('Unexpected error loading stats:', error);
       toast({
         title: "Error Loading Statistics",
         description: sanitizeErrorMessage(error),
