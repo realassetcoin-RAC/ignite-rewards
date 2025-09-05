@@ -166,7 +166,7 @@ const AdminPanel = () => {
           </p>
           <div className="flex items-center space-x-2 mt-2">
             <Badge variant="outline" className="bg-primary/10 text-primary">
-              Role: {profile?.role}
+              Role: {isAdmin ? 'admin' : (profile?.role || 'user')}
             </Badge>
             <Badge variant="outline" className="bg-green-500/10 text-green-600">
               Secure Session Active

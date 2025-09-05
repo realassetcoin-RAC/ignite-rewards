@@ -175,14 +175,8 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
           description: "You have been signed in successfully.",
         });
         
-        // Navigate based on user role
-        if (profile?.role === 'admin') {
-          navigate('/admin');
-        } else if (profile?.role === 'merchant') {
-          navigate('/merchant');
-        } else {
-          navigate('/user');
-        }
+        // Navigate to centralized dashboard route for consistent role handling
+        navigate('/dashboard');
         
         onClose();
       }
@@ -262,14 +256,8 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
         description: "You have been signed in successfully.",
       });
 
-      // Navigate based on user role
-      if (profile?.role === 'admin') {
-        navigate('/admin');
-      } else if (profile?.role === 'merchant') {
-        navigate('/merchant');
-      } else {
-        navigate('/user');
-      }
+      // Navigate to centralized dashboard route for consistent role handling
+      navigate('/dashboard');
     }
     
     setShowMFAVerification(false);
