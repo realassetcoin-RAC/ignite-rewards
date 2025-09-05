@@ -75,14 +75,14 @@ const AdminPanel = () => {
 
     try {
       // Get virtual cards count
-      const { count: cardsCount, error: cardsError } = await (supabase as any)
+      const { count: cardsCount, error: cardsError } = await supabase
         .from('virtual_cards')
         .select('*', { count: 'exact', head: true });
 
       if (cardsError) throw cardsError;
 
       // Get active merchants count
-      const { count: merchantsCount, error: merchantsError } = await (supabase as any)
+      const { count: merchantsCount, error: merchantsError } = await supabase
         .from('merchants')
         .select('*', { count: 'exact', head: true })
         .eq('status', 'active');
@@ -90,7 +90,7 @@ const AdminPanel = () => {
       if (merchantsError) throw merchantsError;
 
       // Get total users count
-      const { count: usersCount, error: usersError } = await (supabase as any)
+      const { count: usersCount, error: usersError } = await supabase
         .from('profiles')
         .select('*', { count: 'exact', head: true });
 

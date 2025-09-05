@@ -51,7 +51,7 @@ const UserManager = ({ onStatsUpdate }: UserManagerProps) => {
   const loadData = async () => {
     try {
       // Load user profiles
-      const { data: profilesData, error: profilesError } = await (supabase as any)
+      const { data: profilesData, error: profilesError } = await supabase
         .from("profiles")
         .select("*")
         .order("created_at", { ascending: false });
@@ -63,7 +63,7 @@ const UserManager = ({ onStatsUpdate }: UserManagerProps) => {
       }
 
       // Load subscribers
-      const { data: subscribersData, error: subscribersError } = await (supabase as any)
+      const { data: subscribersData, error: subscribersError } = await supabase
         .from("subscribers")
         .select(`
           id,

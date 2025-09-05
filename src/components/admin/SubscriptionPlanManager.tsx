@@ -46,7 +46,7 @@ const SubscriptionPlanManager = () => {
   const loadPlans = async () => {
     try {
       setLoading(true);
-      const { data, error } = await (supabase as any)
+      const { data, error } = await supabase
         .from('merchant_subscription_plans')
         .select('*')
         .order('created_at', { ascending: false });
@@ -88,14 +88,14 @@ const SubscriptionPlanManager = () => {
         is_active: !!values.is_active,
       };
       if (editing) {
-        const { error } = await (supabase as any)
+        const { error } = await supabase
           .from('merchant_subscription_plans')
           .update(payload)
           .eq('id', editing.id);
         if (error) throw error;
         toast({ title: 'Updated', description: 'Plan updated successfully.' });
       } else {
-        const { error } = await (supabase as any)
+        const { error } = await supabase
           .from('merchant_subscription_plans')
           .insert([payload]);
         if (error) throw error;

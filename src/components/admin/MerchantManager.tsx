@@ -80,7 +80,7 @@ const MerchantManager = ({ onStatsUpdate }: MerchantManagerProps) => {
         return;
       }
 
-      const { data, error } = await (supabase as any)
+      const { data, error } = await supabase
         .from('merchants')
         .select('*')
         .order('created_at', { ascending: false });
@@ -134,7 +134,7 @@ const MerchantManager = ({ onStatsUpdate }: MerchantManagerProps) => {
           subscription_end_date: endDate,
         };
 
-        const { error } = await (supabase as any)
+        const { error } = await supabase
           .from("merchants")
           .insert([merchantData]);
 
@@ -164,7 +164,7 @@ const MerchantManager = ({ onStatsUpdate }: MerchantManagerProps) => {
           subscription_end_date: endDate
         };
 
-        const { error } = await (supabase as any)
+        const { error } = await supabase
           .from("merchants")
           .update(updateData)
           .eq("id", selectedMerchant.id);
@@ -197,14 +197,14 @@ const MerchantManager = ({ onStatsUpdate }: MerchantManagerProps) => {
       if (!file || !selectedMerchant) return;
       const fileExt = file.name.split('.').pop();
       const path = `merchant-logos/${selectedMerchant.id}-${Date.now()}.${fileExt}`;
-      const { error: uploadError } = await (supabase as any).storage.from('public-assets').upload(path, file, {
+      const { error: uploadError } = await supabase.storage.from('public-assets').upload(path, file, {
         cacheControl: '3600', upsert: true
       });
       if (uploadError) throw uploadError;
-      const { data: urlData } = (supabase as any).storage.from('public-assets').getPublicUrl(path);
+      const { data: urlData } = supabase.storage.from('public-assets').getPublicUrl(path);
       const publicUrl = urlData?.publicUrl;
       if (publicUrl) {
-        const { error } = await (supabase as any).from('merchants').update({ logo_url: publicUrl }).eq('id', selectedMerchant.id);
+        const { error } = await supabase.from('merchants').update({ logo_url: publicUrl }).eq('id', selectedMerchant.id);
         if (error) throw error;
         toast({ title: 'Logo Updated', description: 'Merchant logo uploaded successfully.' });
         await loadMerchants();
