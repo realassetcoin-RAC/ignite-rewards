@@ -35,6 +35,7 @@ const App = () => (
           <Route path="/privacy" element={<Privacy />} />
           <Route path="/partners" element={<Partners />} />
           <Route path="/faqs" element={<FAQs />} />
+          <Route path="/terms" element={<TermsOfService />} />
           <Route path="/admin-panel" element={<AdminPanel />} />
           <Route path="/admin" element={<Navigate to="/admin-panel" replace />} />
           <Route path="/merchant" element={<MerchantDashboard />} />
