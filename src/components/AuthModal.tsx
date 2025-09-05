@@ -288,7 +288,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
   if (showMFAVerification && pendingUserId) {
     return (
       <Dialog open={isOpen} onOpenChange={onClose}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="w-[calc(100vw-2rem)] sm:w-full sm:max-w-md mx-auto">
           <MFAVerification
             userId={pendingUserId}
             onSuccess={handleMFASuccess}
@@ -302,28 +302,28 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
   return (
     <>
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md bg-card/95 backdrop-blur-sm border-border/50 card-shadow">
-        <DialogHeader>
-          <DialogTitle className="text-center text-2xl font-bold bg-gradient-to-r from-primary to-primary-glow bg-clip-text text-transparent">
+      <DialogContent className="w-[calc(100vw-2rem)] sm:w-full sm:max-w-md mx-auto bg-card/95 backdrop-blur-sm border-border/50 card-shadow max-h-[calc(100vh-2rem)] overflow-y-auto p-4 sm:p-6">
+        <DialogHeader className="space-y-3">
+          <DialogTitle className="text-center text-xl sm:text-2xl font-bold bg-gradient-to-r from-primary to-primary-glow bg-clip-text text-transparent">
             Welcome to PointBridge
           </DialogTitle>
-          <DialogDescription className="text-center text-muted-foreground">
+          <DialogDescription className="text-center text-sm sm:text-base text-muted-foreground px-2">
             Sign in to your account or create a new one
           </DialogDescription>
         </DialogHeader>
         
-        <Tabs defaultValue="signin" className="w-full">
-          <TabsList className="grid w-full grid-cols-2 bg-accent/50 border-border/50">
-            <TabsTrigger value="signin" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Sign In</TabsTrigger>
-            <TabsTrigger value="signup" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Sign Up</TabsTrigger>
+        <Tabs defaultValue="signin" className="w-full mt-4">
+          <TabsList className="grid w-full grid-cols-2 bg-accent/50 border-border/50 h-10 sm:h-11">
+            <TabsTrigger value="signin" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-sm sm:text-base">Sign In</TabsTrigger>
+            <TabsTrigger value="signup" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-sm sm:text-base">Sign Up</TabsTrigger>
           </TabsList>
           
-          <TabsContent value="signin" className="space-y-4">
+          <TabsContent value="signin" className="space-y-3 sm:space-y-4 mt-4">
             {/* Google Sign In Button */}
             <Button 
               type="button"
               variant="outline"
-              className="w-full border-primary/40 text-primary bg-primary/10 hover:bg-primary/20 backdrop-blur-sm transition-smooth"
+              className="w-full h-11 sm:h-12 border-primary/40 text-primary bg-primary/10 hover:bg-primary/20 backdrop-blur-sm transition-smooth"
               onClick={handleGoogleSignIn}
               disabled={googleLoading || loading}
             >
@@ -348,36 +348,36 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                   />
                 </svg>
               )}
-              Continue with Google
+              <span className="text-sm sm:text-base">Continue with Google</span>
             </Button>
             <Button 
               type="button"
               variant="outline"
-              className="w-full border-primary/40 text-primary bg-primary/10 hover:bg-primary/20 backdrop-blur-sm transition-smooth"
+              className="w-full h-11 sm:h-12 border-primary/40 text-primary bg-primary/10 hover:bg-primary/20 backdrop-blur-sm transition-smooth"
               onClick={handleWalletConnect}
               disabled={loading || googleLoading}
             >
               <Wallet className="mr-2 h-4 w-4" />
-              Connect Wallet
-              <span className="ml-auto text-xs text-muted-foreground">
+              <span className="text-sm sm:text-base">Connect Wallet</span>
+              <span className="ml-auto text-xs text-muted-foreground hidden sm:inline">
                 Phantom • Solflare • MetaMask
               </span>
             </Button>
             
-            <div className="relative">
+            <div className="relative py-2">
               <div className="absolute inset-0 flex items-center">
                 <Separator className="w-full" />
               </div>
               <div className="relative flex justify-center text-xs uppercase">
                 <span className="bg-card/95 px-2 text-muted-foreground">
-                  Or continue with email
+                  Or with email
                 </span>
               </div>
             </div>
 
-            <form onSubmit={handleSignIn} className="space-y-4">
+            <form onSubmit={handleSignIn} className="space-y-3 sm:space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="signin-email">Email</Label>
+                <Label htmlFor="signin-email" className="text-sm">Email</Label>
                 <Input
                   id="signin-email"
                   type="email"
@@ -385,11 +385,11 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="Enter your email"
                   required
-                  className="bg-card/50 border-border/50 focus:border-primary/50 transition-smooth"
+                  className="h-10 sm:h-11 bg-card/50 border-border/50 focus:border-primary/50 transition-smooth text-sm sm:text-base"
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="signin-password">Password</Label>
+                <Label htmlFor="signin-password" className="text-sm">Password</Label>
                 <Input
                   id="signin-password"
                   type="password"
@@ -397,12 +397,12 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Enter your password"
                   required
-                  className="bg-card/50 border-border/50 focus:border-primary/50 transition-smooth"
+                  className="h-10 sm:h-11 bg-card/50 border-border/50 focus:border-primary/50 transition-smooth text-sm sm:text-base"
                 />
               </div>
               <Button 
                 type="submit" 
-                className="w-full bg-primary hover:bg-primary/90 text-primary-foreground glow-shadow transition-smooth" 
+                className="w-full h-11 sm:h-12 bg-primary hover:bg-primary/90 text-primary-foreground glow-shadow transition-smooth text-sm sm:text-base" 
                 disabled={loading || googleLoading}
               >
                 {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
@@ -411,12 +411,12 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
             </form>
           </TabsContent>
           
-          <TabsContent value="signup" className="space-y-4">
+          <TabsContent value="signup" className="space-y-3 sm:space-y-4 mt-4">
             {/* Google Sign In Button */}
             <Button 
               type="button"
               variant="outline"
-              className="w-full border-primary/40 text-primary bg-primary/10 hover:bg-primary/20 backdrop-blur-sm transition-smooth"
+              className="w-full h-11 sm:h-12 border-primary/40 text-primary bg-primary/10 hover:bg-primary/20 backdrop-blur-sm transition-smooth"
               onClick={handleGoogleSignIn}
               disabled={googleLoading || loading}
             >
@@ -441,36 +441,36 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                   />
                 </svg>
               )}
-              Continue with Google
+              <span className="text-sm sm:text-base">Continue with Google</span>
             </Button>
             <Button 
               type="button"
               variant="outline"
-              className="w-full border-primary/40 text-primary bg-primary/10 hover:bg-primary/20 backdrop-blur-sm transition-smooth"
+              className="w-full h-11 sm:h-12 border-primary/40 text-primary bg-primary/10 hover:bg-primary/20 backdrop-blur-sm transition-smooth"
               onClick={handleWalletConnect}
               disabled={loading || googleLoading}
             >
               <Wallet className="mr-2 h-4 w-4" />
-              Connect Wallet
-              <span className="ml-auto text-xs text-muted-foreground">
+              <span className="text-sm sm:text-base">Connect Wallet</span>
+              <span className="ml-auto text-xs text-muted-foreground hidden sm:inline">
                 Phantom • Solflare • MetaMask
               </span>
             </Button>
             
-            <div className="relative">
+            <div className="relative py-2">
               <div className="absolute inset-0 flex items-center">
                 <Separator className="w-full" />
               </div>
               <div className="relative flex justify-center text-xs uppercase">
                 <span className="bg-card/95 px-2 text-muted-foreground">
-                  Or continue with email
+                  Or with email
                 </span>
               </div>
             </div>
 
-            <form onSubmit={handleSignUp} className="space-y-4">
+            <form onSubmit={handleSignUp} className="space-y-3 sm:space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="signup-email">Email</Label>
+                <Label htmlFor="signup-email" className="text-sm">Email</Label>
                 <Input
                   id="signup-email"
                   type="email"
@@ -478,11 +478,11 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="Enter your email"
                   required
-                  className="bg-card/50 border-border/50 focus:border-primary/50 transition-smooth"
+                  className="h-10 sm:h-11 bg-card/50 border-border/50 focus:border-primary/50 transition-smooth text-sm sm:text-base"
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="signup-password">Password</Label>
+                <Label htmlFor="signup-password" className="text-sm">Password</Label>
                 <Input
                   id="signup-password"
                   type="password"
@@ -491,12 +491,12 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                   placeholder="Create a password (min. 6 characters)"
                   required
                   minLength={6}
-                  className="bg-card/50 border-border/50 focus:border-primary/50 transition-smooth"
+                  className="h-10 sm:h-11 bg-card/50 border-border/50 focus:border-primary/50 transition-smooth text-sm sm:text-base"
                 />
               </div>
               <Button 
                 type="submit" 
-                className="w-full bg-primary hover:bg-primary/90 text-primary-foreground glow-shadow transition-smooth" 
+                className="w-full h-11 sm:h-12 bg-primary hover:bg-primary/90 text-primary-foreground glow-shadow transition-smooth text-sm sm:text-base" 
                 disabled={loading || googleLoading}
               >
                 {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
