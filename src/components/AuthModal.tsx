@@ -288,12 +288,16 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
   if (showMFAVerification && pendingUserId) {
     return (
       <Dialog open={isOpen} onOpenChange={onClose}>
-        <DialogContent className="w-[calc(100vw-2rem)] sm:w-full sm:max-w-md mx-auto">
-          <MFAVerification
-            userId={pendingUserId}
-            onSuccess={handleMFASuccess}
-            onCancel={handleMFACancel}
-          />
+        <DialogContent className="w-[calc(100vw-2rem)] sm:w-full sm:max-w-md mx-auto bg-transparent border-0 shadow-none p-0">
+          <div className="rounded-lg p-[1px] bg-gradient-to-r from-primary via-purple-500 to-blue-500 animate-gradient-x">
+            <div className="bg-card/95 backdrop-blur-sm border border-border/50 card-shadow rounded-lg p-4 sm:p-6">
+              <MFAVerification
+                userId={pendingUserId}
+                onSuccess={handleMFASuccess}
+                onCancel={handleMFACancel}
+              />
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
     );
@@ -302,23 +306,26 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
   return (
     <>
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="w-[calc(100vw-2rem)] sm:w-full sm:max-w-md mx-auto bg-card/95 backdrop-blur-sm border-border/50 card-shadow max-h-[calc(100vh-2rem)] overflow-y-auto p-4 sm:p-6">
-        <DialogHeader className="space-y-3">
-          <DialogTitle className="text-center text-xl sm:text-2xl font-bold bg-gradient-to-r from-primary to-primary-glow bg-clip-text text-transparent">
-            Welcome to PointBridge
-          </DialogTitle>
-          <DialogDescription className="text-center text-sm sm:text-base text-muted-foreground px-2">
-            Sign in to your account or create a new one
-          </DialogDescription>
-        </DialogHeader>
-        
-        <Tabs defaultValue="signin" className="w-full mt-4">
-          <TabsList className="grid w-full grid-cols-2 bg-accent/50 border-border/50 h-10 sm:h-11">
-            <TabsTrigger value="signin" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-sm sm:text-base">Sign In</TabsTrigger>
-            <TabsTrigger value="signup" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-sm sm:text-base">Sign Up</TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="signin" className="space-y-3 sm:space-y-4 mt-4">
+      <DialogContent className="w-[calc(100vw-2rem)] sm:w-full sm:max-w-md mx-auto bg-transparent border-0 shadow-none p-0">
+        <div className="rounded-lg p-[1px] bg-gradient-to-r from-primary via-purple-500 to-blue-500 animate-gradient-x">
+          <div className="bg-card/95 backdrop-blur-sm border border-border/50 card-shadow rounded-lg max-h-[calc(100vh-2rem)] overflow-y-auto p-4 sm:p-6">
+            <DialogHeader className="space-y-3">
+              <DialogTitle className="text-center text-xl sm:text-2xl font-bold bg-gradient-to-r from-primary via-purple-500 to-blue-500 bg-clip-text text-transparent animate-gradient-x">
+                Welcome to PointBridge
+              </DialogTitle>
+              <DialogDescription className="text-center text-sm sm:text-base text-muted-foreground px-2">
+                Sign in to your account or create a new one
+              </DialogDescription>
+            </DialogHeader>
+            
+            <Tabs defaultValue="signin" className="w-full mt-4">
+              <TabsList className="grid w-full grid-cols-2 bg-accent/50 border-border/50 h-10 sm:h-11">
+                <TabsTrigger value="signin" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-sm sm:text-base">Sign In</TabsTrigger>
+                <TabsTrigger value="signup" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-sm sm:text-base">Sign Up</TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="signin" className="space-y-3 sm:space-y-4 mt-4">
+            <div className="max-w-md mx-auto text-left">
             {/* Google Sign In Button */}
             <Button 
               type="button"
@@ -377,7 +384,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
 
             <form onSubmit={handleSignIn} className="space-y-3 sm:space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="signin-email" className="text-sm">Email</Label>
+                <Label htmlFor="signin-email" className="text-sm text-left">Email</Label>
                 <Input
                   id="signin-email"
                   type="email"
@@ -389,7 +396,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="signin-password" className="text-sm">Password</Label>
+                <Label htmlFor="signin-password" className="text-sm text-left">Password</Label>
                 <Input
                   id="signin-password"
                   type="password"
@@ -409,9 +416,11 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                 Sign In
               </Button>
             </form>
+            </div>
           </TabsContent>
           
           <TabsContent value="signup" className="space-y-3 sm:space-y-4 mt-4">
+            <div className="max-w-md mx-auto text-left">
             {/* Google Sign In Button */}
             <Button 
               type="button"
@@ -470,7 +479,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
 
             <form onSubmit={handleSignUp} className="space-y-3 sm:space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="signup-email" className="text-sm">Email</Label>
+                <Label htmlFor="signup-email" className="text-sm text-left">Email</Label>
                 <Input
                   id="signup-email"
                   type="email"
@@ -482,7 +491,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="signup-password" className="text-sm">Password</Label>
+                <Label htmlFor="signup-password" className="text-sm text-left">Password</Label>
                 <Input
                   id="signup-password"
                   type="password"
@@ -503,8 +512,11 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                 Sign Up
               </Button>
             </form>
+            </div>
           </TabsContent>
         </Tabs>
+          </div>
+        </div>
       </DialogContent>
     </Dialog>
     
