@@ -44,84 +44,71 @@ const ApiHealthTab = () => {
   const timerRef = useRef<number | null>(null);
 
   const checks: HealthCheck[] = useMemo(() => {
-    return [
-      {
-        id: "auth-session",
-        name: "Supabase Auth Session",
-        description: "Validate current session availability",
-        run: async () => {
-          const start = performance.now();
-          try {
-            const { data, error } = await supabase.auth.getSession();
-            const latencyMs = performance.now() - start;
-            if (error) {
-              return { id: "auth-session", name: "Supabase Auth Session", status: "error", latencyMs, message: error.message };
-            }
-            const hasSession = Boolean(data?.session);
-            return {
-              id: "auth-session",
-              name: "Supabase Auth Session",
-              status: hasSession ? "ok" : "warn",
-              latencyMs,
-              message: hasSession ? "Session active" : "No active session"
-            };
-          } catch (e: any) {
-            const latencyMs = performance.now() - start;
-            return { id: "auth-session", name: "Supabase Auth Session", status: "error", latencyMs, message: String(e?.message || e) };
+    const authSessionCheck: HealthCheck = {
+      id: "auth-session",
+      name: "Supabase Auth Session",
+      description: "Validate current session availability",
+      run: async () => {
+        const start = performance.now();
+        try {
+          const { data, error } = await supabase.auth.getSession();
+          const latencyMs = performance.now() - start;
+          if (error) {
+            return { id: "auth-session", name: "Supabase Auth Session", status: "error", latencyMs, message: error.message };
           }
+          const hasSession = Boolean(data?.session);
+          return {
+            id: "auth-session",
+            name: "Supabase Auth Session",
+            status: hasSession ? "ok" : "warn",
+            latencyMs,
+            message: hasSession ? "Session active" : "No active session"
+          };
+        } catch (e: any) {
+          const latencyMs = performance.now() - start;
+          return { id: "auth-session", name: "Supabase Auth Session", status: "error", latencyMs, message: String(e?.message || e) };
         }
-      },
-      {
-        id: "profiles-read",
-        name: "Profiles Table Read",
-        description: "HEAD count on profiles table",
-        run: async () => {
-          const start = performance.now();
-          try {
-            const { count, error } = await supabase.from("profiles").select("*", { count: "exact", head: true });
-            const latencyMs = performance.now() - start;
-            if (error) return { id: "profiles-read", name: "Profiles Table Read", status: "error", latencyMs, message: error.message };
-            return { id: "profiles-read", name: "Profiles Table Read", status: "ok", latencyMs, message: `Count accessible (${count ?? 0})` };
-          } catch (e: any) {
-            const latencyMs = performance.now() - start;
-            return { id: "profiles-read", name: "Profiles Table Read", status: "error", latencyMs, message: String(e?.message || e) };
-          }
+      }
+    };
+
+    // All key tables used across the app (reads are HEAD count to avoid payload)
+    const tableNames = [
+      "profiles",
+      "merchants",
+      "virtual_cards",
+      "loyalty_transactions",
+      "user_loyalty_cards",
+      "user_points",
+      "user_referrals",
+      "user_wallets",
+      "merchant_cards",
+      "merchant_subscriptions",
+      "merchant_subscription_plans",
+      "referral_campaigns",
+      "transaction_qr_codes",
+      "subscribers"
+    ];
+
+    const tableChecks: HealthCheck[] = tableNames.map((table) => ({
+      id: `table-${table}`,
+      name: `Table ${table}`,
+      description: `HEAD count on ${table}`,
+      run: async () => {
+        const start = performance.now();
+        try {
+          const { count, error } = await supabase.from(table).select("*", { count: "exact", head: true });
+          const latencyMs = performance.now() - start;
+          if (error) return { id: `table-${table}`, name: `Table ${table}`, status: "error", latencyMs, message: error.message };
+          return { id: `table-${table}`, name: `Table ${table}`, status: "ok", latencyMs, message: `Count accessible (${count ?? 0})` };
+        } catch (e: any) {
+          const latencyMs = performance.now() - start;
+          return { id: `table-${table}`, name: `Table ${table}`, status: "error", latencyMs, message: String(e?.message || e) };
         }
-      },
-      {
-        id: "merchants-read",
-        name: "Merchants Table Read",
-        description: "HEAD count on merchants table",
-        run: async () => {
-          const start = performance.now();
-          try {
-            const { count, error } = await supabase.from("merchants").select("*", { count: "exact", head: true });
-            const latencyMs = performance.now() - start;
-            if (error) return { id: "merchants-read", name: "Merchants Table Read", status: "error", latencyMs, message: error.message };
-            return { id: "merchants-read", name: "Merchants Table Read", status: "ok", latencyMs, message: `Count accessible (${count ?? 0})` };
-          } catch (e: any) {
-            const latencyMs = performance.now() - start;
-            return { id: "merchants-read", name: "Merchants Table Read", status: "error", latencyMs, message: String(e?.message || e) };
-          }
-        }
-      },
-      {
-        id: "virtual-cards-read",
-        name: "Virtual Cards Table Read",
-        description: "HEAD count on virtual_cards table",
-        run: async () => {
-          const start = performance.now();
-          try {
-            const { count, error } = await supabase.from("virtual_cards").select("*", { count: "exact", head: true });
-            const latencyMs = performance.now() - start;
-            if (error) return { id: "virtual-cards-read", name: "Virtual Cards Table Read", status: "error", latencyMs, message: error.message };
-            return { id: "virtual-cards-read", name: "Virtual Cards Table Read", status: "ok", latencyMs, message: `Count accessible (${count ?? 0})` };
-          } catch (e: any) {
-            const latencyMs = performance.now() - start;
-            return { id: "virtual-cards-read", name: "Virtual Cards Table Read", status: "error", latencyMs, message: String(e?.message || e) };
-          }
-        }
-      },
+      }
+    }));
+
+    // Safe RPCs used in the app
+    const rpcChecks: HealthCheck[] = [
       {
         id: "rpc-is-admin",
         name: "RPC is_admin",
@@ -132,7 +119,7 @@ const ApiHealthTab = () => {
             const { data, error } = await supabase.rpc("is_admin");
             const latencyMs = performance.now() - start;
             if (error) return { id: "rpc-is-admin", name: "RPC is_admin", status: "error", latencyMs, message: error.message };
-            const ok = data === true || data === false; // Should return boolean
+            const ok = data === true || data === false;
             return { id: "rpc-is-admin", name: "RPC is_admin", status: ok ? "ok" : "warn", latencyMs, message: `Response: ${String(data)}` };
           } catch (e: any) {
             const latencyMs = performance.now() - start;
@@ -169,15 +156,92 @@ const ApiHealthTab = () => {
             const { data, error } = await supabase.rpc("can_use_mfa", { user_id: userId });
             const latencyMs = performance.now() - start;
             if (error) return { id: "rpc-can-use-mfa", name: "RPC can_use_mfa", status: "error", latencyMs, message: error.message };
-            const ok = data === true || data === false || data == null; // allow null when not configured
+            const ok = data === true || data === false || data == null;
             return { id: "rpc-can-use-mfa", name: "RPC can_use_mfa", status: ok ? "ok" : "warn", latencyMs, message: `Response: ${String(data)}` };
           } catch (e: any) {
             const latencyMs = performance.now() - start;
             return { id: "rpc-can-use-mfa", name: "RPC can_use_mfa", status: "error", latencyMs, message: String(e?.message || e) };
           }
         }
+      },
+      {
+        id: "rpc-get-current-user-profile",
+        name: "RPC get_current_user_profile",
+        description: "Fetch current user profile via RPC",
+        run: async () => {
+          const start = performance.now();
+          try {
+            const { data, error } = await supabase.rpc("get_current_user_profile");
+            const latencyMs = performance.now() - start;
+            if (error) return { id: "rpc-get-current-user-profile", name: "RPC get_current_user_profile", status: "error", latencyMs, message: error.message };
+            const ok = Array.isArray(data);
+            return { id: "rpc-get-current-user-profile", name: "RPC get_current_user_profile", status: ok ? "ok" : "warn", latencyMs, message: `Rows: ${Array.isArray(data) ? data.length : 0}` };
+          } catch (e: any) {
+            const latencyMs = performance.now() - start;
+            return { id: "rpc-get-current-user-profile", name: "RPC get_current_user_profile", status: "error", latencyMs, message: String(e?.message || e) };
+          }
+        }
+      },
+      {
+        id: "rpc-generate-loyalty-number",
+        name: "RPC generate_loyalty_number",
+        description: "Generate a loyalty number (read-only)",
+        run: async () => {
+          const start = performance.now();
+          try {
+            const { data, error } = await supabase.rpc("generate_loyalty_number");
+            const latencyMs = performance.now() - start;
+            if (error) return { id: "rpc-generate-loyalty-number", name: "RPC generate_loyalty_number", status: "error", latencyMs, message: error.message };
+            const ok = typeof data === "string" && data.length > 0;
+            return { id: "rpc-generate-loyalty-number", name: "RPC generate_loyalty_number", status: ok ? "ok" : "warn", latencyMs, message: ok ? "Generated" : "Empty response" };
+          } catch (e: any) {
+            const latencyMs = performance.now() - start;
+            return { id: "rpc-generate-loyalty-number", name: "RPC generate_loyalty_number", status: "error", latencyMs, message: String(e?.message || e) };
+          }
+        }
+      },
+      {
+        id: "rpc-generate-referral-code",
+        name: "RPC generate_referral_code",
+        description: "Generate a referral code (read-only)",
+        run: async () => {
+          const start = performance.now();
+          try {
+            const { data, error } = await supabase.rpc("generate_referral_code");
+            const latencyMs = performance.now() - start;
+            if (error) return { id: "rpc-generate-referral-code", name: "RPC generate_referral_code", status: "error", latencyMs, message: error.message };
+            const ok = typeof data === "string" && data.length > 0;
+            return { id: "rpc-generate-referral-code", name: "RPC generate_referral_code", status: ok ? "ok" : "warn", latencyMs, message: ok ? "Generated" : "Empty response" };
+          } catch (e: any) {
+            const latencyMs = performance.now() - start;
+            return { id: "rpc-generate-referral-code", name: "RPC generate_referral_code", status: "error", latencyMs, message: String(e?.message || e) };
+          }
+        }
       }
     ];
+
+    // Storage buckets used in the app
+    const storageChecks: HealthCheck[] = [
+      {
+        id: "storage-public-assets",
+        name: "Storage public-assets",
+        description: "List objects in public-assets bucket",
+        run: async () => {
+          const start = performance.now();
+          try {
+            const { data, error } = await supabase.storage.from("public-assets").list("", { limit: 1 });
+            const latencyMs = performance.now() - start;
+            if (error) return { id: "storage-public-assets", name: "Storage public-assets", status: "error", latencyMs, message: error.message };
+            return { id: "storage-public-assets", name: "Storage public-assets", status: "ok", latencyMs, message: `${Array.isArray(data) ? data.length : 0} objects visible` };
+          } catch (e: any) {
+            const latencyMs = performance.now() - start;
+            return { id: "storage-public-assets", name: "Storage public-assets", status: "error", latencyMs, message: String(e?.message || e) };
+          }
+        }
+      }
+    ];
+
+    return [authSessionCheck, ...tableChecks, ...rpcChecks, ...storageChecks];
   }, [user?.id]);
 
   const runAllChecks = useCallback(async () => {
@@ -203,9 +267,8 @@ const ApiHealthTab = () => {
       }
       setResults(next);
       setLastRunAt(Date.now());
-      if (anyError) {
-        toast({ title: "Health Check Completed", description: "Some checks reported errors.", variant: "destructive" });
-      }
+      // Keep toast informational and non-blocking
+      toast({ title: "Health Check Completed", description: anyError ? "Some checks reported errors." : "All checks ran.", variant: anyError ? "destructive" : "default" });
     } finally {
       setIsRunning(false);
     }
