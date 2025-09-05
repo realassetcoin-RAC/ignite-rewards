@@ -86,7 +86,11 @@ const ReferralsTab = () => {
             errorMessage = "Referrals table not found. This feature may not be set up yet.";
             break;
           default:
-            errorMessage = `Failed to load referrals: ${referralError.message}`;
+            if (referralError.message?.includes('schema must be one of the following')) {
+              errorMessage = "Database schema configuration error. The referrals feature may not be properly set up.";
+            } else {
+              errorMessage = `Failed to load referrals: ${referralError.message}`;
+            }
         }
         
         toast({
