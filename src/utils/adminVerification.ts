@@ -202,16 +202,24 @@ export async function shouldAllowAdminAccess(): Promise<boolean> {
  * Enhanced admin check with automatic fallbacks and error recovery
  */
 export async function robustAdminCheck(): Promise<boolean> {
+  console.group('🔍 Robust Admin Check');
   try {
     // First, try the comprehensive verification
+    console.log('Step 1: Running comprehensive verification...');
     const result = await verifyAdminAccess();
+    console.log('Verification result:', result);
     
     if (result.success) {
+      console.log('✅ Admin access granted via comprehensive verification');
+      console.groupEnd();
       return true;
     }
     
     // If verification fails, try a simplified check for specific known admin users
+    console.log('Step 2: Checking known admin emails fallback...');
     const { data: { user } } = await supabase.auth.getUser();
+    console.log('Current user:', user?.email);
+    
     if (user?.email) {
       // List of known admin emails (can be configured)
       const knownAdminEmails = [
@@ -219,15 +227,26 @@ export async function robustAdminCheck(): Promise<boolean> {
         // Add other known admin emails here
       ];
       
+      console.log('Known admin emails:', knownAdminEmails);
+      console.log('Checking if user email is in known admins...');
+      
       if (knownAdminEmails.includes(user.email.toLowerCase())) {
         console.log(`🔓 Granting admin access to known admin email: ${user.email}`);
+        console.groupEnd();
         return true;
+      } else {
+        console.log(`❌ User email ${user.email} is not in known admin list`);
       }
+    } else {
+      console.log('❌ No user email found');
     }
     
+    console.log('❌ Admin access denied');
+    console.groupEnd();
     return false;
   } catch (error) {
     console.error('Robust admin check failed:', error);
+    console.groupEnd();
     return false;
   }
 }
