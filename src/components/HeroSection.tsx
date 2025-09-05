@@ -10,6 +10,7 @@ import MerchantSignupModal from "@/components/MerchantSignupModal";
 import { useSecureAuth } from "@/hooks/useSecureAuth";
 import { LogOut, User, Settings, Shield } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
+import { getDashboardUrl } from "@/lib/dashboard-routing";
 
 /**
  * Hero section component that displays the main landing page content
@@ -50,24 +51,8 @@ const HeroSection = () => {
     return user?.email?.charAt(0).toUpperCase() || 'U';
   };
 
-  /**
-   * Get the appropriate dashboard URL based on user role
-   * @returns {string} Dashboard URL for the user's role
-   */
-  const getDashboardUrl = () => {
-    const userRole = profile?.role;
-    
-    switch (userRole) {
-      case 'admin':
-        return '/admin-panel';
-      case 'merchant':
-        return '/merchant';
-      case 'customer':
-      case 'user':
-      default:
-        return '/user';
-    }
-  };
+  // Use centralized dashboard routing logic
+  const dashboardUrl = getDashboardUrl(isAdmin, profile);
   return (
     <section className="relative overflow-hidden">
       <div className="hero-gradient absolute inset-0 opacity-90" />
@@ -136,7 +121,12 @@ const HeroSection = () => {
                     <DropdownMenuSeparator />
                     <DropdownMenuItem 
                       className="cursor-pointer"
-                      onClick={() => navigate(getDashboardUrl())}
+                      onClick={() => {
+                        console.log('Navigating to dashboard:', dashboardUrl);
+                        console.log('isAdmin:', isAdmin);
+                        console.log('profile:', profile);
+                        navigate(dashboardUrl);
+                      }}
                     >
                       <User className="mr-2 h-4 w-4" />
                       <span>My Dashboard</span>

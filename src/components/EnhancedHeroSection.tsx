@@ -33,6 +33,7 @@ import {
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
+import { getDashboardUrl } from "@/lib/dashboard-routing";
 
 const EnhancedHeroSection = () => {
   const { user, profile, isAdmin, signOut } = useSecureAuth();
@@ -88,20 +89,8 @@ const EnhancedHeroSection = () => {
     return "U";
   };
 
-  const getDashboardUrl = () => {
-    const userRole = profile?.role;
-    
-    switch (userRole) {
-      case 'admin':
-        return '/admin-panel';
-      case 'merchant':
-        return '/merchant';
-      case 'customer':
-      case 'user':
-      default:
-        return '/user';
-    }
-  };
+  // Use centralized dashboard routing logic
+  const dashboardUrl = getDashboardUrl(isAdmin, profile);
 
   return (
     <div className="relative min-h-screen flex items-center justify-center overflow-hidden">
@@ -132,7 +121,7 @@ const EnhancedHeroSection = () => {
       </div>
 
       {/* Navigation Bar */}
-      <div className="absolute top-0 left-0 right-0 z-50">
+      <div className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-md border-b border-border/50">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2">
@@ -173,7 +162,12 @@ const EnhancedHeroSection = () => {
                       <DropdownMenuSeparator />
                       <DropdownMenuItem 
                         className="cursor-pointer"
-                        onClick={() => navigate(getDashboardUrl())}
+                        onClick={() => {
+                          console.log('Navigating to dashboard:', dashboardUrl);
+                          console.log('isAdmin:', isAdmin);
+                          console.log('profile:', profile);
+                          navigate(dashboardUrl);
+                        }}
                       >
                         <User className="mr-2 h-4 w-4" />
                         My Dashboard
@@ -213,24 +207,25 @@ const EnhancedHeroSection = () => {
       </div>
 
       {/* Main Hero Content */}
-      <div className="relative z-10 text-center px-4 max-w-6xl mx-auto">
+      <div className="relative z-10 text-center px-4 max-w-6xl mx-auto pt-24">
         <div className="space-y-8">
           {/* Hero Badge with Animation */}
 
           {/* Main Headline with Enhanced Typography */}
           <div className="space-y-6">
-            <h1 className={`text-4xl sm:text-5xl md:text-7xl lg:text-8xl font-bold text-foreground leading-tight ${
+            <h1 className={`text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold text-foreground leading-tight ${
               isLoaded ? 'animate-fade-in-up animation-delay-200' : 'opacity-0'
             }`}>
-              Bridge Your{" "}
-              <span className="bg-gradient-to-r from-primary via-purple-500 to-blue-500 bg-clip-text text-transparent animate-gradient-x">
-                Loyalty
+              <span className="block mb-2">Bridge Your{" "}
+                <span className="bg-gradient-to-r from-primary via-purple-500 to-blue-500 bg-clip-text text-transparent animate-gradient-x inline-block">
+                  Loyalty
+                </span>
               </span>
-              <br className="hidden sm:block" />
-              <span className="sm:hidden"> </span>
-              to{" "}
-              <span className="bg-gradient-to-r from-blue-500 via-primary to-purple-500 bg-clip-text text-transparent animate-gradient-x-reverse">
-                Web3 Rewards
+              <span className="block">
+                to{" "}
+                <span className="bg-gradient-to-r from-blue-500 via-primary to-purple-500 bg-clip-text text-transparent animate-gradient-x-reverse inline-block">
+                  Web3 Rewards
+                </span>
               </span>
             </h1>
             <p className={`text-lg sm:text-xl md:text-2xl text-muted-foreground max-w-4xl mx-auto leading-relaxed px-4 ${
@@ -269,8 +264,8 @@ const EnhancedHeroSection = () => {
           {/* Enhanced Learn More Section */}
           <div className={`pt-6 ${isLoaded ? 'animate-fade-in-up animation-delay-800' : 'opacity-0'}`}>
             <div className="flex flex-col items-center space-y-4">
-              <Button variant="ghost" asChild className="group">
-                <a href="#features" className="text-muted-foreground hover:text-foreground transition-colors">
+              <Button variant="ghost" asChild className="group relative z-20">
+                <a href="#features" className="text-muted-foreground hover:text-foreground transition-colors inline-flex items-center">
                   <Play className="mr-2 h-4 w-4 group-hover:animate-pulse" />
                   Watch Demo
                   <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />

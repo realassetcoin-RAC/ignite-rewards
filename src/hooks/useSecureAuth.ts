@@ -3,7 +3,7 @@ import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { canUserUseMFA } from '@/lib/mfa';
 
-interface UserProfile {
+export interface UserProfile {
   id: string;
   email: string;
   full_name: string | null;
@@ -43,12 +43,18 @@ export const useSecureAuth = () => {
 
   const checkAdminAccess = async (): Promise<boolean> => {
     try {
+      console.log('Checking admin access...');
       const { data, error } = await supabase.rpc('is_admin');
+      console.log('Admin check response:', { data, error });
+      
       if (error) {
         console.error('Error checking admin access:', error);
         return false;
       }
-      return data === true;
+      
+      const isAdmin = data === true;
+      console.log('Is admin result:', isAdmin);
+      return isAdmin;
     } catch (error) {
       console.error('Admin access check failed:', error);
       return false;
@@ -57,12 +63,18 @@ export const useSecureAuth = () => {
 
   const getCurrentUserProfile = async (): Promise<UserProfile | null> => {
     try {
+      console.log('Fetching user profile...');
       const { data, error } = await supabase.rpc('get_current_user_profile');
+      console.log('Profile response:', { data, error });
+      
       if (error) {
         console.error('Error fetching user profile:', error);
         return null;
       }
-      return data?.[0] || null;
+      
+      const profile = data?.[0] || null;
+      console.log('User profile:', profile);
+      return profile;
     } catch (error) {
       console.error('Profile fetch failed:', error);
       return null;
