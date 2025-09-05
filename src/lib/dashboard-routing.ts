@@ -7,29 +7,45 @@ import { UserProfile } from '@/hooks/useSecureAuth';
  * @returns The appropriate dashboard URL path
  */
 export const getDashboardUrl = (isAdmin: boolean, profile: UserProfile | null): string => {
+  // Log for debugging
+  console.group('Dashboard Routing Decision');
+  console.log('isAdmin flag:', isAdmin);
+  console.log('Profile:', profile);
+  console.log('Role from profile:', profile?.role);
+  
   // Priority 1: Check if user has admin privileges
   // This takes precedence over the role field in the profile
-  if (isAdmin) {
+  if (isAdmin === true) {
+    console.log('Decision: Admin dashboard (isAdmin flag is true)');
+    console.groupEnd();
     return '/admin-panel';
   }
 
   // Priority 2: Check the role from profile
   const userRole = profile?.role?.toLowerCase();
   
-  // Handle different role variations
+  // Also check for admin/administrator role variations in profile
+  if (userRole === 'admin' || userRole === 'administrator') {
+    console.log('Decision: Admin dashboard (role is admin/administrator)');
+    console.groupEnd();
+    return '/admin-panel';
+  }
+  
+  // Handle other role variations
   switch (userRole) {
     case 'merchant':
+      console.log('Decision: Merchant dashboard');
+      console.groupEnd();
       return '/merchant';
     case 'customer':
     case 'user':
+      console.log('Decision: User dashboard');
+      console.groupEnd();
       return '/user';
-    case 'admin':
-      // This is a fallback in case isAdmin flag is false but role is admin
-      // This shouldn't happen in normal circumstances
-      console.warn('User has admin role but isAdmin flag is false');
-      return '/admin-panel';
     default:
       // Default to user dashboard for any unknown roles
+      console.log('Decision: User dashboard (default)');
+      console.groupEnd();
       return '/user';
   }
 };
