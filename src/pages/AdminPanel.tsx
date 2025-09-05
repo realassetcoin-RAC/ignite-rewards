@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -50,14 +50,21 @@ const AdminPanel = () => {
   const [isLoaded, setIsLoaded] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
+  const hasLoadedStatsRef = useRef(false);
+  const hasShownWarningRef = useRef(false);
 
   useEffect(() => {
     // Only load stats if we have admin access - the wrapper handles auth checks
     if (!loading && user && isAdmin) {
-      loadStats();
+      if (!hasLoadedStatsRef.current) {
+        hasLoadedStatsRef.current = true;
+        loadStats();
+      }
+      setIsLoaded(true);
+    } else if (!loading) {
+      setIsLoaded(true);
     }
-    setIsLoaded(true);
-  }, [user, isAdmin, loading]);
+  }, [user?.id, isAdmin, loading]);
 
   // Rate limiting for stats loading
   const loadStats = async () => {
@@ -125,7 +132,8 @@ const AdminPanel = () => {
       if (merchantsError) failedQueries.push('merchants');
       if (usersError) failedQueries.push('users');
       
-      if (failedQueries.length > 0) {
+      if (failedQueries.length > 0 && !hasShownWarningRef.current) {
+        hasShownWarningRef.current = true;
         toast({
           title: "Warning",
           description: `Some statistics could not be loaded (${failedQueries.join(', ')}). Please check your permissions.`,

@@ -5,7 +5,7 @@
  * with comprehensive error handling, authentication verification, and recovery mechanisms.
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -36,13 +36,22 @@ const AdminDashboardWrapper: React.FC<AdminDashboardWrapperProps> = ({ children 
   const [showDiagnostics, setShowDiagnostics] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
+  const lastVerifiedUserIdRef = useRef<string | null>(null);
+  const hasTriggeredVerificationRef = useRef(false);
 
   // Run comprehensive verification when component mounts or auth state changes
   useEffect(() => {
     if (!loading && user) {
-      runVerification();
+      if (lastVerifiedUserIdRef.current !== user.id) {
+        lastVerifiedUserIdRef.current = user.id;
+        hasTriggeredVerificationRef.current = false;
+      }
+      if (!hasTriggeredVerificationRef.current) {
+        hasTriggeredVerificationRef.current = true;
+        runVerification();
+      }
     }
-  }, [user, loading]);
+  }, [user?.id, loading]);
 
   const runVerification = async () => {
     setIsVerifying(true);
