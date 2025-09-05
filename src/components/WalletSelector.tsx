@@ -368,7 +368,7 @@ const WalletSelector: React.FC<WalletSelectorProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md bg-card/95 backdrop-blur-sm border-border/50 card-shadow">
         <DialogHeader>
           <DialogTitle className="text-center text-xl font-bold flex items-center justify-center gap-2">
             <Wallet className="h-5 w-5" />
@@ -388,7 +388,7 @@ const WalletSelector: React.FC<WalletSelectorProps> = ({
               <div key={wallet.name} className="space-y-2">
                 <Button
                   variant="outline"
-                  className="w-full h-14 flex items-center justify-between border-border hover:bg-accent"
+                  className="w-full h-14 flex items-center justify-between border-primary/40 text-primary bg-primary/10 hover:bg-primary/20 backdrop-blur-sm transition-smooth"
                   onClick={() => isAvailable ? handleWalletClick(wallet) : window.open(getInstallUrl(wallet.name), '_blank')}
                   disabled={isConnecting}
                 >
