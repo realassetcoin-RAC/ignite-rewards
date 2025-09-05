@@ -32,10 +32,12 @@ import {
   Coins
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useNavigate } from "react-router-dom";
 
 const EnhancedHeroSection = () => {
   const { user, profile, isAdmin, signOut } = useSecureAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [customerModalOpen, setCustomerModalOpen] = useState(false);
   const [merchantModalOpen, setMerchantModalOpen] = useState(false);
@@ -169,18 +171,20 @@ const EnhancedHeroSection = () => {
                         </div>
                       </div>
                       <DropdownMenuSeparator />
-                      <DropdownMenuItem asChild>
-                        <a href={getDashboardUrl()} className="cursor-pointer">
-                          <User className="mr-2 h-4 w-4" />
-                          My Dashboard
-                        </a>
+                      <DropdownMenuItem 
+                        className="cursor-pointer"
+                        onClick={() => navigate(getDashboardUrl())}
+                      >
+                        <User className="mr-2 h-4 w-4" />
+                        My Dashboard
                       </DropdownMenuItem>
                       {isAdmin && (
-                        <DropdownMenuItem asChild>
-                          <a href="/admin-panel" className="cursor-pointer">
-                            <Settings className="mr-2 h-4 w-4" />
-                            Admin Panel
-                          </a>
+                        <DropdownMenuItem 
+                          className="cursor-pointer"
+                          onClick={() => navigate('/admin-panel')}
+                        >
+                          <Settings className="mr-2 h-4 w-4" />
+                          Admin Panel
                         </DropdownMenuItem>
                       )}
                       <DropdownMenuSeparator />

@@ -9,6 +9,7 @@ import CustomerSignupModal from "@/components/CustomerSignupModal";
 import MerchantSignupModal from "@/components/MerchantSignupModal";
 import { useSecureAuth } from "@/hooks/useSecureAuth";
 import { LogOut, User, Settings, Shield } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
 
 /**
  * Hero section component that displays the main landing page content
@@ -20,6 +21,9 @@ const HeroSection = () => {
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [customerModalOpen, setCustomerModalOpen] = useState(false);
   const [merchantModalOpen, setMerchantModalOpen] = useState(false);
+  
+  // Navigation hook
+  const navigate = useNavigate();
   
   // Authentication hook
   const { user, signOut, profile, isAdmin } = useSecureAuth();
@@ -130,18 +134,22 @@ const HeroSection = () => {
                       </p>
                     </div>
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem asChild className="cursor-pointer">
-                      <a href={getDashboardUrl()}>
-                        <User className="mr-2 h-4 w-4" />
-                        <span>My Dashboard</span>
-                      </a>
+                    <DropdownMenuItem 
+                      className="cursor-pointer"
+                      onClick={() => navigate(getDashboardUrl())}
+                    >
+                      <User className="mr-2 h-4 w-4" />
+                      <span>My Dashboard</span>
                     </DropdownMenuItem>
                     <DropdownMenuItem className="cursor-pointer">
                       <Settings className="mr-2 h-4 w-4" />
                       <span>Settings</span>
                     </DropdownMenuItem>
                     {isAdmin && (
-                      <DropdownMenuItem className="cursor-pointer">
+                      <DropdownMenuItem 
+                        className="cursor-pointer"
+                        onClick={() => navigate('/admin-panel')}
+                      >
                         <Shield className="mr-2 h-4 w-4" />
                         <span>Admin Panel</span>
                       </DropdownMenuItem>
