@@ -10,7 +10,8 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useSecureAuth } from "@/hooks/useSecureAuth";
 import { Wallet, Copy, Download, Upload, Key, Shield, ExternalLink } from "lucide-react";
-import { Keypair, Connection, clusterApiUrl } from "@solana/web3.js";
+import { Keypair, Connection, clusterApiUrl, PublicKey } from "@solana/web3.js";
+import { useWallet } from "@solana/wallet-adapter-react";
 import * as bip39 from "bip39";
 import bs58 from "bs58";
 
@@ -33,6 +34,7 @@ const SolanaWalletManager = () => {
   const [seedPhrase, setSeedPhrase] = useState("");
   const [importSeedPhrase, setImportSeedPhrase] = useState("");
   const [balance, setBalance] = useState<number | null>(null);
+  const { connected, publicKey, connect, disconnect } = useWallet();
 
   useEffect(() => {
     if (user) {
@@ -73,8 +75,8 @@ const SolanaWalletManager = () => {
 
     try {
       const connection = new Connection(clusterApiUrl('devnet'));
-      const publicKey = new Keypair().publicKey;
-      const walletBalance = await connection.getBalance(publicKey);
+      const targetPublicKey: PublicKey = publicKey ?? new Keypair().publicKey;
+      const walletBalance = await connection.getBalance(targetPublicKey);
       setBalance(walletBalance / 1e9); // Convert lamports to SOL
     } catch (error) {
       console.error('Error loading wallet balance:', error);
@@ -124,6 +126,27 @@ const SolanaWalletManager = () => {
       });
     } finally {
       setCreating(false);
+    }
+  };
+
+  const connectThirdPartyWallet = async () => {
+    try {
+      await connect();
+      if (publicKey) {
+        toast({ title: "Wallet Connected", description: `Connected: ${publicKey.toBase58().slice(0,6)}...` });
+      }
+    } catch (error) {
+      console.error('Error connecting wallet:', error);
+      toast({ title: "Error", description: "Failed to connect wallet", variant: "destructive" });
+    }
+  };
+
+  const disconnectThirdPartyWallet = async () => {
+    try {
+      await disconnect();
+      toast({ title: "Wallet Disconnected" });
+    } catch (error) {
+      console.error('Error disconnecting wallet:', error);
     }
   };
 
@@ -255,6 +278,15 @@ const SolanaWalletManager = () => {
               </div>
             </DialogContent>
           </Dialog>
+          {!connected ? (
+            <Button variant="outline" className="flex-1" onClick={connectThirdPartyWallet}>
+              Connect Phantom/Solflare
+            </Button>
+          ) : (
+            <Button variant="outline" className="flex-1" onClick={disconnectThirdPartyWallet}>
+              Disconnect Wallet
+            </Button>
+          )}
         </div>
 
         {/* Seed Phrase Backup Dialog */}

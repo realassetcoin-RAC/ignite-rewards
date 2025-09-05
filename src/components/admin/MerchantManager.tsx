@@ -9,9 +9,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { useForm } from "react-hook-form";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Eye, Edit2, CreditCard, Calendar, Plus, HelpCircle } from "lucide-react";
+import { Eye, Edit2, CreditCard, Calendar, Plus, HelpCircle, Image as ImageIcon } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 interface Merchant {
   id: string;
@@ -55,7 +56,8 @@ const MerchantManager = ({ onStatsUpdate }: MerchantManagerProps) => {
       status: "pending",
       subscription_plan: "",
       subscription_start_date: "",
-      subscription_end_date: ""
+      subscription_end_date: "",
+      free_trial_months: "0"
     }
   });
 
@@ -119,9 +121,17 @@ const MerchantManager = ({ onStatsUpdate }: MerchantManagerProps) => {
       if (viewMode === "create") {
         // For new merchants, we need a user_id - in a real app this would come from user selection
         // For demo purposes, we'll use a placeholder
+        const trialMonthsNum = Number(data.free_trial_months || 0);
+        const startDate = data.subscription_start_date || new Date().toISOString().split('T')[0];
+        const endDate = trialMonthsNum > 0
+          ? new Date(new Date(startDate).setMonth(new Date(startDate).getMonth() + trialMonthsNum)).toISOString()
+          : (data.subscription_end_date || null);
+
         const merchantData = {
           ...data,
           user_id: crypto.randomUUID(), // In production, this should be selected from existing users
+          subscription_start_date: startDate,
+          subscription_end_date: endDate,
         };
 
         const { error } = await (supabase as any)
@@ -135,6 +145,12 @@ const MerchantManager = ({ onStatsUpdate }: MerchantManagerProps) => {
           description: "Merchant created successfully"
         });
       } else if (selectedMerchant) {
+        const trialMonthsNum = Number(data.free_trial_months || 0);
+        const startDate = data.subscription_start_date || selectedMerchant.subscription_start_date || new Date().toISOString().split('T')[0];
+        const endDate = trialMonthsNum > 0
+          ? new Date(new Date(startDate).setMonth(new Date(startDate).getMonth() + trialMonthsNum)).toISOString()
+          : (data.subscription_end_date || null);
+
         const updateData = {
           business_name: data.business_name,
           business_type: data.business_type,
@@ -144,8 +160,8 @@ const MerchantManager = ({ onStatsUpdate }: MerchantManagerProps) => {
           country: data.country,
           status: data.status,
           subscription_plan: data.subscription_plan,
-          subscription_start_date: data.subscription_start_date || null,
-          subscription_end_date: data.subscription_end_date || null
+          subscription_start_date: startDate,
+          subscription_end_date: endDate
         };
 
         const { error } = await (supabase as any)
@@ -175,6 +191,30 @@ const MerchantManager = ({ onStatsUpdate }: MerchantManagerProps) => {
     }
   };
 
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    try {
+      const file = e.target.files?.[0];
+      if (!file || !selectedMerchant) return;
+      const fileExt = file.name.split('.').pop();
+      const path = `merchant-logos/${selectedMerchant.id}-${Date.now()}.${fileExt}`;
+      const { error: uploadError } = await (supabase as any).storage.from('public-assets').upload(path, file, {
+        cacheControl: '3600', upsert: true
+      });
+      if (uploadError) throw uploadError;
+      const { data: urlData } = (supabase as any).storage.from('public-assets').getPublicUrl(path);
+      const publicUrl = urlData?.publicUrl;
+      if (publicUrl) {
+        const { error } = await (supabase as any).from('merchants').update({ logo_url: publicUrl }).eq('id', selectedMerchant.id);
+        if (error) throw error;
+        toast({ title: 'Logo Updated', description: 'Merchant logo uploaded successfully.' });
+        await loadMerchants();
+      }
+    } catch (err) {
+      console.error('Logo upload failed:', err);
+      toast({ title: 'Error', description: 'Failed to upload logo', variant: 'destructive' });
+    }
+  };
+
   const handleViewMerchant = (merchant: Merchant) => {
     setSelectedMerchant(merchant);
     setViewMode("view");
@@ -194,7 +234,8 @@ const MerchantManager = ({ onStatsUpdate }: MerchantManagerProps) => {
       status: merchant.status,
       subscription_plan: merchant.subscription_plan || "",
       subscription_start_date: merchant.subscription_start_date?.split('T')[0] || "",
-      subscription_end_date: merchant.subscription_end_date?.split('T')[0] || ""
+      subscription_end_date: merchant.subscription_end_date?.split('T')[0] || "",
+      free_trial_months: "0"
     });
     setDialogOpen(true);
   };
@@ -212,7 +253,8 @@ const MerchantManager = ({ onStatsUpdate }: MerchantManagerProps) => {
       status: "pending",
       subscription_plan: "",
       subscription_start_date: "",
-      subscription_end_date: ""
+      subscription_end_date: "",
+      free_trial_months: "0"
     });
     setDialogOpen(true);
   };
@@ -360,6 +402,22 @@ const MerchantManager = ({ onStatsUpdate }: MerchantManagerProps) => {
                       </CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-3">
+                      <div>
+                        <label className="text-sm font-medium text-muted-foreground">Logo</label>
+                        <div className="flex items-center gap-3 mt-1">
+                          <div className="w-16 h-16 bg-muted rounded flex items-center justify-center overflow-hidden">
+                            {selectedMerchant.logo_url ? (
+                              <img src={selectedMerchant.logo_url} alt={selectedMerchant.business_name} className="w-full h-full object-cover" />
+                            ) : (
+                              <ImageIcon className="w-6 h-6 text-muted-foreground" />
+                            )}
+                          </div>
+                          <label className="cursor-pointer text-sm px-3 py-2 border rounded">
+                            Upload
+                            <input type="file" accept="image/*" className="hidden" onChange={handleLogoUpload} />
+                          </label>
+                        </div>
+                      </div>
                       <div>
                         <label className="text-sm font-medium text-muted-foreground">Business Name</label>
                         <div>{selectedMerchant.business_name}</div>
@@ -668,7 +726,7 @@ const MerchantManager = ({ onStatsUpdate }: MerchantManagerProps) => {
                         />
                       </div>
 
-                      <div className="grid grid-cols-2 gap-4">
+                      <div className="grid grid-cols-3 gap-4">
                         <FormField
                           control={form.control}
                           name="subscription_start_date"
@@ -720,6 +778,40 @@ const MerchantManager = ({ onStatsUpdate }: MerchantManagerProps) => {
                                   {...field}
                                 />
                               </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name="free_trial_months"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel className="flex items-center gap-2">
+                                Free Trial
+                                <Tooltip>
+                                  <TooltipTrigger>
+                                    <HelpCircle className="w-3 h-3" />
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p>Assign a 1–3 month free trial</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </FormLabel>
+                              <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                <FormControl>
+                                  <SelectTrigger>
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  <SelectItem value="0">No Trial</SelectItem>
+                                  <SelectItem value="1">1 Month</SelectItem>
+                                  <SelectItem value="2">2 Months</SelectItem>
+                                  <SelectItem value="3">3 Months</SelectItem>
+                                </SelectContent>
+                              </Select>
                               <FormMessage />
                             </FormItem>
                           )}

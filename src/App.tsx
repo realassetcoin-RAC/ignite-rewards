@@ -8,7 +8,6 @@ import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
 import Privacy from "./pages/Privacy";
 import Partners from "./pages/Partners";
-import AdminDashboard from "./pages/AdminDashboard";
 import AdminPanel from "./pages/AdminPanel";
 import Auth from "./pages/Auth";
 import MerchantDashboard from "./pages/MerchantDashboard";
@@ -28,7 +27,6 @@ const App = () => (
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/privacy" element={<Privacy />} />
           <Route path="/partners" element={<Partners />} />
-          <Route path="/admin" element={<AdminDashboard />} />
           <Route path="/admin-panel" element={<AdminPanel />} />
           <Route path="/merchant" element={<MerchantDashboard />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

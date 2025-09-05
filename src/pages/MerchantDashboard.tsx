@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { QrCode, RefreshCw, Calendar, DollarSign, Hash, CreditCard } from 'lucide-react';
+import { QrCode, RefreshCw, Calendar, DollarSign, Hash, CreditCard, Link as LinkIcon, Shield } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { QrCodeGenerator } from '@/components/QrCodeGenerator';
@@ -26,6 +26,11 @@ interface MerchantData {
   id: string;
   business_name: string;
   status: string;
+  subscription_plan_id?: string | null;
+  subscription_start_date?: string | null;
+  subscription_end_date?: string | null;
+  trial_end_date?: string | null;
+  payment_link_url?: string | null;
 }
 
 const MerchantDashboard = () => {
@@ -54,7 +59,7 @@ const MerchantDashboard = () => {
 
       const { data: merchantData, error } = await (supabase as any)
         .from('merchants')
-        .select('id, business_name, status')
+        .select('id, business_name, status, subscription_plan_id, subscription_start_date, subscription_end_date, trial_end_date, payment_link_url')
         .eq('user_id', user.id)
         .single();
 
@@ -160,6 +165,18 @@ const MerchantDashboard = () => {
           <p className="text-muted-foreground">
             Welcome back, {merchant.business_name}
           </p>
+          <div className="mt-2 flex flex-wrap gap-2">
+            {merchant.trial_end_date && (
+              <Badge variant="secondary" className="bg-yellow-100 text-yellow-800">
+                Trial until {new Date(merchant.trial_end_date).toLocaleDateString()}
+              </Badge>
+            )}
+            {merchant.subscription_end_date && (
+              <Badge variant="secondary" className="bg-blue-100 text-blue-800">
+                Plan expires {new Date(merchant.subscription_end_date).toLocaleDateString()}
+              </Badge>
+            )}
+          </div>
         </div>
 
         {/* Stats Cards */}
@@ -216,6 +233,49 @@ const MerchantDashboard = () => {
             <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
             Refresh
           </Button>
+          {merchant.payment_link_url && (
+            <Button variant="outline" asChild>
+              <a href={merchant.payment_link_url} target="_blank" rel="noreferrer">
+                <LinkIcon className="w-4 h-4 mr-2" /> Renew Subscription
+              </a>
+            </Button>
+          )}
+        </div>
+
+        {/* Subscription & Payments */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2"><Shield className="w-4 h-4" /> Subscription</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">Status</span>
+                <Badge variant={merchant.status === 'active' ? 'default' : 'secondary'} className="capitalize">{merchant.status}</Badge>
+              </div>
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">Start</span>
+                <span>{merchant.subscription_start_date ? new Date(merchant.subscription_start_date).toLocaleDateString() : '-'}</span>
+              </div>
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">End</span>
+                <span>{merchant.subscription_end_date ? new Date(merchant.subscription_end_date).toLocaleDateString() : '-'}</span>
+              </div>
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">Trial End</span>
+                <span>{merchant.trial_end_date ? new Date(merchant.trial_end_date).toLocaleDateString() : '-'}</span>
+              </div>
+              {merchant.payment_link_url && (
+                <div className="pt-2">
+                  <Button variant="outline" asChild className="w-full">
+                    <a href={merchant.payment_link_url} target="_blank" rel="noreferrer">
+                      <LinkIcon className="w-4 h-4 mr-2" /> Open Payment Portal
+                    </a>
+                  </Button>
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </div>
 
         {/* Transactions Table */}

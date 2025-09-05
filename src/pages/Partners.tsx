@@ -42,8 +42,14 @@ const Partners = () => {
 
   const loadMerchants = async () => {
     try {
-      // Use sample data for now since merchants table is in different schema
-      setSampleMerchants();
+      setLoading(true);
+      const { data, error } = await (supabase as any)
+        .from('merchants')
+        .select('id, business_name, business_type, city, country, industry, logo_url, status')
+        .eq('status', 'active')
+        .order('business_name');
+      if (error) throw error;
+      if (data) setMerchants(data);
     } catch (error) {
       console.error('Error loading merchants:', error);
       setSampleMerchants();

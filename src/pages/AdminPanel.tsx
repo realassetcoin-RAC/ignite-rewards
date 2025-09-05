@@ -9,6 +9,9 @@ import { useToast } from "@/hooks/use-toast";
 import { Separator } from "@/components/ui/separator";
 import VirtualCardManager from "@/components/admin/VirtualCardManager";
 import MerchantManager from "@/components/admin/MerchantManager";
+import ReferralCampaignManager from "@/components/admin/ReferralCampaignManager";
+import ReferralManager from "@/components/admin/ReferralManager";
+import SubscriptionPlanManager from "@/components/admin/SubscriptionPlanManager";
 import UserManager from "@/components/admin/UserManager";
 import { useSecureAuth } from "@/hooks/useSecureAuth";
 import { checkRateLimit, sanitizeErrorMessage } from "@/utils/validation";
@@ -258,7 +261,7 @@ const AdminPanel = () => {
 
         {/* Main Admin Tabs */}
         <Tabs defaultValue="cards" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3 lg:w-auto lg:grid-cols-5">
+          <TabsList className="grid w-full grid-cols-4 lg:w-auto lg:grid-cols-6">
             <TabsTrigger value="cards" className="flex items-center space-x-2">
               <CreditCard className="h-4 w-4" />
               <span>Virtual Cards</span>
@@ -266,6 +269,10 @@ const AdminPanel = () => {
             <TabsTrigger value="merchants" className="flex items-center space-x-2">
               <Store className="h-4 w-4" />
               <span>Merchants</span>
+            </TabsTrigger>
+            <TabsTrigger value="referrals" className="flex items-center space-x-2">
+              <Shield className="h-4 w-4" />
+              <span>Referrals</span>
             </TabsTrigger>
             <TabsTrigger value="users" className="flex items-center space-x-2">
               <Users className="h-4 w-4" />
@@ -297,7 +304,23 @@ const AdminPanel = () => {
               <p className="text-muted-foreground mb-6">
                 Manage merchant partnerships and subscription plans.
               </p>
-              <MerchantManager onStatsUpdate={loadStats} />
+              <div className="space-y-6">
+                <MerchantManager onStatsUpdate={loadStats} />
+                <SubscriptionPlanManager />
+              </div>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="referrals" className="space-y-6">
+            <div>
+              <h3 className="text-2xl font-bold text-foreground mb-2">Referral Programs</h3>
+              <p className="text-muted-foreground mb-6">
+                Create and manage referral campaigns and rewards.
+              </p>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <ReferralCampaignManager />
+                <ReferralManager />
+              </div>
             </div>
           </TabsContent>
 
