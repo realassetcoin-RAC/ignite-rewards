@@ -16,6 +16,10 @@ import UserManager from "@/components/admin/UserManager";
 import AdminDashboardWrapper from "@/components/AdminDashboardWrapper";
 import { useSecureAuth } from "@/hooks/useSecureAuth";
 import { checkRateLimit, sanitizeErrorMessage } from "@/utils/validation";
+import ErrorBoundary from "@/components/ErrorBoundary";
+// Import the fix utilities (makes them available globally)
+import "@/utils/adminAuthFix";
+import "@/utils/testAdminAccess";
 import { 
   Shield, 
   CreditCard, 
@@ -258,7 +262,9 @@ const AdminPanel = () => {
               <p className="text-muted-foreground mb-6">
                 Create and manage virtual cards with different pricing tiers and features.
               </p>
-              <VirtualCardManager onStatsUpdate={loadStats} />
+              <ErrorBoundary>
+                <VirtualCardManager onStatsUpdate={loadStats} />
+              </ErrorBoundary>
             </div>
           </TabsContent>
 
@@ -269,8 +275,12 @@ const AdminPanel = () => {
                 Manage merchant partnerships and subscription plans.
               </p>
               <div className="space-y-6">
-                <MerchantManager onStatsUpdate={loadStats} />
-                <SubscriptionPlanManager />
+                <ErrorBoundary>
+                  <MerchantManager onStatsUpdate={loadStats} />
+                </ErrorBoundary>
+                <ErrorBoundary>
+                  <SubscriptionPlanManager />
+                </ErrorBoundary>
               </div>
             </div>
           </TabsContent>
@@ -282,8 +292,12 @@ const AdminPanel = () => {
                 Create and manage referral campaigns and rewards.
               </p>
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <ReferralCampaignManager />
-                <ReferralManager />
+                <ErrorBoundary>
+                  <ReferralCampaignManager />
+                </ErrorBoundary>
+                <ErrorBoundary>
+                  <ReferralManager />
+                </ErrorBoundary>
               </div>
             </div>
           </TabsContent>
@@ -294,7 +308,9 @@ const AdminPanel = () => {
               <p className="text-muted-foreground mb-6">
                 View and manage user accounts and subscriptions.
               </p>
-              <UserManager onStatsUpdate={loadStats} />
+              <ErrorBoundary>
+                <UserManager onStatsUpdate={loadStats} />
+              </ErrorBoundary>
             </div>
           </TabsContent>
 
