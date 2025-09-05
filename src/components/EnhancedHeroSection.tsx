@@ -104,7 +104,7 @@ const EnhancedHeroSection = () => {
   };
 
   return (
-    <div className="relative min-h-screen flex items-center justify-center overflow-hidden">
+    <div className="relative min-h-screen flex flex-col overflow-hidden">
       {/* Enhanced Dynamic Background */}
       <div className="absolute inset-0 bg-gradient-to-br from-primary/30 via-purple-500/20 to-blue-500/30">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-transparent via-background/70 to-background/90" />
@@ -132,7 +132,7 @@ const EnhancedHeroSection = () => {
       </div>
 
       {/* Navigation Bar */}
-      <div className="absolute top-0 left-0 right-0 z-50">
+      <div className="relative z-50 bg-background/80 backdrop-blur-sm border-b border-border/50">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2">
@@ -212,8 +212,9 @@ const EnhancedHeroSection = () => {
         </div>
       </div>
 
-      {/* Main Hero Content */}
-      <div className="relative z-10 text-center px-4 max-w-6xl mx-auto">
+      {/* Main Hero Content Container */}
+      <div className="flex-grow flex items-center justify-center">
+        <div className="relative z-10 text-center px-4 max-w-6xl mx-auto w-full">
         <div className="space-y-8">
           {/* Hero Badge with Animation */}
 
@@ -331,6 +332,7 @@ const EnhancedHeroSection = () => {
             </div>
           </div>
         </div>
+      </div>
       </div>
 
       {/* Modals */}
