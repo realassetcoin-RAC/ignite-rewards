@@ -234,19 +234,19 @@ const CustomerSignupModal: React.FC<CustomerSignupModalProps> = ({ isOpen, onClo
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-4xl max-h-[90vh] overflow-y-auto bg-card/95 backdrop-blur-sm border-border/50 card-shadow">
-        <DialogHeader>
-          <DialogTitle className="text-center text-2xl font-bold bg-gradient-to-r from-primary to-primary-glow bg-clip-text text-transparent">
-            <CreditCard className="inline-block mr-2 h-6 w-6 text-primary" />
+      <DialogContent className="w-[calc(100vw-2rem)] sm:w-full sm:max-w-4xl max-h-[calc(100vh-2rem)] overflow-y-auto bg-card/95 backdrop-blur-sm border-border/50 card-shadow p-4 sm:p-6">
+        <DialogHeader className="space-y-3">
+          <DialogTitle className="text-center text-xl sm:text-2xl font-bold bg-gradient-to-r from-primary to-primary-glow bg-clip-text text-transparent">
+            <CreditCard className="inline-block mr-2 h-5 w-5 sm:h-6 sm:w-6 text-primary" />
             Customer Signup
           </DialogTitle>
         </DialogHeader>
 
         {step === 'select' && (
           <div className="space-y-6">
-            <div className="text-center">
-              <h3 className="text-xl font-semibold mb-2">Choose Your Virtual Card</h3>
-              <p className="text-muted-foreground">Select the card that best fits your needs</p>
+            <div className="text-center px-2">
+              <h3 className="text-lg sm:text-xl font-semibold mb-2">Choose Your Virtual Card</h3>
+              <p className="text-sm sm:text-base text-muted-foreground">Select the card that best fits your needs</p>
             </div>
 
             <div className="relative max-w-md mx-auto">
