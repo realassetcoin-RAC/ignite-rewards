@@ -3,7 +3,7 @@ import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { canUserUseMFA } from '@/lib/mfa';
 
-interface UserProfile {
+export interface UserProfile {
   id: string;
   email: string;
   full_name: string | null;
