@@ -50,14 +50,15 @@ const ReferralCampaignManager = () => {
       setLoading(true);
       
       // Use enhanced loading with fallback methods
-      const { loadReferralCampaignsWithFallback } = await import('@/utils/adminDashboardLoadingFix');
-      const result = await loadReferralCampaignsWithFallback();
+      const { loadReferralCampaigns } = await import('@/utils/enhancedAdminLoading');
+      const result = await loadReferralCampaigns();
       
       if (result.success) {
         setCampaigns(result.data || []);
         if (result.data && result.data.length === 0) {
           console.log('No referral campaigns found, but loading was successful');
         }
+        console.log(`✅ Referral campaigns loaded from ${result.source}`);
       } else {
         console.error('Failed to load referral campaigns:', result.errors);
         toast({ 

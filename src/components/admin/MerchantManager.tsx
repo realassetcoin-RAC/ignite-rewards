@@ -70,14 +70,15 @@ const MerchantManager = ({ onStatsUpdate }: MerchantManagerProps) => {
       setLoading(true);
       
       // Use enhanced loading with fallback methods
-      const { loadMerchantsWithFallback } = await import('@/utils/adminDashboardLoadingFix');
-      const result = await loadMerchantsWithFallback();
+      const { loadMerchants } = await import('@/utils/enhancedAdminLoading');
+      const result = await loadMerchants();
       
       if (result.success) {
         setMerchants(result.data || []);
         if (result.data && result.data.length === 0) {
           console.log('No merchants found, but loading was successful');
         }
+        console.log(`✅ Merchants loaded from ${result.source}`);
       } else {
         console.error('Failed to load merchants:', result.errors);
         toast({

@@ -22,6 +22,7 @@ import "@/utils/adminAuthFix";
 import "@/utils/testAdminAccess";
 import "@/utils/adminDashboardFix";
 import "@/utils/adminDashboardLoadingFix";
+import "@/utils/enhancedAdminLoading";
 import { 
   Shield, 
   CreditCard, 
