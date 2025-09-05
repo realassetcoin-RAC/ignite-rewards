@@ -9,6 +9,7 @@ import Dashboard from "./pages/Dashboard";
 import Privacy from "./pages/Privacy";
 import Partners from "./pages/Partners";
 import FAQs from "./pages/FAQs";
+import TermsOfService from "./pages/TermsOfService";
 import AdminPanel from "./pages/AdminPanel";
 import Auth from "./pages/Auth";
 import MerchantDashboard from "./pages/MerchantDashboard";
