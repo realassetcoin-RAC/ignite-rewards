@@ -298,4 +298,43 @@ All colors MUST be HSL.
   .pt-24 {
     padding-top: 6rem !important;
   }
+
+  /* Mobile-first responsive container improvements */
+  .container {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+
+  @media (min-width: 640px) {
+    .container {
+      padding-left: 1.5rem;
+      padding-right: 1.5rem;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .container {
+      padding-left: 2rem;
+      padding-right: 2rem;
+    }
+  }
+
+  /* Ensure buttons don't get too small on mobile */
+  .btn-mobile-min {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  /* Responsive text scaling */
+  .text-responsive-sm {
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+  }
+
+  @media (min-width: 640px) {
+    .text-responsive-sm {
+      font-size: 1rem;
+      line-height: 1.5rem;
+    }
+  }
 }

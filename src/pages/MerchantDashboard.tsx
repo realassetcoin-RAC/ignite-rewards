@@ -159,10 +159,10 @@ const MerchantDashboard = () => {
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-foreground mb-2">
+          <h1 className="text-2xl sm:text-3xl font-bold text-foreground mb-2">
             Merchant Dashboard
           </h1>
-          <p className="text-muted-foreground">
+          <p className="text-sm sm:text-base text-muted-foreground truncate">
             Welcome back, {merchant.business_name}
           </p>
           <div className="mt-2 flex flex-wrap gap-2">
@@ -305,12 +305,12 @@ const MerchantDashboard = () => {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Date</TableHead>
-                      <TableHead>Customer</TableHead>
-                      <TableHead>Loyalty Number</TableHead>
-                      <TableHead>Amount</TableHead>
-                      <TableHead>Reference</TableHead>
-                      <TableHead>Points</TableHead>
+                      <TableHead className="min-w-[100px]">Date</TableHead>
+                      <TableHead className="min-w-[120px]">Customer</TableHead>
+                      <TableHead className="min-w-[120px] hidden sm:table-cell">Loyalty Number</TableHead>
+                      <TableHead className="min-w-[80px]">Amount</TableHead>
+                      <TableHead className="min-w-[120px] hidden md:table-cell">Reference</TableHead>
+                      <TableHead className="min-w-[60px]">Points</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -328,7 +328,7 @@ const MerchantDashboard = () => {
                             <div className="text-sm text-muted-foreground">{transaction.user_loyalty_cards?.email}</div>
                           </div>
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="hidden sm:table-cell">
                           <Badge variant="outline" className="font-mono">
                             {transaction.loyalty_number}
                           </Badge>
@@ -336,7 +336,7 @@ const MerchantDashboard = () => {
                         <TableCell className="font-medium">
                           ${Number(transaction.transaction_amount).toFixed(2)}
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="hidden md:table-cell">
                           <Badge variant="secondary" className="font-mono">
                             {transaction.transaction_reference}
                           </Badge>
