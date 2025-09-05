@@ -7,11 +7,12 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2 } from "lucide-react";
+import { Loader2, Wallet } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { useSecureAuth } from "@/hooks/useSecureAuth";
 import MFAVerification from "@/components/MFAVerification";
+import WalletSelector from "@/components/WalletSelector";
 import { canUserUseMFA } from "@/lib/mfa";
 
 /**
@@ -37,6 +38,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [showMFAVerification, setShowMFAVerification] = useState(false);
+  const [showWalletSelector, setShowWalletSelector] = useState(false);
   const [pendingUserId, setPendingUserId] = useState<string | null>(null);
   
   // Hooks
@@ -285,70 +287,13 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
     supabase.auth.signOut();
   };
 
-  const handleWalletConnect = async () => {
-    try {
-      if (!connect) {
-        toast({ 
-          title: "Wallet Not Available", 
-          description: "Please install Phantom or Solflare wallet extension", 
-          variant: "destructive" 
-        });
-        return;
-      }
+  const handleWalletConnect = () => {
+    setShowWalletSelector(true);
+  };
 
-      await connect();
-      
-      // Wait a moment for the connection to establish
-      setTimeout(async () => {
-        if (publicKey) {
-          const walletAddress = publicKey.toBase58();
-          
-          // Check if this wallet is associated with an admin user
-          const { data: walletData } = await supabase
-            .from('user_wallets')
-            .select('user_id')
-            .eq('wallet_address', walletAddress)
-            .single();
-          
-          let redirectPath = '/user';
-          
-          if (walletData?.user_id) {
-            // Get user role
-            const { data: profile } = await supabase
-              .from('profiles')
-              .select('role')
-              .eq('id', walletData.user_id)
-              .single();
-            
-            if (profile?.role === 'admin') {
-              redirectPath = '/admin';
-            } else if (profile?.role === 'merchant') {
-              redirectPath = '/merchant';
-            }
-          }
-          
-          toast({ 
-            title: "Wallet Connected", 
-            description: `Connected: ${walletAddress.slice(0,6)}...` 
-          });
-          onClose();
-          navigate(redirectPath);
-        } else {
-          toast({ 
-            title: "Connection Failed", 
-            description: "Please try connecting your wallet again", 
-            variant: "destructive" 
-          });
-        }
-      }, 1000);
-    } catch (error) {
-      console.error('Wallet connection error:', error);
-      toast({ 
-        title: "Error", 
-        description: error instanceof Error ? error.message : "Failed to connect wallet", 
-        variant: "destructive" 
-      });
-    }
+  const handleWalletConnected = () => {
+    setShowWalletSelector(false);
+    onClose();
   };
 
   // Show MFA verification if needed
@@ -367,6 +312,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
   }
 
   return (
+    <>
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
@@ -419,26 +365,15 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
             <Button 
               type="button"
               variant="outline"
-              className="w-full border-border"
+              className="w-full border-border hover:bg-accent"
               onClick={handleWalletConnect}
               disabled={loading || googleLoading}
             >
-              {connected ? (
-                <>
-                  <svg className="mr-2 h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                  </svg>
-                  Wallet Connected
-                </>
-              ) : (
-                <>
-                  <svg className="mr-2 h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
-                    <path d="M4 4a2 2 0 00-2 2v1h16V6a2 2 0 00-2-2H4z" />
-                    <path fillRule="evenodd" d="M18 9H2v5a2 2 0 002 2h12a2 2 0 002-2V9zM4 13a1 1 0 011-1h1a1 1 0 110 2H5a1 1 0 01-1-1zm5-1a1 1 0 100 2h1a1 1 0 100-2H9z" clipRule="evenodd" />
-                  </svg>
-                  Connect Solana Wallet (Phantom/Solflare)
-                </>
-              )}
+              <Wallet className="mr-2 h-4 w-4" />
+              Connect Wallet
+              <span className="ml-auto text-xs text-muted-foreground">
+                Phantom • Solflare • MetaMask
+              </span>
             </Button>
             
             <div className="relative">
@@ -523,26 +458,15 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
             <Button 
               type="button"
               variant="outline"
-              className="w-full border-border"
+              className="w-full border-border hover:bg-accent"
               onClick={handleWalletConnect}
               disabled={loading || googleLoading}
             >
-              {connected ? (
-                <>
-                  <svg className="mr-2 h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                  </svg>
-                  Wallet Connected
-                </>
-              ) : (
-                <>
-                  <svg className="mr-2 h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
-                    <path d="M4 4a2 2 0 00-2 2v1h16V6a2 2 0 00-2-2H4z" />
-                    <path fillRule="evenodd" d="M18 9H2v5a2 2 0 002 2h12a2 2 0 002-2V9zM4 13a1 1 0 011-1h1a1 1 0 110 2H5a1 1 0 01-1-1zm5-1a1 1 0 100 2h1a1 1 0 100-2H9z" clipRule="evenodd" />
-                  </svg>
-                  Connect Solana Wallet (Phantom/Solflare)
-                </>
-              )}
+              <Wallet className="mr-2 h-4 w-4" />
+              Connect Wallet
+              <span className="ml-auto text-xs text-muted-foreground">
+                Phantom • Solflare • MetaMask
+              </span>
             </Button>
             
             <div className="relative">
@@ -595,6 +519,14 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
         </Tabs>
       </DialogContent>
     </Dialog>
+    
+    {/* Wallet Selector Modal */}
+    <WalletSelector 
+      isOpen={showWalletSelector}
+      onClose={() => setShowWalletSelector(false)}
+      onWalletConnected={handleWalletConnected}
+    />
+    </>
   );
 };
 
