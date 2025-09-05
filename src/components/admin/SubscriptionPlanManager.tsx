@@ -34,6 +34,7 @@ const SubscriptionPlanManager = () => {
       name: "",
       description: "",
       price_monthly: 0,
+      features: "[]",
       trial_days: 0,
       is_active: true,
     },
@@ -101,7 +102,7 @@ const SubscriptionPlanManager = () => {
 
   const openCreate = () => {
     setEditing(null);
-    form.reset({ name: "", description: "", price_monthly: 0, trial_days: 0, is_active: true });
+    form.reset({ name: "", description: "", price_monthly: 0, features: "[]", trial_days: 0, is_active: true });
     setDialogOpen(true);
   };
 
@@ -111,6 +112,7 @@ const SubscriptionPlanManager = () => {
       name: plan.name,
       description: plan.description || "",
       price_monthly: Number(plan.price_monthly) || 0,
+      features: plan.features ? JSON.stringify(plan.features) : "[]",
       trial_days: plan.trial_days || 0,
       is_active: !!plan.is_active,
     });
@@ -119,33 +121,61 @@ const SubscriptionPlanManager = () => {
 
   const onSubmit = async (values: any) => {
     try {
+      if (!values.name?.trim()) {
+        toast({ title: 'Missing Information', description: 'Plan name is required.', variant: 'destructive' });
+        return;
+      }
+
+      // Parse features JSON
+      let features = [];
+      try {
+        features = values.features ? JSON.parse(values.features) : [];
+      } catch (parseError) {
+        console.error('Error parsing features JSON:', parseError);
+        toast({ title: 'Invalid Features', description: 'Features must be valid JSON format.', variant: 'destructive' });
+        return;
+      }
+
       const payload = {
         name: values.name.trim(),
         description: values.description?.trim() || null,
         price_monthly: Number(values.price_monthly) || 0,
+        features: features,
         trial_days: Number(values.trial_days) || 0,
         is_active: !!values.is_active,
       };
+
       if (editing) {
         const { error } = await supabase
           .from('merchant_subscription_plans')
           .update(payload)
           .eq('id', editing.id);
-        if (error) throw error;
+        if (error) {
+          console.error('Update error:', error);
+          throw error;
+        }
         toast({ title: 'Updated', description: 'Plan updated successfully.' });
       } else {
         const { error } = await supabase
           .from('merchant_subscription_plans')
           .insert([payload]);
-        if (error) throw error;
+        if (error) {
+          console.error('Insert error:', error);
+          throw error;
+        }
         toast({ title: 'Created', description: 'Plan created successfully.' });
       }
       setDialogOpen(false);
       setEditing(null);
       await loadPlans();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to save plan:', error);
-      toast({ title: 'Error', description: 'Failed to save plan', variant: 'destructive' });
+      const errorMessage = error?.message || 'Failed to save plan';
+      toast({ 
+        title: 'Error', 
+        description: `Failed to save plan: ${errorMessage}`,
+        variant: 'destructive' 
+      });
     }
   };
 
@@ -168,7 +198,7 @@ const SubscriptionPlanManager = () => {
               <DialogTitle>{editing ? 'Edit Plan' : 'Create Plan'}</DialogTitle>
             </DialogHeader>
             <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                 <FormField
                   control={form.control}
                   name="name"
@@ -195,15 +225,44 @@ const SubscriptionPlanManager = () => {
                     </FormItem>
                   )}
                 />
-                <div className="grid grid-cols-3 gap-4">
+                <FormField
+                  control={form.control}
+                  name="features"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Features (JSON)</FormLabel>
+                      <FormControl>
+                        <Input 
+                          placeholder='["Feature 1", "Feature 2", "Feature 3"]' 
+                          {...field} 
+                        />
+                      </FormControl>
+                      <p className="text-sm text-muted-foreground">
+                        Enter features as a JSON array of strings
+                      </p>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <FormField
                     control={form.control}
                     name="price_monthly"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Price (monthly)</FormLabel>
+                        <FormLabel>Monthly Price</FormLabel>
                         <FormControl>
-                          <Input type="number" min={0} step={0.01} {...field} />
+                          <div className="relative">
+                            <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground">$</span>
+                            <Input 
+                              type="number" 
+                              min={0} 
+                              step={0.01} 
+                              placeholder="0.00"
+                              className="pl-8"
+                              {...field} 
+                            />
+                          </div>
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -216,7 +275,7 @@ const SubscriptionPlanManager = () => {
                       <FormItem>
                         <FormLabel>Trial Days</FormLabel>
                         <FormControl>
-                          <Input type="number" min={0} step={1} {...field} />
+                          <Input type="number" min={0} step={1} placeholder="0" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -227,11 +286,11 @@ const SubscriptionPlanManager = () => {
                     name="is_active"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Active</FormLabel>
+                        <FormLabel>Status</FormLabel>
                         <FormControl>
                           <select className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" value={field.value ? 'true' : 'false'} onChange={(e) => field.onChange(e.target.value === 'true')}>
-                            <option value="true">Yes</option>
-                            <option value="false">No</option>
+                            <option value="true">Active</option>
+                            <option value="false">Inactive</option>
                           </select>
                         </FormControl>
                         <FormMessage />
@@ -239,7 +298,7 @@ const SubscriptionPlanManager = () => {
                     )}
                   />
                 </div>
-                <div className="flex gap-2 pt-2">
+                <div className="flex gap-3 pt-4">
                   <Button type="submit" className="flex-1">
                     <CheckCircle2 className="w-4 h-4 mr-2" />
                     {editing ? 'Update Plan' : 'Create Plan'}
@@ -271,6 +330,7 @@ const SubscriptionPlanManager = () => {
                   <TableRow>
                     <TableHead>Name</TableHead>
                     <TableHead>Price</TableHead>
+                    <TableHead>Features</TableHead>
                     <TableHead>Trial</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
@@ -283,7 +343,30 @@ const SubscriptionPlanManager = () => {
                         <div className="font-medium">{p.name}</div>
                         <div className="text-sm text-muted-foreground">{p.description}</div>
                       </TableCell>
-                      <TableCell>${Number(p.price_monthly).toFixed(2)}</TableCell>
+                      <TableCell>
+                        <span className="font-medium">${Number(p.price_monthly).toFixed(2)}</span>
+                        <div className="text-xs text-muted-foreground">per month</div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="text-sm">
+                          {p.features && Array.isArray(p.features) ? (
+                            <div className="space-y-1">
+                              {p.features.slice(0, 2).map((feature, index) => (
+                                <div key={index} className="text-xs bg-secondary/50 px-2 py-1 rounded">
+                                  {feature}
+                                </div>
+                              ))}
+                              {p.features.length > 2 && (
+                                <div className="text-xs text-muted-foreground">
+                                  +{p.features.length - 2} more
+                                </div>
+                              )}
+                            </div>
+                          ) : (
+                            <span className="text-muted-foreground">No features</span>
+                          )}
+                        </div>
+                      </TableCell>
                       <TableCell>{p.trial_days || 0} days</TableCell>
                       <TableCell>
                         <Badge variant={p.is_active ? 'default' : 'secondary'}>
