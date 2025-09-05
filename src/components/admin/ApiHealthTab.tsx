@@ -6,7 +6,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Switch } from "@/components/ui/switch";
 import { supabase } from "@/integrations/supabase/client";
 import { useSecureAuth } from "@/hooks/useSecureAuth";
-import { useToast } from "@/hooks/use-toast";
 import { Activity, CheckCircle, XCircle, RefreshCw, Clock, AlertTriangle } from "lucide-react";
 
 type HealthStatus = "ok" | "warn" | "error";
@@ -36,7 +35,6 @@ const DEFAULT_INTERVAL_MS = 30000;
 
 const ApiHealthTab = () => {
   const { user } = useSecureAuth();
-  const { toast } = useToast();
   const [results, setResults] = useState<Record<string, HealthResult>>({});
   const [isRunning, setIsRunning] = useState(false);
   const [autoRefresh, setAutoRefresh] = useState(true);
@@ -267,12 +265,10 @@ const ApiHealthTab = () => {
       }
       setResults(next);
       setLastRunAt(Date.now());
-      // Keep toast informational and non-blocking
-      toast({ title: "Health Check Completed", description: anyError ? "Some checks reported errors." : "All checks ran.", variant: anyError ? "destructive" : "default" });
     } finally {
       setIsRunning(false);
     }
-  }, [checks, isRunning, toast]);
+  }, [checks, isRunning]);
 
   useEffect(() => {
     // initial run
