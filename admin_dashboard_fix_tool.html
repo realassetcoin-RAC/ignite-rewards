@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard Fix Tool</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .fix-section {
+            margin: 20px 0;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background: #f9f9f9;
+        }
+        .fix-section h3 {
+            margin-top: 0;
+            color: #555;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .success {
+            color: #28a745;
+            font-weight: bold;
+        }
+        .error {
+            color: #dc3545;
+            font-weight: bold;
+        }
+        .warning {
+            color: #ffc107;
+            font-weight: bold;
+        }
+        .info {
+            color: #17a2b8;
+            font-weight: bold;
+        }
+        .log {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 15px;
+            margin: 10px 0;
+            font-family: monospace;
+            font-size: 14px;
+            max-height: 300px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .status.warning {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 Admin Dashboard Fix Tool</h1>
+        
+        <div class="fix-section">
+            <h3>📋 Instructions</h3>
+            <p>This tool will help fix loading errors in the admin dashboard for virtual cards, merchants, and referral programs.</p>
+            <ol>
+                <li>Make sure you're logged in as an admin user</li>
+                <li>Click "Run Comprehensive Fix" below</li>
+                <li>Check the results and follow any additional instructions</li>
+                <li>Refresh the admin dashboard to see the fixes</li>
+            </ol>
+        </div>
+
+        <div class="fix-section">
+            <h3>🚀 Quick Fix</h3>
+            <button onclick="runComprehensiveFix()" id="fixBtn">Run Comprehensive Fix</button>
+            <button onclick="clearLog()" id="clearBtn">Clear Log</button>
+            <div id="status"></div>
+        </div>
+
+        <div class="fix-section">
+            <h3>🔍 Individual Tests</h3>
+            <button onclick="testAdminAccess()">Test Admin Access</button>
+            <button onclick="testVirtualCards()">Test Virtual Cards</button>
+            <button onclick="testMerchants()">Test Merchants</button>
+            <button onclick="testReferralCampaigns()">Test Referral Campaigns</button>
+        </div>
+
+        <div class="fix-section">
+            <h3>📝 Log Output</h3>
+            <div id="log" class="log">Ready to run fixes...\n</div>
+        </div>
+
+        <div class="fix-section">
+            <h3>💡 Manual Database Fix</h3>
+            <p>If the automatic fixes don't work, you can apply the database fix manually:</p>
+            <ol>
+                <li>Open your Supabase Dashboard</li>
+                <li>Go to SQL Editor</li>
+                <li>Copy and paste the contents of <code>admin_dashboard_comprehensive_fix.sql</code></li>
+                <li>Run the SQL script</li>
+                <li>Refresh this page and try the fixes again</li>
+            </ol>
+        </div>
+    </div>
+
+    <script>
+        let logElement = document.getElementById('log');
+        let statusElement = document.getElementById('status');
+        let fixBtn = document.getElementById('fixBtn');
+
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const prefix = type === 'error' ? '❌' : type === 'success' ? '✅' : type === 'warning' ? '⚠️' : 'ℹ️';
+            logElement.textContent += `[${timestamp}] ${prefix} ${message}\n`;
+            logElement.scrollTop = logElement.scrollHeight;
+        }
+
+        function setStatus(message, type = 'info') {
+            statusElement.innerHTML = `<div class="status ${type}">${message}</div>`;
+        }
+
+        function clearLog() {
+            logElement.textContent = 'Log cleared...\n';
+            statusElement.innerHTML = '';
+        }
+
+        async function runComprehensiveFix() {
+            fixBtn.disabled = true;
+            fixBtn.textContent = 'Running Fix...';
+            setStatus('Running comprehensive fix...', 'info');
+            log('Starting comprehensive admin dashboard fix...');
+
+            try {
+                // Check if we're in the admin dashboard context
+                if (typeof window.adminDashboardFix === 'undefined') {
+                    log('Admin dashboard fix utilities not found. Make sure you\'re on the admin dashboard page.', 'error');
+                    setStatus('Fix utilities not found. Please run this from the admin dashboard.', 'error');
+                    return;
+                }
+
+                const result = await window.adminDashboardFix.fixAdminDashboardLoading();
+                
+                if (result.success) {
+                    log('✅ Comprehensive fix completed successfully!', 'success');
+                    log(`Message: ${result.message}`, 'success');
+                    
+                    if (result.data) {
+                        log('Fix Results:', 'info');
+                        Object.entries(result.data).forEach(([key, value]) => {
+                            const status = value ? '✅' : '❌';
+                            log(`  ${status} ${key}: ${value}`, value ? 'success' : 'error');
+                        });
+                    }
+                    
+                    setStatus('✅ Fix completed successfully! Refresh the admin dashboard to see changes.', 'success');
+                } else {
+                    log('❌ Fix failed:', 'error');
+                    log(`Error: ${result.message}`, 'error');
+                    if (result.errors) {
+                        result.errors.forEach(error => log(`  - ${error}`, 'error'));
+                    }
+                    setStatus('❌ Fix failed. Check the log for details.', 'error');
+                }
+            } catch (error) {
+                log(`❌ Unexpected error: ${error.message}`, 'error');
+                setStatus('❌ Unexpected error occurred. Check the log for details.', 'error');
+            } finally {
+                fixBtn.disabled = false;
+                fixBtn.textContent = 'Run Comprehensive Fix';
+            }
+        }
+
+        async function testAdminAccess() {
+            log('Testing admin access...');
+            try {
+                if (typeof window.adminDashboardFix === 'undefined') {
+                    log('Admin dashboard fix utilities not found.', 'error');
+                    return;
+                }
+
+                const result = await window.adminDashboardFix.enhancedAdminCheck();
+                log(`Admin access result: ${result ? '✅ GRANTED' : '❌ DENIED'}`, result ? 'success' : 'error');
+            } catch (error) {
+                log(`❌ Admin access test failed: ${error.message}`, 'error');
+            }
+        }
+
+        async function testVirtualCards() {
+            log('Testing virtual cards loading...');
+            try {
+                if (typeof window.adminDashboardFix === 'undefined') {
+                    log('Admin dashboard fix utilities not found.', 'error');
+                    return;
+                }
+
+                const result = await window.adminDashboardFix.loadVirtualCardsWithFallback();
+                log(`Virtual cards loading: ${result.success ? '✅ SUCCESS' : '❌ FAILED'}`, result.success ? 'success' : 'error');
+                log(`Message: ${result.message}`, 'info');
+                if (result.data) {
+                    log(`Found ${result.data.length} virtual cards`, 'info');
+                }
+            } catch (error) {
+                log(`❌ Virtual cards test failed: ${error.message}`, 'error');
+            }
+        }
+
+        async function testMerchants() {
+            log('Testing merchants loading...');
+            try {
+                if (typeof window.adminDashboardFix === 'undefined') {
+                    log('Admin dashboard fix utilities not found.', 'error');
+                    return;
+                }
+
+                const result = await window.adminDashboardFix.loadMerchantsWithFallback();
+                log(`Merchants loading: ${result.success ? '✅ SUCCESS' : '❌ FAILED'}`, result.success ? 'success' : 'error');
+                log(`Message: ${result.message}`, 'info');
+                if (result.data) {
+                    log(`Found ${result.data.length} merchants`, 'info');
+                }
+            } catch (error) {
+                log(`❌ Merchants test failed: ${error.message}`, 'error');
+            }
+        }
+
+        async function testReferralCampaigns() {
+            log('Testing referral campaigns loading...');
+            try {
+                if (typeof window.adminDashboardFix === 'undefined') {
+                    log('Admin dashboard fix utilities not found.', 'error');
+                    return;
+                }
+
+                const result = await window.adminDashboardFix.loadReferralCampaignsWithFallback();
+                log(`Referral campaigns loading: ${result.success ? '✅ SUCCESS' : '❌ FAILED'}`, result.success ? 'success' : 'error');
+                log(`Message: ${result.message}`, 'info');
+                if (result.data) {
+                    log(`Found ${result.data.length} referral campaigns`, 'info');
+                }
+            } catch (error) {
+                log(`❌ Referral campaigns test failed: ${error.message}`, 'error');
+            }
+        }
+
+        // Auto-detect if we're in the right context
+        window.addEventListener('load', () => {
+            if (typeof window.adminDashboardFix !== 'undefined') {
+                log('✅ Admin dashboard fix utilities detected!', 'success');
+                setStatus('Ready to run fixes. Click "Run Comprehensive Fix" to start.', 'success');
+            } else {
+                log('⚠️ Admin dashboard fix utilities not found.', 'warning');
+                log('Make sure you\'re running this from the admin dashboard page.', 'warning');
+                setStatus('Please run this tool from the admin dashboard page.', 'warning');
+            }
+        });
+    </script>
+</body>
+</html>

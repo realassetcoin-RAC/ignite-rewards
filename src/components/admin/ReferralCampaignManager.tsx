@@ -48,12 +48,24 @@ const ReferralCampaignManager = () => {
   const loadCampaigns = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
-        .from('referral_campaigns')
-        .select('*')
-        .order('created_at', { ascending: false });
-      if (error) throw error;
-      setCampaigns(data || []);
+      
+      // Use enhanced loading with fallback methods
+      const { loadReferralCampaignsWithFallback } = await import('@/utils/adminDashboardLoadingFix');
+      const result = await loadReferralCampaignsWithFallback();
+      
+      if (result.success) {
+        setCampaigns(result.data || []);
+        if (result.data && result.data.length === 0) {
+          console.log('No referral campaigns found, but loading was successful');
+        }
+      } else {
+        console.error('Failed to load referral campaigns:', result.errors);
+        toast({ 
+          title: 'Loading Error', 
+          description: result.message || 'Failed to load referral campaigns', 
+          variant: 'destructive' 
+        });
+      }
     } catch (error) {
       console.error('Failed to load campaigns:', error);
       toast({ title: 'Error', description: 'Failed to load referral campaigns', variant: 'destructive' });
