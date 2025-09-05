@@ -241,12 +241,21 @@ export const useSecureAuth = () => {
         return;
       }
 
+      console.log('🔐 Updating auth state for user:', session.user.email);
+
       // Fetch user profile, admin status, and user type in parallel
       const [profile, isAdmin, userType] = await Promise.all([
         getCurrentUserProfile(),
         robustAdminCheck(), // Use the robust admin check instead
         checkUserType(session.user.id),
       ]);
+
+      console.log('🔍 Auth state results:', {
+        profile: profile?.email,
+        isAdmin,
+        userType,
+        role: profile?.role
+      });
 
       setAuthState({
         user: session.user,
