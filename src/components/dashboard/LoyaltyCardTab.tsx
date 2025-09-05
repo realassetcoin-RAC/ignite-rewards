@@ -98,27 +98,107 @@ const LoyaltyCardTab = () => {
 
     setCreating(true);
     try {
-      // Generate loyalty number
-      const { data: loyaltyNumber, error: rpcError } = await supabase
-        .rpc('generate_loyalty_number');
-
-      if (rpcError) {
-        throw rpcError;
+      // Generate loyalty number - try both function signatures
+      let loyaltyNumber;
+      let rpcError;
+      
+      try {
+        // Try the public schema function first (no parameters)
+        const { data: publicNumber, error: publicError } = await supabase
+          .rpc('generate_loyalty_number');
+        
+        if (publicError) {
+          console.error('Error with public schema function:', publicError);
+          throw publicError;
+        }
+        
+        loyaltyNumber = publicNumber;
+        console.log('Generated loyalty number from public schema:', loyaltyNumber);
+      } catch (error) {
+        console.error('Public schema RPC failed, trying api schema:', error);
+        
+        // Try the api schema function (with user_email parameter)
+        try {
+          const { data: apiNumber, error: apiError } = await supabase
+            .rpc('generate_loyalty_number', { user_email: user?.email || '' });
+          
+          if (apiError) {
+            console.error('Error with api schema function:', apiError);
+            throw apiError;
+          }
+          
+          loyaltyNumber = apiNumber;
+          console.log('Generated loyalty number from api schema:', loyaltyNumber);
+        } catch (apiError) {
+          console.error('Both RPC functions failed, using fallback:', apiError);
+          // Fallback: generate a simple loyalty number
+          const initial = (user?.email || 'U').charAt(0).toUpperCase();
+          const randomDigits = Math.floor(Math.random() * 10000000).toString().padStart(7, '0');
+          loyaltyNumber = initial + randomDigits;
+          console.log('Using fallback loyalty number:', loyaltyNumber);
+        }
       }
 
-      // Create loyalty card
-      const { data, error } = await supabase
-        .from('user_loyalty_cards')
-        .insert({
-          user_id: user?.id,
-          loyalty_number: loyaltyNumber,
-          full_name: formData.full_name.trim(),
-          email: user?.email || '',
-          phone: formData.phone.trim() || null,
-          is_active: true,
-        })
-        .select()
-        .single();
+      // Create loyalty card - try both schemas
+      let data, error;
+      
+      try {
+        console.log('Attempting to insert into public.user_loyalty_cards...');
+        const result = await supabase
+          .from('user_loyalty_cards')
+          .insert({
+            user_id: user?.id,
+            loyalty_number: loyaltyNumber,
+            full_name: formData.full_name.trim(),
+            email: user?.email || '',
+            phone: formData.phone.trim() || null,
+            is_active: true,
+          })
+          .select()
+          .single();
+        
+        data = result.data;
+        error = result.error;
+        
+        if (error) {
+          console.error('Error inserting into public.user_loyalty_cards:', error);
+          throw error;
+        }
+        
+        console.log('Successfully inserted into public.user_loyalty_cards:', data);
+      } catch (publicError) {
+        console.error('Failed to insert into public.user_loyalty_cards, trying api schema:', publicError);
+        
+        // Fallback to api schema
+        try {
+          console.log('Attempting to insert into api.user_loyalty_cards...');
+          const result = await (supabase as any)
+            .from('api.user_loyalty_cards')
+            .insert({
+              user_id: user?.id,
+              loyalty_number: loyaltyNumber,
+              full_name: formData.full_name.trim(),
+              email: user?.email || '',
+              phone: formData.phone.trim() || null,
+              is_active: true,
+            })
+            .select()
+            .single();
+          
+          data = result.data;
+          error = result.error;
+          
+          if (error) {
+            console.error('Error inserting into api.user_loyalty_cards:', error);
+            throw error;
+          }
+          
+          console.log('Successfully inserted into api.user_loyalty_cards:', data);
+        } catch (apiError) {
+          console.error('Failed to insert into api.user_loyalty_cards:', apiError);
+          error = apiError;
+        }
+      }
 
       if (error) throw error;
 
