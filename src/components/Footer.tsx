@@ -1,4 +1,5 @@
 import { Twitter, Send, Linkedin, Facebook, Youtube } from "lucide-react";
+import { Link } from "react-router-dom";
 
 const Footer = () => {
   return (
@@ -36,8 +37,8 @@ const Footer = () => {
             <ul className="space-y-2 text-white/80">
               <li><a href="#how-it-works" className="hover:text-primary transition-colors">How It Works</a></li>
               <li><a href="#benefits" className="hover:text-primary transition-colors">Why Join Our Loyalty Network</a></li>
-              <li><a href="#" className="hover:text-primary transition-colors">Partners</a></li>
-              <li><a href="#" className="hover:text-primary transition-colors">FAQs</a></li>
+              <li><Link to="/partners" className="hover:text-primary transition-colors">Partners</Link></li>
+              <li><Link to="/faqs" className="hover:text-primary transition-colors">FAQs</Link></li>
             </ul>
           </div>
           
@@ -46,7 +47,7 @@ const Footer = () => {
             <ul className="space-y-2 text-white/80">
               <li><a href="#" className="hover:text-primary transition-colors">Contact Us</a></li>
               <li><a href="#" className="hover:text-primary transition-colors">Help Center</a></li>
-              <li><a href="#" className="hover:text-primary transition-colors">Privacy Policy</a></li>
+              <li><Link to="/privacy" className="hover:text-primary transition-colors">Privacy Policy</Link></li>
               <li><a href="#" className="hover:text-primary transition-colors">Terms of Service</a></li>
             </ul>
           </div>

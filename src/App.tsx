@@ -8,6 +8,7 @@ import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
 import Privacy from "./pages/Privacy";
 import Partners from "./pages/Partners";
+import FAQs from "./pages/FAQs";
 import AdminPanel from "./pages/AdminPanel";
 import Auth from "./pages/Auth";
 import MerchantDashboard from "./pages/MerchantDashboard";
@@ -32,6 +33,7 @@ const App = () => (
           <Route path="/user" element={<UserDashboard />} />
           <Route path="/privacy" element={<Privacy />} />
           <Route path="/partners" element={<Partners />} />
+          <Route path="/faqs" element={<FAQs />} />
           <Route path="/admin-panel" element={<AdminPanel />} />
           <Route path="/admin" element={<Navigate to="/admin-panel" replace />} />
           <Route path="/merchant" element={<MerchantDashboard />} />
