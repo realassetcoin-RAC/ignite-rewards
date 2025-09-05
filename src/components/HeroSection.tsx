@@ -55,11 +55,15 @@ const HeroSection = () => {
    * @returns {string} Dashboard URL for the user's role
    */
   const getDashboardUrl = () => {
+    // Check if user is admin first (based on isAdmin flag)
+    if (isAdmin) {
+      return '/admin-panel';
+    }
+    
+    // Then check the role from profile
     const userRole = profile?.role;
     
     switch (userRole) {
-      case 'admin':
-        return '/admin-panel';
       case 'merchant':
         return '/merchant';
       case 'customer':

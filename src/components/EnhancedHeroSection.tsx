@@ -89,11 +89,15 @@ const EnhancedHeroSection = () => {
   };
 
   const getDashboardUrl = () => {
+    // Check if user is admin first (based on isAdmin flag)
+    if (isAdmin) {
+      return '/admin-panel';
+    }
+    
+    // Then check the role from profile
     const userRole = profile?.role;
     
     switch (userRole) {
-      case 'admin':
-        return '/admin-panel';
       case 'merchant':
         return '/merchant';
       case 'customer':
@@ -219,18 +223,19 @@ const EnhancedHeroSection = () => {
 
           {/* Main Headline with Enhanced Typography */}
           <div className="space-y-6">
-            <h1 className={`text-4xl sm:text-5xl md:text-7xl lg:text-8xl font-bold text-foreground leading-tight ${
+            <h1 className={`text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-foreground leading-tight ${
               isLoaded ? 'animate-fade-in-up animation-delay-200' : 'opacity-0'
             }`}>
-              Bridge Your{" "}
+              <span className="block sm:inline">Bridge Your{" "}</span>
               <span className="bg-gradient-to-r from-primary via-purple-500 to-blue-500 bg-clip-text text-transparent animate-gradient-x">
                 Loyalty
               </span>
               <br className="hidden sm:block" />
-              <span className="sm:hidden"> </span>
-              to{" "}
-              <span className="bg-gradient-to-r from-blue-500 via-primary to-purple-500 bg-clip-text text-transparent animate-gradient-x-reverse">
-                Web3 Rewards
+              <span className="block sm:inline">
+                to{" "}
+                <span className="bg-gradient-to-r from-blue-500 via-primary to-purple-500 bg-clip-text text-transparent animate-gradient-x-reverse">
+                  Web3 Rewards
+                </span>
               </span>
             </h1>
             <p className={`text-lg sm:text-xl md:text-2xl text-muted-foreground max-w-4xl mx-auto leading-relaxed px-4 ${
@@ -269,8 +274,8 @@ const EnhancedHeroSection = () => {
           {/* Enhanced Learn More Section */}
           <div className={`pt-6 ${isLoaded ? 'animate-fade-in-up animation-delay-800' : 'opacity-0'}`}>
             <div className="flex flex-col items-center space-y-4">
-              <Button variant="ghost" asChild className="group">
-                <a href="#features" className="text-muted-foreground hover:text-foreground transition-colors">
+              <Button variant="ghost" asChild className="group relative z-20">
+                <a href="#features" className="text-muted-foreground hover:text-foreground transition-colors inline-flex items-center">
                   <Play className="mr-2 h-4 w-4 group-hover:animate-pulse" />
                   Watch Demo
                   <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
