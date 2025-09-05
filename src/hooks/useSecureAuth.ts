@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
+import { canUserUseMFA } from '@/lib/mfa';
 
 interface UserProfile {
   id: string;
@@ -9,6 +10,10 @@ interface UserProfile {
   role: string;
   created_at: string;
   updated_at: string;
+  totp_secret?: string | null;
+  mfa_enabled?: boolean;
+  backup_codes?: string[];
+  mfa_setup_completed_at?: string | null;
 }
 
 interface AuthState {
@@ -18,6 +23,9 @@ interface AuthState {
   isAdmin: boolean;
   loading: boolean;
   error: string | null;
+  canUseMFA: boolean;
+  mfaEnabled: boolean;
+  isWalletUser: boolean;
 }
 
 export const useSecureAuth = () => {
@@ -28,6 +36,9 @@ export const useSecureAuth = () => {
     isAdmin: false,
     loading: true,
     error: null,
+    canUseMFA: false,
+    mfaEnabled: false,
+    isWalletUser: false,
   });
 
   const checkAdminAccess = async (): Promise<boolean> => {
@@ -58,6 +69,22 @@ export const useSecureAuth = () => {
     }
   };
 
+  const checkUserType = async (userId: string): Promise<{ canUseMFA: boolean; isWalletUser: boolean }> => {
+    try {
+      const canUse = await canUserUseMFA(userId);
+      return {
+        canUseMFA: canUse,
+        isWalletUser: !canUse
+      };
+    } catch (error) {
+      console.error('Error checking user type:', error);
+      return {
+        canUseMFA: false,
+        isWalletUser: true
+      };
+    }
+  };
+
   const updateAuthState = async (session: Session | null) => {
     setAuthState(prev => ({
       ...prev,
@@ -74,14 +101,18 @@ export const useSecureAuth = () => {
           isAdmin: false,
           loading: false,
           error: null,
+          canUseMFA: false,
+          mfaEnabled: false,
+          isWalletUser: false,
         });
         return;
       }
 
-      // Fetch user profile and admin status in parallel
-      const [profile, isAdmin] = await Promise.all([
+      // Fetch user profile, admin status, and user type in parallel
+      const [profile, isAdmin, userType] = await Promise.all([
         getCurrentUserProfile(),
         checkAdminAccess(),
+        checkUserType(session.user.id),
       ]);
 
       setAuthState({
@@ -91,6 +122,9 @@ export const useSecureAuth = () => {
         isAdmin,
         loading: false,
         error: null,
+        canUseMFA: userType.canUseMFA,
+        mfaEnabled: profile?.mfa_enabled || false,
+        isWalletUser: userType.isWalletUser,
       });
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Authentication error';
