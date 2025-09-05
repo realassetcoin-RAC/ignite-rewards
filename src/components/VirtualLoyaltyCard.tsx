@@ -40,11 +40,36 @@ export const VirtualLoyaltyCard: React.FC = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      const { data, error } = await (supabase as any)
-        .from('user_loyalty_cards')
-        .select('*')
-        .eq('user_id', user.id)
-        .single();
+      // Try to load from api.user_loyalty_cards first, then fallback to public.user_loyalty_cards
+      let data, error;
+      
+      try {
+        const result = await (supabase as any)
+          .from('api.user_loyalty_cards')
+          .select('*')
+          .eq('user_id', user.id)
+          .single();
+        
+        data = result.data;
+        error = result.error;
+      } catch (apiError) {
+        console.error('Failed to load from api.user_loyalty_cards, trying public schema:', apiError);
+        
+        // Fallback to public schema
+        try {
+          const result = await (supabase as any)
+            .from('public.user_loyalty_cards')
+            .select('*')
+            .eq('user_id', user.id)
+            .single();
+          
+          data = result.data;
+          error = result.error;
+        } catch (publicError) {
+          console.error('Failed to load from public.user_loyalty_cards:', publicError);
+          error = publicError;
+        }
+      }
 
       if (error && error.code !== 'PGRST116') {
         console.error('Error loading loyalty card:', error);
@@ -82,39 +107,96 @@ export const VirtualLoyaltyCard: React.FC = () => {
     try {
       setCreating(true);
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      // Generate loyalty number using the database function
-      const { data: loyaltyNumber, error: numberError } = await (supabase as any)
-        .rpc('generate_loyalty_number', { user_email: user.email || '' });
-
-      if (numberError) {
-        console.error('Error generating loyalty number:', numberError);
+      if (!user) {
         toast({
-          title: "Error",
-          description: "Failed to generate loyalty number.",
+          title: "Authentication Error",
+          description: "Please log in to create a virtual card.",
           variant: "destructive",
         });
         return;
       }
 
-      const { data, error } = await (supabase as any)
-        .from('user_loyalty_cards')
-        .insert({
-          user_id: user.id,
-          loyalty_number: loyaltyNumber,
-          full_name: formData.full_name.trim(),
-          email: user.email || '',
-          phone: formData.phone.trim() || null,
-        })
-        .select()
-        .single();
+      // Generate loyalty number using the database function
+      let loyaltyNumber;
+      try {
+        const { data: generatedNumber, error: numberError } = await (supabase as any)
+          .rpc('generate_loyalty_number', { user_email: user.email || '' });
+
+        if (numberError) {
+          console.error('Error generating loyalty number:', numberError);
+          // Fallback: generate a simple loyalty number
+          const initial = (user.email || 'U').charAt(0).toUpperCase();
+          const randomDigits = Math.floor(Math.random() * 10000000).toString().padStart(7, '0');
+          loyaltyNumber = initial + randomDigits;
+          console.log('Using fallback loyalty number:', loyaltyNumber);
+        } else if (!generatedNumber) {
+          console.error('No loyalty number generated');
+          // Fallback: generate a simple loyalty number
+          const initial = (user.email || 'U').charAt(0).toUpperCase();
+          const randomDigits = Math.floor(Math.random() * 10000000).toString().padStart(7, '0');
+          loyaltyNumber = initial + randomDigits;
+          console.log('Using fallback loyalty number:', loyaltyNumber);
+        } else {
+          loyaltyNumber = generatedNumber;
+        }
+      } catch (rpcError) {
+        console.error('RPC call failed, using fallback:', rpcError);
+        // Fallback: generate a simple loyalty number
+        const initial = (user.email || 'U').charAt(0).toUpperCase();
+        const randomDigits = Math.floor(Math.random() * 10000000).toString().padStart(7, '0');
+        loyaltyNumber = initial + randomDigits;
+        console.log('Using fallback loyalty number:', loyaltyNumber);
+      }
+
+      // Try to insert into api.user_loyalty_cards first, then fallback to public.user_loyalty_cards
+      let data, error;
+      
+      try {
+        const result = await (supabase as any)
+          .from('api.user_loyalty_cards')
+          .insert({
+            user_id: user.id,
+            loyalty_number: loyaltyNumber,
+            full_name: formData.full_name.trim(),
+            email: user.email || '',
+            phone: formData.phone.trim() || null,
+          })
+          .select()
+          .single();
+        
+        data = result.data;
+        error = result.error;
+      } catch (apiError) {
+        console.error('Failed to insert into api.user_loyalty_cards, trying public schema:', apiError);
+        
+        // Fallback to public schema
+        try {
+          const result = await (supabase as any)
+            .from('public.user_loyalty_cards')
+            .insert({
+              user_id: user.id,
+              loyalty_number: loyaltyNumber,
+              full_name: formData.full_name.trim(),
+              email: user.email || '',
+              phone: formData.phone.trim() || null,
+            })
+            .select()
+            .single();
+          
+          data = result.data;
+          error = result.error;
+        } catch (publicError) {
+          console.error('Failed to insert into public.user_loyalty_cards:', publicError);
+          error = publicError;
+        }
+      }
 
       if (error) {
         console.error('Error creating loyalty card:', error);
+        const errorMessage = error.message || 'Failed to create loyalty card';
         toast({
           title: "Error",
-          description: "Failed to create loyalty card.",
+          description: `Failed to create virtual card: ${errorMessage}`,
           variant: "destructive",
         });
         return;
@@ -128,11 +210,12 @@ export const VirtualLoyaltyCard: React.FC = () => {
         title: "Success",
         description: "Your virtual loyalty card has been created!",
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error creating loyalty card:', error);
+      const errorMessage = error?.message || 'Failed to create virtual card';
       toast({
         title: "Error",
-        description: "Failed to create loyalty card.",
+        description: `Failed to create virtual card: ${errorMessage}`,
         variant: "destructive",
       });
     } finally {
