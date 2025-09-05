@@ -12,6 +12,7 @@ import AdminPanel from "./pages/AdminPanel";
 import Auth from "./pages/Auth";
 import MerchantDashboard from "./pages/MerchantDashboard";
 import NotFound from "./pages/NotFound";
+import UserDashboard from "./pages/UserDashboard";
 
 const queryClient = new QueryClient();
 
@@ -25,7 +26,7 @@ const App = () => (
           <Route path="/" element={<Index />} />
           <Route path="/auth" element={<Auth />} />
           <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/user" element={<Dashboard />} />
+          <Route path="/user" element={<UserDashboard />} />
           <Route path="/privacy" element={<Privacy />} />
           <Route path="/partners" element={<Partners />} />
           <Route path="/admin-panel" element={<AdminPanel />} />
