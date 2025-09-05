@@ -18,12 +18,7 @@ import AdminDashboardWrapper from "@/components/AdminDashboardWrapper";
 import { useSecureAuth } from "@/hooks/useSecureAuth";
 import { checkRateLimit, sanitizeErrorMessage } from "@/utils/validation";
 import ErrorBoundary from "@/components/ErrorBoundary";
-// Import the fix utilities (makes them available globally)
-import "@/utils/adminAuthFix";
-import "@/utils/testAdminAccess";
-import "@/utils/adminDashboardFix";
-import "@/utils/adminDashboardLoadingFix";
-import "@/utils/enhancedAdminLoading";
+// Dev-only: load fix utilities for diagnostics without exposing in production
 import { 
   Shield, 
   CreditCard, 
@@ -52,6 +47,25 @@ const AdminPanel = () => {
   const { toast } = useToast();
   const hasLoadedStatsRef = useRef(false);
   const hasShownWarningRef = useRef(false);
+
+  // Dev-only: load fix utilities without exposing them in production builds
+  useEffect(() => {
+    if (import.meta?.env?.DEV) {
+      (async () => {
+        try {
+          await Promise.all([
+            import('@/utils/adminAuthFix'),
+            import('@/utils/testAdminAccess'),
+            import('@/utils/adminDashboardFix'),
+            import('@/utils/adminDashboardLoadingFix'),
+            import('@/utils/enhancedAdminLoading')
+          ]);
+        } catch (e) {
+          console.warn('Dev fix utilities failed to load', e);
+        }
+      })();
+    }
+  }, []);
 
   useEffect(() => {
     // Only load stats if we have admin access - the wrapper handles auth checks

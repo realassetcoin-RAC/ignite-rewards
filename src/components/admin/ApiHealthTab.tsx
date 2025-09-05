@@ -42,6 +42,21 @@ function isMissingRpcError(error: any): boolean {
   );
 }
 
+function isNonCriticalTableError(error: any): boolean {
+  const code = (error?.code || '').toString().toUpperCase();
+  const message = (error?.message || '').toString();
+  const details = (error?.details || '').toString();
+  const combined = `${message} ${details}`;
+  return (
+    code === '42P01' || // undefined_table
+    code === '42501' || // insufficient_privilege
+    /permission denied/i.test(combined) ||
+    /row[- ]level security/i.test(combined) ||
+    /relation .* does not exist/i.test(combined) ||
+    /table .* does not exist/i.test(combined)
+  );
+}
+
 const DEFAULT_INTERVAL_MS = 30000;
 
 const ApiHealthTab = () => {
@@ -107,11 +122,15 @@ const ApiHealthTab = () => {
         try {
           const { count, error } = await supabase.from(table).select("*", { count: "exact", head: true });
           const latencyMs = performance.now() - start;
-          if (error) return { id: `table-${table}`, name: `Table ${table}`, status: "error", latencyMs, message: error.message };
+          if (error) {
+            const status: HealthStatus = isNonCriticalTableError(error) ? "warn" : "error";
+            return { id: `table-${table}`, name: `Table ${table}`, status, latencyMs, message: error.message };
+          }
           return { id: `table-${table}`, name: `Table ${table}`, status: "ok", latencyMs, message: `Count accessible (${count ?? 0})` };
         } catch (e: any) {
           const latencyMs = performance.now() - start;
-          return { id: `table-${table}`, name: `Table ${table}`, status: "error", latencyMs, message: String(e?.message || e) };
+          const status: HealthStatus = isNonCriticalTableError(e) ? "warn" : "error";
+          return { id: `table-${table}`, name: `Table ${table}`, status, latencyMs, message: String(e?.message || e) };
         }
       }
     }));
