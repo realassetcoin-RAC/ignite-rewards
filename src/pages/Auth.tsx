@@ -7,9 +7,9 @@ const Auth = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // If not loading and user is authenticated, redirect to home
+    // If not loading and user is authenticated, redirect to /user
     if (!loading && user) {
-      navigate('/', { replace: true });
+      navigate('/user', { replace: true });
     }
   }, [user, loading, navigate]);
 
