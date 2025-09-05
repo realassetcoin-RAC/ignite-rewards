@@ -244,7 +244,7 @@ const MerchantSignupModal: React.FC<MerchantSignupModalProps> = ({ isOpen, onClo
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-4xl max-h-[90vh] overflow-y-auto bg-card/95 backdrop-blur-xl border-border/50">
+      <DialogContent className="sm:max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-center text-2xl font-bold bg-gradient-to-r from-primary to-primary-glow bg-clip-text text-transparent">
             <Building2 className="inline-block mr-2 h-6 w-6 text-primary" />

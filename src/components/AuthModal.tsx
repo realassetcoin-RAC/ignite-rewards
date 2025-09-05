@@ -302,12 +302,12 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
   return (
     <>
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md bg-card/95 backdrop-blur-xl border-border/50">
+      <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="text-center text-2xl font-bold bg-gradient-to-r from-primary to-primary-glow bg-clip-text text-transparent">
             Welcome to PointBridge
           </DialogTitle>
-          <DialogDescription className="text-center text-muted-foreground">
+          <DialogDescription className="text-center">
             Sign in to your account or create a new one
           </DialogDescription>
         </DialogHeader>
@@ -323,7 +323,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
             <Button 
               type="button"
               variant="outline"
-              className="w-full border-border/50 hover:bg-accent/50 hover:border-primary/50 transition-all duration-300"
+              className="w-full border-border hover:bg-accent"
               onClick={handleGoogleSignIn}
               disabled={googleLoading || loading}
             >
@@ -353,7 +353,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
             <Button 
               type="button"
               variant="outline"
-              className="w-full border-border/50 hover:bg-accent/50 hover:border-primary/50 transition-all duration-300"
+              className="w-full border-border hover:bg-accent"
               onClick={handleWalletConnect}
               disabled={loading || googleLoading}
             >
@@ -369,7 +369,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                 <Separator className="w-full" />
               </div>
               <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-card px-2 text-muted-foreground">
+                <span className="bg-popover px-2 text-muted-foreground">
                   Or continue with email
                 </span>
               </div>
@@ -385,7 +385,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="Enter your email"
                   required
-                  className="bg-background/50 border-border/50 focus:border-primary/50 transition-colors duration-300"
+                  className="bg-input border-border"
                 />
               </div>
               <div className="space-y-2">
@@ -397,22 +397,16 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Enter your password"
                   required
-                  className="bg-background/50 border-border/50 focus:border-primary/50 transition-colors duration-300"
+                  className="bg-input border-border"
                 />
               </div>
               <Button 
                 type="submit" 
-                className="w-full relative overflow-hidden group transition-all duration-300 transform hover:scale-[1.02]" 
+                className="w-full bg-primary hover:bg-primary/90 text-primary-foreground" 
                 disabled={loading || googleLoading}
-                style={{
-                  background: 'linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary-glow)))',
-                }}
               >
-                <span className="relative z-10 flex items-center justify-center text-primary-foreground">
-                  {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  Sign In
-                </span>
-                <div className="absolute inset-0 bg-gradient-to-r from-primary-glow to-primary opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Sign In
               </Button>
             </form>
           </TabsContent>
@@ -422,7 +416,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
             <Button 
               type="button"
               variant="outline"
-              className="w-full border-border/50 hover:bg-accent/50 hover:border-primary/50 transition-all duration-300"
+              className="w-full border-border hover:bg-accent"
               onClick={handleGoogleSignIn}
               disabled={googleLoading || loading}
             >
@@ -452,7 +446,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
             <Button 
               type="button"
               variant="outline"
-              className="w-full border-border/50 hover:bg-accent/50 hover:border-primary/50 transition-all duration-300"
+              className="w-full border-border hover:bg-accent"
               onClick={handleWalletConnect}
               disabled={loading || googleLoading}
             >
@@ -468,7 +462,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                 <Separator className="w-full" />
               </div>
               <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-card px-2 text-muted-foreground">
+                <span className="bg-popover px-2 text-muted-foreground">
                   Or continue with email
                 </span>
               </div>
@@ -484,7 +478,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="Enter your email"
                   required
-                  className="bg-background/50 border-border/50 focus:border-primary/50 transition-colors duration-300"
+                  className="bg-input border-border"
                 />
               </div>
               <div className="space-y-2">
@@ -497,22 +491,16 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                   placeholder="Create a password (min. 6 characters)"
                   required
                   minLength={6}
-                  className="bg-background/50 border-border/50 focus:border-primary/50 transition-colors duration-300"
+                  className="bg-input border-border"
                 />
               </div>
               <Button 
                 type="submit" 
-                className="w-full relative overflow-hidden group transition-all duration-300 transform hover:scale-[1.02]" 
+                className="w-full bg-primary hover:bg-primary/90 text-primary-foreground" 
                 disabled={loading || googleLoading}
-                style={{
-                  background: 'linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary-glow)))',
-                }}
               >
-                <span className="relative z-10 flex items-center justify-center text-primary-foreground">
-                  {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  Sign Up
-                </span>
-                <div className="absolute inset-0 bg-gradient-to-r from-primary-glow to-primary opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Sign Up
               </Button>
             </form>
           </TabsContent>
