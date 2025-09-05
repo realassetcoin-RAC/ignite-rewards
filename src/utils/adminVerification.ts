@@ -204,18 +204,19 @@ export async function shouldAllowAdminAccess(): Promise<boolean> {
 export async function robustAdminCheck(): Promise<boolean> {
   console.group('🔍 Robust Admin Check');
   try {
-    // First, try the comprehensive verification
-    console.log('Step 1: Running comprehensive verification...');
-    const result = await verifyAdminAccess();
-    console.log('Verification result:', result);
+    // Import the enhanced admin check from the fix utility
+    const { enhancedAdminCheck } = await import('./adminDashboardFix');
     
-    if (result.success) {
-      console.log('✅ Admin access granted via comprehensive verification');
+    console.log('Step 1: Running enhanced admin check...');
+    const result = await enhancedAdminCheck();
+    
+    if (result) {
+      console.log('✅ Admin access granted via enhanced admin check');
       console.groupEnd();
       return true;
     }
     
-    // If verification fails, try a simplified check for specific known admin users
+    // Fallback: Check known admin emails
     console.log('Step 2: Checking known admin emails fallback...');
     const { data: { user } } = await supabase.auth.getUser();
     console.log('Current user:', user?.email);

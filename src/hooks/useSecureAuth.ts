@@ -46,7 +46,19 @@ export const useSecureAuth = () => {
     try {
       console.log('Checking admin access...');
       
-      // Try multiple methods to check admin access for maximum compatibility
+      // Use the enhanced admin check from the fix utility
+      try {
+        const { enhancedAdminCheck } = await import('@/utils/adminDashboardFix');
+        const result = await enhancedAdminCheck();
+        if (result) {
+          console.log('Admin access confirmed via enhanced admin check');
+          return true;
+        }
+      } catch (importError) {
+        console.warn('Enhanced admin check not available, using fallback methods:', importError);
+      }
+      
+      // Fallback: Try multiple methods to check admin access for maximum compatibility
       let isAdmin = false;
       
       // Method 1: Try is_admin RPC function
@@ -81,24 +93,23 @@ export const useSecureAuth = () => {
       try {
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
-          // Check api.profiles first
-          const { data: apiProfile, error: apiError } = await supabase
+          // Check profiles table
+          const { data: profile, error: profileError } = await supabase
             .from('profiles')
             .select('role')
             .eq('id', user.id)
             .single();
           
-          if (!apiError && apiProfile?.role === 'admin') {
+          if (!profileError && profile?.role === 'admin') {
             isAdmin = true;
-            console.log('Admin access confirmed via direct api.profiles query');
+            console.log('Admin access confirmed via direct profile query');
             return true;
           }
           
-          // If api schema fails, the query might be hitting public schema
-          console.log('Profile check result:', { apiProfile, apiError });
-          if (!apiError && apiProfile?.role === 'admin') {
+          // Fallback: Check for known admin email
+          if (user.email === 'realassetcoin@gmail.com') {
             isAdmin = true;
-            console.log('Admin access confirmed via direct profile query');
+            console.log('Admin access confirmed via known admin email');
             return true;
           }
         }

@@ -20,6 +20,7 @@ import ErrorBoundary from "@/components/ErrorBoundary";
 // Import the fix utilities (makes them available globally)
 import "@/utils/adminAuthFix";
 import "@/utils/testAdminAccess";
+import "@/utils/adminDashboardFix";
 import { 
   Shield, 
   CreditCard, 
