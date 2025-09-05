@@ -150,11 +150,11 @@ const EnhancedHeroSection = () => {
                         </Avatar>
                       </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent className="w-56" align="end" forceMount>
+                    <DropdownMenuContent className="w-56 max-w-[90vw]" align="end" forceMount>
                       <div className="flex items-center justify-start gap-2 p-2">
-                        <div className="flex flex-col space-y-1 leading-none">
-                          <p className="font-medium text-sm">{profile?.full_name || "User"}</p>
-                          <p className="w-[200px] truncate text-xs text-muted-foreground">
+                        <div className="flex flex-col space-y-1 leading-none min-w-0">
+                          <p className="font-medium text-sm truncate">{profile?.full_name || "User"}</p>
+                          <p className="truncate text-xs text-muted-foreground">
                             {user.email}
                           </p>
                         </div>

@@ -57,26 +57,31 @@ const Dashboard = () => {
       {/* Dashboard Content */}
       <main className="container mx-auto px-4 py-8">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-5">
-            <TabsTrigger value="loyalty" className="flex items-center gap-2">
-              <CreditCard className="h-4 w-4" />
+          <TabsList className="grid w-full grid-cols-5 gap-1">
+            <TabsTrigger value="loyalty" className="flex items-center gap-1 px-2 py-1.5">
+              <CreditCard className="h-4 w-4 flex-shrink-0" />
               <span className="hidden md:inline">Loyalty Card</span>
+              <span className="md:hidden text-xs">Card</span>
             </TabsTrigger>
-            <TabsTrigger value="transactions" className="flex items-center gap-2">
-              <Activity className="h-4 w-4" />
+            <TabsTrigger value="transactions" className="flex items-center gap-1 px-2 py-1.5">
+              <Activity className="h-4 w-4 flex-shrink-0" />
               <span className="hidden md:inline">Transactions</span>
+              <span className="md:hidden text-xs">Txns</span>
             </TabsTrigger>
-            <TabsTrigger value="points" className="flex items-center gap-2">
-              <TrendingUp className="h-4 w-4" />
+            <TabsTrigger value="points" className="flex items-center gap-1 px-2 py-1.5">
+              <TrendingUp className="h-4 w-4 flex-shrink-0" />
               <span className="hidden md:inline">Points Graph</span>
+              <span className="md:hidden text-xs">Points</span>
             </TabsTrigger>
-            <TabsTrigger value="profile" className="flex items-center gap-2">
-              <User className="h-4 w-4" />
+            <TabsTrigger value="profile" className="flex items-center gap-1 px-2 py-1.5">
+              <User className="h-4 w-4 flex-shrink-0" />
               <span className="hidden md:inline">Profile</span>
+              <span className="md:hidden text-xs">Profile</span>
             </TabsTrigger>
-            <TabsTrigger value="referrals" className="flex items-center gap-2">
-              <Share2 className="h-4 w-4" />
+            <TabsTrigger value="referrals" className="flex items-center gap-1 px-2 py-1.5">
+              <Share2 className="h-4 w-4 flex-shrink-0" />
               <span className="hidden md:inline">Referrals</span>
+              <span className="md:hidden text-xs">Refs</span>
             </TabsTrigger>
           </TabsList>
 

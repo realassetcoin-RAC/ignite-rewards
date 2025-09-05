@@ -115,19 +115,19 @@ const AdminPanel = () => {
     <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="border-b border-border bg-card">
-        <div className="max-w-7xl mx-auto px-6 py-4">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-2 sm:space-x-4 min-w-0">
               <div className="flex items-center space-x-2">
-                <Shield className="h-8 w-8 text-primary" />
-                <h1 className="text-2xl font-bold text-foreground">PointBridge Admin</h1>
+                <Shield className="h-6 w-6 sm:h-8 sm:w-8 text-primary flex-shrink-0" />
+                <h1 className="text-lg sm:text-2xl font-bold text-foreground truncate">PointBridge Admin</h1>
               </div>
-              <Badge variant="secondary" className="bg-primary/10 text-primary">
+              <Badge variant="secondary" className="bg-primary/10 text-primary hidden sm:inline-flex">
                 Administrator
               </Badge>
             </div>
             
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-2 sm:space-x-4 flex-shrink-0">
               <Button
                 variant="ghost"
                 size="sm"
@@ -219,30 +219,36 @@ const AdminPanel = () => {
 
         {/* Main Admin Tabs */}
         <Tabs defaultValue="cards" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4 lg:w-auto lg:grid-cols-6">
-            <TabsTrigger value="cards" className="flex items-center space-x-2">
-              <CreditCard className="h-4 w-4" />
-              <span>Virtual Cards</span>
+          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-1">
+            <TabsTrigger value="cards" className="flex items-center space-x-1 px-2 py-1.5">
+              <CreditCard className="h-4 w-4 flex-shrink-0" />
+              <span className="hidden sm:inline">Virtual Cards</span>
+              <span className="sm:hidden text-xs">Cards</span>
             </TabsTrigger>
-            <TabsTrigger value="merchants" className="flex items-center space-x-2">
-              <Store className="h-4 w-4" />
-              <span>Merchants</span>
+            <TabsTrigger value="merchants" className="flex items-center space-x-1 px-2 py-1.5">
+              <Store className="h-4 w-4 flex-shrink-0" />
+              <span className="hidden sm:inline">Merchants</span>
+              <span className="sm:hidden text-xs">Shops</span>
             </TabsTrigger>
-            <TabsTrigger value="referrals" className="flex items-center space-x-2">
-              <Shield className="h-4 w-4" />
-              <span>Referrals</span>
+            <TabsTrigger value="referrals" className="flex items-center space-x-1 px-2 py-1.5">
+              <Shield className="h-4 w-4 flex-shrink-0" />
+              <span className="hidden sm:inline">Referrals</span>
+              <span className="sm:hidden text-xs">Refs</span>
             </TabsTrigger>
-            <TabsTrigger value="users" className="flex items-center space-x-2">
-              <Users className="h-4 w-4" />
-              <span>Users</span>
+            <TabsTrigger value="users" className="flex items-center space-x-1 px-2 py-1.5">
+              <Users className="h-4 w-4 flex-shrink-0" />
+              <span className="hidden sm:inline">Users</span>
+              <span className="sm:hidden text-xs">Users</span>
             </TabsTrigger>
-            <TabsTrigger value="analytics" className="flex items-center space-x-2">
-              <BarChart3 className="h-4 w-4" />
-              <span>Analytics</span>
+            <TabsTrigger value="analytics" className="flex items-center space-x-1 px-2 py-1.5">
+              <BarChart3 className="h-4 w-4 flex-shrink-0" />
+              <span className="hidden sm:inline">Analytics</span>
+              <span className="sm:hidden text-xs">Stats</span>
             </TabsTrigger>
-            <TabsTrigger value="settings" className="flex items-center space-x-2">
-              <Settings className="h-4 w-4" />
-              <span>Settings</span>
+            <TabsTrigger value="settings" className="flex items-center space-x-1 px-2 py-1.5">
+              <Settings className="h-4 w-4 flex-shrink-0" />
+              <span className="hidden sm:inline">Settings</span>
+              <span className="sm:hidden text-xs">Config</span>
             </TabsTrigger>
           </TabsList>
 
