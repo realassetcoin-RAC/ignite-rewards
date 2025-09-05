@@ -74,14 +74,15 @@ const VirtualCardManager = ({ onStatsUpdate }: VirtualCardManagerProps) => {
       setLoading(true);
       
       // Use enhanced loading with fallback methods
-      const { loadVirtualCardsWithFallback } = await import('@/utils/adminDashboardLoadingFix');
-      const result = await loadVirtualCardsWithFallback();
+      const { loadVirtualCards } = await import('@/utils/enhancedAdminLoading');
+      const result = await loadVirtualCards();
       
       if (result.success) {
         setCards(result.data || []);
         if (result.data && result.data.length === 0) {
           console.log('No virtual cards found, but loading was successful');
         }
+        console.log(`✅ Virtual cards loaded from ${result.source}`);
       } else {
         console.error('Failed to load virtual cards:', result.errors);
         toast({

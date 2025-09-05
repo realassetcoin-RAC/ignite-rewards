@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard Load Error Fix Tool</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            border-radius: 8px;
+            padding: 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #2563eb;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 1px solid #e5e7eb;
+            border-radius: 6px;
+        }
+        .section h2 {
+            color: #374151;
+            margin-top: 0;
+        }
+        button {
+            background: #2563eb;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 5px;
+        }
+        button:hover {
+            background: #1d4ed8;
+        }
+        button:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+        }
+        .success {
+            color: #059669;
+            background: #d1fae5;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .error {
+            color: #dc2626;
+            background: #fee2e2;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .warning {
+            color: #d97706;
+            background: #fef3c7;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .info {
+            color: #2563eb;
+            background: #dbeafe;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .log {
+            background: #f9fafb;
+            border: 1px solid #e5e7eb;
+            border-radius: 4px;
+            padding: 15px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            max-height: 300px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+        }
+        .status {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+        .status.success { background: #d1fae5; color: #059669; }
+        .status.error { background: #fee2e2; color: #dc2626; }
+        .status.warning { background: #fef3c7; color: #d97706; }
+        .status.info { background: #dbeafe; color: #2563eb; }
+        .instructions {
+            background: #f0f9ff;
+            border-left: 4px solid #2563eb;
+            padding: 15px;
+            margin: 20px 0;
+        }
+        .instructions h3 {
+            margin-top: 0;
+            color: #1e40af;
+        }
+        .instructions ol {
+            margin: 10px 0;
+            padding-left: 20px;
+        }
+        .instructions li {
+            margin: 5px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 Admin Dashboard Load Error Fix Tool</h1>
+        
+        <div class="instructions">
+            <h3>📋 Instructions</h3>
+            <ol>
+                <li><strong>Login as admin</strong> (realassetcoin@gmail.com) in your application</li>
+                <li><strong>Navigate to admin dashboard</strong> (/admin-panel)</li>
+                <li><strong>Open browser console</strong> (F12 → Console)</li>
+                <li><strong>Run the comprehensive fix</strong> using the button below</li>
+                <li><strong>Refresh the admin dashboard</strong> to see the results</li>
+            </ol>
+        </div>
+
+        <div class="section">
+            <h2>🚀 Quick Fix</h2>
+            <p>Run the comprehensive fix to resolve all admin dashboard loading errors:</p>
+            <button onclick="runComprehensiveFix()" id="comprehensiveFixBtn">
+                Run Comprehensive Fix
+            </button>
+            <div id="comprehensiveFixResult"></div>
+        </div>
+
+        <div class="section">
+            <h2>🔍 Individual Component Tests</h2>
+            <p>Test individual components to identify specific issues:</p>
+            
+            <button onclick="testAdminAccess()">Test Admin Access</button>
+            <button onclick="testVirtualCards()">Test Virtual Cards</button>
+            <button onclick="testMerchants()">Test Merchants</button>
+            <button onclick="testReferralCampaigns()">Test Referral Campaigns</button>
+            <button onclick="testUserReferrals()">Test User Referrals</button>
+            <button onclick="testAdminStats()">Test Admin Stats</button>
+            
+            <div id="individualTestResults"></div>
+        </div>
+
+        <div class="section">
+            <h2>📊 Database Function Tests</h2>
+            <p>Test database functions to ensure they're working correctly:</p>
+            
+            <button onclick="testDatabaseFunctions()">Test Database Functions</button>
+            <button onclick="testRLSPolicies()">Test RLS Policies</button>
+            <button onclick="testTablePermissions()">Test Table Permissions</button>
+            
+            <div id="databaseTestResults"></div>
+        </div>
+
+        <div class="section">
+            <h2>📝 Activity Log</h2>
+            <div id="activityLog" class="log">Ready to run tests...\n</div>
+            <button onclick="clearLog()">Clear Log</button>
+        </div>
+
+        <div class="section">
+            <h2>🆘 Manual Database Fix</h2>
+            <p>If the automatic fix doesn't work, apply the manual database fix:</p>
+            <div class="info">
+                <strong>Steps:</strong>
+                <ol>
+                    <li>Open Supabase Dashboard → SQL Editor</li>
+                    <li>Copy and paste the contents of <code>COMPREHENSIVE_LOAD_ERROR_FIX.sql</code></li>
+                    <li>Run the script</li>
+                    <li>Refresh your application</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let logElement = document.getElementById('activityLog');
+        
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const logMessage = `[${timestamp}] ${message}\n`;
+            logElement.textContent += logMessage;
+            logElement.scrollTop = logElement.scrollHeight;
+            
+            // Add visual indicator
+            const statusClass = type === 'error' ? 'error' : type === 'success' ? 'success' : type === 'warning' ? 'warning' : 'info';
+            console.log(`%c${message}`, `color: ${type === 'error' ? 'red' : type === 'success' ? 'green' : type === 'warning' ? 'orange' : 'blue'}`);
+        }
+        
+        function clearLog() {
+            logElement.textContent = 'Log cleared...\n';
+        }
+        
+        function showResult(elementId, message, type = 'info') {
+            const element = document.getElementById(elementId);
+            const statusClass = type === 'error' ? 'error' : type === 'success' ? 'success' : type === 'warning' ? 'warning' : 'info';
+            element.innerHTML = `<div class="${statusClass}">${message}</div>`;
+        }
+        
+        async function runComprehensiveFix() {
+            const btn = document.getElementById('comprehensiveFixBtn');
+            btn.disabled = true;
+            btn.textContent = 'Running Fix...';
+            
+            log('🚀 Starting comprehensive admin dashboard fix...', 'info');
+            
+            try {
+                // Check if we're in the admin dashboard context
+                if (typeof window.enhancedAdminLoading === 'undefined') {
+                    throw new Error('Enhanced admin loading utilities not found. Make sure you are on the admin dashboard page.');
+                }
+                
+                const result = await window.enhancedAdminLoading.fixAdminDashboardLoading();
+                
+                if (result.success) {
+                    log('✅ Comprehensive fix completed successfully!', 'success');
+                    showResult('comprehensiveFixResult', 
+                        `✅ Fix completed successfully!<br>
+                         Admin Access: ${result.data.adminAccess ? '✅' : '❌'}<br>
+                         Virtual Cards: ${result.data.virtualCards ? '✅' : '❌'}<br>
+                         Merchants: ${result.data.merchants ? '✅' : '❌'}<br>
+                         Referral Campaigns: ${result.data.referralCampaigns ? '✅' : '❌'}<br>
+                         User Referrals: ${result.data.userReferrals ? '✅' : '❌'}<br>
+                         Stats: ${result.data.stats ? '✅' : '❌'}`, 'success');
+                } else {
+                    log(`❌ Fix failed: ${result.message}`, 'error');
+                    showResult('comprehensiveFixResult', `❌ Fix failed: ${result.message}`, 'error');
+                }
+                
+            } catch (error) {
+                log(`❌ Error running comprehensive fix: ${error.message}`, 'error');
+                showResult('comprehensiveFixResult', `❌ Error: ${error.message}`, 'error');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Run Comprehensive Fix';
+            }
+        }
+        
+        async function testAdminAccess() {
+            log('🔍 Testing admin access...', 'info');
+            try {
+                if (typeof window.enhancedAdminLoading === 'undefined') {
+                    throw new Error('Enhanced admin loading utilities not found');
+                }
+                
+                const result = await window.enhancedAdminLoading.verifyAdminAccess();
+                
+                if (result.success) {
+                    log(`✅ Admin access verified via ${result.source}`, 'success');
+                    showResult('individualTestResults', `✅ Admin access verified via ${result.source}`, 'success');
+                } else {
+                    log(`❌ Admin access failed: ${result.message}`, 'error');
+                    showResult('individualTestResults', `❌ Admin access failed: ${result.message}`, 'error');
+                }
+            } catch (error) {
+                log(`❌ Error testing admin access: ${error.message}`, 'error');
+                showResult('individualTestResults', `❌ Error: ${error.message}`, 'error');
+            }
+        }
+        
+        async function testVirtualCards() {
+            log('🔍 Testing virtual cards loading...', 'info');
+            try {
+                if (typeof window.enhancedAdminLoading === 'undefined') {
+                    throw new Error('Enhanced admin loading utilities not found');
+                }
+                
+                const result = await window.enhancedAdminLoading.loadVirtualCards();
+                
+                if (result.success) {
+                    log(`✅ Virtual cards loaded from ${result.source} (${result.data.length} items)`, 'success');
+                    showResult('individualTestResults', `✅ Virtual cards loaded from ${result.source} (${result.data.length} items)`, 'success');
+                } else {
+                    log(`❌ Virtual cards failed: ${result.message}`, 'error');
+                    showResult('individualTestResults', `❌ Virtual cards failed: ${result.message}`, 'error');
+                }
+            } catch (error) {
+                log(`❌ Error testing virtual cards: ${error.message}`, 'error');
+                showResult('individualTestResults', `❌ Error: ${error.message}`, 'error');
+            }
+        }
+        
+        async function testMerchants() {
+            log('🔍 Testing merchants loading...', 'info');
+            try {
+                if (typeof window.enhancedAdminLoading === 'undefined') {
+                    throw new Error('Enhanced admin loading utilities not found');
+                }
+                
+                const result = await window.enhancedAdminLoading.loadMerchants();
+                
+                if (result.success) {
+                    log(`✅ Merchants loaded from ${result.source} (${result.data.length} items)`, 'success');
+                    showResult('individualTestResults', `✅ Merchants loaded from ${result.source} (${result.data.length} items)`, 'success');
+                } else {
+                    log(`❌ Merchants failed: ${result.message}`, 'error');
+                    showResult('individualTestResults', `❌ Merchants failed: ${result.message}`, 'error');
+                }
+            } catch (error) {
+                log(`❌ Error testing merchants: ${error.message}`, 'error');
+                showResult('individualTestResults', `❌ Error: ${error.message}`, 'error');
+            }
+        }
+        
+        async function testReferralCampaigns() {
+            log('🔍 Testing referral campaigns loading...', 'info');
+            try {
+                if (typeof window.enhancedAdminLoading === 'undefined') {
+                    throw new Error('Enhanced admin loading utilities not found');
+                }
+                
+                const result = await window.enhancedAdminLoading.loadReferralCampaigns();
+                
+                if (result.success) {
+                    log(`✅ Referral campaigns loaded from ${result.source} (${result.data.length} items)`, 'success');
+                    showResult('individualTestResults', `✅ Referral campaigns loaded from ${result.source} (${result.data.length} items)`, 'success');
+                } else {
+                    log(`❌ Referral campaigns failed: ${result.message}`, 'error');
+                    showResult('individualTestResults', `❌ Referral campaigns failed: ${result.message}`, 'error');
+                }
+            } catch (error) {
+                log(`❌ Error testing referral campaigns: ${error.message}`, 'error');
+                showResult('individualTestResults', `❌ Error: ${error.message}`, 'error');
+            }
+        }
+        
+        async function testUserReferrals() {
+            log('🔍 Testing user referrals loading...', 'info');
+            try {
+                if (typeof window.enhancedAdminLoading === 'undefined') {
+                    throw new Error('Enhanced admin loading utilities not found');
+                }
+                
+                const result = await window.enhancedAdminLoading.loadUserReferrals();
+                
+                if (result.success) {
+                    log(`✅ User referrals loaded from ${result.source} (${result.data.length} items)`, 'success');
+                    showResult('individualTestResults', `✅ User referrals loaded from ${result.source} (${result.data.length} items)`, 'success');
+                } else {
+                    log(`❌ User referrals failed: ${result.message}`, 'error');
+                    showResult('individualTestResults', `❌ User referrals failed: ${result.message}`, 'error');
+                }
+            } catch (error) {
+                log(`❌ Error testing user referrals: ${error.message}`, 'error');
+                showResult('individualTestResults', `❌ Error: ${error.message}`, 'error');
+            }
+        }
+        
+        async function testAdminStats() {
+            log('🔍 Testing admin stats loading...', 'info');
+            try {
+                if (typeof window.enhancedAdminLoading === 'undefined') {
+                    throw new Error('Enhanced admin loading utilities not found');
+                }
+                
+                const result = await window.enhancedAdminLoading.loadAdminStats();
+                
+                if (result.success) {
+                    log(`✅ Admin stats loaded successfully`, 'success');
+                    showResult('individualTestResults', `✅ Admin stats loaded successfully`, 'success');
+                } else {
+                    log(`❌ Admin stats failed: ${result.message}`, 'error');
+                    showResult('individualTestResults', `❌ Admin stats failed: ${result.message}`, 'error');
+                }
+            } catch (error) {
+                log(`❌ Error testing admin stats: ${error.message}`, 'error');
+                showResult('individualTestResults', `❌ Error: ${error.message}`, 'error');
+            }
+        }
+        
+        async function testDatabaseFunctions() {
+            log('🔍 Testing database functions...', 'info');
+            try {
+                // This would need to be run in the context of the application
+                log('⚠️ Database function tests need to be run in the application context', 'warning');
+                showResult('databaseTestResults', '⚠️ Database function tests need to be run in the application context', 'warning');
+            } catch (error) {
+                log(`❌ Error testing database functions: ${error.message}`, 'error');
+                showResult('databaseTestResults', `❌ Error: ${error.message}`, 'error');
+            }
+        }
+        
+        async function testRLSPolicies() {
+            log('🔍 Testing RLS policies...', 'info');
+            try {
+                // This would need to be run in the context of the application
+                log('⚠️ RLS policy tests need to be run in the application context', 'warning');
+                showResult('databaseTestResults', '⚠️ RLS policy tests need to be run in the application context', 'warning');
+            } catch (error) {
+                log(`❌ Error testing RLS policies: ${error.message}`, 'error');
+                showResult('databaseTestResults', `❌ Error: ${error.message}`, 'error');
+            }
+        }
+        
+        async function testTablePermissions() {
+            log('🔍 Testing table permissions...', 'info');
+            try {
+                // This would need to be run in the context of the application
+                log('⚠️ Table permission tests need to be run in the application context', 'warning');
+                showResult('databaseTestResults', '⚠️ Table permission tests need to be run in the application context', 'warning');
+            } catch (error) {
+                log(`❌ Error testing table permissions: ${error.message}`, 'error');
+                showResult('databaseTestResults', `❌ Error: ${error.message}`, 'error');
+            }
+        }
+        
+        // Initialize
+        log('🔧 Admin Dashboard Load Error Fix Tool loaded', 'info');
+        log('📋 Make sure you are logged in as admin and on the admin dashboard page', 'info');
+    </script>
+</body>
+</html>
