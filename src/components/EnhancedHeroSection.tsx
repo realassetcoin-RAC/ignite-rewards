@@ -108,9 +108,9 @@ const EnhancedHeroSection = () => {
                       </div>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem asChild>
-                        <a href="/dashboard" className="cursor-pointer">
+                        <a href="/user" className="cursor-pointer">
                           <User className="mr-2 h-4 w-4" />
-                          Dashboard
+                          My Dashboard
                         </a>
                       </DropdownMenuItem>
                       {isAdmin && (

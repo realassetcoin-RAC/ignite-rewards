@@ -8,6 +8,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { useWallet } from "@solana/wallet-adapter-react";
 import { useSecureAuth } from "@/hooks/useSecureAuth";
 
 /**
@@ -36,6 +38,8 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
   // Hooks
   const { toast } = useToast();
   const { user, loading: authLoading } = useSecureAuth();
+  const navigate = useNavigate();
+  const { connect, connected, disconnect, publicKey } = useWallet();
 
   /**
    * Reset form state when modal opens/closes
@@ -180,6 +184,19 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
     }
   };
 
+  const handleWalletConnect = async () => {
+    try {
+      await connect();
+      if (publicKey) {
+        toast({ title: "Wallet Connected", description: `Connected: ${publicKey.toBase58().slice(0,6)}...` });
+      }
+      onClose();
+      navigate('/user');
+    } catch (error) {
+      toast({ title: "Error", description: "Failed to connect wallet", variant: "destructive" });
+    }
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-md">
@@ -229,6 +246,15 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                 </svg>
               )}
               Continue with Google
+            </Button>
+            <Button 
+              type="button"
+              variant="outline"
+              className="w-full border-border"
+              onClick={handleWalletConnect}
+              disabled={loading}
+            >
+              Connect Solana Wallet (Phantom/Solflare)
             </Button>
             
             <div className="relative">
@@ -309,6 +335,15 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                 </svg>
               )}
               Continue with Google
+            </Button>
+            <Button 
+              type="button"
+              variant="outline"
+              className="w-full border-border"
+              onClick={handleWalletConnect}
+              disabled={loading}
+            >
+              Connect Solana Wallet (Phantom/Solflare)
             </Button>
             
             <div className="relative">

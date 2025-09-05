@@ -1,4 +1,4 @@
-# Welcome to your Lovable project
+# PointBridge App
 
 ## Project info
 
@@ -8,11 +8,7 @@
 
 There are several ways of editing your application.
 
-**Use Lovable**
-
-Simply visit the [Lovable Project](https://lovable.dev/projects/bbe3a9f6-d080-4fb9-8aab-a438d68c3107) and start prompting.
-
-Changes made via Lovable will be committed automatically to this repo.
+This repository contains the PointBridge web application.
 
 **Use your preferred IDE**
 
@@ -62,7 +58,7 @@ This project is built with:
 
 ## How can I deploy this project?
 
-Simply open [Lovable](https://lovable.dev/projects/bbe3a9f6-d080-4fb9-8aab-a438d68c3107) and click on Share -> Publish.
+Use your preferred hosting provider (e.g., Vercel, Netlify). Build using `npm run build` and deploy the `dist` folder.
 
 ## Can I connect a custom domain to my Lovable project?
 
