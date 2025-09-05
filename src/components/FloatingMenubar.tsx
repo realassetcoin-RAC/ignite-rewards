@@ -9,6 +9,7 @@ import {
   MenubarTrigger,
 } from "@/components/ui/menubar";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { 
   Home, 
   User, 
@@ -16,10 +17,13 @@ import {
   Shield, 
   Store, 
   LogIn,
+  LogOut,
   Menu,
   X
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useSecureAuth } from "@/hooks/useSecureAuth";
+import AuthModal from "@/components/AuthModal";
 
 interface FloatingMenubarProps {
   className?: string;
@@ -28,6 +32,16 @@ interface FloatingMenubarProps {
 const FloatingMenubar: React.FC<FloatingMenubarProps> = ({ className }) => {
   const location = useLocation();
   const [isOpen, setIsOpen] = React.useState(false);
+  const [authModalOpen, setAuthModalOpen] = React.useState(false);
+  const { user, profile, isAdmin, signOut } = useSecureAuth();
+
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+    } catch (error) {
+      console.error("Sign out error:", error);
+    }
+  };
 
   const menuItems = [
     {
@@ -35,32 +49,47 @@ const FloatingMenubar: React.FC<FloatingMenubarProps> = ({ className }) => {
       href: "/",
       icon: Home,
       isActive: location.pathname === "/",
+      requiresAuth: false,
+      requiresAdmin: false,
     },
     {
       label: "Dashboard",
       href: "/dashboard",
       icon: User,
       isActive: location.pathname === "/dashboard",
+      requiresAuth: true,
+      requiresAdmin: false,
     },
     {
       label: "Merchant",
       href: "/merchant",
       icon: Store,
       isActive: location.pathname === "/merchant",
+      requiresAuth: true,
+      requiresAdmin: false,
     },
     {
       label: "Admin",
       href: "/admin-panel",
       icon: Shield,
       isActive: location.pathname === "/admin-panel",
+      requiresAuth: true,
+      requiresAdmin: true,
     },
     {
       label: "Partners",
       href: "/partners",
       icon: Settings,
       isActive: location.pathname === "/partners",
+      requiresAuth: false,
+      requiresAdmin: false,
     },
-  ];
+  ].filter(item => {
+    // Filter out items based on authentication and admin requirements
+    if (item.requiresAuth && !user) return false;
+    if (item.requiresAdmin && !isAdmin) return false;
+    return true;
+  });
 
   return (
     <div className={cn(
@@ -71,7 +100,7 @@ const FloatingMenubar: React.FC<FloatingMenubarProps> = ({ className }) => {
       className
     )}>
       {/* Desktop Menu */}
-      <div className="hidden md:block">
+      <div className="hidden md:flex items-center">
         <Menubar className="bg-transparent border-none p-2">
           <MenubarMenu>
             <MenubarTrigger className="bg-transparent hover:bg-white/20 border-none text-white font-medium">
@@ -94,18 +123,48 @@ const FloatingMenubar: React.FC<FloatingMenubarProps> = ({ className }) => {
                 </MenubarItem>
               ))}
               <MenubarSeparator className="bg-white/20" />
-              <MenubarItem asChild>
-                <Link
-                  to="/auth"
-                  className="flex items-center gap-2 cursor-pointer"
-                >
-                  <LogIn className="h-4 w-4" />
+              {user ? (
+                <>
+                  <MenubarItem className="flex items-center gap-2 text-sm">
+                    <User className="h-4 w-4" />
+                    {profile?.full_name || user.email}
+                    {isAdmin && <Badge variant="secondary" className="ml-2 text-xs">Admin</Badge>}
+                  </MenubarItem>
+                  <MenubarItem onClick={handleSignOut} className="cursor-pointer">
+                    <LogOut className="h-4 w-4 mr-2" />
+                    Sign Out
+                  </MenubarItem>
+                </>
+              ) : (
+                <MenubarItem onClick={() => setAuthModalOpen(true)} className="cursor-pointer">
+                  <LogIn className="h-4 w-4 mr-2" />
                   Sign In
-                </Link>
-              </MenubarItem>
+                </MenubarItem>
+              )}
             </MenubarContent>
           </MenubarMenu>
         </Menubar>
+        
+        {/* User Info / Sign In Button */}
+        <div className="ml-4">
+          {user ? (
+            <div className="flex items-center gap-2 text-white text-sm">
+              <User className="h-4 w-4" />
+              <span>{profile?.full_name || user.email?.split('@')[0]}</span>
+              {isAdmin && <Badge variant="secondary" className="text-xs">Admin</Badge>}
+            </div>
+          ) : (
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="border-white/20 text-white bg-white/10 hover:bg-white/20"
+              onClick={() => setAuthModalOpen(true)}
+            >
+              <LogIn className="h-4 w-4 mr-2" />
+              Sign In
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Mobile Menu */}
@@ -137,18 +196,43 @@ const FloatingMenubar: React.FC<FloatingMenubarProps> = ({ className }) => {
                 </Link>
               ))}
               <div className="border-t border-white/20 my-2" />
-              <Link
-                to="/auth"
-                onClick={() => setIsOpen(false)}
-                className="flex items-center gap-2 px-3 py-2 rounded-md text-white hover:bg-white/20 transition-colors"
-              >
-                <LogIn className="h-4 w-4" />
-                Sign In
-              </Link>
+              {user ? (
+                <>
+                  <div className="px-3 py-2 text-white text-sm flex items-center gap-2">
+                    <User className="h-4 w-4" />
+                    {profile?.full_name || user.email}
+                    {isAdmin && <Badge variant="secondary" className="ml-2 text-xs">Admin</Badge>}
+                  </div>
+                  <button
+                    onClick={() => {
+                      setIsOpen(false);
+                      handleSignOut();
+                    }}
+                    className="flex items-center gap-2 px-3 py-2 rounded-md text-white hover:bg-white/20 transition-colors w-full text-left"
+                  >
+                    <LogOut className="h-4 w-4" />
+                    Sign Out
+                  </button>
+                </>
+              ) : (
+                <button
+                  onClick={() => {
+                    setIsOpen(false);
+                    setAuthModalOpen(true);
+                  }}
+                  className="flex items-center gap-2 px-3 py-2 rounded-md text-white hover:bg-white/20 transition-colors w-full text-left"
+                >
+                  <LogIn className="h-4 w-4" />
+                  Sign In
+                </button>
+              )}
             </div>
           </div>
         )}
       </div>
+      
+      {/* Auth Modal */}
+      <AuthModal isOpen={authModalOpen} onClose={() => setAuthModalOpen(false)} />
     </div>
   );
 };
