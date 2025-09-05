@@ -5,15 +5,26 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useSecureAuth } from "@/hooks/useSecureAuth";
-import { User, Mail, Calendar, Shield, Save } from "lucide-react";
+import { User, Mail, Calendar, Shield, Save, Smartphone, Key, Settings, AlertCircle } from "lucide-react";
+import MFASetup from "@/components/MFASetup";
+import { disableMFA, regenerateBackupCodes, getMFAStatus } from "@/lib/mfa";
 
 const ProfileTab = () => {
-  const { user, profile, isAdmin, refreshAuth } = useSecureAuth();
+  const { user, profile, isAdmin, refreshAuth, canUseMFA, mfaEnabled, isWalletUser } = useSecureAuth();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
+  const [mfaLoading, setMfaLoading] = useState(false);
+  const [showMFASetup, setShowMFASetup] = useState(false);
+  const [mfaStatus, setMfaStatus] = useState({
+    mfaEnabled: false,
+    canUseMFA: false,
+    backupCodesCount: 0,
+    mfaSetupCompletedAt: undefined as string | undefined
+  });
   const [formData, setFormData] = useState({
     full_name: profile?.full_name || "",
     email: user?.email || "",
@@ -27,6 +38,22 @@ const ProfileTab = () => {
       });
     }
   }, [profile, user]);
+
+  // Load MFA status
+  useEffect(() => {
+    const loadMFAStatus = async () => {
+      if (user?.id && canUseMFA) {
+        try {
+          const status = await getMFAStatus(user.id);
+          setMfaStatus(status);
+        } catch (error) {
+          console.error('Error loading MFA status:', error);
+        }
+      }
+    };
+
+    loadMFAStatus();
+  }, [user?.id, canUseMFA]);
 
   const updateProfile = async () => {
     if (!user?.id) return;
@@ -48,6 +75,84 @@ const ProfileTab = () => {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDisableMFA = async () => {
+    if (!user?.id) return;
+
+    setMfaLoading(true);
+    try {
+      const result = await disableMFA(user.id);
+      
+      if (result.success) {
+        toast({
+          title: "MFA Disabled",
+          description: "Two-factor authentication has been disabled for your account.",
+        });
+        // Refresh auth state and MFA status
+        refreshAuth();
+        const status = await getMFAStatus(user.id);
+        setMfaStatus(status);
+      } else {
+        toast({
+          title: "Error",
+          description: result.error || "Failed to disable MFA",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error('Error disabling MFA:', error);
+      toast({
+        title: "Error",
+        description: "Failed to disable MFA. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setMfaLoading(false);
+    }
+  };
+
+  const handleRegenerateBackupCodes = async () => {
+    if (!user?.id) return;
+
+    setMfaLoading(true);
+    try {
+      const result = await regenerateBackupCodes(user.id);
+      
+      if (result.success) {
+        toast({
+          title: "Backup Codes Regenerated",
+          description: "New backup codes have been generated. Please save them securely.",
+        });
+        // Refresh MFA status
+        const status = await getMFAStatus(user.id);
+        setMfaStatus(status);
+      } else {
+        toast({
+          title: "Error",
+          description: result.error || "Failed to regenerate backup codes",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error('Error regenerating backup codes:', error);
+      toast({
+        title: "Error",
+        description: "Failed to regenerate backup codes. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setMfaLoading(false);
+    }
+  };
+
+  const handleMFASetupComplete = () => {
+    setShowMFASetup(false);
+    // Refresh auth state and MFA status
+    refreshAuth();
+    if (user?.id) {
+      getMFAStatus(user.id).then(setMfaStatus);
     }
   };
 
@@ -187,13 +292,103 @@ const ProfileTab = () => {
               <Badge variant="outline">Managed by Supabase Auth</Badge>
             </div>
             
-            <div className="p-4 border rounded-lg">
-              <h4 className="font-medium mb-2">Two-Factor Authentication</h4>
-              <p className="text-sm text-muted-foreground mb-3">
-                Enhance your account security with two-factor authentication.
-              </p>
-              <Badge variant="secondary">Coming Soon</Badge>
-            </div>
+            {/* MFA Section - Only show for email/social users */}
+            {canUseMFA ? (
+              <div className="p-4 border rounded-lg">
+                <div className="flex items-center justify-between mb-2">
+                  <h4 className="font-medium flex items-center gap-2">
+                    <Smartphone className="h-4 w-4" />
+                    Two-Factor Authentication
+                  </h4>
+                  <Badge variant={mfaStatus.mfaEnabled ? "default" : "secondary"}>
+                    {mfaStatus.mfaEnabled ? "Enabled" : "Disabled"}
+                  </Badge>
+                </div>
+                
+                <p className="text-sm text-muted-foreground mb-4">
+                  {mfaStatus.mfaEnabled 
+                    ? "Your account is protected with two-factor authentication using an authenticator app."
+                    : "Enhance your account security with two-factor authentication using an authenticator app."
+                  }
+                </p>
+
+                {mfaStatus.mfaEnabled && (
+                  <div className="space-y-3 mb-4">
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-muted-foreground">Backup codes remaining:</span>
+                      <span className="font-medium">{mfaStatus.backupCodesCount}</span>
+                    </div>
+                    {mfaStatus.mfaSetupCompletedAt && (
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-muted-foreground">Setup completed:</span>
+                        <span className="font-medium">
+                          {new Date(mfaStatus.mfaSetupCompletedAt).toLocaleDateString()}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                <div className="flex gap-2">
+                  {!mfaStatus.mfaEnabled ? (
+                    <Dialog open={showMFASetup} onOpenChange={setShowMFASetup}>
+                      <DialogTrigger asChild>
+                        <Button size="sm">
+                          <Settings className="h-4 w-4 mr-2" />
+                          Enable MFA
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+                        <DialogHeader>
+                          <DialogTitle>Enable Two-Factor Authentication</DialogTitle>
+                          <DialogDescription>
+                            Set up two-factor authentication to secure your account
+                          </DialogDescription>
+                        </DialogHeader>
+                        <MFASetup onComplete={handleMFASetupComplete} onCancel={() => setShowMFASetup(false)} />
+                      </DialogContent>
+                    </Dialog>
+                  ) : (
+                    <>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={handleRegenerateBackupCodes}
+                        disabled={mfaLoading}
+                      >
+                        <Key className="h-4 w-4 mr-2" />
+                        Regenerate Backup Codes
+                      </Button>
+                      <Button 
+                        variant="destructive" 
+                        size="sm" 
+                        onClick={handleDisableMFA}
+                        disabled={mfaLoading}
+                      >
+                        Disable MFA
+                      </Button>
+                    </>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <div className="p-4 border rounded-lg">
+                <div className="flex items-center gap-2 mb-2">
+                  <h4 className="font-medium">Two-Factor Authentication</h4>
+                  <Badge variant="outline">Not Available</Badge>
+                </div>
+                <p className="text-sm text-muted-foreground mb-3">
+                  MFA is only available for users who signed up with email or social authentication.
+                </p>
+                <div className="flex items-start gap-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                  <AlertCircle className="h-4 w-4 text-blue-600 mt-0.5 flex-shrink-0" />
+                  <div className="text-sm text-blue-700">
+                    <p className="font-medium mb-1">Wallet Security</p>
+                    <p>Your wallet-based authentication already provides strong security through cryptographic signatures.</p>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>

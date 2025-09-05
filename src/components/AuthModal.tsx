@@ -11,6 +11,8 @@ import { Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { useSecureAuth } from "@/hooks/useSecureAuth";
+import MFAVerification from "@/components/MFAVerification";
+import { canUserUseMFA } from "@/lib/mfa";
 
 /**
  * Authentication modal component props
@@ -34,6 +36,8 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [showMFAVerification, setShowMFAVerification] = useState(false);
+  const [pendingUserId, setPendingUserId] = useState<string | null>(null);
   
   // Hooks
   const { toast } = useToast();
@@ -50,6 +54,8 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
       setPassword("");
       setLoading(false);
       setGoogleLoading(false);
+      setShowMFAVerification(false);
+      setPendingUserId(null);
     }
   }, [isOpen]);
 
@@ -123,7 +129,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
     setLoading(true);
 
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password
       });
@@ -134,7 +140,27 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
           description: error.message,
           variant: "destructive"
         });
-      } else {
+      } else if (data.user) {
+        // Check if user can use MFA and if MFA is enabled
+        const canUseMFA = await canUserUseMFA(data.user.id);
+        
+        if (canUseMFA) {
+          // Check if MFA is enabled for this user
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('mfa_enabled')
+            .eq('id', data.user.id)
+            .single();
+          
+          if (profile?.mfa_enabled) {
+            // User has MFA enabled, show verification step
+            setPendingUserId(data.user.id);
+            setShowMFAVerification(true);
+            return;
+          }
+        }
+        
+        // No MFA required, complete sign in
         toast({
           title: "Welcome back!",
           description: "You have been signed in successfully.",
@@ -184,6 +210,29 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
     }
   };
 
+  /**
+   * Handle MFA verification success
+   */
+  const handleMFASuccess = () => {
+    toast({
+      title: "Welcome back!",
+      description: "You have been signed in successfully.",
+    });
+    setShowMFAVerification(false);
+    setPendingUserId(null);
+    onClose();
+  };
+
+  /**
+   * Handle MFA verification cancel
+   */
+  const handleMFACancel = () => {
+    setShowMFAVerification(false);
+    setPendingUserId(null);
+    // Sign out the user since they didn't complete MFA
+    supabase.auth.signOut();
+  };
+
   const handleWalletConnect = async () => {
     try {
       await connect();
@@ -196,6 +245,21 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
       toast({ title: "Error", description: "Failed to connect wallet", variant: "destructive" });
     }
   };
+
+  // Show MFA verification if needed
+  if (showMFAVerification && pendingUserId) {
+    return (
+      <Dialog open={isOpen} onOpenChange={onClose}>
+        <DialogContent className="sm:max-w-md">
+          <MFAVerification
+            userId={pendingUserId}
+            onSuccess={handleMFASuccess}
+            onCancel={handleMFACancel}
+          />
+        </DialogContent>
+      </Dialog>
+    );
+  }
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
