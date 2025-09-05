@@ -16,10 +16,6 @@ interface Transaction {
   transaction_reference: string;
   transaction_date: string;
   created_at: string;
-  merchant: {
-    business_name: string;
-    business_type: string;
-  };
 }
 
 const TransactionsTab = () => {
@@ -43,10 +39,7 @@ const TransactionsTab = () => {
     try {
       const { data, error } = await supabase
         .from('loyalty_transactions')
-        .select(`
-          *,
-          merchant:merchants!inner(business_name, business_type)
-        `)
+        .select('*')
         .eq('user_id', user?.id)
         .order('transaction_date', { ascending: false });
 
@@ -60,6 +53,7 @@ const TransactionsTab = () => {
         return;
       }
 
+      // For now, just use merchant_id since cross-schema relations are complex
       setTransactions(data || []);
       
       // Calculate stats
@@ -181,12 +175,10 @@ const TransactionsTab = () => {
                         <div className="flex items-center gap-2">
                           <Building2 className="h-4 w-4 text-muted-foreground" />
                           <div>
-                            <div className="font-medium">{transaction.merchant.business_name}</div>
-                            {transaction.merchant.business_type && (
-                              <div className="text-xs text-muted-foreground">
-                                {transaction.merchant.business_type}
-                              </div>
-                            )}
+                            <div className="font-medium">Merchant #{transaction.merchant_id.slice(-8)}</div>
+                            <div className="text-xs text-muted-foreground">
+                              Business Partner
+                            </div>
                           </div>
                         </div>
                       </TableCell>

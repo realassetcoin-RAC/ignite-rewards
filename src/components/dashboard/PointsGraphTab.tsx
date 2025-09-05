@@ -61,12 +61,7 @@ const PointsGraphTab = () => {
 
       const { data: transactions, error } = await supabase
         .from('loyalty_transactions')
-        .select(`
-          transaction_date,
-          points_earned,
-          transaction_amount,
-          merchant:merchants!inner(business_name)
-        `)
+        .select('transaction_date, points_earned, transaction_amount, merchant_id')
         .eq('user_id', user?.id)
         .gte('transaction_date', startDate.toISOString())
         .order('transaction_date', { ascending: true });
@@ -81,28 +76,21 @@ const PointsGraphTab = () => {
         return;
       }
 
-      // Process data for line chart
+      // Process data for line chart (simplified without merchant lookups)
       const dailyData: { [key: string]: { points: number; transactions: number; } } = {};
-      const merchantStats: { [key: string]: { points: number; transactions: number; } } = {};
 
-      transactions?.forEach((t) => {
-        const date = new Date(t.transaction_date).toLocaleDateString();
-        const merchantName = t.merchant.business_name;
+      if (transactions) {
+        for (const t of transactions) {
+          const date = new Date(t.transaction_date).toLocaleDateString();
 
-        // Daily data
-        if (!dailyData[date]) {
-          dailyData[date] = { points: 0, transactions: 0 };
+          // Daily data
+          if (!dailyData[date]) {
+            dailyData[date] = { points: 0, transactions: 0 };
+          }
+          dailyData[date].points += t.points_earned;
+          dailyData[date].transactions += 1;
         }
-        dailyData[date].points += t.points_earned;
-        dailyData[date].transactions += 1;
-
-        // Merchant data
-        if (!merchantStats[merchantName]) {
-          merchantStats[merchantName] = { points: 0, transactions: 0 };
-        }
-        merchantStats[merchantName].points += t.points_earned;
-        merchantStats[merchantName].transactions += 1;
-      });
+      }
 
       // Convert to chart data with cumulative points
       let cumulative = 0;
@@ -116,19 +104,8 @@ const PointsGraphTab = () => {
         };
       });
 
-      // Convert merchant data
-      const merchantChartData = Object.entries(merchantStats)
-        .map(([name, data], index) => ({
-          name,
-          points: data.points,
-          transactions: data.transactions,
-          color: colors[index % colors.length],
-        }))
-        .sort((a, b) => b.points - a.points)
-        .slice(0, 6); // Top 6 merchants
-
       setPointsData(chartData);
-      setMerchantData(merchantChartData);
+      setMerchantData([]); // Simplified for now
     } catch (error) {
       console.error('Error loading points data:', error);
       toast({
