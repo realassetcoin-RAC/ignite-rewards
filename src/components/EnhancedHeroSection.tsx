@@ -62,13 +62,13 @@ const EnhancedHeroSection = () => {
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-transparent via-background/80 to-background/95" />
         
         {/* Animated Background Elements */}
-        <div className="absolute top-20 left-20 w-72 h-72 bg-primary/10 rounded-full mix-blend-multiply filter blur-xl animate-pulse"></div>
-        <div className="absolute top-40 right-20 w-96 h-96 bg-purple-500/10 rounded-full mix-blend-multiply filter blur-xl animate-pulse animation-delay-2000"></div>
-        <div className="absolute -bottom-20 left-40 w-80 h-80 bg-blue-500/10 rounded-full mix-blend-multiply filter blur-xl animate-pulse animation-delay-4000"></div>
+        <div className="absolute top-20 left-20 w-72 h-72 bg-primary/10 rounded-full mix-blend-multiply filter blur-xl animate-pulse pointer-events-none"></div>
+        <div className="absolute top-40 right-20 w-96 h-96 bg-purple-500/10 rounded-full mix-blend-multiply filter blur-xl animate-pulse animation-delay-2000 pointer-events-none"></div>
+        <div className="absolute -bottom-20 left-40 w-80 h-80 bg-blue-500/10 rounded-full mix-blend-multiply filter blur-xl animate-pulse animation-delay-4000 pointer-events-none"></div>
       </div>
 
       {/* Navigation Bar */}
-      <div className="absolute top-0 left-0 right-0 z-10">
+      <div className="absolute top-0 left-0 right-0 z-50">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2">
@@ -130,7 +130,14 @@ const EnhancedHeroSection = () => {
                   </DropdownMenu>
                 </>
               ) : (
-                <Button variant="outline" onClick={() => setAuthModalOpen(true)}>
+                <Button 
+                  variant="outline" 
+                  onClick={() => {
+                    console.log('Sign In button clicked');
+                    setAuthModalOpen(true);
+                  }}
+                  className="pointer-events-auto cursor-pointer"
+                >
                   Sign In
                 </Button>
               )}

@@ -3,7 +3,6 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
-import heroImage from "@/assets/hero-rewards.jpg";
 import pointbridgeLogo from "@/assets/pointbridge-logo.png";
 import AuthModal from "@/components/AuthModal";
 import CustomerSignupModal from "@/components/CustomerSignupModal";
@@ -48,10 +47,6 @@ const HeroSection = () => {
   };
   return (
     <section className="relative overflow-hidden">
-      <div 
-        className="absolute inset-0 opacity-10 bg-cover bg-center"
-        style={{ backgroundImage: `url(${heroImage})` }}
-      />
       <div className="hero-gradient absolute inset-0 opacity-90" />
       
       <div className="relative z-10 max-w-7xl mx-auto px-6 py-16 lg:py-24">
