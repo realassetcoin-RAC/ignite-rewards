@@ -14,7 +14,6 @@ import MerchantDashboard from "./pages/MerchantDashboard";
 import NotFound from "./pages/NotFound";
 import UserDashboard from "./pages/UserDashboard";
 import RoleBasedDashboard from "./components/RoleBasedDashboard";
-import FloatingMenubar from "./components/FloatingMenubar";
 
 const queryClient = new QueryClient();
 
@@ -24,7 +23,6 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <FloatingMenubar />
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/auth" element={<Auth />} />
