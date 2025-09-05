@@ -38,11 +38,7 @@ const UserDashboard = () => {
                 </Badge>
               )}
             </div>
-            <div className="flex items-center space-x-3">
-              <Button variant="outline" size="sm" asChild>
-                <a href="/dashboard">Open Full Dashboard</a>
-              </Button>
-            </div>
+            <div className="flex items-center space-x-3" />
           </div>
         </div>
       </header>

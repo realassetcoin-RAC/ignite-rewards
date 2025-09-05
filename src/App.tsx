@@ -25,7 +25,8 @@ const App = () => (
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/auth" element={<Auth />} />
-          <Route path="/dashboard" element={<Dashboard />} />
+          {/* Keep the old dashboard route for backward compatibility if bookmarked */}
+          <Route path="/dashboard" element={<UserDashboard />} />
           <Route path="/user" element={<UserDashboard />} />
           <Route path="/privacy" element={<Privacy />} />
           <Route path="/partners" element={<Partners />} />
