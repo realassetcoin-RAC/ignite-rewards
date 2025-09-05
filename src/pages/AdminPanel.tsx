@@ -118,12 +118,17 @@ const AdminPanel = () => {
       // Update stats even if some queries failed
       setStats(newStats);
       
-      // Only show error if all queries failed
-      if (cardsError && merchantsError && usersError) {
+      // Show warning if some queries failed
+      const failedQueries = [];
+      if (cardsError) failedQueries.push('virtual cards');
+      if (merchantsError) failedQueries.push('merchants');
+      if (usersError) failedQueries.push('users');
+      
+      if (failedQueries.length > 0) {
         toast({
-          title: "Error Loading Statistics",
-          description: "Some statistics could not be loaded. Please check your permissions.",
-          variant: "destructive"
+          title: "Warning",
+          description: `Some statistics could not be loaded (${failedQueries.join(', ')}). Please check your permissions.`,
+          variant: "default"
         });
       }
     } catch (error) {

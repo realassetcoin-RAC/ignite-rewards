@@ -67,6 +67,12 @@ const SubscriptionPlanManager = () => {
             description: 'The subscription plans table is not properly configured. Please run the database migrations.', 
             variant: 'destructive' 
           });
+        } else if (error.message?.includes('schema must be one of the following')) {
+          toast({ 
+            title: 'Configuration Error', 
+            description: 'Database schema configuration error. The subscription plans feature may not be properly set up.', 
+            variant: 'destructive' 
+          });
         } else {
           toast({ 
             title: 'Error', 
