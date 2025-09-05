@@ -31,6 +31,17 @@ function formatLatency(latencyMs: number | null): string {
   return `${(latencyMs / 1000).toFixed(2)} s`;
 }
 
+function isMissingRpcError(error: any): boolean {
+  const code = (error?.code || '').toString();
+  const message = (error?.message || '').toString();
+  const details = (error?.details || '').toString();
+  return (
+    code === 'PGRST202' ||
+    /could not find the function/i.test(message) ||
+    /schema cache/i.test(details)
+  );
+}
+
 const DEFAULT_INTERVAL_MS = 30000;
 
 const ApiHealthTab = () => {
@@ -116,7 +127,10 @@ const ApiHealthTab = () => {
           try {
             const { data, error } = await supabase.rpc("is_admin");
             const latencyMs = performance.now() - start;
-            if (error) return { id: "rpc-is-admin", name: "RPC is_admin", status: "error", latencyMs, message: error.message };
+            if (error) {
+              const status: HealthStatus = isMissingRpcError(error) ? "warn" : "error";
+              return { id: "rpc-is-admin", name: "RPC is_admin", status, latencyMs, message: error.message };
+            }
             const ok = data === true || data === false;
             return { id: "rpc-is-admin", name: "RPC is_admin", status: ok ? "ok" : "warn", latencyMs, message: `Response: ${String(data)}` };
           } catch (e: any) {
@@ -133,8 +147,20 @@ const ApiHealthTab = () => {
           const start = performance.now();
           try {
             const { data, error } = await supabase.rpc("check_admin_access");
-            const latencyMs = performance.now() - start;
-            if (error) return { id: "rpc-check-admin", name: "RPC check_admin_access", status: "error", latencyMs, message: error.message };
+            let latencyMs = performance.now() - start;
+            if (error) {
+              if (isMissingRpcError(error)) {
+                // Fallback to is_admin
+                const fbStart = performance.now();
+                const { data: fb, error: fbErr } = await supabase.rpc("is_admin");
+                latencyMs = performance.now() - fbStart;
+                if (!fbErr && (fb === true || fb === false)) {
+                  return { id: "rpc-check-admin", name: "RPC check_admin_access", status: "warn", latencyMs, message: `Missing RPC; used is_admin fallback: ${String(fb)}` };
+                }
+                return { id: "rpc-check-admin", name: "RPC check_admin_access", status: "warn", latencyMs, message: "RPC missing; fallback unavailable" };
+              }
+              return { id: "rpc-check-admin", name: "RPC check_admin_access", status: "error", latencyMs, message: error.message };
+            }
             const ok = data === true || data === false;
             return { id: "rpc-check-admin", name: "RPC check_admin_access", status: ok ? "ok" : "warn", latencyMs, message: `Response: ${String(data)}` };
           } catch (e: any) {
@@ -153,7 +179,11 @@ const ApiHealthTab = () => {
             const userId = user?.id || "00000000-0000-0000-0000-000000000000";
             const { data, error } = await supabase.rpc("can_use_mfa", { user_id: userId });
             const latencyMs = performance.now() - start;
-            if (error) return { id: "rpc-can-use-mfa", name: "RPC can_use_mfa", status: "error", latencyMs, message: error.message };
+            if (error) {
+              const status: HealthStatus = isMissingRpcError(error) ? "warn" : "error";
+              const msg = isMissingRpcError(error) ? "RPC missing; MFA not configured" : error.message;
+              return { id: "rpc-can-use-mfa", name: "RPC can_use_mfa", status, latencyMs, message: msg };
+            }
             const ok = data === true || data === false || data == null;
             return { id: "rpc-can-use-mfa", name: "RPC can_use_mfa", status: ok ? "ok" : "warn", latencyMs, message: `Response: ${String(data)}` };
           } catch (e: any) {
@@ -170,8 +200,29 @@ const ApiHealthTab = () => {
           const start = performance.now();
           try {
             const { data, error } = await supabase.rpc("get_current_user_profile");
-            const latencyMs = performance.now() - start;
-            if (error) return { id: "rpc-get-current-user-profile", name: "RPC get_current_user_profile", status: "error", latencyMs, message: error.message };
+            let latencyMs = performance.now() - start;
+            if (error) {
+              if (isMissingRpcError(error)) {
+                // Fallback to direct table query
+                const userId = user?.id;
+                if (!userId) {
+                  return { id: "rpc-get-current-user-profile", name: "RPC get_current_user_profile", status: "warn", latencyMs, message: "No user; RPC missing" };
+                }
+                const fbStart = performance.now();
+                const { data: prof, error: profErr } = await supabase
+                  .from('profiles')
+                  .select('id,email,full_name,role')
+                  .or(`id.eq.${userId},user_id.eq.${userId}`)
+                  .limit(1);
+                latencyMs = performance.now() - fbStart;
+                if (!profErr) {
+                  const rows = Array.isArray(prof) ? prof.length : 0;
+                  return { id: "rpc-get-current-user-profile", name: "RPC get_current_user_profile", status: "warn", latencyMs, message: `RPC missing; direct query rows: ${rows}` };
+                }
+                return { id: "rpc-get-current-user-profile", name: "RPC get_current_user_profile", status: "warn", latencyMs, message: "RPC missing; direct query failed" };
+              }
+              return { id: "rpc-get-current-user-profile", name: "RPC get_current_user_profile", status: "error", latencyMs, message: error.message };
+            }
             const ok = Array.isArray(data);
             return { id: "rpc-get-current-user-profile", name: "RPC get_current_user_profile", status: ok ? "ok" : "warn", latencyMs, message: `Rows: ${Array.isArray(data) ? data.length : 0}` };
           } catch (e: any) {
@@ -189,7 +240,11 @@ const ApiHealthTab = () => {
           try {
             const { data, error } = await supabase.rpc("generate_loyalty_number");
             const latencyMs = performance.now() - start;
-            if (error) return { id: "rpc-generate-loyalty-number", name: "RPC generate_loyalty_number", status: "error", latencyMs, message: error.message };
+            if (error) {
+              const status: HealthStatus = isMissingRpcError(error) ? "warn" : "error";
+              const msg = isMissingRpcError(error) ? "RPC missing; not required for core health" : error.message;
+              return { id: "rpc-generate-loyalty-number", name: "RPC generate_loyalty_number", status, latencyMs, message: msg };
+            }
             const ok = typeof data === "string" && data.length > 0;
             return { id: "rpc-generate-loyalty-number", name: "RPC generate_loyalty_number", status: ok ? "ok" : "warn", latencyMs, message: ok ? "Generated" : "Empty response" };
           } catch (e: any) {
@@ -207,7 +262,11 @@ const ApiHealthTab = () => {
           try {
             const { data, error } = await supabase.rpc("generate_referral_code");
             const latencyMs = performance.now() - start;
-            if (error) return { id: "rpc-generate-referral-code", name: "RPC generate_referral_code", status: "error", latencyMs, message: error.message };
+            if (error) {
+              const status: HealthStatus = isMissingRpcError(error) ? "warn" : "error";
+              const msg = isMissingRpcError(error) ? "RPC missing; not required for core health" : error.message;
+              return { id: "rpc-generate-referral-code", name: "RPC generate_referral_code", status, latencyMs, message: msg };
+            }
             const ok = typeof data === "string" && data.length > 0;
             return { id: "rpc-generate-referral-code", name: "RPC generate_referral_code", status: ok ? "ok" : "warn", latencyMs, message: ok ? "Generated" : "Empty response" };
           } catch (e: any) {
@@ -229,7 +288,11 @@ const ApiHealthTab = () => {
           try {
             const { data, error } = await supabase.storage.from("public-assets").list("", { limit: 1 });
             const latencyMs = performance.now() - start;
-            if (error) return { id: "storage-public-assets", name: "Storage public-assets", status: "error", latencyMs, message: error.message };
+            if (error) {
+              // Treat missing bucket as a warning rather than hard error for health UI
+              const status: HealthStatus = /not found|does not exist/i.test(String(error?.message || '')) ? "warn" : "error";
+              return { id: "storage-public-assets", name: "Storage public-assets", status, latencyMs, message: error.message };
+            }
             return { id: "storage-public-assets", name: "Storage public-assets", status: "ok", latencyMs, message: `${Array.isArray(data) ? data.length : 0} objects visible` };
           } catch (e: any) {
             const latencyMs = performance.now() - start;
