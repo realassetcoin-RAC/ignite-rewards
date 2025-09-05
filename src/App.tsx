@@ -10,6 +10,7 @@ import Privacy from "./pages/Privacy";
 import Partners from "./pages/Partners";
 import AdminPanel from "./pages/AdminPanel";
 import Auth from "./pages/Auth";
+import AuthCallback from "./pages/AuthCallback";
 import MerchantDashboard from "./pages/MerchantDashboard";
 import NotFound from "./pages/NotFound";
 import UserDashboard from "./pages/UserDashboard";
@@ -28,6 +29,7 @@ const App = () => (
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/auth" element={<Auth />} />
+          <Route path="/auth/callback" element={<AuthCallback />} />
           {/* Role-based dashboard routing - redirects to appropriate dashboard based on user role */}
           <Route path="/dashboard" element={<RoleBasedDashboard />} />
           {/* Keep the old dashboard route for backward compatibility if bookmarked */}

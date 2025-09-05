@@ -7,6 +7,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { Check, ChevronLeft, ChevronRight, Loader2, CreditCard } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useNavigate } from "react-router-dom";
 
 /**
  * Virtual card configuration interface
@@ -35,6 +37,7 @@ interface CustomerSignupModalProps {
 interface CustomerForm {
   name: string;
   email: string;
+  password: string;
   phone: string;
   city: string;
 }
@@ -72,6 +75,7 @@ const CustomerSignupModal: React.FC<CustomerSignupModalProps> = ({ isOpen, onClo
   const [customerForm, setCustomerForm] = useState<CustomerForm>({
     name: "",
     email: "",
+    password: "",
     phone: "",
     city: ""
   });
@@ -81,6 +85,7 @@ const CustomerSignupModal: React.FC<CustomerSignupModalProps> = ({ isOpen, onClo
   const [showCityDropdown, setShowCityDropdown] = useState(false);
   
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   /**
    * Reset modal state when it opens/closes
@@ -89,7 +94,7 @@ const CustomerSignupModal: React.FC<CustomerSignupModalProps> = ({ isOpen, onClo
     if (!isOpen) {
       setStep('select');
       setSelectedCard(0);
-      setCustomerForm({ name: "", email: "", phone: "", city: "" });
+      setCustomerForm({ name: "", email: "", password: "", phone: "", city: "" });
       setLoading(false);
       setCityResults([]);
       setShowCityDropdown(false);
@@ -156,10 +161,19 @@ const CustomerSignupModal: React.FC<CustomerSignupModalProps> = ({ isOpen, onClo
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!customerForm.name || !customerForm.email) {
+    if (!customerForm.name || !customerForm.email || !customerForm.password) {
       toast({
         title: "Missing Information",
         description: "Please fill in all required fields.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (customerForm.password.length < 6) {
+      toast({
+        title: "Password Too Short",
+        description: "Password must be at least 6 characters long.",
         variant: "destructive"
       });
       return;
@@ -169,29 +183,48 @@ const CustomerSignupModal: React.FC<CustomerSignupModalProps> = ({ isOpen, onClo
     const selectedCardData = virtualCards[selectedCard];
     
     try {
-      // Simulate API call for customer signup
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
+      // Create customer account with Supabase Auth
+      const { data, error } = await supabase.auth.signUp({
+        email: customerForm.email,
+        password: customerForm.password,
+        options: {
+          data: {
+            signup_type: 'user',
+            full_name: customerForm.name,
+            phone: customerForm.phone,
+            city: customerForm.city,
+            selected_card: selectedCardData.id,
+            card_price: selectedCardData.price
+          },
+          emailRedirectTo: `${window.location.origin}/user`
+        }
+      });
+
+      if (error) {
+        throw error;
+      }
+
       if (selectedCardData.price === 0) {
         // Free card - complete signup
         toast({
-          title: "Welcome to PointBridge!",
-          description: `${customerForm.name}, your account has been created with the ${selectedCardData.name}.`,
+          title: "Account Created Successfully!",
+          description: `Please check your email to verify your account. Your ${selectedCardData.name} will be activated once verified.`,
         });
         onClose();
       } else {
-        // Paid card - simulate payment flow
+        // Paid card - will need payment after email verification
         toast({
-          title: "Proceeding to Checkout",
-          description: `Redirecting to payment for ${selectedCardData.name} ($${selectedCardData.price})`,
+          title: "Account Created Successfully!",
+          description: `Please check your email to verify your account. After verification, you'll be able to purchase your ${selectedCardData.name} ($${selectedCardData.price}).`,
         });
-        // Here you would integrate with your payment system (Stripe, etc.)
+        // Here you would integrate with your payment system (Stripe, etc.) after email verification
         onClose();
       }
-    } catch (error) {
+    } catch (error: any) {
+      console.error('Customer signup error:', error);
       toast({
-        title: "Error",
-        description: "An error occurred during signup. Please try again.",
+        title: "Signup Failed",
+        description: error.message || "An error occurred during signup. Please try again.",
         variant: "destructive"
       });
     } finally {
@@ -314,6 +347,21 @@ const CustomerSignupModal: React.FC<CustomerSignupModalProps> = ({ isOpen, onClo
                   onChange={handleInputChange}
                   placeholder="Enter your email address"
                   required
+                  disabled={loading}
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="password">Password *</Label>
+                <Input
+                  id="password"
+                  name="password"
+                  type="password"
+                  value={customerForm.password}
+                  onChange={handleInputChange}
+                  placeholder="Create a password (min. 6 characters)"
+                  required
+                  minLength={6}
                   disabled={loading}
                 />
               </div>

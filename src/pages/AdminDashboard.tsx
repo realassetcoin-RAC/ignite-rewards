@@ -8,7 +8,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import VirtualCardManager from "@/components/admin/VirtualCardManager";
 import MerchantManager from "@/components/admin/MerchantManager";
-import { CreditCard, Users, Package, TrendingUp } from "lucide-react";
+import AdminUserCreator from "@/components/admin/AdminUserCreator";
+import { CreditCard, Users, Package, TrendingUp, Shield } from "lucide-react";
 
 const AdminDashboard = () => {
   const [user, setUser] = useState<any>(null);
@@ -162,9 +163,10 @@ const AdminDashboard = () => {
 
         {/* Management Tabs */}
         <Tabs defaultValue="cards" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="cards">Virtual Cards</TabsTrigger>
             <TabsTrigger value="merchants">Merchants</TabsTrigger>
+            <TabsTrigger value="admins">Admin Users</TabsTrigger>
           </TabsList>
           
           <TabsContent value="cards">
@@ -191,6 +193,20 @@ const AdminDashboard = () => {
               </CardHeader>
               <CardContent>
                 <MerchantManager onStatsUpdate={loadStats} />
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="admins">
+            <Card>
+              <CardHeader>
+                <CardTitle>Admin User Management</CardTitle>
+                <CardDescription>
+                  Create and manage admin users with email or wallet-based authentication.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <AdminUserCreator />
               </CardContent>
             </Card>
           </TabsContent>

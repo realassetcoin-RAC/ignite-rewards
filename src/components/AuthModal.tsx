@@ -161,10 +161,27 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
         }
         
         // No MFA required, complete sign in
+        // Get user role for redirect
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', data.user.id)
+          .single();
+
         toast({
           title: "Welcome back!",
           description: "You have been signed in successfully.",
         });
+        
+        // Navigate based on user role
+        if (profile?.role === 'admin') {
+          navigate('/admin');
+        } else if (profile?.role === 'merchant') {
+          navigate('/merchant');
+        } else {
+          navigate('/user');
+        }
+        
         onClose();
       }
     } catch (error) {
@@ -188,7 +205,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/`,
+          redirectTo: `${window.location.origin}/auth/callback`,
           queryParams: {
             access_type: 'offline',
             prompt: 'consent',
@@ -229,11 +246,30 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
   /**
    * Handle MFA verification success
    */
-  const handleMFASuccess = () => {
-    toast({
-      title: "Welcome back!",
-      description: "You have been signed in successfully.",
-    });
+  const handleMFASuccess = async () => {
+    if (pendingUserId) {
+      // Get user role for redirect
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', pendingUserId)
+        .single();
+
+      toast({
+        title: "Welcome back!",
+        description: "You have been signed in successfully.",
+      });
+
+      // Navigate based on user role
+      if (profile?.role === 'admin') {
+        navigate('/admin');
+      } else if (profile?.role === 'merchant') {
+        navigate('/merchant');
+      } else {
+        navigate('/user');
+      }
+    }
+    
     setShowMFAVerification(false);
     setPendingUserId(null);
     onClose();
@@ -263,14 +299,40 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
       await connect();
       
       // Wait a moment for the connection to establish
-      setTimeout(() => {
+      setTimeout(async () => {
         if (publicKey) {
+          const walletAddress = publicKey.toBase58();
+          
+          // Check if this wallet is associated with an admin user
+          const { data: walletData } = await supabase
+            .from('user_wallets')
+            .select('user_id')
+            .eq('wallet_address', walletAddress)
+            .single();
+          
+          let redirectPath = '/user';
+          
+          if (walletData?.user_id) {
+            // Get user role
+            const { data: profile } = await supabase
+              .from('profiles')
+              .select('role')
+              .eq('id', walletData.user_id)
+              .single();
+            
+            if (profile?.role === 'admin') {
+              redirectPath = '/admin';
+            } else if (profile?.role === 'merchant') {
+              redirectPath = '/merchant';
+            }
+          }
+          
           toast({ 
             title: "Wallet Connected", 
-            description: `Connected: ${publicKey.toBase58().slice(0,6)}...` 
+            description: `Connected: ${walletAddress.slice(0,6)}...` 
           });
           onClose();
-          navigate('/user');
+          navigate(redirectPath);
         } else {
           toast({ 
             title: "Connection Failed", 
