@@ -112,7 +112,7 @@ const HeroSection = () => {
                     </div>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem asChild className="cursor-pointer">
-                      <a href="/user">
+                      <a href="/dashboard">
                         <User className="mr-2 h-4 w-4" />
                         <span>My Dashboard</span>
                       </a>

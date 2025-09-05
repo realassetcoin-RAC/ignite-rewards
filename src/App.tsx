@@ -13,6 +13,7 @@ import Auth from "./pages/Auth";
 import MerchantDashboard from "./pages/MerchantDashboard";
 import NotFound from "./pages/NotFound";
 import UserDashboard from "./pages/UserDashboard";
+import RoleBasedDashboard from "./components/RoleBasedDashboard";
 
 const queryClient = new QueryClient();
 
@@ -25,8 +26,9 @@ const App = () => (
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/auth" element={<Auth />} />
+          {/* Role-based dashboard routing - redirects to appropriate dashboard based on user role */}
+          <Route path="/dashboard" element={<RoleBasedDashboard />} />
           {/* Keep the old dashboard route for backward compatibility if bookmarked */}
-          <Route path="/dashboard" element={<UserDashboard />} />
           <Route path="/user" element={<UserDashboard />} />
           <Route path="/privacy" element={<Privacy />} />
           <Route path="/partners" element={<Partners />} />
