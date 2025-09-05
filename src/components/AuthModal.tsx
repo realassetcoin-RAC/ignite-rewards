@@ -7,10 +7,10 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2 } from "lucide-react";
+import { Loader2, Shield } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { useWallet } from "@solana/wallet-adapter-react";
 import { useSecureAuth } from "@/hooks/useSecureAuth";
+import SeedPhraseRecovery from "./SeedPhraseRecovery";
 
 /**
  * Authentication modal component props
@@ -34,12 +34,12 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [showRecoveryDialog, setShowRecoveryDialog] = useState(false);
   
   // Hooks
   const { toast } = useToast();
   const { user, loading: authLoading } = useSecureAuth();
   const navigate = useNavigate();
-  const { connect, connected, disconnect, publicKey } = useWallet();
 
   /**
    * Reset form state when modal opens/closes
@@ -184,18 +184,15 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
     }
   };
 
-  const handleWalletConnect = async () => {
-    try {
-      await connect();
-      if (publicKey) {
-        toast({ title: "Wallet Connected", description: `Connected: ${publicKey.toBase58().slice(0,6)}...` });
-      }
-      onClose();
-      navigate('/user');
-    } catch (error) {
-      toast({ title: "Error", description: "Failed to connect wallet", variant: "destructive" });
-    }
+  const handleRecoverySuccess = (recoveredUser: any) => {
+    toast({
+      title: "Account Recovered",
+      description: "Your account has been recovered using your seed phrase. You can now sign in normally.",
+    });
+    setShowRecoveryDialog(false);
+    // Optionally redirect to dashboard or show success message
   };
+
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -251,10 +248,10 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
               type="button"
               variant="outline"
               className="w-full border-border"
-              onClick={handleWalletConnect}
-              disabled={loading}
+              onClick={() => setShowRecoveryDialog(true)}
             >
-              Connect Solana Wallet (Phantom/Solflare)
+              <Shield className="mr-2 h-4 w-4" />
+              Recover with Seed Phrase
             </Button>
             
             <div className="relative">
@@ -336,15 +333,6 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
               )}
               Continue with Google
             </Button>
-            <Button 
-              type="button"
-              variant="outline"
-              className="w-full border-border"
-              onClick={handleWalletConnect}
-              disabled={loading}
-            >
-              Connect Solana Wallet (Phantom/Solflare)
-            </Button>
             
             <div className="relative">
               <div className="absolute inset-0 flex items-center">
@@ -395,6 +383,12 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
           </TabsContent>
         </Tabs>
       </DialogContent>
+      
+      <SeedPhraseRecovery
+        isOpen={showRecoveryDialog}
+        onClose={() => setShowRecoveryDialog(false)}
+        onSuccess={handleRecoverySuccess}
+      />
     </Dialog>
   );
 };

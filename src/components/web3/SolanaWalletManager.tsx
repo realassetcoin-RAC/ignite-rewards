@@ -11,7 +11,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { useSecureAuth } from "@/hooks/useSecureAuth";
 import { Wallet, Copy, Download, Upload, Key, Shield, ExternalLink } from "lucide-react";
 import { Keypair, Connection, clusterApiUrl, PublicKey } from "@solana/web3.js";
-import { useWallet } from "@solana/wallet-adapter-react";
 import * as bip39 from "bip39";
 import bs58 from "bs58";
 
@@ -31,10 +30,11 @@ const SolanaWalletManager = () => {
   const [creating, setCreating] = useState(false);
   const [showSeedDialog, setShowSeedDialog] = useState(false);
   const [showImportDialog, setShowImportDialog] = useState(false);
+  const [showViewSeedDialog, setShowViewSeedDialog] = useState(false);
   const [seedPhrase, setSeedPhrase] = useState("");
   const [importSeedPhrase, setImportSeedPhrase] = useState("");
+  const [viewSeedPhrase, setViewSeedPhrase] = useState("");
   const [balance, setBalance] = useState<number | null>(null);
-  const { connected, publicKey, connect, disconnect } = useWallet();
 
   useEffect(() => {
     if (user) {
@@ -75,7 +75,7 @@ const SolanaWalletManager = () => {
 
     try {
       const connection = new Connection(clusterApiUrl('devnet'));
-      const targetPublicKey: PublicKey = publicKey ?? new Keypair().publicKey;
+      const targetPublicKey = new PublicKey(wallet.solana_address);
       const walletBalance = await connection.getBalance(targetPublicKey);
       setBalance(walletBalance / 1e9); // Convert lamports to SOL
     } catch (error) {
@@ -129,26 +129,6 @@ const SolanaWalletManager = () => {
     }
   };
 
-  const connectThirdPartyWallet = async () => {
-    try {
-      await connect();
-      if (publicKey) {
-        toast({ title: "Wallet Connected", description: `Connected: ${publicKey.toBase58().slice(0,6)}...` });
-      }
-    } catch (error) {
-      console.error('Error connecting wallet:', error);
-      toast({ title: "Error", description: "Failed to connect wallet", variant: "destructive" });
-    }
-  };
-
-  const disconnectThirdPartyWallet = async () => {
-    try {
-      await disconnect();
-      toast({ title: "Wallet Disconnected" });
-    } catch (error) {
-      console.error('Error disconnecting wallet:', error);
-    }
-  };
 
   const importWallet = async () => {
     if (!importSeedPhrase.trim()) {
@@ -215,9 +195,10 @@ const SolanaWalletManager = () => {
   };
 
   const downloadSeedPhrase = () => {
-    if (seedPhrase) {
+    const phraseToDownload = seedPhrase || viewSeedPhrase;
+    if (phraseToDownload) {
       const element = document.createElement("a");
-      const file = new Blob([seedPhrase], { type: "text/plain" });
+      const file = new Blob([phraseToDownload], { type: "text/plain" });
       element.href = URL.createObjectURL(file);
       element.download = "solana-wallet-seed-phrase.txt";
       document.body.appendChild(element);
@@ -227,6 +208,24 @@ const SolanaWalletManager = () => {
       toast({
         title: "Downloaded",
         description: "Seed phrase saved to your device",
+      });
+    }
+  };
+
+  const viewExistingSeedPhrase = async () => {
+    if (!wallet) return;
+    
+    try {
+      // Decrypt the stored seed phrase
+      const decryptedSeed = atob(wallet.encrypted_seed_phrase);
+      setViewSeedPhrase(decryptedSeed);
+      setShowViewSeedDialog(true);
+    } catch (error) {
+      console.error('Error decrypting seed phrase:', error);
+      toast({
+        title: "Error",
+        description: "Failed to decrypt seed phrase",
+        variant: "destructive",
       });
     }
   };
@@ -278,15 +277,6 @@ const SolanaWalletManager = () => {
               </div>
             </DialogContent>
           </Dialog>
-          {!connected ? (
-            <Button variant="outline" className="flex-1" onClick={connectThirdPartyWallet}>
-              Connect Phantom/Solflare
-            </Button>
-          ) : (
-            <Button variant="outline" className="flex-1" onClick={disconnectThirdPartyWallet}>
-              Disconnect Wallet
-            </Button>
-          )}
         </div>
 
         {/* Seed Phrase Backup Dialog */}
@@ -327,6 +317,50 @@ const SolanaWalletManager = () => {
               </div>
               <Button onClick={() => setShowSeedDialog(false)} className="w-full">
                 I've Saved My Seed Phrase
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* View Existing Seed Phrase Dialog */}
+        <Dialog open={showViewSeedDialog} onOpenChange={setShowViewSeedDialog}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Shield className="h-5 w-5" />
+                Your Seed Phrase
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="p-4 bg-destructive/10 border border-destructive/20 rounded-lg">
+                <p className="text-sm font-medium text-destructive mb-2">⚠️ Security Warning</p>
+                <p className="text-sm text-muted-foreground">
+                  This seed phrase can be used to recover your account if your email is compromised. 
+                  Store it securely and never share it with anyone.
+                </p>
+              </div>
+              <div className="p-4 bg-muted rounded-lg">
+                <p className="font-mono text-sm break-all">{viewSeedPhrase}</p>
+              </div>
+              <div className="flex gap-2">
+                <Button onClick={downloadSeedPhrase} variant="outline" className="flex-1">
+                  <Download className="mr-2 h-4 w-4" />
+                  Download
+                </Button>
+                <Button 
+                  onClick={() => {
+                    navigator.clipboard.writeText(viewSeedPhrase);
+                    toast({ title: "Copied", description: "Seed phrase copied to clipboard" });
+                  }}
+                  variant="outline" 
+                  className="flex-1"
+                >
+                  <Copy className="mr-2 h-4 w-4" />
+                  Copy
+                </Button>
+              </div>
+              <Button onClick={() => setShowViewSeedDialog(false)} className="w-full">
+                I've Secured My Seed Phrase
               </Button>
             </div>
           </DialogContent>
@@ -376,6 +410,24 @@ const SolanaWalletManager = () => {
             </a>
           </Button>
         </div>
+      </div>
+
+      <div className="space-y-2">
+        <Label className="text-sm text-muted-foreground">Recovery Options</Label>
+        <div className="flex gap-2">
+          <Button 
+            size="sm" 
+            variant="outline" 
+            onClick={viewExistingSeedPhrase}
+            className="flex-1"
+          >
+            <Key className="mr-2 h-4 w-4" />
+            View Seed Phrase
+          </Button>
+        </div>
+        <p className="text-xs text-muted-foreground">
+          Your seed phrase allows you to recover your account even if your email is compromised.
+        </p>
       </div>
 
       <div className="text-xs text-muted-foreground">
