@@ -6,10 +6,21 @@ import { useWallet } from "@solana/wallet-adapter-react";
 import { Loader2, Wallet } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { usePhantom } from "@/components/PhantomWalletProvider";
 
 declare global {
   interface Window {
     ethereum?: any;
+    phantom?: {
+      solana?: {
+        isPhantom?: boolean;
+        connect: (opts?: { onlyIfTrusted?: boolean }) => Promise<{ publicKey: { toString: () => string } }>;
+        disconnect: () => Promise<void>;
+        isConnected: boolean;
+        publicKey: { toString: () => string } | null;
+      };
+    };
+    solflare?: any;
   }
 }
 
@@ -36,6 +47,7 @@ const WalletSelector: React.FC<WalletSelectorProps> = ({
   const [availableWallets, setAvailableWallets] = useState<WalletOption[]>([]);
   const { toast } = useToast();
   const { connect, connected, disconnect, publicKey, wallets, select } = useWallet();
+  const { phantom, connect: phantomConnect, connected: phantomConnected, publicKey: phantomPublicKey } = usePhantom();
   const navigate = useNavigate();
 
   const walletOptions: WalletOption[] = [
@@ -44,20 +56,20 @@ const WalletSelector: React.FC<WalletSelectorProps> = ({
       icon: "🟣",
       type: "solana",
       adapter: "Phantom",
-      detectFunction: () => !!(window as any)?.phantom?.solana
+      detectFunction: () => !!(phantom?.isPhantom)
     },
     {
       name: "Solflare", 
       icon: "🟡",
       type: "solana",
       adapter: "Solflare",
-      detectFunction: () => !!(window as any)?.solflare
+      detectFunction: () => !!(window.solflare)
     },
     {
       name: "MetaMask",
       icon: "🦊",
       type: "ethereum", 
-      detectFunction: () => !!(window as any)?.ethereum?.isMetaMask
+      detectFunction: () => !!(window.ethereum?.isMetaMask)
     }
   ];
 
@@ -70,9 +82,60 @@ const WalletSelector: React.FC<WalletSelectorProps> = ({
       return true; // Show all wallets by default
     });
     setAvailableWallets(available);
-  }, []);
+  }, [phantom]);
+
+  const handlePhantomConnect = async () => {
+    setConnecting("Phantom");
+    
+    try {
+      if (!phantom) {
+        throw new Error("Phantom wallet not found! Please install Phantom wallet extension.");
+      }
+
+      await phantomConnect();
+      
+      if (phantomPublicKey) {
+        // Check if this wallet is associated with a user
+        const { data: walletData } = await supabase
+          .from('user_wallets')
+          .select('user_id')
+          .eq('wallet_address', phantomPublicKey)
+          .single();
+        
+        let redirectPath = '/user';
+        
+        if (walletData?.user_id) {
+          // Get user role
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('role')
+            .eq('id', walletData.user_id)
+            .single();
+          
+          if (profile?.role === 'admin') {
+            redirectPath = '/admin';
+          } else if (profile?.role === 'merchant') {
+            redirectPath = '/merchant';
+          }
+        }
+        
+        onWalletConnected?.();
+        onClose();
+        navigate(redirectPath);
+      }
+      
+    } catch (error) {
+      console.error('Phantom connection error:', error);
+      setConnecting(null);
+    }
+  };
 
   const handleSolanaWalletConnect = async (walletName: string) => {
+    if (walletName === "Phantom") {
+      await handlePhantomConnect();
+      return;
+    }
+    
     setConnecting(walletName);
     
     try {

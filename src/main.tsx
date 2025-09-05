@@ -4,6 +4,7 @@ import App from './App.tsx'
 import './index.css'
 import { ConnectionProvider, WalletProvider } from '@solana/wallet-adapter-react'
 import { PhantomWalletAdapter, SolflareWalletAdapter } from '@solana/wallet-adapter-wallets'
+import { PhantomWalletProvider } from './components/PhantomWalletProvider'
 
 const Root = () => {
   const endpoint = 'https://api.devnet.solana.com'
@@ -15,7 +16,9 @@ const Root = () => {
   return (
     <ConnectionProvider endpoint={endpoint}>
       <WalletProvider wallets={wallets} autoConnect>
-        <App />
+        <PhantomWalletProvider>
+          <App />
+        </PhantomWalletProvider>
       </WalletProvider>
     </ConnectionProvider>
   )
