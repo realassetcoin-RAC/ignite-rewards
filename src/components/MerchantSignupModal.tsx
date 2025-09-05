@@ -244,13 +244,15 @@ const MerchantSignupModal: React.FC<MerchantSignupModalProps> = ({ isOpen, onClo
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="w-[calc(100vw-2rem)] sm:w-full sm:max-w-4xl max-h-[calc(100vh-2rem)] overflow-y-auto bg-card/95 backdrop-blur-sm border-border/50 card-shadow p-4 sm:p-6">
-        <DialogHeader className="space-y-3">
-          <DialogTitle className="text-center text-xl sm:text-2xl font-bold bg-gradient-to-r from-primary to-primary-glow bg-clip-text text-transparent">
-            <Building2 className="inline-block mr-2 h-5 w-5 sm:h-6 sm:w-6 text-primary" />
-            Merchant Signup
-          </DialogTitle>
-        </DialogHeader>
+      <DialogContent className="w-[calc(100vw-2rem)] sm:w-full sm:max-w-4xl bg-transparent border-0 shadow-none p-0">
+        <div className="rounded-lg p-[1px] bg-gradient-to-r from-primary via-purple-500 to-blue-500 animate-gradient-x">
+          <div className="bg-card/95 backdrop-blur-sm border border-border/50 card-shadow rounded-lg max-h-[calc(100vh-2rem)] overflow-y-auto p-4 sm:p-6">
+            <DialogHeader className="space-y-3">
+              <DialogTitle className="text-center text-xl sm:text-2xl font-bold bg-gradient-to-r from-primary via-purple-500 to-blue-500 bg-clip-text text-transparent animate-gradient-x">
+                <Building2 className="inline-block mr-2 h-5 w-5 sm:h-6 sm:w-6 text-primary" />
+                Merchant Signup
+              </DialogTitle>
+            </DialogHeader>
 
         {step === 'select' && (
           <div className="space-y-6">
@@ -340,7 +342,7 @@ const MerchantSignupModal: React.FC<MerchantSignupModalProps> = ({ isOpen, onClo
               <p className="text-muted-foreground">Fill in your business details to get started</p>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-4 max-w-md mx-auto">
+            <form onSubmit={handleSubmit} className="space-y-4 max-w-md mx-auto text-left">
               <div className="space-y-2">
                 <Label htmlFor="businessName">Business Name *</Label>
                 <Input
@@ -469,6 +471,8 @@ const MerchantSignupModal: React.FC<MerchantSignupModalProps> = ({ isOpen, onClo
             </form>
           </div>
         )}
+          </div>
+        </div>
       </DialogContent>
     </Dialog>
   );
