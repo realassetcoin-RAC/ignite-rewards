@@ -36,7 +36,7 @@ const ReferralManager = () => {
   const loadReferrals = async () => {
     try {
       setLoading(true);
-      const { data, error } = await (supabase as any)
+      const { data, error } = await supabase
         .from('user_referrals')
         .select('*')
         .order('created_at', { ascending: false });
@@ -58,7 +58,7 @@ const ReferralManager = () => {
 
   const markRewarded = async (referral: Referral) => {
     try {
-      const { error } = await (supabase as any)
+      const { error } = await supabase
         .from('user_referrals')
         .update({ status: 'rewarded', rewarded_at: new Date().toISOString() })
         .eq('id', referral.id);
