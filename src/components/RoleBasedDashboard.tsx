@@ -7,7 +7,7 @@ import { useSecureAuth } from '@/hooks/useSecureAuth';
  * based on their role (admin, merchant, customer/user)
  */
 const RoleBasedDashboard = () => {
-  const { user, profile, loading } = useSecureAuth();
+  const { user, profile, loading, isAdmin } = useSecureAuth();
 
   // Show loading state while authentication is being checked
   if (loading) {
@@ -23,17 +23,34 @@ const RoleBasedDashboard = () => {
     return <Navigate to="/auth" replace />;
   }
 
-  // Redirect based on user role
-  const userRole = profile?.role;
+  // Priority 1: Check if user has admin privileges
+  // This takes precedence over the role field in the profile
+  if (isAdmin === true) {
+    console.log('RoleBasedDashboard: Redirecting to admin panel (isAdmin flag is true)');
+    return <Navigate to="/admin-panel" replace />;
+  }
+
+  // Priority 2: Check the role from profile
+  const userRole = profile?.role?.toLowerCase();
   
+  // Also check for admin/administrator role variations in profile
+  if (userRole === 'admin' || userRole === 'administrator') {
+    console.log('RoleBasedDashboard: Redirecting to admin panel (role is admin/administrator)');
+    return <Navigate to="/admin-panel" replace />;
+  }
+  
+  // Handle other role variations
   switch (userRole) {
-    case 'admin':
-      return <Navigate to="/admin-panel" replace />;
     case 'merchant':
+      console.log('RoleBasedDashboard: Redirecting to merchant dashboard');
       return <Navigate to="/merchant" replace />;
     case 'customer':
     case 'user':
+      console.log('RoleBasedDashboard: Redirecting to user dashboard');
+      return <Navigate to="/user" replace />;
     default:
+      // Default to user dashboard for any unknown roles
+      console.log('RoleBasedDashboard: Redirecting to user dashboard (default)');
       return <Navigate to="/user" replace />;
   }
 };
