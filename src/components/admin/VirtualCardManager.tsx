@@ -12,7 +12,7 @@ import { Switch } from "@/components/ui/switch";
 import { useForm } from "react-hook-form";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Edit2, Eye, Trash2, HelpCircle } from "lucide-react";
+import { Plus, Edit2, Eye, Trash2, HelpCircle, CreditCard } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface VirtualCard {
@@ -73,8 +73,18 @@ const VirtualCardManager = ({ onStatsUpdate }: VirtualCardManagerProps) => {
     try {
       setLoading(true);
       
-      // First check if user is admin
-      const { data: { user } } = await supabase.auth.getUser();
+      // First check if user is authenticated
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      if (authError) {
+        console.error('Authentication error:', authError);
+        toast({
+          title: "Authentication Error",
+          description: "Failed to verify user authentication",
+          variant: "destructive",
+        });
+        return;
+      }
+
       if (!user) {
         toast({
           title: "Access Denied",
@@ -84,6 +94,33 @@ const VirtualCardManager = ({ onStatsUpdate }: VirtualCardManagerProps) => {
         return;
       }
 
+      // Check user profile and admin status
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', user.id)
+        .single();
+
+      if (profileError) {
+        console.error('Profile error:', profileError);
+        toast({
+          title: "Profile Error",
+          description: "Failed to verify user profile",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      if (!profile || profile.role !== 'admin') {
+        toast({
+          title: "Access Denied",
+          description: "Admin access required to manage virtual cards",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Load virtual cards
       const { data, error } = await supabase
         .from('virtual_cards')
         .select('*')
@@ -91,19 +128,27 @@ const VirtualCardManager = ({ onStatsUpdate }: VirtualCardManagerProps) => {
 
       if (error) {
         console.error('Error loading virtual cards:', error);
-        if (error.code === 'PGRST301') {
-          toast({
-            title: "Access Denied",
-            description: "You don't have permission to view virtual cards. Admin access required.",
-            variant: "destructive",
-          });
-        } else {
-          toast({
-            title: "Error",
-            description: `Failed to load virtual cards: ${error.message}`,
-            variant: "destructive",
-          });
+        let errorMessage = "Failed to load virtual cards";
+        
+        switch (error.code) {
+          case 'PGRST301':
+            errorMessage = "You don't have permission to view virtual cards. Admin access required.";
+            break;
+          case '42501':
+            errorMessage = "Insufficient permissions to access virtual cards table.";
+            break;
+          case 'PGRST116':
+            errorMessage = "Virtual cards table not found or not accessible.";
+            break;
+          default:
+            errorMessage = `Failed to load virtual cards: ${error.message}`;
         }
+        
+        toast({
+          title: "Database Error",
+          description: errorMessage,
+          variant: "destructive",
+        });
         return;
       }
 
@@ -717,7 +762,30 @@ const VirtualCardManager = ({ onStatsUpdate }: VirtualCardManagerProps) => {
       </div>
 
       {loading ? (
-        <div className="text-center py-8">Loading virtual cards...</div>
+        <div className="text-center py-8">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+          <p>Loading virtual cards...</p>
+        </div>
+      ) : cards.length === 0 ? (
+        <div className="text-center py-8">
+          <Card className="p-8">
+            <div className="text-center">
+              <CreditCard className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+              <h3 className="text-lg font-medium mb-2">No Virtual Cards</h3>
+              <p className="text-muted-foreground mb-4">
+                Create your first virtual card to get started.
+              </p>
+              <Button onClick={() => {
+                setEditingCard(null);
+                form.reset();
+                setDialogOpen(true);
+              }}>
+                <Plus className="w-4 h-4 mr-2" />
+                Create Virtual Card
+              </Button>
+            </div>
+          </Card>
+        </div>
       ) : (
         <div className="border rounded-lg">
           <Table>
