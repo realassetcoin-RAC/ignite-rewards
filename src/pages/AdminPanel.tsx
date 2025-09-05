@@ -21,6 +21,7 @@ import ErrorBoundary from "@/components/ErrorBoundary";
 import "@/utils/adminAuthFix";
 import "@/utils/testAdminAccess";
 import "@/utils/adminDashboardFix";
+import "@/utils/adminDashboardLoadingFix";
 import { 
   Shield, 
   CreditCard, 

@@ -69,41 +69,23 @@ const MerchantManager = ({ onStatsUpdate }: MerchantManagerProps) => {
     try {
       setLoading(true);
       
-      // First check if user is admin
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
+      // Use enhanced loading with fallback methods
+      const { loadMerchantsWithFallback } = await import('@/utils/adminDashboardLoadingFix');
+      const result = await loadMerchantsWithFallback();
+      
+      if (result.success) {
+        setMerchants(result.data || []);
+        if (result.data && result.data.length === 0) {
+          console.log('No merchants found, but loading was successful');
+        }
+      } else {
+        console.error('Failed to load merchants:', result.errors);
         toast({
-          title: "Access Denied",
-          description: "Please sign in to access admin features",
+          title: "Loading Error",
+          description: result.message || "Failed to load merchants",
           variant: "destructive",
         });
-        return;
       }
-
-      const { data, error } = await supabase
-        .from('merchants')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (error) {
-        console.error('Error loading merchants:', error);
-        if (error.code === 'PGRST301') {
-          toast({
-            title: "Access Denied",
-            description: "You don't have permission to view merchants. Admin access required.",
-            variant: "destructive",
-          });
-        } else {
-          toast({
-            title: "Error",
-            description: `Failed to load merchants: ${error.message}`,
-            variant: "destructive",
-          });
-        }
-        return;
-      }
-
-      setMerchants(data || []);
     } catch (error) {
       console.error('Error loading merchants:', error);
       toast({

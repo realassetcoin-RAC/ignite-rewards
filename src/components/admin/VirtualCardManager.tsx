@@ -73,86 +73,23 @@ const VirtualCardManager = ({ onStatsUpdate }: VirtualCardManagerProps) => {
     try {
       setLoading(true);
       
-      // First check if user is authenticated
-      const { data: { user }, error: authError } = await supabase.auth.getUser();
-      if (authError) {
-        console.error('Authentication error:', authError);
-        toast({
-          title: "Authentication Error",
-          description: "Failed to verify user authentication",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      if (!user) {
-        toast({
-          title: "Access Denied",
-          description: "Please sign in to access admin features",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      // Check user profile and admin status
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('role')
-        .eq('id', user.id)
-        .single();
-
-      if (profileError) {
-        console.error('Profile error:', profileError);
-        toast({
-          title: "Profile Error",
-          description: "Failed to verify user profile",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      if (!profile || profile.role !== 'admin') {
-        toast({
-          title: "Access Denied",
-          description: "Admin access required to manage virtual cards",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      // Load virtual cards
-      const { data, error } = await supabase
-        .from('virtual_cards')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (error) {
-        console.error('Error loading virtual cards:', error);
-        let errorMessage = "Failed to load virtual cards";
-        
-        switch (error.code) {
-          case 'PGRST301':
-            errorMessage = "You don't have permission to view virtual cards. Admin access required.";
-            break;
-          case '42501':
-            errorMessage = "Insufficient permissions to access virtual cards table.";
-            break;
-          case 'PGRST116':
-            errorMessage = "Virtual cards table not found or not accessible.";
-            break;
-          default:
-            errorMessage = `Failed to load virtual cards: ${error.message}`;
+      // Use enhanced loading with fallback methods
+      const { loadVirtualCardsWithFallback } = await import('@/utils/adminDashboardLoadingFix');
+      const result = await loadVirtualCardsWithFallback();
+      
+      if (result.success) {
+        setCards(result.data || []);
+        if (result.data && result.data.length === 0) {
+          console.log('No virtual cards found, but loading was successful');
         }
-        
+      } else {
+        console.error('Failed to load virtual cards:', result.errors);
         toast({
-          title: "Database Error",
-          description: errorMessage,
+          title: "Loading Error",
+          description: result.message || "Failed to load virtual cards",
           variant: "destructive",
         });
-        return;
       }
-
-      setCards(data || []);
     } catch (error) {
       console.error('Error loading virtual cards:', error);
       toast({
