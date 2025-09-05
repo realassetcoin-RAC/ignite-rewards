@@ -7,6 +7,7 @@ import { Loader2, Wallet } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { usePhantom } from "@/components/PhantomWalletProvider";
+import { useMetaMask } from "@/components/MetaMaskProvider";
 
 declare global {
   interface Window {
@@ -48,6 +49,7 @@ const WalletSelector: React.FC<WalletSelectorProps> = ({
   const { toast } = useToast();
   const { connect, connected, disconnect, publicKey, wallets, select } = useWallet();
   const { phantom, connect: phantomConnect, connected: phantomConnected, publicKey: phantomPublicKey } = usePhantom();
+  const { ethereum, connect: metaMaskConnect, connected: metaMaskConnected, currentAccount: metaMaskAccount } = useMetaMask();
   const navigate = useNavigate();
 
   const walletOptions: WalletOption[] = [
@@ -69,7 +71,7 @@ const WalletSelector: React.FC<WalletSelectorProps> = ({
       name: "MetaMask",
       icon: "🦊",
       type: "ethereum", 
-      detectFunction: () => !!(window.ethereum?.isMetaMask)
+      detectFunction: () => !!(ethereum?.isMetaMask)
     }
   ];
 
@@ -82,7 +84,7 @@ const WalletSelector: React.FC<WalletSelectorProps> = ({
       return true; // Show all wallets by default
     });
     setAvailableWallets(available);
-  }, [phantom]);
+  }, [phantom, ethereum]);
 
   const handlePhantomConnect = async () => {
     setConnecting("Phantom");
@@ -216,61 +218,44 @@ const WalletSelector: React.FC<WalletSelectorProps> = ({
     setConnecting("MetaMask");
     
     try {
-      if (!window.ethereum) {
-        throw new Error("MetaMask not installed");
+      if (!ethereum) {
+        throw new Error("MetaMask not found! Please install MetaMask browser extension.");
       }
 
-      // Request account access
-      const accounts = await window.ethereum.request({
-        method: 'eth_requestAccounts',
-      });
-
-      if (accounts.length === 0) {
-        throw new Error("No accounts found");
-      }
-
-      const walletAddress = accounts[0];
+      await metaMaskConnect();
       
-      // Check if this wallet is associated with a user
-      const { data: walletData } = await supabase
-        .from('user_wallets')
-        .select('user_id')
-        .eq('wallet_address', walletAddress.toLowerCase())
-        .single();
-      
-      let redirectPath = '/user';
-      
-      if (walletData?.user_id) {
-        // Get user role
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('role')
-          .eq('id', walletData.user_id)
+      if (metaMaskAccount) {
+        // Check if this wallet is associated with a user
+        const { data: walletData } = await supabase
+          .from('user_wallets')
+          .select('user_id')
+          .eq('wallet_address', metaMaskAccount.toLowerCase())
           .single();
         
-        if (profile?.role === 'admin') {
-          redirectPath = '/admin';
-        } else if (profile?.role === 'merchant') {
-          redirectPath = '/merchant';
+        let redirectPath = '/user';
+        
+        if (walletData?.user_id) {
+          // Get user role
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('role')
+            .eq('id', walletData.user_id)
+            .single();
+          
+          if (profile?.role === 'admin') {
+            redirectPath = '/admin';
+          } else if (profile?.role === 'merchant') {
+            redirectPath = '/merchant';
+          }
         }
+        
+        onWalletConnected?.();
+        onClose();
+        navigate(redirectPath);
       }
-      
-      toast({ 
-        title: "Wallet Connected", 
-        description: `MetaMask connected: ${walletAddress.slice(0,6)}...` 
-      });
-      
-      onWalletConnected?.();
-      onClose();
-      navigate(redirectPath);
       
     } catch (error) {
       console.error('MetaMask connection error:', error);
-      toast({ 
-        title: "Connection Failed", 
-        description: error instanceof Error ? error.message : "Failed to connect MetaMask", 
-        variant: "destructive" 
-      });
       setConnecting(null);
     }
   };
