@@ -7,6 +7,8 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { Check, ChevronLeft, ChevronRight, Loader2, Building2, Star } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useNavigate } from "react-router-dom";
 
 /**
  * Merchant subscription plan interface
@@ -37,6 +39,7 @@ interface MerchantForm {
   businessName: string;
   contactName: string;
   email: string;
+  password: string;
   phone: string;
   website: string;
   industry: string;
@@ -106,6 +109,7 @@ const MerchantSignupModal: React.FC<MerchantSignupModalProps> = ({ isOpen, onClo
     businessName: "",
     contactName: "",
     email: "",
+    password: "",
     phone: "",
     website: "",
     industry: "",
@@ -113,6 +117,7 @@ const MerchantSignupModal: React.FC<MerchantSignupModalProps> = ({ isOpen, onClo
   });
   
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   /**
    * Reset modal state when it opens/closes
@@ -125,6 +130,7 @@ const MerchantSignupModal: React.FC<MerchantSignupModalProps> = ({ isOpen, onClo
         businessName: "",
         contactName: "",
         email: "",
+        password: "",
         phone: "",
         website: "",
         industry: "",
@@ -164,10 +170,19 @@ const MerchantSignupModal: React.FC<MerchantSignupModalProps> = ({ isOpen, onClo
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!merchantForm.businessName || !merchantForm.contactName || !merchantForm.email) {
+    if (!merchantForm.businessName || !merchantForm.contactName || !merchantForm.email || !merchantForm.password) {
       toast({
         title: "Missing Information", 
         description: "Please fill in all required fields.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (merchantForm.password.length < 6) {
+      toast({
+        title: "Password Too Short",
+        description: "Password must be at least 6 characters long.",
         variant: "destructive"
       });
       return;
@@ -177,25 +192,49 @@ const MerchantSignupModal: React.FC<MerchantSignupModalProps> = ({ isOpen, onClo
     const plan = merchantPlans[selectedPlan];
     
     try {
-      // Simulate API call for merchant signup and subscription setup
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
+      // Create merchant account with Supabase Auth
+      const { data, error } = await supabase.auth.signUp({
+        email: merchantForm.email,
+        password: merchantForm.password,
+        options: {
+          data: {
+            signup_type: 'merchant',
+            full_name: merchantForm.contactName,
+            business_name: merchantForm.businessName,
+            contact_name: merchantForm.contactName,
+            phone: merchantForm.phone,
+            website: merchantForm.website,
+            industry: merchantForm.industry,
+            address: merchantForm.address,
+            selected_plan: plan.id,
+            plan_price: plan.price
+          },
+          emailRedirectTo: `${window.location.origin}/merchant`
+        }
+      });
+
+      if (error) {
+        throw error;
+      }
+
       toast({
-        title: "Welcome to PointBridge!",
-        description: `Your ${plan.name} subscription has been set up. Welcome aboard!`,
+        title: "Account Created Successfully!",
+        description: "Please check your email to verify your account. Once verified, you can set up your subscription.",
       });
       
-      // Here you would integrate with Stripe for subscription billing
-      console.log('Merchant signup data:', {
+      // Here you would integrate with Stripe for subscription billing after email verification
+      console.log('Merchant signup successful:', {
         plan: plan,
-        merchant: merchantForm
+        merchant: merchantForm,
+        userId: data.user?.id
       });
       
       onClose();
-    } catch (error) {
+    } catch (error: any) {
+      console.error('Merchant signup error:', error);
       toast({
-        title: "Error",
-        description: "An error occurred during signup. Please try again.",
+        title: "Signup Failed",
+        description: error.message || "An error occurred during signup. Please try again.",
         variant: "destructive"
       });
     } finally {
@@ -338,6 +377,21 @@ const MerchantSignupModal: React.FC<MerchantSignupModalProps> = ({ isOpen, onClo
                   onChange={handleInputChange}
                   placeholder="Enter business email"
                   required
+                  disabled={loading}
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="password">Password *</Label>
+                <Input
+                  id="password"
+                  name="password"
+                  type="password"
+                  value={merchantForm.password}
+                  onChange={handleInputChange}
+                  placeholder="Create a password (min. 6 characters)"
+                  required
+                  minLength={6}
                   disabled={loading}
                 />
               </div>
