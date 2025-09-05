@@ -2,6 +2,8 @@ import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2 } from "lucide-react";
+import { getDashboardUrl } from "@/lib/dashboard-routing";
+import { robustAdminCheck } from "@/utils/adminVerification";
 
 /**
  * Auth callback page that handles role-based redirects after OAuth authentication
@@ -17,23 +19,34 @@ const AuthCallback = () => {
         const { data: { session } } = await supabase.auth.getSession();
         
         if (session?.user) {
-          // Get user profile to determine role
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('role')
-            .eq('id', session.user.id)
-            .single();
+          console.log('AuthCallback: Processing authentication for user:', session.user.email);
           
-          // Navigate based on user role
-          if (profile?.role === 'admin') {
-            navigate('/admin');
-          } else if (profile?.role === 'merchant') {
-            navigate('/merchant');
-          } else {
-            navigate('/user');
-          }
+          // Get user profile and admin status in parallel
+          const [profileResult, isAdmin] = await Promise.all([
+            supabase
+              .from('profiles')
+              .select('id, email, full_name, role, created_at, updated_at')
+              .eq('id', session.user.id)
+              .single(),
+            robustAdminCheck()
+          ]);
+          
+          const profile = profileResult.data;
+          
+          // Use the same routing logic as the rest of the app
+          const dashboardUrl = getDashboardUrl(isAdmin, profile);
+          
+          console.log('AuthCallback: Routing decision:', {
+            isAdmin,
+            profile: profile,
+            role: profile?.role,
+            dashboardUrl
+          });
+          
+          navigate(dashboardUrl);
         } else {
           // No session, redirect to home
+          console.log('AuthCallback: No session found, redirecting to home');
           navigate('/');
         }
       } catch (error) {
