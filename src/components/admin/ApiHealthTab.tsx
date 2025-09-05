@@ -1,0 +1,343 @@
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Switch } from "@/components/ui/switch";
+import { supabase } from "@/integrations/supabase/client";
+import { useSecureAuth } from "@/hooks/useSecureAuth";
+import { useToast } from "@/hooks/use-toast";
+import { Activity, CheckCircle, XCircle, RefreshCw, Clock, AlertTriangle } from "lucide-react";
+
+type HealthStatus = "ok" | "warn" | "error";
+
+type HealthResult = {
+  id: string;
+  name: string;
+  status: HealthStatus;
+  latencyMs: number | null;
+  message?: string;
+};
+
+type HealthCheck = {
+  id: string;
+  name: string;
+  description: string;
+  run: () => Promise<HealthResult>;
+};
+
+function formatLatency(latencyMs: number | null): string {
+  if (latencyMs == null) return "-";
+  if (latencyMs < 1000) return `${Math.round(latencyMs)} ms`;
+  return `${(latencyMs / 1000).toFixed(2)} s`;
+}
+
+const DEFAULT_INTERVAL_MS = 30000;
+
+const ApiHealthTab = () => {
+  const { user } = useSecureAuth();
+  const { toast } = useToast();
+  const [results, setResults] = useState<Record<string, HealthResult>>({});
+  const [isRunning, setIsRunning] = useState(false);
+  const [autoRefresh, setAutoRefresh] = useState(true);
+  const [lastRunAt, setLastRunAt] = useState<number | null>(null);
+  const timerRef = useRef<number | null>(null);
+
+  const checks: HealthCheck[] = useMemo(() => {
+    return [
+      {
+        id: "auth-session",
+        name: "Supabase Auth Session",
+        description: "Validate current session availability",
+        run: async () => {
+          const start = performance.now();
+          try {
+            const { data, error } = await supabase.auth.getSession();
+            const latencyMs = performance.now() - start;
+            if (error) {
+              return { id: "auth-session", name: "Supabase Auth Session", status: "error", latencyMs, message: error.message };
+            }
+            const hasSession = Boolean(data?.session);
+            return {
+              id: "auth-session",
+              name: "Supabase Auth Session",
+              status: hasSession ? "ok" : "warn",
+              latencyMs,
+              message: hasSession ? "Session active" : "No active session"
+            };
+          } catch (e: any) {
+            const latencyMs = performance.now() - start;
+            return { id: "auth-session", name: "Supabase Auth Session", status: "error", latencyMs, message: String(e?.message || e) };
+          }
+        }
+      },
+      {
+        id: "profiles-read",
+        name: "Profiles Table Read",
+        description: "HEAD count on profiles table",
+        run: async () => {
+          const start = performance.now();
+          try {
+            const { count, error } = await supabase.from("profiles").select("*", { count: "exact", head: true });
+            const latencyMs = performance.now() - start;
+            if (error) return { id: "profiles-read", name: "Profiles Table Read", status: "error", latencyMs, message: error.message };
+            return { id: "profiles-read", name: "Profiles Table Read", status: "ok", latencyMs, message: `Count accessible (${count ?? 0})` };
+          } catch (e: any) {
+            const latencyMs = performance.now() - start;
+            return { id: "profiles-read", name: "Profiles Table Read", status: "error", latencyMs, message: String(e?.message || e) };
+          }
+        }
+      },
+      {
+        id: "merchants-read",
+        name: "Merchants Table Read",
+        description: "HEAD count on merchants table",
+        run: async () => {
+          const start = performance.now();
+          try {
+            const { count, error } = await supabase.from("merchants").select("*", { count: "exact", head: true });
+            const latencyMs = performance.now() - start;
+            if (error) return { id: "merchants-read", name: "Merchants Table Read", status: "error", latencyMs, message: error.message };
+            return { id: "merchants-read", name: "Merchants Table Read", status: "ok", latencyMs, message: `Count accessible (${count ?? 0})` };
+          } catch (e: any) {
+            const latencyMs = performance.now() - start;
+            return { id: "merchants-read", name: "Merchants Table Read", status: "error", latencyMs, message: String(e?.message || e) };
+          }
+        }
+      },
+      {
+        id: "virtual-cards-read",
+        name: "Virtual Cards Table Read",
+        description: "HEAD count on virtual_cards table",
+        run: async () => {
+          const start = performance.now();
+          try {
+            const { count, error } = await supabase.from("virtual_cards").select("*", { count: "exact", head: true });
+            const latencyMs = performance.now() - start;
+            if (error) return { id: "virtual-cards-read", name: "Virtual Cards Table Read", status: "error", latencyMs, message: error.message };
+            return { id: "virtual-cards-read", name: "Virtual Cards Table Read", status: "ok", latencyMs, message: `Count accessible (${count ?? 0})` };
+          } catch (e: any) {
+            const latencyMs = performance.now() - start;
+            return { id: "virtual-cards-read", name: "Virtual Cards Table Read", status: "error", latencyMs, message: String(e?.message || e) };
+          }
+        }
+      },
+      {
+        id: "rpc-is-admin",
+        name: "RPC is_admin",
+        description: "Test is_admin RPC accessibility",
+        run: async () => {
+          const start = performance.now();
+          try {
+            const { data, error } = await supabase.rpc("is_admin");
+            const latencyMs = performance.now() - start;
+            if (error) return { id: "rpc-is-admin", name: "RPC is_admin", status: "error", latencyMs, message: error.message };
+            const ok = data === true || data === false; // Should return boolean
+            return { id: "rpc-is-admin", name: "RPC is_admin", status: ok ? "ok" : "warn", latencyMs, message: `Response: ${String(data)}` };
+          } catch (e: any) {
+            const latencyMs = performance.now() - start;
+            return { id: "rpc-is-admin", name: "RPC is_admin", status: "error", latencyMs, message: String(e?.message || e) };
+          }
+        }
+      },
+      {
+        id: "rpc-check-admin",
+        name: "RPC check_admin_access",
+        description: "Test check_admin_access RPC accessibility",
+        run: async () => {
+          const start = performance.now();
+          try {
+            const { data, error } = await supabase.rpc("check_admin_access");
+            const latencyMs = performance.now() - start;
+            if (error) return { id: "rpc-check-admin", name: "RPC check_admin_access", status: "error", latencyMs, message: error.message };
+            const ok = data === true || data === false;
+            return { id: "rpc-check-admin", name: "RPC check_admin_access", status: ok ? "ok" : "warn", latencyMs, message: `Response: ${String(data)}` };
+          } catch (e: any) {
+            const latencyMs = performance.now() - start;
+            return { id: "rpc-check-admin", name: "RPC check_admin_access", status: "error", latencyMs, message: String(e?.message || e) };
+          }
+        }
+      },
+      {
+        id: "rpc-can-use-mfa",
+        name: "RPC can_use_mfa",
+        description: "Validate MFA eligibility RPC",
+        run: async () => {
+          const start = performance.now();
+          try {
+            const userId = user?.id || "00000000-0000-0000-0000-000000000000";
+            const { data, error } = await supabase.rpc("can_use_mfa", { user_id: userId });
+            const latencyMs = performance.now() - start;
+            if (error) return { id: "rpc-can-use-mfa", name: "RPC can_use_mfa", status: "error", latencyMs, message: error.message };
+            const ok = data === true || data === false || data == null; // allow null when not configured
+            return { id: "rpc-can-use-mfa", name: "RPC can_use_mfa", status: ok ? "ok" : "warn", latencyMs, message: `Response: ${String(data)}` };
+          } catch (e: any) {
+            const latencyMs = performance.now() - start;
+            return { id: "rpc-can-use-mfa", name: "RPC can_use_mfa", status: "error", latencyMs, message: String(e?.message || e) };
+          }
+        }
+      }
+    ];
+  }, [user?.id]);
+
+  const runAllChecks = useCallback(async () => {
+    if (isRunning) return;
+    setIsRunning(true);
+    try {
+      const settled = await Promise.allSettled(
+        checks.map(async (c) => {
+          const res = await c.run();
+          return [c.id, res] as const;
+        })
+      );
+      const next: Record<string, HealthResult> = {};
+      let anyError = false;
+      for (const s of settled) {
+        if (s.status === "fulfilled") {
+          const [id, res] = s.value;
+          next[id] = res;
+          if (res.status === "error") anyError = true;
+        } else {
+          anyError = true;
+        }
+      }
+      setResults(next);
+      setLastRunAt(Date.now());
+      if (anyError) {
+        toast({ title: "Health Check Completed", description: "Some checks reported errors.", variant: "destructive" });
+      }
+    } finally {
+      setIsRunning(false);
+    }
+  }, [checks, isRunning, toast]);
+
+  useEffect(() => {
+    // initial run
+    runAllChecks();
+  }, [runAllChecks]);
+
+  useEffect(() => {
+    if (!autoRefresh) {
+      if (timerRef.current) window.clearInterval(timerRef.current);
+      timerRef.current = null;
+      return;
+    }
+    timerRef.current = window.setInterval(() => {
+      runAllChecks();
+    }, DEFAULT_INTERVAL_MS);
+    return () => {
+      if (timerRef.current) window.clearInterval(timerRef.current);
+      timerRef.current = null;
+    };
+  }, [autoRefresh, runAllChecks]);
+
+  const summary = useMemo(() => {
+    const total = checks.length;
+    const values = Object.values(results);
+    const okCount = values.filter(v => v.status === "ok").length;
+    const warnCount = values.filter(v => v.status === "warn").length;
+    const errorCount = values.filter(v => v.status === "error").length;
+    return { total, okCount, warnCount, errorCount };
+  }, [results, checks.length]);
+
+  return (
+    <div className="space-y-4">
+      <Card className="card-gradient border-0">
+        <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <CardTitle className="flex items-center gap-2">
+              <Activity className="h-5 w-5" />
+              API Health
+            </CardTitle>
+            <CardDescription>Live status of core Supabase APIs and tables</CardDescription>
+          </div>
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
+              <Clock className="h-4 w-4 text-muted-foreground" />
+              <span className="text-sm text-muted-foreground">
+                {lastRunAt ? new Date(lastRunAt).toLocaleTimeString() : "-"}
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-muted-foreground">Auto-refresh</span>
+              <Switch checked={autoRefresh} onCheckedChange={(v) => setAutoRefresh(Boolean(v))} />
+            </div>
+            <Button onClick={runAllChecks} disabled={isRunning} variant="outline">
+              <RefreshCw className={`h-4 w-4 ${isRunning ? "animate-spin" : ""}`} />
+              Refresh
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-wrap items-center gap-2">
+            <Badge variant="outline">Total: {summary.total}</Badge>
+            <Badge className="bg-green-500/10 text-green-600 border-green-500/30">OK: {summary.okCount}</Badge>
+            <Badge className="bg-yellow-500/10 text-yellow-700 border-yellow-500/30">Warnings: {summary.warnCount}</Badge>
+            <Badge className="bg-red-500/10 text-red-600 border-red-500/30">Errors: {summary.errorCount}</Badge>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Checks</CardTitle>
+          <CardDescription>Key endpoints and database resources</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Check</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Latency</TableHead>
+                <TableHead>Details</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {checks.map((c) => {
+                const r = results[c.id];
+                const status = r?.status;
+                return (
+                  <TableRow key={c.id}>
+                    <TableCell>
+                      <div className="font-medium">{c.name}</div>
+                      <div className="text-xs text-muted-foreground">{c.description}</div>
+                    </TableCell>
+                    <TableCell>
+                      {status === "ok" && (
+                        <div className="flex items-center gap-1 text-green-600">
+                          <CheckCircle className="h-4 w-4" />
+                          <span>Healthy</span>
+                        </div>
+                      )}
+                      {status === "warn" && (
+                        <div className="flex items-center gap-1 text-yellow-700">
+                          <AlertTriangle className="h-4 w-4" />
+                          <span>Warning</span>
+                        </div>
+                      )}
+                      {status === "error" && (
+                        <div className="flex items-center gap-1 text-red-600">
+                          <XCircle className="h-4 w-4" />
+                          <span>Error</span>
+                        </div>
+                      )}
+                      {!status && <span className="text-muted-foreground">-</span>}
+                    </TableCell>
+                    <TableCell>{formatLatency(r?.latencyMs ?? null)}</TableCell>
+                    <TableCell className="text-sm text-muted-foreground whitespace-pre-wrap">
+                      {r?.message || "-"}
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+    </div>
+  );
+};
+
+export default ApiHealthTab;
+

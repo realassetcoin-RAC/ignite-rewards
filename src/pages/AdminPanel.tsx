@@ -13,6 +13,7 @@ import ReferralCampaignManager from "@/components/admin/ReferralCampaignManager"
 import ReferralManager from "@/components/admin/ReferralManager";
 import SubscriptionPlanManager from "@/components/admin/SubscriptionPlanManager";
 import UserManager from "@/components/admin/UserManager";
+import ApiHealthTab from "@/components/admin/ApiHealthTab";
 import AdminDashboardWrapper from "@/components/AdminDashboardWrapper";
 import { useSecureAuth } from "@/hooks/useSecureAuth";
 import { checkRateLimit, sanitizeErrorMessage } from "@/utils/validation";
@@ -287,7 +288,7 @@ const AdminPanel = () => {
 
         {/* Main Admin Tabs */}
         <Tabs defaultValue="cards" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-1">
+          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-1">
             <TabsTrigger value="cards" className="flex items-center space-x-1 px-2 py-1.5">
               <CreditCard className="h-4 w-4 flex-shrink-0" />
               <span className="hidden sm:inline">Virtual Cards</span>
@@ -312,6 +313,11 @@ const AdminPanel = () => {
               <BarChart3 className="h-4 w-4 flex-shrink-0" />
               <span className="hidden sm:inline">Analytics</span>
               <span className="sm:hidden text-xs">Stats</span>
+            </TabsTrigger>
+            <TabsTrigger value="health" className="flex items-center space-x-1 px-2 py-1.5">
+              <AlertTriangle className="h-4 w-4 flex-shrink-0" />
+              <span className="hidden sm:inline">Health</span>
+              <span className="sm:hidden text-xs">Health</span>
             </TabsTrigger>
             <TabsTrigger value="settings" className="flex items-center space-x-1 px-2 py-1.5">
               <Settings className="h-4 w-4 flex-shrink-0" />
@@ -399,6 +405,18 @@ const AdminPanel = () => {
                 </div>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="health" className="space-y-6">
+            <div>
+              <h3 className="text-2xl font-bold text-foreground mb-2">API Health</h3>
+              <p className="text-muted-foreground mb-6">
+                Live status of core APIs, RPCs, and database tables.
+              </p>
+              <ErrorBoundary>
+                <ApiHealthTab />
+              </ErrorBoundary>
+            </div>
           </TabsContent>
 
           <TabsContent value="settings" className="space-y-6">
