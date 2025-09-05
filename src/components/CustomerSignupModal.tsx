@@ -196,7 +196,7 @@ const CustomerSignupModal: React.FC<CustomerSignupModalProps> = ({ isOpen, onClo
             selected_card: selectedCardData.id,
             card_price: selectedCardData.price
           },
-          emailRedirectTo: `${window.location.origin}/user`
+          emailRedirectTo: `${window.location.origin}/dashboard`
         }
       });
 
