@@ -104,6 +104,14 @@ const ReferralCampaignManager = () => {
         toast({ title: 'Invalid dates', description: 'End date must be after start date.', variant: 'destructive' });
         return;
       }
+      
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast({ title: 'Authentication Error', description: 'Please log in to create campaigns.', variant: 'destructive' });
+        return;
+      }
+
       const payload = {
         name: values.name.trim(),
         description: values.description?.trim() || null,
@@ -111,27 +119,42 @@ const ReferralCampaignManager = () => {
         start_date: values.start_date,
         end_date: values.end_date,
         is_active: !!values.is_active,
+        ...(editing ? {} : { created_by: user.id }), // Only add created_by for new campaigns
       };
+      
       if (editing) {
         const { error } = await supabase
           .from('referral_campaigns')
           .update(payload)
           .eq('id', editing.id);
-        if (error) throw error;
+        if (error) {
+          console.error('Update error:', error);
+          throw error;
+        }
         toast({ title: 'Updated', description: 'Campaign updated successfully.' });
       } else {
         const { error } = await supabase
           .from('referral_campaigns')
           .insert([payload]);
-        if (error) throw error;
+        if (error) {
+          console.error('Insert error:', error);
+          throw error;
+        }
         toast({ title: 'Created', description: 'Campaign created successfully.' });
       }
       setDialogOpen(false);
       setEditing(null);
       await loadCampaigns();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to save campaign:', error);
-      toast({ title: 'Error', description: 'Failed to save campaign', variant: 'destructive' });
+      const errorMessage = error?.message || 'Failed to save campaign';
+      toast({ 
+        title: 'Error', 
+        description: errorMessage.includes('permission') 
+          ? 'You do not have permission to create campaigns. Please contact an administrator.'
+          : errorMessage,
+        variant: 'destructive' 
+      });
     }
   };
 
@@ -154,7 +177,7 @@ const ReferralCampaignManager = () => {
               <DialogTitle>{editing ? 'Edit Campaign' : 'Create Campaign'}</DialogTitle>
             </DialogHeader>
             <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                 <FormField
                   control={form.control}
                   name="name"
@@ -181,7 +204,7 @@ const ReferralCampaignManager = () => {
                     </FormItem>
                   )}
                 />
-                <div className="grid grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <FormField
                     control={form.control}
                     name="reward_points"
@@ -204,7 +227,7 @@ const ReferralCampaignManager = () => {
                           <Calendar className="w-3 h-3" /> Start Date
                         </FormLabel>
                         <FormControl>
-                          <input type="date" className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" {...field} />
+                          <Input type="date" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -219,7 +242,7 @@ const ReferralCampaignManager = () => {
                           <Calendar className="w-3 h-3" /> End Date
                         </FormLabel>
                         <FormControl>
-                          <input type="date" className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" {...field} />
+                          <Input type="date" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -230,16 +253,21 @@ const ReferralCampaignManager = () => {
                   control={form.control}
                   name="is_active"
                   render={({ field }) => (
-                    <FormItem className="flex items-center gap-2">
+                    <FormItem className="flex flex-row items-center space-x-3 space-y-0">
                       <FormControl>
                         <Checkbox checked={field.value} onCheckedChange={field.onChange} />
                       </FormControl>
-                      <FormLabel className="m-0">Active</FormLabel>
+                      <div className="space-y-1 leading-none">
+                        <FormLabel>Active Campaign</FormLabel>
+                        <p className="text-sm text-muted-foreground">
+                          Enable this campaign for new referrals
+                        </p>
+                      </div>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
-                <div className="flex gap-2 pt-2">
+                <div className="flex gap-3 pt-4">
                   <Button type="submit" className="flex-1">
                     <CheckCircle2 className="w-4 h-4 mr-2" />
                     {editing ? 'Update Campaign' : 'Create Campaign'}
