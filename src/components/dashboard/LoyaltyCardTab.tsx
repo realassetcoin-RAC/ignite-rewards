@@ -2,13 +2,10 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useSecureAuth } from "@/hooks/useSecureAuth";
-import { Wallet, CreditCard, Copy, Download } from "lucide-react";
+import { Wallet, CreditCard, Copy, Info } from "lucide-react";
 import SolanaWalletManager from "@/components/web3/SolanaWalletManager";
 
 interface LoyaltyCard {
@@ -27,15 +24,13 @@ interface UserPoints {
   lifetime_points: number;
 }
 
+
 const LoyaltyCardTab = () => {
   const { user } = useSecureAuth();
   const { toast } = useToast();
   const [loyaltyCard, setLoyaltyCard] = useState<LoyaltyCard | null>(null);
   const [userPoints, setUserPoints] = useState<UserPoints>({ total_points: 0, available_points: 0, lifetime_points: 0 });
   const [loading, setLoading] = useState(true);
-  const [creating, setCreating] = useState(false);
-  const [showCreateDialog, setShowCreateDialog] = useState(false);
-  const [formData, setFormData] = useState({ full_name: "", phone: "" });
 
   useEffect(() => {
     if (user) {
@@ -46,15 +41,14 @@ const LoyaltyCardTab = () => {
 
   const loadLoyaltyCard = async () => {
     try {
-      // Try to load from user_loyalty_cards with multiple schema attempts
+      // Try to load from user_loyalty_cards with API schema focus
       let loyaltyData = null;
       let loadError = null;
       
-      // Try public schema first
+      // Based on our testing, focus on API schema first
       try {
-        console.log('Loading from public.user_loyalty_cards...');
+        console.log('Loading from api.user_loyalty_cards (configured schema)...');
         const { data, error } = await supabase
-          .schema('public')
           .from('user_loyalty_cards')
           .select('*')
           .eq('user_id', user?.id)
@@ -65,15 +59,16 @@ const LoyaltyCardTab = () => {
         }
         
         loyaltyData = data;
-        console.log('Loaded from public schema:', data);
-      } catch (publicError) {
-        console.warn('Public schema load failed:', publicError);
-        loadError = publicError;
+        console.log('Loaded from configured schema:', data);
+      } catch (primaryError) {
+        console.warn('Primary schema load failed:', primaryError);
+        loadError = primaryError;
         
-        // Fallback to default schema
+        // Try explicit API schema reference
         try {
-          console.log('Loading from default user_loyalty_cards...');
+          console.log('Loading with explicit api schema reference...');
           const { data, error } = await supabase
+            .schema('api')
             .from('user_loyalty_cards')
             .select('*')
             .eq('user_id', user?.id)
@@ -84,17 +79,23 @@ const LoyaltyCardTab = () => {
           }
           
           loyaltyData = data;
-          console.log('Loaded from default schema:', data);
-        } catch (defaultError) {
-          console.error('Default schema load also failed:', defaultError);
-          loadError = defaultError;
+          console.log('Loaded with explicit api schema:', data);
+        } catch (secondaryError) {
+          console.error('All load attempts failed:', secondaryError);
+          loadError = secondaryError;
         }
       }
       
-      // Only show error if it's not a "no rows" error and we couldn't load from either schema
+      // Handle loading errors more gracefully
       if (loadError && loadError.code !== 'PGRST116') {
         console.error('Error loading loyalty card:', loadError);
-        return;
+        
+        // If it's a permission error, don't prevent card creation - just continue with no card
+        if (loadError.code !== '42501' && !loadError.message?.includes('permission denied')) {
+          return;
+        } else {
+          console.log('Permission denied for loading - continuing with card creation option');
+        }
       }
 
       setLoyaltyCard(loyaltyData);
@@ -126,155 +127,6 @@ const LoyaltyCardTab = () => {
     }
   };
 
-  const createLoyaltyCard = async () => {
-    if (!formData.full_name.trim()) {
-      toast({
-        title: "Error",
-        description: "Please enter your full name",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setCreating(true);
-    try {
-      // Generate loyalty number using the database function with multiple fallbacks
-      let loyaltyNumber;
-      
-      // Try multiple approaches to generate loyalty number
-      const generateLoyaltyNumber = async () => {
-        const attempts = [
-          // Attempt 1: api.generate_loyalty_number with email
-          () => supabase.rpc('generate_loyalty_number', { user_email: user?.email || '' }),
-          // Attempt 2: public.generate_loyalty_number with email  
-          () => supabase.schema('public').rpc('generate_loyalty_number', { user_email: user?.email || '' }),
-          // Attempt 3: api.generate_loyalty_number without params
-          () => supabase.rpc('generate_loyalty_number'),
-          // Attempt 4: public.generate_loyalty_number without params
-          () => supabase.schema('public').rpc('generate_loyalty_number')
-        ];
-        
-        for (let i = 0; i < attempts.length; i++) {
-          try {
-            console.log(`Attempting loyalty number generation method ${i + 1}...`);
-            const { data: generatedNumber, error: numberError } = await attempts[i]();
-            
-            if (!numberError && generatedNumber) {
-              console.log(`Success with method ${i + 1}, generated:`, generatedNumber);
-              return generatedNumber;
-            } else if (numberError) {
-              console.warn(`Method ${i + 1} failed:`, numberError.message);
-            }
-          } catch (e) {
-            console.warn(`Method ${i + 1} exception:`, e);
-          }
-        }
-        
-        // Final fallback: client-side generation
-        console.log('All RPC methods failed, using client-side generation');
-        const initial = (user?.email || 'U').charAt(0).toUpperCase();
-        const randomDigits = Math.floor(Math.random() * 10000000).toString().padStart(7, '0');
-        return initial + randomDigits;
-      };
-      
-      loyaltyNumber = await generateLoyaltyNumber();
-      console.log('Final loyalty number to use:', loyaltyNumber);
-
-      // Insert into user_loyalty_cards with multiple schema attempts
-      console.log('Attempting to insert loyalty card...');
-      
-      const insertData = {
-        user_id: user?.id,
-        loyalty_number: loyaltyNumber,
-        full_name: formData.full_name.trim(),
-        email: user?.email || '',
-        phone: formData.phone.trim() || null,
-        is_active: true
-      };
-      
-      let insertResult = null;
-      let insertError = null;
-      
-      // Try public schema first (this is the main table now)
-      try {
-        console.log('Trying public.user_loyalty_cards...');
-        const { data, error } = await supabase
-          .schema('public')
-          .from('user_loyalty_cards')
-          .insert(insertData)
-          .select()
-          .single();
-          
-        if (error) {
-          throw error;
-        }
-        
-        insertResult = data;
-        console.log('Successfully inserted into public.user_loyalty_cards:', data);
-      } catch (publicError) {
-        console.warn('Public schema insert failed:', publicError);
-        insertError = publicError;
-        
-        // Fallback to default schema (should resolve to public anyway)
-        try {
-          console.log('Trying default schema user_loyalty_cards...');
-          const { data, error } = await supabase
-            .from('user_loyalty_cards')
-            .insert(insertData)
-            .select()
-            .single();
-            
-          if (error) {
-            throw error;
-          }
-          
-          insertResult = data;
-          console.log('Successfully inserted into user_loyalty_cards:', data);
-        } catch (defaultError) {
-          console.error('Default schema insert also failed:', defaultError);
-          throw defaultError;
-        }
-      }
-      
-      if (!insertResult) {
-        throw new Error('Failed to insert loyalty card record');
-      }
-
-      setLoyaltyCard(insertResult);
-      setShowCreateDialog(false);
-      setFormData({ full_name: "", phone: "" });
-
-      toast({
-        title: "Success",
-        description: "Your loyalty card has been created successfully!",
-      });
-    } catch (error: any) {
-      console.error('Error creating loyalty card:', error);
-      
-      let errorMessage = 'Failed to create loyalty card. Please try again.';
-      
-      // Provide specific error messages based on common issues
-      if (error?.code === 'PGRST301') {
-        errorMessage = 'Permission denied. Please check your account permissions.';
-      } else if (error?.code === '42501') {
-        errorMessage = 'Insufficient permissions to create loyalty card.';
-      } else if (error?.code === 'PGRST116') {
-        errorMessage = 'Loyalty card table not accessible. Please contact support.';
-      } else if (error?.code === '23505') {
-        errorMessage = 'A loyalty card already exists for your account.';
-      } else if (error?.message) {
-        errorMessage = error.message;
-      }
-      
-      toast({
-        title: "Error",
-        description: errorMessage,
-        variant: "destructive",
-      });
-    } finally {
-      setCreating(false);
-    }
-  };
 
   const copyLoyaltyNumber = () => {
     if (loyaltyCard?.loyalty_number) {
@@ -324,55 +176,27 @@ const LoyaltyCardTab = () => {
         </Card>
       </div>
 
-      {/* Loyalty Card */}
+      {/* Loyalty Card Display or Info Message */}
       {!loyaltyCard ? (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <CreditCard className="h-5 w-5" />
-              Create Your Loyalty Card
+              <Info className="h-5 w-5 text-blue-500" />
+              No Loyalty Card Found
             </CardTitle>
             <CardDescription>
-              Get started by creating your digital loyalty card to earn rewards
+              You don't have a loyalty card yet. Create one to start earning rewards and participating in the loyalty program.
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
-              <DialogTrigger asChild>
-                <Button className="w-full">
-                  <CreditCard className="mr-2 h-4 w-4" />
-                  Create Loyalty Card
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Create Your Loyalty Card</DialogTitle>
-                </DialogHeader>
-                <div className="space-y-4">
-                  <div>
-                    <Label htmlFor="full_name">Full Name *</Label>
-                    <Input
-                      id="full_name"
-                      value={formData.full_name}
-                      onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
-                      placeholder="Enter your full name"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="phone">Phone Number (Optional)</Label>
-                    <Input
-                      id="phone"
-                      value={formData.phone}
-                      onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                      placeholder="Enter your phone number"
-                    />
-                  </div>
-                  <Button onClick={createLoyaltyCard} disabled={creating} className="w-full">
-                    {creating ? "Creating..." : "Create Card"}
-                  </Button>
-                </div>
-              </DialogContent>
-            </Dialog>
+            <div className="text-sm text-muted-foreground space-y-2">
+              <p>To create your virtual loyalty card:</p>
+              <ul className="list-disc list-inside space-y-1 ml-4">
+                <li>Use the <strong>"Add Virtual Card"</strong> button in the main dashboard</li>
+                <li>Fill in your details to generate a unique loyalty number</li>
+                <li>Start earning points with your new loyalty card</li>
+              </ul>
+            </div>
           </CardContent>
         </Card>
       ) : (

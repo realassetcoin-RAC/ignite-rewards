@@ -10,9 +10,10 @@ import VirtualCardManager from "@/components/admin/VirtualCardManager";
 import MerchantManager from "@/components/admin/MerchantManager";
 import AdminUserCreator from "@/components/admin/AdminUserCreator";
 import UserManager from "@/components/admin/UserManager";
+import UserLoyaltyCardManager from "@/components/admin/UserLoyaltyCardManager";
 import ReferralManager from "@/components/admin/ReferralManager";
 import SubscriptionPlanManager from "@/components/admin/SubscriptionPlanManager";
-import { CreditCard, Users, Package, TrendingUp, Shield, UserCheck, Gift, Settings } from "lucide-react";
+import { CreditCard, Users, Package, TrendingUp, Shield, UserCheck, Gift, Settings, Wallet } from "lucide-react";
 
 const AdminDashboard = () => {
   const [user, setUser] = useState<any>(null);
@@ -222,6 +223,11 @@ const AdminDashboard = () => {
                 <span className="hidden sm:inline">Users</span>
                 <span className="sm:hidden">Users</span>
               </TabsTrigger>
+              <TabsTrigger value="loyalty-cards" className="tabs-trigger flex items-center gap-2 px-4 py-2 whitespace-nowrap">
+                <Wallet className="h-4 w-4" />
+                <span className="hidden sm:inline">Loyalty Cards</span>
+                <span className="sm:hidden">Loyalty</span>
+              </TabsTrigger>
               <TabsTrigger value="referrals" className="tabs-trigger flex items-center gap-2 px-4 py-2 whitespace-nowrap">
                 <Gift className="h-4 w-4" />
                 <span className="hidden sm:inline">Referrals</span>
@@ -278,6 +284,20 @@ const AdminDashboard = () => {
               </CardHeader>
               <CardContent>
                 <UserManager onStatsUpdate={loadStats} />
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="loyalty-cards">
+            <Card>
+              <CardHeader>
+                <CardTitle>User Loyalty Cards</CardTitle>
+                <CardDescription>
+                  Create and manage loyalty cards for users to enable their participation in the loyalty program.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <UserLoyaltyCardManager onStatsUpdate={loadStats} />
               </CardContent>
             </Card>
           </TabsContent>
