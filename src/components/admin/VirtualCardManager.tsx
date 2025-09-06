@@ -342,7 +342,7 @@ const VirtualCardManager = ({ onStatsUpdate }: VirtualCardManagerProps) => {
     setEditingCard(card);
     
     // Check if card type or plan is custom (not in predefined list)
-    const standardTypes = ["rewards", "loyalty", "membership", "gift"];
+    const standardTypes = ["loyalty"];
     const standardPlans = ["basic", "premium", "enterprise"];
     
     const isCustomType = !standardTypes.includes(card.card_type);
@@ -556,10 +556,7 @@ const VirtualCardManager = ({ onStatsUpdate }: VirtualCardManagerProps) => {
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
-                              <SelectItem value="rewards">Rewards</SelectItem>
                               <SelectItem value="loyalty">Loyalty</SelectItem>
-                              <SelectItem value="membership">Membership</SelectItem>
-                              <SelectItem value="gift">Gift</SelectItem>
                               {customCardTypes.map((type) => (
                                 <SelectItem key={type} value={type}>{type}</SelectItem>
                               ))}

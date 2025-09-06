@@ -74,7 +74,7 @@ async function applyVirtualCardsFix() {
         DO $$
         BEGIN
             IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'card_type' AND typnamespace = (SELECT oid FROM pg_namespace WHERE nspname = 'api')) THEN
-                CREATE TYPE api.card_type AS ENUM ('rewards', 'loyalty', 'membership', 'gift', 'loyalty_plus');
+                CREATE TYPE api.card_type AS ENUM ('loyalty', 'loyalty_plus');
             END IF;
         END $$;
       `

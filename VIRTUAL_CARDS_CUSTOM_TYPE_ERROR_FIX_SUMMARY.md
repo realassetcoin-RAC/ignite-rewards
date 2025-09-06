@@ -13,7 +13,7 @@ The frontend `VirtualCardManager` component was trying to submit a `custom_card_
 
 ### 2. Schema Type Mismatch
 There was inconsistency in the database schema:
-- Some migrations defined `card_type` as an enum with values like `('rewards', 'loyalty', 'membership', 'gift')`
+- Some migrations defined `card_type` as an enum with values like `('loyalty')`
 - Other migrations converted it to TEXT to support custom types
 - The TypeScript types were expecting enum values, but the actual database might have had TEXT
 - The frontend was using outdated enum values like `"standard"` and `"premium"` that weren't in the current enum definition
@@ -24,7 +24,7 @@ There was inconsistency in the database schema:
 **File: `src/components/admin/VirtualCardManager.tsx`**
 
 - **Fixed form submission**: Changed from spreading all form data (`...data`) to explicitly selecting only database fields, excluding UI-only fields like `custom_card_type` and `custom_plan`
-- **Updated enum values**: Changed from `"standard"` and `"premium"` to valid enum values: `"rewards"`, `"loyalty"`, `"membership"`, `"gift"`
+- **Updated enum values**: Changed from `"standard"` and `"premium"` to valid enum values: `"loyalty"`
 - **Updated dropdown options**: Modified the select options to use the correct enum values
 
 ### 2. Database Schema Fix
@@ -105,7 +105,7 @@ SELECT api.test_virtual_cards_fix();
 ### 3. Test in Admin Dashboard
 1. Go to the admin dashboard
 2. Try creating a new virtual card
-3. Test both standard types (rewards, loyalty, membership, gift) and custom types
+3. Test both standard types (loyalty) and custom types
 4. Verify that cards are created successfully without schema errors
 
 ## Expected Results
