@@ -9,13 +9,18 @@ import { Activity, TrendingUp, Calendar, Building2 } from "lucide-react";
 
 interface Transaction {
   id: string;
+  user_id: string;
   merchant_id: string;
   loyalty_number: string;
   transaction_amount: number;
   points_earned: number;
-  transaction_reference: string;
+  transaction_reference: string | null;
   transaction_date: string;
   created_at: string;
+  merchants: {
+    business_name: string;
+    logo_url: string | null;
+  };
 }
 
 const TransactionsTab = () => {
@@ -39,7 +44,13 @@ const TransactionsTab = () => {
     try {
       const { data, error } = await supabase
         .from('loyalty_transactions')
-        .select('*')
+        .select(`
+          *,
+          merchants!inner (
+            business_name,
+            logo_url
+          )
+        `)
         .eq('user_id', user?.id)
         .order('transaction_date', { ascending: false });
 
@@ -175,9 +186,9 @@ const TransactionsTab = () => {
                         <div className="flex items-center gap-2">
                           <Building2 className="h-4 w-4 text-muted-foreground" />
                           <div>
-                            <div className="font-medium">Merchant #{transaction.merchant_id.slice(-8)}</div>
+                            <div className="font-medium">{transaction.merchants.business_name}</div>
                             <div className="text-xs text-muted-foreground">
-                              Business Partner
+                              ID: {transaction.merchant_id.slice(-8)}
                             </div>
                           </div>
                         </div>
@@ -193,9 +204,13 @@ const TransactionsTab = () => {
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        <code className="text-xs bg-muted px-1 py-0.5 rounded">
-                          {transaction.transaction_reference}
-                        </code>
+                        {transaction.transaction_reference ? (
+                          <code className="text-xs bg-muted px-1 py-0.5 rounded">
+                            {transaction.transaction_reference}
+                          </code>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">N/A</span>
+                        )}
                       </TableCell>
                       <TableCell>
                         <Badge variant="default">Completed</Badge>

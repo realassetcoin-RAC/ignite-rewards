@@ -12,11 +12,14 @@ import { Link, useNavigate } from 'react-router-dom';
 
 interface Transaction {
   id: string;
+  user_id: string;
+  merchant_id: string;
   loyalty_number: string;
   transaction_amount: number;
-  transaction_reference: string;
-  reward_points: number;
+  transaction_reference: string | null;
+  points_earned: number;
   transaction_date: string;
+  created_at: string;
   user_loyalty_cards?: {
     full_name: string;
     email: string;
@@ -105,7 +108,7 @@ const MerchantDashboard = () => {
         .from('loyalty_transactions')
         .select(`
           *,
-          user_loyalty_cards (
+          user_loyalty_cards!loyalty_transactions_loyalty_number_fkey (
             full_name,
             email
           )
@@ -274,7 +277,7 @@ const MerchantDashboard = () => {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold bg-gradient-to-r from-blue-500 to-primary bg-clip-text text-transparent">
-                {transactions.reduce((sum, t) => sum + t.reward_points, 0)}
+                {transactions.reduce((sum, t) => sum + t.points_earned, 0)}
               </div>
             </CardContent>
           </Card>
@@ -407,7 +410,7 @@ const MerchantDashboard = () => {
                         </TableCell>
                         <TableCell>
                           <Badge variant="default">
-                            {transaction.reward_points} pts
+                            {transaction.points_earned} pts
                           </Badge>
                         </TableCell>
                       </TableRow>
