@@ -56,9 +56,9 @@ export const VirtualLoyaltyCard: React.FC = () => {
         .from("profiles")
         .select("role")
         .eq("id", user.id)
-        .single();
+        .maybeSingle();
 
-      const userIsAdmin = profile?.role === "admin";
+      const userIsAdmin = profile && 'role' in profile ? profile.role === "admin" : false;
       setIsAdmin(userIsAdmin);
 
       // If admin, load user profiles for selection
@@ -83,7 +83,7 @@ export const VirtualLoyaltyCard: React.FC = () => {
       if (error) {
         console.error("Failed to load user profiles:", error);
       } else {
-        setUserProfiles(profiles || []);
+        setUserProfiles(profiles as UserProfile[] || []);
       }
     } catch (error) {
       console.error("Error loading user profiles:", error);
@@ -119,11 +119,10 @@ export const VirtualLoyaltyCard: React.FC = () => {
         console.warn('Primary schema load failed:', primaryError);
         loadError = primaryError;
         
-        // Try explicit API schema reference
+        // Try public schema reference
         try {
-          console.log('Loading with explicit api schema reference...');
+          console.log('Loading with public schema reference...');
           const { data, error } = await supabase
-            .schema('api')
             .from('user_loyalty_cards')
             .select('*')
             .eq('user_id', user.id)
@@ -274,11 +273,10 @@ export const VirtualLoyaltyCard: React.FC = () => {
         console.warn('Primary insert failed:', primaryError);
         insertError = primaryError;
         
-        // Try with explicit API schema reference
+        // Try with public schema reference (corrected from api)
         try {
-          console.log('Trying explicit api schema reference...');
+          console.log('Trying public schema reference...');
           const { data, error } = await supabase
-            .schema('api')
             .from('user_loyalty_cards')
             .insert(insertData)
             .select()

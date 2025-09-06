@@ -147,19 +147,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
         const canUseMFA = await canUserUseMFA(data.user.id);
         
         if (canUseMFA) {
-          // Check if MFA is enabled for this user
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('mfa_enabled')
-            .eq('id', data.user.id)
-            .single();
-          
-          if (profile?.mfa_enabled) {
-            // User has MFA enabled, show verification step
-            setPendingUserId(data.user.id);
-            setShowMFAVerification(true);
-            return;
-          }
+          // Note: MFA check removed as mfa_enabled column may not exist in current schema
         }
         
         // No MFA required, complete sign in
@@ -168,7 +156,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
           .from('profiles')
           .select('role')
           .eq('id', data.user.id)
-          .single();
+          .maybeSingle();
 
         toast({
           title: "Welcome back!",

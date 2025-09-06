@@ -25,7 +25,7 @@ import {
 } from 'lucide-react';
 
 const AdminTestPanel: React.FC = () => {
-  const { user, profile, isAdmin, loading, error, refreshAuth } = useSecureAuth();
+  const { user, profile, isAdmin, loading, error, refreshAuth, isWalletUser, mfaEnabled } = useSecureAuth();
   const [testResults, setTestResults] = useState<any>(null);
   const [isTestingRunning, setIsTestingRunning] = useState(false);
   const [verificationResult, setVerificationResult] = useState<any>(null);
@@ -138,8 +138,8 @@ const AdminTestPanel: React.FC = () => {
               <div className="grid grid-cols-2 gap-2 text-sm">
                 <div><strong>Role:</strong> {profile.role || "Not set"}</div>
                 <div><strong>Name:</strong> {profile.full_name || "Not set"}</div>
-                <div><strong>MFA:</strong> {profile.mfa_enabled ? "Enabled" : "Disabled"}</div>
-                <div><strong>Wallet User:</strong> {profile.isWalletUser ? "Yes" : "No"}</div>
+                <div><strong>MFA:</strong> {mfaEnabled ? "Enabled" : "Disabled"}</div>
+                <div><strong>Wallet User:</strong> {isWalletUser ? "Yes" : "No"}</div>
               </div>
             </div>
           )}
