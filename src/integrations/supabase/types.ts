@@ -50,6 +50,45 @@ export type Database = {
         }
         Relationships: []
       }
+      transaction_qr_codes: {
+        Row: {
+          created_at: string
+          expires_at: string
+          id: string
+          is_used: boolean
+          merchant_id: string
+          qr_code_data: string
+          reward_points: number
+          transaction_amount: number
+          updated_at: string
+          used_by_loyalty_number: string | null
+        }
+        Insert: {
+          created_at?: string
+          expires_at: string
+          id?: string
+          is_used?: boolean
+          merchant_id: string
+          qr_code_data: string
+          reward_points?: number
+          transaction_amount: number
+          updated_at?: string
+          used_by_loyalty_number?: string | null
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string
+          id?: string
+          is_used?: boolean
+          merchant_id?: string
+          qr_code_data?: string
+          reward_points?: number
+          transaction_amount?: number
+          updated_at?: string
+          used_by_loyalty_number?: string | null
+        }
+        Relationships: []
+      }
       merchant_subscription_plans: {
         Row: {
           created_at: string
