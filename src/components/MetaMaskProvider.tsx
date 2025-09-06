@@ -318,12 +318,12 @@ export const MetaMaskProvider: React.FC<MetaMaskProviderProps> = ({ children }) 
     };
   }, [ethereum, handleAccountsChanged, handleChainChanged, handleConnect, handleDisconnect]);
 
-  // Initialize on mount
+  // Initialize on mount - only detect MetaMask, don't auto-connect
   useEffect(() => {
     // Wait for page to load before detecting MetaMask
     const initializeMetaMask = () => {
       detectMetaMask();
-      checkConnection();
+      // Removed checkConnection() to prevent any auto-connection behavior
     };
 
     if (document.readyState === 'loading') {
@@ -335,7 +335,7 @@ export const MetaMaskProvider: React.FC<MetaMaskProviderProps> = ({ children }) 
     return () => {
       window.removeEventListener('load', initializeMetaMask);
     };
-  }, [detectMetaMask, checkConnection]);
+  }, [detectMetaMask]);
 
   const value: MetaMaskContextType = {
     ethereum,

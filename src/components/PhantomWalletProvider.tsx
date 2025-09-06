@@ -193,12 +193,12 @@ export const PhantomWalletProvider: React.FC<PhantomWalletProviderProps> = ({ ch
     };
   }, [phantom]);
 
-  // Initialize on mount
+  // Initialize on mount - only detect Phantom, don't auto-connect
   useEffect(() => {
     // Wait for page to load before detecting Phantom
     const initializePhantom = () => {
       detectPhantom();
-      checkConnection();
+      // Removed checkConnection() to prevent auto-launching Phantom wallet
     };
 
     if (document.readyState === 'loading') {
@@ -210,7 +210,7 @@ export const PhantomWalletProvider: React.FC<PhantomWalletProviderProps> = ({ ch
     return () => {
       window.removeEventListener('load', initializePhantom);
     };
-  }, [detectPhantom, checkConnection]);
+  }, [detectPhantom]);
 
   const value: PhantomContextType = {
     phantom,
