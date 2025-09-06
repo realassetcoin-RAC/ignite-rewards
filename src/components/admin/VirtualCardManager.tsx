@@ -49,7 +49,7 @@ const VirtualCardManager = ({ onStatsUpdate }: VirtualCardManagerProps) => {
   const form = useForm({
     defaultValues: {
       card_name: "",
-      card_type: "rewards",
+      card_type: "standard",
       description: "",
       image_url: "",
       subscription_plan: "basic",
@@ -81,9 +81,15 @@ const VirtualCardManager = ({ onStatsUpdate }: VirtualCardManagerProps) => {
       // Log the loading attempt
       log.debug('VIRTUAL_CARD_MANAGER', 'Attempting to load virtual cards using enhanced loading');
       
-      // Use enhanced loading with fallback methods
-      const { loadVirtualCards } = await import('@/utils/enhancedAdminLoading');
-      const result = await loadVirtualCards();
+      // Load virtual cards from api schema (configured schema)
+      const { data, error } = await supabase
+        .from('virtual_cards')
+        .select('*')
+        .order('created_at', { ascending: false });
+      
+      const result = error 
+        ? { success: false, message: error.message, errors: [error] }
+        : { success: true, data, source: 'api.virtual_cards' };
       
       if (result.success) {
         setCards(result.data || []);
@@ -313,7 +319,7 @@ const VirtualCardManager = ({ onStatsUpdate }: VirtualCardManagerProps) => {
     setEditingCard(card);
     
     // Check if card type or plan is custom (not in predefined list)
-    const standardTypes = ["loyalty", "loyalty_plus"];
+    const standardTypes = ["standard", "premium", "enterprise"];
     const standardPlans = ["basic", "premium", "enterprise"];
     
     const isCustomType = !standardTypes.includes(card.card_type);
@@ -439,14 +445,14 @@ const VirtualCardManager = ({ onStatsUpdate }: VirtualCardManagerProps) => {
     <TooltipProvider>
       <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h3 className="text-lg font-medium">Virtual Cards</h3>
+        <h3 className="text-lg font-medium">Loyalty Cards</h3>
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild>
             <Button onClick={() => {
               setEditingCard(null);
               form.reset({
                 card_name: "",
-                card_type: "rewards",
+                card_type: "standard",
                 description: "",
                 image_url: "",
                 subscription_plan: "basic",
@@ -461,16 +467,16 @@ const VirtualCardManager = ({ onStatsUpdate }: VirtualCardManagerProps) => {
               });
             }}>
               <Plus className="w-4 h-4 mr-2" />
-              Add New Card
+              Add New Loyalty Card
             </Button>
           </DialogTrigger>
           <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>
-                {editingCard ? "Edit Virtual Card" : "Create New Virtual Card"}
+                {editingCard ? "Edit Loyalty Card" : "Create New Loyalty Card"}
               </DialogTitle>
               <DialogDescription>
-                Configure the virtual card details, pricing, and features.
+                Configure the loyalty card details, pricing, and features.
               </DialogDescription>
             </DialogHeader>
             
@@ -492,7 +498,7 @@ const VirtualCardManager = ({ onStatsUpdate }: VirtualCardManagerProps) => {
                                 <HelpCircle className="w-3 h-3" />
                               </TooltipTrigger>
                               <TooltipContent>
-                                <p>The display name for this virtual card</p>
+                                <p>The display name for this loyalty card</p>
                               </TooltipContent>
                             </Tooltip>
                           </FormLabel>
@@ -516,7 +522,7 @@ const VirtualCardManager = ({ onStatsUpdate }: VirtualCardManagerProps) => {
                                 <HelpCircle className="w-3 h-3" />
                               </TooltipTrigger>
                               <TooltipContent>
-                                <p>Category of the virtual card (rewards, loyalty, etc.)</p>
+                                <p>Category of the loyalty card (standard, premium, etc.)</p>
                               </TooltipContent>
                             </Tooltip>
                           </FormLabel>
@@ -527,8 +533,9 @@ const VirtualCardManager = ({ onStatsUpdate }: VirtualCardManagerProps) => {
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
-                              <SelectItem value="loyalty">Loyalty</SelectItem>
-                              <SelectItem value="loyalty_plus">Loyalty Plus</SelectItem>
+                              <SelectItem value="standard">Standard</SelectItem>
+                              <SelectItem value="premium">Premium</SelectItem>
+                              <SelectItem value="enterprise">Enterprise</SelectItem>
                               {customCardTypes.map((type) => (
                                 <SelectItem key={type} value={type}>{type}</SelectItem>
                               ))}
@@ -883,7 +890,7 @@ const VirtualCardManager = ({ onStatsUpdate }: VirtualCardManagerProps) => {
 
                 <div className="flex gap-2 pt-4">
                   <Button type="submit" className="flex-1">
-                    {editingCard ? "Update Card" : "Create Card"}
+                    {editingCard ? "Update Loyalty Card" : "Create Loyalty Card"}
                   </Button>
                   <Button 
                     type="button" 
@@ -902,16 +909,16 @@ const VirtualCardManager = ({ onStatsUpdate }: VirtualCardManagerProps) => {
       {loading ? (
         <div className="text-center py-8">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-          <p>Loading virtual cards...</p>
+          <p>Loading loyalty cards...</p>
         </div>
       ) : cards.length === 0 ? (
         <div className="text-center py-8">
           <Card className="p-8">
             <div className="text-center">
               <CreditCard className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-              <h3 className="text-lg font-medium mb-2">No Virtual Cards</h3>
+              <h3 className="text-lg font-medium mb-2">No Loyalty Cards</h3>
               <p className="text-muted-foreground mb-4">
-                Create your first virtual card to get started.
+                Create your first loyalty card product to get started.
               </p>
               <Button onClick={() => {
                 setEditingCard(null);
@@ -919,7 +926,7 @@ const VirtualCardManager = ({ onStatsUpdate }: VirtualCardManagerProps) => {
                 setDialogOpen(true);
               }}>
                 <Plus className="w-4 h-4 mr-2" />
-                Create Virtual Card
+                Create Loyalty Card
               </Button>
             </div>
           </Card>
