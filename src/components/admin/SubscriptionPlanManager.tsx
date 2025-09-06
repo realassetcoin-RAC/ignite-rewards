@@ -186,6 +186,37 @@ const SubscriptionPlanManager = () => {
     }
   };
 
+  const togglePlanStatus = async (plan: Plan) => {
+    try {
+      console.log(`🔄 Toggling plan status for: ${plan.name} (current: ${plan.is_active ? 'Active' : 'Inactive'})`);
+      
+      const newStatus = !plan.is_active;
+      const { error } = await supabase
+        .from('merchant_subscription_plans')
+        .update({ is_active: newStatus })
+        .eq('id', plan.id);
+      
+      if (error) {
+        console.error('Toggle status error:', error);
+        throw error;
+      }
+      
+      toast({ 
+        title: newStatus ? 'Plan Activated' : 'Plan Deactivated', 
+        description: `${plan.name} has been ${newStatus ? 'activated' : 'deactivated'}.` 
+      });
+      
+      await loadPlans();
+    } catch (error: any) {
+      console.error('Failed to toggle plan status:', error);
+      toast({ 
+        title: 'Error', 
+        description: `Failed to update plan status: ${error.message}`,
+        variant: 'destructive' 
+      });
+    }
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -381,9 +412,19 @@ const SubscriptionPlanManager = () => {
                         </Badge>
                       </TableCell>
                       <TableCell className="text-right">
-                        <Button size="sm" variant="outline" onClick={() => openEdit(p)}>
-                          <Edit2 className="w-4 h-4" />
-                        </Button>
+                        <div className="flex gap-2 justify-end">
+                          <Button size="sm" variant="outline" onClick={() => openEdit(p)} title="Edit Plan">
+                            <Edit2 className="w-4 h-4" />
+                          </Button>
+                          <Button 
+                            size="sm" 
+                            variant={p.is_active ? "destructive" : "default"} 
+                            onClick={() => togglePlanStatus(p)}
+                            title={p.is_active ? "Deactivate Plan" : "Activate Plan"}
+                          >
+                            {p.is_active ? "Deactivate" : "Activate"}
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}

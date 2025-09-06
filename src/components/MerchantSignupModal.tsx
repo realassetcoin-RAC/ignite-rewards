@@ -87,7 +87,8 @@ const MerchantSignupModal: React.FC<MerchantSignupModalProps> = ({ isOpen, onClo
     try {
       setPlansLoading(true);
       setPlansError(null);
-      console.log('🔍 Loading subscription plans for merchant signup...');
+      console.log('🔍 [FRONTEND] Loading subscription plans for merchant signup...');
+      console.log('🔍 [FRONTEND] Supabase client schema:', (supabase as any).supabaseUrl, (supabase as any).supabaseKey?.slice(0, 20) + '...');
       
       // Load only active plans for public display
       const { data, error } = await supabase
@@ -96,8 +97,16 @@ const MerchantSignupModal: React.FC<MerchantSignupModalProps> = ({ isOpen, onClo
         .eq('is_active', true)
         .order('price_monthly', { ascending: true });
       
+      console.log('🔍 [FRONTEND] Database query result:', { data, error, count: data?.length });
+      
       if (error) {
-        console.error('❌ Failed to load subscription plans:', error);
+        console.error('❌ [FRONTEND] Failed to load subscription plans:', error);
+        console.error('❌ [FRONTEND] Error details:', {
+          message: error.message,
+          code: error.code,
+          details: error.details,
+          hint: error.hint
+        });
         setPlansError(`Failed to load plans: ${error.message}`);
         
         // Fallback to default plans if database fails
@@ -137,14 +146,17 @@ const MerchantSignupModal: React.FC<MerchantSignupModalProps> = ({ isOpen, onClo
           }
         ];
         
-        console.log('🔄 Using fallback plans due to database error');
+        console.log('🔄 [FRONTEND] Using fallback plans due to database error');
         setMerchantPlans(fallbackPlans);
       } else {
-        console.log('✅ Loaded subscription plans from database:', data?.length || 0, 'plans');
-        setMerchantPlans(data || []);
-        
+        console.log('✅ [FRONTEND] Loaded subscription plans from database:', data?.length || 0, 'plans');
         if (data && data.length > 0) {
-          console.log('📋 Available plans:', data.map(p => `${p.name} ($${p.price_monthly})`).join(', '));
+          console.log('📋 [FRONTEND] Available plans:', data.map(p => `${p.name} ($${p.price_monthly})`).join(', '));
+          console.log('📋 [FRONTEND] Plan details:', data);
+          setMerchantPlans(data);
+        } else {
+          console.log('⚠️ [FRONTEND] No plans returned from database, using fallback');
+          setMerchantPlans(fallbackPlans);
         }
       }
     } catch (error: any) {
