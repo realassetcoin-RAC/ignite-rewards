@@ -49,7 +49,7 @@ const VirtualCardManager = ({ onStatsUpdate }: VirtualCardManagerProps) => {
   const form = useForm({
     defaultValues: {
       card_name: "",
-      card_type: "standard",
+      card_type: "loyalty",
       description: "",
       image_url: "",
       subscription_plan: "basic",
@@ -209,14 +209,19 @@ const VirtualCardManager = ({ onStatsUpdate }: VirtualCardManagerProps) => {
         }
       }
 
+      // Prepare card data for database submission (excluding UI-only fields)
       const cardData = {
-        ...data,
+        card_name: data.card_name,
         card_type: finalCardType,
+        description: data.description,
+        image_url: data.image_url,
         subscription_plan: finalPlan,
-        features: parsedFeatures,
+        pricing_type: data.pricing_type,
         one_time_fee: data.pricing_type === "free" ? 0 : Number(data.one_time_fee),
         monthly_fee: data.pricing_type === "free" ? 0 : Number(data.monthly_fee),
-        annual_fee: data.pricing_type === "free" ? 0 : Number(data.annual_fee)
+        annual_fee: data.pricing_type === "free" ? 0 : Number(data.annual_fee),
+        features: parsedFeatures,
+        is_active: data.is_active
       };
 
       log.debug('VIRTUAL_CARD_MANAGER', 'Prepared card data for submission', { 
@@ -337,7 +342,7 @@ const VirtualCardManager = ({ onStatsUpdate }: VirtualCardManagerProps) => {
     setEditingCard(card);
     
     // Check if card type or plan is custom (not in predefined list)
-    const standardTypes = ["standard", "premium"];
+    const standardTypes = ["rewards", "loyalty", "membership", "gift"];
     const standardPlans = ["basic", "premium", "enterprise"];
     
     const isCustomType = !standardTypes.includes(card.card_type);
@@ -470,7 +475,7 @@ const VirtualCardManager = ({ onStatsUpdate }: VirtualCardManagerProps) => {
               setEditingCard(null);
               form.reset({
                 card_name: "",
-                card_type: "standard",
+                card_type: "loyalty",
                 description: "",
                 image_url: "",
                 subscription_plan: "basic",
@@ -551,8 +556,10 @@ const VirtualCardManager = ({ onStatsUpdate }: VirtualCardManagerProps) => {
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
-                              <SelectItem value="standard">Standard</SelectItem>
-                              <SelectItem value="premium">Premium</SelectItem>
+                              <SelectItem value="rewards">Rewards</SelectItem>
+                              <SelectItem value="loyalty">Loyalty</SelectItem>
+                              <SelectItem value="membership">Membership</SelectItem>
+                              <SelectItem value="gift">Gift</SelectItem>
                               {customCardTypes.map((type) => (
                                 <SelectItem key={type} value={type}>{type}</SelectItem>
                               ))}

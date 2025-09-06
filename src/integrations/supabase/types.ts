@@ -45,7 +45,7 @@ export type Database = {
         Row: {
           id: string
           card_name: string
-          card_type: Database["public"]["Enums"]["card_type"]
+          card_type: string
           description: string | null
           image_url: string | null
           subscription_plan: Database["public"]["Enums"]["subscription_plan"] | null
@@ -62,7 +62,7 @@ export type Database = {
         Insert: {
           id?: string
           card_name: string
-          card_type: Database["public"]["Enums"]["card_type"]
+          card_type: string
           description?: string | null
           image_url?: string | null
           subscription_plan?: Database["public"]["Enums"]["subscription_plan"] | null
@@ -79,7 +79,7 @@ export type Database = {
         Update: {
           id?: string
           card_name?: string
-          card_type?: Database["public"]["Enums"]["card_type"]
+          card_type?: string
           description?: string | null
           image_url?: string | null
           subscription_plan?: Database["public"]["Enums"]["subscription_plan"] | null
