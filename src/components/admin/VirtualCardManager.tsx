@@ -12,8 +12,10 @@ import { Switch } from "@/components/ui/switch";
 import { useForm } from "react-hook-form";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Edit2, Eye, Trash2, HelpCircle, CreditCard } from "lucide-react";
+import { Plus, Edit2, Eye, Trash2, HelpCircle, CreditCard, AlertCircle } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { log } from "@/utils/logger";
+import { trackVirtualCardError } from "@/utils/virtualCardErrorTracker";
 
 interface VirtualCard {
   id: string;
@@ -70,8 +72,14 @@ const VirtualCardManager = ({ onStatsUpdate }: VirtualCardManagerProps) => {
   const watchPricingType = form.watch("pricing_type");
 
   const loadCards = async () => {
+    const timer = log.timer('Virtual Cards Loading');
+    log.info('VIRTUAL_CARD_MANAGER', 'Starting virtual cards loading process');
+    
     try {
       setLoading(true);
+      
+      // Log the loading attempt
+      log.debug('VIRTUAL_CARD_MANAGER', 'Attempting to load virtual cards using enhanced loading');
       
       // Use enhanced loading with fallback methods
       const { loadVirtualCards } = await import('@/utils/enhancedAdminLoading');
@@ -79,31 +87,70 @@ const VirtualCardManager = ({ onStatsUpdate }: VirtualCardManagerProps) => {
       
       if (result.success) {
         setCards(result.data || []);
+        
+        log.info('VIRTUAL_CARD_MANAGER', `Virtual cards loaded successfully from ${result.source}`, {
+          count: result.data?.length || 0,
+          source: result.source,
+          cards: result.data?.map(card => ({ id: card.id, name: card.card_name, type: card.card_type }))
+        });
+        
         if (result.data && result.data.length === 0) {
-          console.log('No virtual cards found, but loading was successful');
+          log.warn('VIRTUAL_CARD_MANAGER', 'No virtual cards found in database', { source: result.source });
         }
-        console.log(`✅ Virtual cards loaded from ${result.source}`);
       } else {
-        console.error('Failed to load virtual cards:', result.errors);
+        const errorId = trackVirtualCardError('load', result.errors, null, {
+          component: 'VirtualCardManager',
+          function: 'loadCards'
+        });
+        
+        log.error('VIRTUAL_CARD_MANAGER', `Failed to load virtual cards: ${result.message}`, {
+          errorId,
+          errors: result.errors,
+          message: result.message
+        });
+        
         toast({
           title: "Loading Error",
-          description: result.message || "Failed to load virtual cards",
+          description: `Failed to load virtual cards: ${result.message || "Unknown error"}`,
           variant: "destructive",
         });
       }
     } catch (error) {
-      console.error('Error loading virtual cards:', error);
+      const errorId = trackVirtualCardError('load', error, null, {
+        component: 'VirtualCardManager',
+        function: 'loadCards'
+      });
+      
+      log.error('VIRTUAL_CARD_MANAGER', 'Unexpected error during virtual cards loading', {
+        errorId,
+        error: error
+      }, error as Error);
+      
       toast({
         title: "Error", 
-        description: "Failed to load virtual cards. Please check your connection.",
+        description: "Failed to load virtual cards. Please check your connection and try again.",
         variant: "destructive",
       });
     } finally {
       setLoading(false);
+      timer(); // End timer
+      log.debug('VIRTUAL_CARD_MANAGER', 'Virtual cards loading process completed');
     }
   };
 
   const handleSubmit = async (data: any) => {
+    const operation = editingCard ? 'update' : 'create';
+    const timer = log.timer(`Virtual Card ${operation}`);
+    
+    log.info('VIRTUAL_CARD_MANAGER', `Starting virtual card ${operation} operation`, {
+      operation,
+      cardName: data.card_name,
+      cardType: data.card_type,
+      pricingType: data.pricing_type,
+      isEditing: !!editingCard,
+      editingCardId: editingCard?.id
+    });
+    
     try {
       // Handle custom card type
       let finalCardType = data.card_type;
@@ -111,6 +158,7 @@ const VirtualCardManager = ({ onStatsUpdate }: VirtualCardManagerProps) => {
         finalCardType = data.custom_card_type;
         if (!customCardTypes.includes(data.custom_card_type)) {
           setCustomCardTypes([...customCardTypes, data.custom_card_type]);
+          log.debug('VIRTUAL_CARD_MANAGER', 'Added new custom card type', { customType: data.custom_card_type });
         }
       }
 
@@ -120,6 +168,24 @@ const VirtualCardManager = ({ onStatsUpdate }: VirtualCardManagerProps) => {
         finalPlan = data.custom_plan;
         if (!customPlans.includes(data.custom_plan)) {
           setCustomPlans([...customPlans, data.custom_plan]);
+          log.debug('VIRTUAL_CARD_MANAGER', 'Added new custom plan', { customPlan: data.custom_plan });
+        }
+      }
+
+      // Validate and parse features JSON
+      let parsedFeatures = null;
+      if (data.features) {
+        try {
+          parsedFeatures = JSON.parse(data.features);
+          log.debug('VIRTUAL_CARD_MANAGER', 'Features JSON parsed successfully', { features: parsedFeatures });
+        } catch (jsonError) {
+          log.error('VIRTUAL_CARD_MANAGER', 'Invalid JSON in features field', { features: data.features }, jsonError as Error);
+          toast({
+            title: "Validation Error",
+            description: "Features field contains invalid JSON format",
+            variant: "destructive"
+          });
+          return;
         }
       }
 
@@ -127,30 +193,46 @@ const VirtualCardManager = ({ onStatsUpdate }: VirtualCardManagerProps) => {
         ...data,
         card_type: finalCardType,
         subscription_plan: finalPlan,
-        features: data.features ? JSON.parse(data.features) : null,
+        features: parsedFeatures,
         one_time_fee: data.pricing_type === "free" ? 0 : Number(data.one_time_fee),
         monthly_fee: data.pricing_type === "free" ? 0 : Number(data.monthly_fee),
         annual_fee: data.pricing_type === "free" ? 0 : Number(data.annual_fee)
       };
 
+      log.debug('VIRTUAL_CARD_MANAGER', 'Prepared card data for submission', { 
+        cardData: { 
+          ...cardData, 
+          features: parsedFeatures ? `[${parsedFeatures.length} features]` : null 
+        } 
+      });
+
+      let result;
       if (editingCard) {
-        const { error } = await supabase
+        log.debug('VIRTUAL_CARD_MANAGER', 'Updating existing virtual card', { cardId: editingCard.id });
+        result = await supabase
           .from("virtual_cards")
           .update(cardData)
           .eq("id", editingCard.id);
         
-        if (error) throw error;
+        if (result.error) throw result.error;
+        
+        log.virtualCard('update', { cardId: editingCard.id, cardName: cardData.card_name });
         
         toast({
           title: "Success",
           description: "Virtual card updated successfully"
         });
       } else {
-        const { error } = await supabase
+        log.debug('VIRTUAL_CARD_MANAGER', 'Creating new virtual card');
+        result = await supabase
           .from("virtual_cards")
-          .insert([cardData]);
+          .insert([cardData])
+          .select();
         
-        if (error) throw error;
+        if (result.error) throw result.error;
+        
+        const newCardId = result.data?.[0]?.id;
+        log.virtualCard('create', { cardId: newCardId, cardName: cardData.card_name });
         
         toast({
           title: "Success",
@@ -158,18 +240,72 @@ const VirtualCardManager = ({ onStatsUpdate }: VirtualCardManagerProps) => {
         });
       }
 
+      // Log successful completion
+      log.info('VIRTUAL_CARD_MANAGER', `Virtual card ${operation} completed successfully`, {
+        operation,
+        cardName: cardData.card_name,
+        cardType: finalCardType
+      });
+
       setDialogOpen(false);
       setEditingCard(null);
       form.reset();
       loadCards();
       onStatsUpdate();
+      
     } catch (error) {
-      console.error("Failed to save card:", error);
+      const errorId = trackVirtualCardError(operation, error, data, {
+        component: 'VirtualCardManager',
+        function: 'handleSubmit'
+      });
+      
+      log.error('VIRTUAL_CARD_MANAGER', `Failed to ${operation} virtual card`, {
+        errorId,
+        operation,
+        cardName: data.card_name,
+        error: error
+      }, error as Error);
+      
+      // Enhanced error message based on error type
+      let errorMessage = "Failed to save virtual card";
+      let errorDescription = "An unexpected error occurred. Please try again.";
+      
+      if (error && typeof error === 'object') {
+        const errorObj = error as any;
+        
+        // Permission errors
+        if (errorObj.code === 42501 || errorObj.message?.includes('permission denied')) {
+          errorMessage = "Permission Denied";
+          errorDescription = "You don't have permission to create/update virtual cards. Please contact your administrator.";
+        }
+        // Validation errors
+        else if (errorObj.code === 23505) {
+          errorMessage = "Duplicate Entry";
+          errorDescription = "A virtual card with this name already exists.";
+        }
+        // Network errors
+        else if (errorObj.message?.includes('fetch') || errorObj.message?.includes('network')) {
+          errorMessage = "Network Error";
+          errorDescription = "Unable to connect to the server. Please check your connection and try again.";
+        }
+        // Database errors
+        else if (errorObj.message?.includes('relation') || errorObj.message?.includes('table')) {
+          errorMessage = "Database Error";
+          errorDescription = "Virtual cards table is not accessible. Please contact your administrator.";
+        }
+        // Use original message if available
+        else if (errorObj.message) {
+          errorDescription = errorObj.message;
+        }
+      }
+      
       toast({
-        title: "Error",
-        description: "Failed to save virtual card",
+        title: errorMessage,
+        description: errorDescription,
         variant: "destructive"
       });
+    } finally {
+      timer(); // End timer
     }
   };
 
@@ -202,7 +338,24 @@ const VirtualCardManager = ({ onStatsUpdate }: VirtualCardManagerProps) => {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this virtual card?")) return;
+    const cardToDelete = cards.find(card => card.id === id);
+    
+    log.info('VIRTUAL_CARD_MANAGER', 'Delete confirmation requested', {
+      cardId: id,
+      cardName: cardToDelete?.card_name,
+      cardType: cardToDelete?.card_type
+    });
+    
+    if (!confirm("Are you sure you want to delete this virtual card?")) {
+      log.debug('VIRTUAL_CARD_MANAGER', 'Delete operation cancelled by user', { cardId: id });
+      return;
+    }
+
+    const timer = log.timer('Virtual Card Delete');
+    log.info('VIRTUAL_CARD_MANAGER', 'Starting virtual card delete operation', {
+      cardId: id,
+      cardName: cardToDelete?.card_name
+    });
 
     try {
       const { error } = await supabase
@@ -212,6 +365,12 @@ const VirtualCardManager = ({ onStatsUpdate }: VirtualCardManagerProps) => {
 
       if (error) throw error;
 
+      log.virtualCard('delete', { cardId: id, cardName: cardToDelete?.card_name });
+      log.info('VIRTUAL_CARD_MANAGER', 'Virtual card deleted successfully', {
+        cardId: id,
+        cardName: cardToDelete?.card_name
+      });
+
       toast({
         title: "Success",
         description: "Virtual card deleted successfully"
@@ -220,12 +379,53 @@ const VirtualCardManager = ({ onStatsUpdate }: VirtualCardManagerProps) => {
       loadCards();
       onStatsUpdate();
     } catch (error) {
-      console.error("Failed to delete card:", error);
+      const errorId = trackVirtualCardError('delete', error, { cardId: id }, {
+        component: 'VirtualCardManager',
+        function: 'handleDelete'
+      });
+      
+      log.error('VIRTUAL_CARD_MANAGER', 'Failed to delete virtual card', {
+        errorId,
+        cardId: id,
+        cardName: cardToDelete?.card_name,
+        error: error
+      }, error as Error);
+      
+      // Enhanced error message based on error type
+      let errorMessage = "Failed to delete virtual card";
+      let errorDescription = "An unexpected error occurred. Please try again.";
+      
+      if (error && typeof error === 'object') {
+        const errorObj = error as any;
+        
+        // Permission errors
+        if (errorObj.code === 42501 || errorObj.message?.includes('permission denied')) {
+          errorMessage = "Permission Denied";
+          errorDescription = "You don't have permission to delete virtual cards. Please contact your administrator.";
+        }
+        // Foreign key constraint (card might be in use)
+        else if (errorObj.code === 23503) {
+          errorMessage = "Card In Use";
+          errorDescription = "This virtual card cannot be deleted because it's currently in use.";
+        }
+        // Network errors
+        else if (errorObj.message?.includes('fetch') || errorObj.message?.includes('network')) {
+          errorMessage = "Network Error";
+          errorDescription = "Unable to connect to the server. Please check your connection and try again.";
+        }
+        // Use original message if available
+        else if (errorObj.message) {
+          errorDescription = errorObj.message;
+        }
+      }
+      
       toast({
-        title: "Error",
-        description: "Failed to delete virtual card",
+        title: errorMessage,
+        description: errorDescription,
         variant: "destructive"
       });
+    } finally {
+      timer(); // End timer
     }
   };
 

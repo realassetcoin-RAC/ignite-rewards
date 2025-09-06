@@ -14,6 +14,7 @@ import ReferralManager from "@/components/admin/ReferralManager";
 import SubscriptionPlanManager from "@/components/admin/SubscriptionPlanManager";
 import UserManager from "@/components/admin/UserManager";
 import ApiHealthTab from "@/components/admin/ApiHealthTab";
+import ErrorDashboard from "@/components/admin/ErrorDashboard";
 import AdminDashboardWrapper from "@/components/AdminDashboardWrapper";
 import { useSecureAuth } from "@/hooks/useSecureAuth";
 import { checkRateLimit, sanitizeErrorMessage } from "@/utils/validation";
@@ -31,7 +32,8 @@ import {
   DollarSign,
   AlertTriangle,
   Sparkles,
-  ArrowLeft
+  ArrowLeft,
+  Bug
 } from "lucide-react";
 
 const AdminPanel = () => {
@@ -310,7 +312,7 @@ const AdminPanel = () => {
 
         {/* Main Admin Tabs */}
         <Tabs defaultValue="cards" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-1">
+          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 lg:grid-cols-8 gap-1">
             <TabsTrigger value="cards" className="flex items-center space-x-1 px-2 py-1.5">
               <CreditCard className="h-4 w-4 flex-shrink-0" />
               <span className="hidden sm:inline">Virtual Cards</span>
@@ -340,6 +342,11 @@ const AdminPanel = () => {
               <AlertTriangle className="h-4 w-4 flex-shrink-0" />
               <span className="hidden sm:inline">Health</span>
               <span className="sm:hidden text-xs">Health</span>
+            </TabsTrigger>
+            <TabsTrigger value="errors" className="flex items-center space-x-1 px-2 py-1.5">
+              <Bug className="h-4 w-4 flex-shrink-0" />
+              <span className="hidden sm:inline">Errors</span>
+              <span className="sm:hidden text-xs">Debug</span>
             </TabsTrigger>
             <TabsTrigger value="settings" className="flex items-center space-x-1 px-2 py-1.5">
               <Settings className="h-4 w-4 flex-shrink-0" />
@@ -439,6 +446,12 @@ const AdminPanel = () => {
                 <ApiHealthTab />
               </ErrorBoundary>
             </div>
+          </TabsContent>
+
+          <TabsContent value="errors" className="space-y-6">
+            <ErrorBoundary>
+              <ErrorDashboard />
+            </ErrorBoundary>
           </TabsContent>
 
           <TabsContent value="settings" className="space-y-6">
