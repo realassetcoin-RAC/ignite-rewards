@@ -42,7 +42,7 @@ const VirtualCardManager = ({ onStatsUpdate }: VirtualCardManagerProps) => {
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingCard, setEditingCard] = useState<VirtualCard | null>(null);
-  const [customCardTypes, setCustomCardTypes] = useState<string[]>([]);
+  const [availableCardTypes, setAvailableCardTypes] = useState<string[]>([]);
   const [customPlans, setCustomPlans] = useState<string[]>([]);
   const { toast } = useToast();
 
@@ -71,6 +71,25 @@ const VirtualCardManager = ({ onStatsUpdate }: VirtualCardManagerProps) => {
   // Watch for pricing type changes to lock/unlock fee fields
   const watchPricingType = form.watch("pricing_type");
 
+  // Helper function to add a new card type to the available types
+  const addNewCardType = (newType: string) => {
+    const formattedType = newType
+      .split(' ')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .join(' ');
+    
+    if (!availableCardTypes.includes(formattedType)) {
+      const updatedTypes = [...availableCardTypes, formattedType].sort();
+      setAvailableCardTypes(updatedTypes);
+      log.info('VIRTUAL_CARD_MANAGER', 'Added new card type to available types', { 
+        newType: formattedType,
+        totalTypes: updatedTypes.length 
+      });
+      return formattedType;
+    }
+    return formattedType;
+  };
+
   const loadCards = async () => {
     const timer = log.timer('Virtual Cards Loading');
     log.info('VIRTUAL_CARD_MANAGER', 'Starting virtual cards loading process');
@@ -93,6 +112,27 @@ const VirtualCardManager = ({ onStatsUpdate }: VirtualCardManagerProps) => {
       
       if (result.success) {
         setCards(result.data || []);
+        
+        // Extract unique card types from existing cards and populate available types
+        if (result.data && result.data.length > 0) {
+          const existingTypes = [...new Set(result.data.map(card => card.card_type).filter(Boolean))];
+          const defaultTypes = ["Standard", "Premium", "Enterprise", "Loyalty"];
+          
+          // Combine default types with existing types, removing duplicates
+          const allTypes = [...new Set([...defaultTypes, ...existingTypes])].sort();
+          setAvailableCardTypes(allTypes);
+          
+          log.debug('VIRTUAL_CARD_MANAGER', 'Updated available card types', { 
+            existingTypes, 
+            allTypes,
+            count: allTypes.length 
+          });
+        } else {
+          // If no cards exist, start with default types
+          const defaultTypes = ["Standard", "Premium", "Enterprise", "Loyalty"];
+          setAvailableCardTypes(defaultTypes);
+          log.debug('VIRTUAL_CARD_MANAGER', 'Initialized with default card types', { defaultTypes });
+        }
         
         log.info('VIRTUAL_CARD_MANAGER', `Virtual cards loaded successfully from ${result.source}`, {
           count: result.data?.length || 0,
@@ -170,16 +210,7 @@ const VirtualCardManager = ({ onStatsUpdate }: VirtualCardManagerProps) => {
       // Handle custom card type
       let finalCardType = data.card_type;
       if (data.card_type === "custom" && data.custom_card_type) {
-        // Capitalize the first letter of each word
-        finalCardType = data.custom_card_type
-          .split(' ')
-          .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-          .join(' ');
-        
-        if (!customCardTypes.includes(finalCardType)) {
-          setCustomCardTypes([...customCardTypes, finalCardType]);
-          log.debug('VIRTUAL_CARD_MANAGER', 'Added new custom card type', { customType: finalCardType });
-        }
+        finalCardType = addNewCardType(data.custom_card_type);
       }
 
       // Handle custom plan
@@ -260,7 +291,7 @@ const VirtualCardManager = ({ onStatsUpdate }: VirtualCardManagerProps) => {
         log.virtualCard('create', { cardId: newCardId, cardName: cardData.card_name });
         
         const successMessage = data.card_type === "custom" 
-          ? `Loyalty card created successfully with new type "${finalCardType}"`
+          ? `Loyalty card created successfully! "${finalCardType}" type is now available for future cards.`
           : "Loyalty card created successfully";
         
         toast({
@@ -341,11 +372,10 @@ const VirtualCardManager = ({ onStatsUpdate }: VirtualCardManagerProps) => {
   const handleEdit = (card: VirtualCard) => {
     setEditingCard(card);
     
-    // Check if card type or plan is custom (not in predefined list)
-    const standardTypes = ["loyalty", "Standard", "Premium", "Enterprise"];
+    // Check if card type or plan is custom (not in available lists)
     const standardPlans = ["basic", "premium", "enterprise"];
     
-    const isCustomType = !standardTypes.includes(card.card_type);
+    const isCustomType = !availableCardTypes.includes(card.card_type);
     const isCustomPlan = !standardPlans.includes(card.subscription_plan || "");
     
     form.reset({
@@ -545,7 +575,7 @@ const VirtualCardManager = ({ onStatsUpdate }: VirtualCardManagerProps) => {
                                 <HelpCircle className="w-3 h-3" />
                               </TooltipTrigger>
                               <TooltipContent>
-                                <p>Category of the loyalty card (standard, premium, etc.)</p>
+                                <p>Category of the loyalty card. Choose from existing types or create a new one.</p>
                               </TooltipContent>
                             </Tooltip>
                           </FormLabel>
@@ -556,11 +586,7 @@ const VirtualCardManager = ({ onStatsUpdate }: VirtualCardManagerProps) => {
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
-                              <SelectItem value="loyalty">Loyalty</SelectItem>
-                              <SelectItem value="Standard">Standard</SelectItem>
-                              <SelectItem value="Premium">Premium</SelectItem>
-                              <SelectItem value="Enterprise">Enterprise</SelectItem>
-                              {customCardTypes.map((type) => (
+                              {availableCardTypes.map((type) => (
                                 <SelectItem key={type} value={type}>{type}</SelectItem>
                               ))}
                               <SelectItem value="custom">+ Add New Type...</SelectItem>
@@ -585,20 +611,20 @@ const VirtualCardManager = ({ onStatsUpdate }: VirtualCardManagerProps) => {
                                 <HelpCircle className="w-3 h-3" />
                               </TooltipTrigger>
                               <TooltipContent>
-                                <p>Enter a name for your new card type (e.g., "VIP", "Corporate", "Student")</p>
+                                <p>Create any new card type you need (e.g., "VIP", "Corporate", "Student", "Platinum", "Black Card", etc.)</p>
                               </TooltipContent>
                             </Tooltip>
                           </FormLabel>
                           <FormControl>
                             <Input 
-                              placeholder="e.g., VIP, Corporate, Student" 
+                              placeholder="e.g., VIP, Corporate, Platinum, Black Card" 
                               {...field}
                               className="capitalize"
                             />
                           </FormControl>
                           <FormMessage />
                           <p className="text-xs text-muted-foreground">
-                            💡 This new type will be available for future loyalty cards
+                            💡 Once created, this type will be permanently available in the dropdown for future cards
                           </p>
                         </FormItem>
                       )}
