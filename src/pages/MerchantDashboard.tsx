@@ -8,6 +8,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { QrCodeGenerator } from '@/components/QrCodeGenerator';
 import { format } from 'date-fns';
+import { Link, useNavigate } from 'react-router-dom';
 
 interface Transaction {
   id: string;
@@ -40,6 +41,7 @@ const MerchantDashboard = () => {
   const [showQrGenerator, setShowQrGenerator] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   useEffect(() => {
     checkMerchantAccess();
@@ -167,7 +169,7 @@ const MerchantDashboard = () => {
               You need merchant access to view this dashboard.
             </p>
             <Button 
-              onClick={() => window.location.href = '/'}
+              onClick={() => navigate('/')}
               className={`bg-gradient-to-r from-primary to-purple-500 hover:from-primary/90 hover:to-purple-500/90 transform hover:scale-105 transition-all duration-300 ${
                 isLoaded ? 'animate-fade-in-up animation-delay-400' : 'opacity-0'
               }`}
@@ -214,10 +216,10 @@ const MerchantDashboard = () => {
                 isLoaded ? 'animate-fade-in-up animation-delay-200' : 'opacity-0'
               }`}
             >
-              <a href="/" className="flex items-center">
+              <Link to="/" className="flex items-center">
                 <ArrowLeft className="mr-2 h-4 w-4 group-hover:-translate-x-1 transition-transform" />
                 Back to Home
-              </a>
+              </Link>
             </Button>
           </div>
           <p className={`text-sm sm:text-base text-muted-foreground truncate ${

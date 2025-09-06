@@ -4,13 +4,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Navigate } from "react-router-dom";
+import { Navigate, Link } from "react-router-dom";
 import { CreditCard, Activity, TrendingUp, User, Share2, Wallet, Sparkles, ArrowLeft } from "lucide-react";
 import LoyaltyCardTab from "@/components/dashboard/LoyaltyCardTab";
 import TransactionsTab from "@/components/dashboard/TransactionsTab";
 import PointsGraphTab from "@/components/dashboard/PointsGraphTab";
 import ProfileTab from "@/components/dashboard/ProfileTab";
 import ReferralsTab from "@/components/dashboard/ReferralsTab";
+import ErrorBoundary from "@/components/ErrorBoundary";
 
 const Dashboard = () => {
   const { user, isAdmin, loading } = useSecureAuth();
@@ -80,10 +81,10 @@ const Dashboard = () => {
                   isLoaded ? 'animate-fade-in-up animation-delay-400' : 'opacity-0'
                 }`}
               >
-                <a href="/" className="flex items-center">
+                <Link to="/" className="flex items-center">
                   <ArrowLeft className="mr-2 h-4 w-4 group-hover:-translate-x-1 transition-transform" />
                   Back to Home
-                </a>
+                </Link>
               </Button>
             </div>
           </div>
@@ -126,31 +127,41 @@ const Dashboard = () => {
           <TabsContent value="loyalty" className={`space-y-6 ${
             isLoaded ? 'animate-fade-in-up animation-delay-800' : 'opacity-0'
           }`}>
-            <LoyaltyCardTab />
+            <ErrorBoundary>
+              <LoyaltyCardTab />
+            </ErrorBoundary>
           </TabsContent>
 
           <TabsContent value="transactions" className={`space-y-6 ${
             isLoaded ? 'animate-fade-in-up animation-delay-800' : 'opacity-0'
           }`}>
-            <TransactionsTab />
+            <ErrorBoundary>
+              <TransactionsTab />
+            </ErrorBoundary>
           </TabsContent>
 
           <TabsContent value="points" className={`space-y-6 ${
             isLoaded ? 'animate-fade-in-up animation-delay-800' : 'opacity-0'
           }`}>
-            <PointsGraphTab />
+            <ErrorBoundary>
+              <PointsGraphTab />
+            </ErrorBoundary>
           </TabsContent>
 
           <TabsContent value="profile" className={`space-y-6 ${
             isLoaded ? 'animate-fade-in-up animation-delay-800' : 'opacity-0'
           }`}>
-            <ProfileTab />
+            <ErrorBoundary>
+              <ProfileTab />
+            </ErrorBoundary>
           </TabsContent>
 
           <TabsContent value="referrals" className={`space-y-6 ${
             isLoaded ? 'animate-fade-in-up animation-delay-800' : 'opacity-0'
           }`}>
-            <ReferralsTab />
+            <ErrorBoundary>
+              <ReferralsTab />
+            </ErrorBoundary>
           </TabsContent>
         </Tabs>
       </main>

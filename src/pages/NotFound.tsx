@@ -1,4 +1,4 @@
-import { useLocation } from "react-router-dom";
+import { useLocation, Link } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { Sparkles, Home, AlertTriangle } from "lucide-react";
 
@@ -45,15 +45,15 @@ const NotFound = () => {
         }`}>
           The page you're looking for doesn't exist or has been moved.
         </p>
-        <a 
-          href="/" 
+        <Link 
+          to="/" 
           className={`inline-flex items-center gap-2 bg-gradient-to-r from-primary to-purple-500 hover:from-primary/90 hover:to-purple-500/90 text-primary-foreground px-6 py-3 rounded-lg transform hover:scale-105 transition-all duration-300 ${
             isLoaded ? 'animate-fade-in-up animation-delay-600' : 'opacity-0'
           }`}
         >
           <Home className="h-4 w-4" />
           Return to Home
-        </a>
+        </Link>
       </div>
     </div>
   );

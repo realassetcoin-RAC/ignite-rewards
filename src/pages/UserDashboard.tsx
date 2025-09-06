@@ -3,7 +3,7 @@ import { useSecureAuth } from "@/hooks/useSecureAuth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Navigate } from "react-router-dom";
+import { Navigate, Link } from "react-router-dom";
 import { CreditCard, Activity, TrendingUp, Share2, Wallet, Sparkles, ArrowLeft } from "lucide-react";
 import LoyaltyCardTab from "@/components/dashboard/LoyaltyCardTab";
 import ReferralsTab from "@/components/dashboard/ReferralsTab";
@@ -71,10 +71,10 @@ const UserDashboard = () => {
                   isLoaded ? 'animate-fade-in-up animation-delay-200' : 'opacity-0'
                 }`}
               >
-                <a href="/" className="flex items-center">
+                <Link to="/" className="flex items-center">
                   <ArrowLeft className="mr-2 h-4 w-4 group-hover:-translate-x-1 transition-transform" />
                   Back to Home
-                </a>
+                </Link>
               </Button>
             </div>
           </div>
