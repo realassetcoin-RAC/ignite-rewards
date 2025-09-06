@@ -12,7 +12,7 @@ import AdminUserCreator from "@/components/admin/AdminUserCreator";
 import UserManager from "@/components/admin/UserManager";
 import UserLoyaltyCardManager from "@/components/admin/UserLoyaltyCardManager";
 import ReferralManager from "@/components/admin/ReferralManager";
-import SubscriptionPlanManager from "@/components/admin/SubscriptionPlanManager";
+import DebugSubscriptionPlanManager from "@/components/admin/DebugSubscriptionPlanManager";
 import { CreditCard, Users, Package, TrendingUp, Shield, UserCheck, Gift, Settings, Wallet } from "lucide-react";
 
 const AdminDashboard = () => {
@@ -325,7 +325,7 @@ const AdminDashboard = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <SubscriptionPlanManager />
+                <DebugSubscriptionPlanManager />
               </CardContent>
             </Card>
           </TabsContent>
