@@ -1,5 +1,5 @@
 -- Create enum types for card and subscription management
-CREATE TYPE public.card_type AS ENUM ('rewards', 'loyalty', 'membership', 'gift');
+CREATE TYPE public.card_type AS ENUM ('loyalty');
 CREATE TYPE public.subscription_plan AS ENUM ('basic', 'premium', 'enterprise');
 CREATE TYPE public.pricing_type AS ENUM ('free', 'one_time', 'subscription');
 CREATE TYPE public.merchant_status AS ENUM ('active', 'suspended', 'pending', 'cancelled');

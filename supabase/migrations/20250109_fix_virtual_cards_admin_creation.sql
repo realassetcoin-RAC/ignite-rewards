@@ -16,7 +16,7 @@ DO $$
 BEGIN
     -- Check and create card_type enum
     IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'card_type' AND typnamespace = (SELECT oid FROM pg_namespace WHERE nspname = 'api')) THEN
-        CREATE TYPE api.card_type AS ENUM ('rewards', 'loyalty', 'membership', 'gift', 'loyalty_plus');
+        CREATE TYPE api.card_type AS ENUM ('loyalty', 'loyalty_plus');
     END IF;
     
     -- Check and create subscription_plan enum
@@ -312,7 +312,7 @@ BEGIN
     
     -- Test 1: Check if enums exist
     BEGIN
-        PERFORM 'rewards'::api.card_type;
+        PERFORM 'loyalty'::api.card_type;
         test_results := test_results || '✅ card_type enum exists' || E'\n';
     EXCEPTION WHEN OTHERS THEN
         test_results := test_results || '❌ card_type enum missing: ' || SQLERRM || E'\n';

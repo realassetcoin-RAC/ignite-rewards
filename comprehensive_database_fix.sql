@@ -14,7 +14,7 @@ BEGIN
 
     -- Create card_type enum if it doesn't exist
     IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'card_type') THEN
-        CREATE TYPE card_type AS ENUM ('standard', 'premium', 'enterprise', 'loyalty', 'loyalty_plus', 'rewards');
+        CREATE TYPE card_type AS ENUM ('standard', 'premium', 'enterprise', 'loyalty', 'loyalty_plus');
     END IF;
 
     -- Create pricing_type enum if it doesn't exist

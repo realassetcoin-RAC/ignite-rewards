@@ -297,7 +297,7 @@ BEGIN
             -- Convert card_type to TEXT if it's currently an enum
             CASE 
                 WHEN card_type::TEXT = 'standard' THEN 'loyalty'
-                WHEN card_type::TEXT = 'premium' THEN 'rewards'
+                WHEN card_type::TEXT = 'premium' THEN 'loyalty'
                 ELSE card_type::TEXT 
             END,
             description, image_url,
