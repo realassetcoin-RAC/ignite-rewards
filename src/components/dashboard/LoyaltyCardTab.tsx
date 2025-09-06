@@ -5,10 +5,11 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useSecureAuth } from "@/hooks/useSecureAuth";
-import { Wallet, CreditCard, Copy, Download } from "lucide-react";
+import { Wallet, CreditCard, Copy, Download, User, Shield } from "lucide-react";
 import SolanaWalletManager from "@/components/web3/SolanaWalletManager";
 
 interface LoyaltyCard {
@@ -27,6 +28,12 @@ interface UserPoints {
   lifetime_points: number;
 }
 
+interface UserProfile {
+  id: string;
+  email: string;
+  full_name: string;
+}
+
 const LoyaltyCardTab = () => {
   const { user } = useSecureAuth();
   const { toast } = useToast();
@@ -35,14 +42,55 @@ const LoyaltyCardTab = () => {
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
-  const [formData, setFormData] = useState({ full_name: "", phone: "" });
+  const [formData, setFormData] = useState({ full_name: "", phone: "", user_id: "", email: "" });
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [userProfiles, setUserProfiles] = useState<UserProfile[]>([]);
+  const [adminMode, setAdminMode] = useState(false);
 
   useEffect(() => {
     if (user) {
+      checkAdminStatus();
       loadLoyaltyCard();
       loadUserPoints();
     }
   }, [user]);
+
+  const checkAdminStatus = async () => {
+    try {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("role")
+        .eq("id", user?.id)
+        .single();
+
+      const userIsAdmin = profile?.role === "admin";
+      setIsAdmin(userIsAdmin);
+
+      // If admin, load user profiles for selection
+      if (userIsAdmin) {
+        loadUserProfiles();
+      }
+    } catch (error) {
+      console.error("Error checking admin status:", error);
+    }
+  };
+
+  const loadUserProfiles = async () => {
+    try {
+      const { data: profiles, error } = await supabase
+        .from("profiles")
+        .select("id, email, full_name")
+        .order("full_name", { ascending: true });
+
+      if (error) {
+        console.error("Failed to load user profiles:", error);
+      } else {
+        setUserProfiles(profiles || []);
+      }
+    } catch (error) {
+      console.error("Error loading user profiles:", error);
+    }
+  };
 
   const loadLoyaltyCard = async () => {
     try {
@@ -133,10 +181,21 @@ const LoyaltyCardTab = () => {
   };
 
   const createLoyaltyCard = async () => {
-    if (!formData.full_name.trim()) {
+    // Validation for regular users
+    if (!adminMode && !formData.full_name.trim()) {
       toast({
         title: "Error",
         description: "Please enter your full name",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validation for admin mode
+    if (adminMode && (!formData.user_id || !formData.full_name.trim())) {
+      toast({
+        title: "Error",
+        description: "Please select a user and enter their full name",
         variant: "destructive",
       });
       return;
@@ -151,7 +210,10 @@ const LoyaltyCardTab = () => {
       const generateLoyaltyNumber = async () => {
         // Since database functions are having issues, use client-side generation as primary method
         console.log('Generating loyalty number client-side due to database constraints...');
-        const initial = (user?.email || 'U').charAt(0).toUpperCase();
+        
+        // Use target user's email for admin mode, or current user's email for regular mode
+        const targetEmail = adminMode ? formData.email : (user?.email || 'U');
+        const initial = targetEmail.charAt(0).toUpperCase();
         const timestamp = Date.now().toString().slice(-6); // Last 6 digits of timestamp
         const random = Math.floor(Math.random() * 100).toString().padStart(2, '0'); // 2 random digits
         return initial + timestamp + random;
@@ -163,11 +225,15 @@ const LoyaltyCardTab = () => {
       // Insert into user_loyalty_cards with improved error handling
       console.log('Attempting to insert loyalty card...');
       
+      // Use target user info for admin mode, or current user info for regular mode
+      const targetUserId = adminMode ? formData.user_id : user?.id;
+      const targetEmail = adminMode ? formData.email : (user?.email || '');
+      
       const insertData = {
-        user_id: user?.id,
+        user_id: targetUserId,
         loyalty_number: loyaltyNumber,
         full_name: formData.full_name.trim(),
-        email: user?.email || '',
+        email: targetEmail,
         phone: formData.phone.trim() || null,
         is_active: true
       };
@@ -249,11 +315,16 @@ const LoyaltyCardTab = () => {
 
       setLoyaltyCard(insertResult);
       setShowCreateDialog(false);
-      setFormData({ full_name: "", phone: "" });
+      setFormData({ full_name: "", phone: "", user_id: "", email: "" });
+      setAdminMode(false);
+
+      const successMessage = adminMode 
+        ? `Loyalty card created successfully for ${formData.full_name}!`
+        : "Your loyalty card has been created successfully!";
 
       toast({
         title: "Success",
-        description: "Your loyalty card has been created successfully!",
+        description: successMessage,
       });
     } catch (error: any) {
       console.error('Error creating loyalty card:', error);
@@ -280,6 +351,18 @@ const LoyaltyCardTab = () => {
       });
     } finally {
       setCreating(false);
+    }
+  };
+
+  const handleUserSelect = (userId: string) => {
+    const selectedUser = userProfiles.find(u => u.id === userId);
+    if (selectedUser) {
+      setFormData(prev => ({
+        ...prev,
+        user_id: userId,
+        full_name: selectedUser.full_name || "",
+        email: selectedUser.email || ""
+      }));
     }
   };
 
@@ -345,39 +428,102 @@ const LoyaltyCardTab = () => {
           </CardHeader>
           <CardContent>
             <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
-              <DialogTrigger asChild>
-                <Button className="w-full">
-                  <CreditCard className="mr-2 h-4 w-4" />
-                  Create Loyalty Card
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Create Your Loyalty Card</DialogTitle>
-                </DialogHeader>
-                <div className="space-y-4">
-                  <div>
-                    <Label htmlFor="full_name">Full Name *</Label>
-                    <Input
-                      id="full_name"
-                      value={formData.full_name}
-                      onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
-                      placeholder="Enter your full name"
-                    />
+          <DialogTrigger asChild>
+            <Button className="w-full" onClick={() => {
+              setFormData({ full_name: "", phone: "", user_id: "", email: "" });
+              setAdminMode(false);
+            }}>
+              <CreditCard className="mr-2 h-4 w-4" />
+              Create Loyalty Card
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>
+                {adminMode ? "Create Loyalty Card (Admin)" : "Create Your Loyalty Card"}
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              {/* Admin Mode Toggle */}
+              {isAdmin && (
+                <div className="flex items-center justify-between p-3 border rounded-lg bg-muted/50">
+                  <div className="flex items-center gap-2">
+                    <Shield className="w-4 h-4 text-primary" />
+                    <Label htmlFor="admin-mode" className="text-sm font-medium">
+                      Admin Mode
+                    </Label>
                   </div>
-                  <div>
-                    <Label htmlFor="phone">Phone Number (Optional)</Label>
-                    <Input
-                      id="phone"
-                      value={formData.phone}
-                      onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                      placeholder="Enter your phone number"
-                    />
-                  </div>
-                  <Button onClick={createLoyaltyCard} disabled={creating} className="w-full">
-                    {creating ? "Creating..." : "Create Card"}
+                  <Button
+                    type="button"
+                    variant={adminMode ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => {
+                      setAdminMode(!adminMode);
+                      if (!adminMode) {
+                        setFormData({ full_name: "", phone: "", user_id: "", email: "" });
+                      }
+                    }}
+                  >
+                    {adminMode ? "ON" : "OFF"}
                   </Button>
                 </div>
+              )}
+
+              {/* User Selection for Admin Mode */}
+              {adminMode && (
+                <div>
+                  <Label htmlFor="user_select">Select User *</Label>
+                  <Select onValueChange={handleUserSelect} value={formData.user_id}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Choose a user..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {userProfiles.map((profile) => (
+                        <SelectItem key={profile.id} value={profile.id}>
+                          <div className="flex items-center gap-2">
+                            <User className="w-4 h-4" />
+                            <div>
+                              <div className="font-medium">{profile.full_name || "No Name"}</div>
+                              <div className="text-xs text-muted-foreground">{profile.email}</div>
+                            </div>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
+              <div>
+                <Label htmlFor="full_name">Full Name *</Label>
+                <Input
+                  id="full_name"
+                  value={formData.full_name}
+                  onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
+                  placeholder={adminMode ? "User's full name" : "Enter your full name"}
+                />
+              </div>
+              <div>
+                <Label htmlFor="phone">Phone Number (Optional)</Label>
+                <Input
+                  id="phone"
+                  value={formData.phone}
+                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                  placeholder={adminMode ? "User's phone number" : "Enter your phone number"}
+                />
+              </div>
+
+              {adminMode && (
+                <div className="text-xs text-muted-foreground p-2 bg-blue-50 rounded">
+                  <Shield className="w-3 h-3 inline mr-1" />
+                  Admin Mode: Creating loyalty card for selected user
+                </div>
+              )}
+
+              <Button onClick={createLoyaltyCard} disabled={creating} className="w-full">
+                {creating ? "Creating..." : adminMode ? "Create Card for User" : "Create Card"}
+              </Button>
+            </div>
               </DialogContent>
             </Dialog>
           </CardContent>

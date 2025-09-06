@@ -4,8 +4,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { CreditCard, Plus, RefreshCw, User, Phone, Mail } from 'lucide-react';
+import { CreditCard, Plus, RefreshCw, User, Phone, Mail, Shield } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
@@ -19,6 +20,12 @@ interface LoyaltyCard {
   created_at: string;
 }
 
+interface UserProfile {
+  id: string;
+  email: string;
+  full_name: string;
+}
+
 export const VirtualLoyaltyCard: React.FC = () => {
   const [loyaltyCard, setLoyaltyCard] = useState<LoyaltyCard | null>(null);
   const [loading, setLoading] = useState(true);
@@ -27,7 +34,12 @@ export const VirtualLoyaltyCard: React.FC = () => {
   const [formData, setFormData] = useState({
     full_name: '',
     phone: '',
+    user_id: '',
+    email: '',
   });
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [userProfiles, setUserProfiles] = useState<UserProfile[]>([]);
+  const [adminMode, setAdminMode] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
