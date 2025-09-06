@@ -158,13 +158,27 @@ const VirtualCardManager = ({ onStatsUpdate }: VirtualCardManagerProps) => {
     });
     
     try {
+      // Validate custom card type
+      if (data.card_type === "custom" && !data.custom_card_type?.trim()) {
+        toast({
+          title: "Missing Information",
+          description: "Please enter a name for your new card type.",
+          variant: "destructive",
+        });
+        return;
+      }
       // Handle custom card type
       let finalCardType = data.card_type;
       if (data.card_type === "custom" && data.custom_card_type) {
-        finalCardType = data.custom_card_type;
-        if (!customCardTypes.includes(data.custom_card_type)) {
-          setCustomCardTypes([...customCardTypes, data.custom_card_type]);
-          log.debug('VIRTUAL_CARD_MANAGER', 'Added new custom card type', { customType: data.custom_card_type });
+        // Capitalize the first letter of each word
+        finalCardType = data.custom_card_type
+          .split(' ')
+          .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+          .join(' ');
+        
+        if (!customCardTypes.includes(finalCardType)) {
+          setCustomCardTypes([...customCardTypes, finalCardType]);
+          log.debug('VIRTUAL_CARD_MANAGER', 'Added new custom card type', { customType: finalCardType });
         }
       }
 
@@ -226,7 +240,7 @@ const VirtualCardManager = ({ onStatsUpdate }: VirtualCardManagerProps) => {
         
         toast({
           title: "Success",
-          description: "Virtual card updated successfully"
+          description: "Loyalty card updated successfully"
         });
       } else {
         log.debug('VIRTUAL_CARD_MANAGER', 'Creating new virtual card');
@@ -240,9 +254,13 @@ const VirtualCardManager = ({ onStatsUpdate }: VirtualCardManagerProps) => {
         const newCardId = result.data?.[0]?.id;
         log.virtualCard('create', { cardId: newCardId, cardName: cardData.card_name });
         
+        const successMessage = data.card_type === "custom" 
+          ? `Loyalty card created successfully with new type "${finalCardType}"`
+          : "Loyalty card created successfully";
+        
         toast({
           title: "Success",
-          description: "Virtual card created successfully"
+          description: successMessage
         });
       }
 
@@ -319,7 +337,7 @@ const VirtualCardManager = ({ onStatsUpdate }: VirtualCardManagerProps) => {
     setEditingCard(card);
     
     // Check if card type or plan is custom (not in predefined list)
-    const standardTypes = ["standard", "premium", "enterprise"];
+    const standardTypes = ["standard", "premium"];
     const standardPlans = ["basic", "premium", "enterprise"];
     
     const isCustomType = !standardTypes.includes(card.card_type);
@@ -535,11 +553,10 @@ const VirtualCardManager = ({ onStatsUpdate }: VirtualCardManagerProps) => {
                             <SelectContent>
                               <SelectItem value="standard">Standard</SelectItem>
                               <SelectItem value="premium">Premium</SelectItem>
-                              <SelectItem value="enterprise">Enterprise</SelectItem>
                               {customCardTypes.map((type) => (
                                 <SelectItem key={type} value={type}>{type}</SelectItem>
                               ))}
-                              <SelectItem value="custom">Add Custom Type...</SelectItem>
+                              <SelectItem value="custom">+ Add New Type...</SelectItem>
                             </SelectContent>
                           </Select>
                           <FormMessage />
@@ -554,11 +571,28 @@ const VirtualCardManager = ({ onStatsUpdate }: VirtualCardManagerProps) => {
                       name="custom_card_type"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Custom Card Type</FormLabel>
+                          <FormLabel className="flex items-center gap-2">
+                            New Card Type Name
+                            <Tooltip>
+                              <TooltipTrigger>
+                                <HelpCircle className="w-3 h-3" />
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>Enter a name for your new card type (e.g., "VIP", "Corporate", "Student")</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </FormLabel>
                           <FormControl>
-                            <Input placeholder="Enter custom card type" {...field} />
+                            <Input 
+                              placeholder="e.g., VIP, Corporate, Student" 
+                              {...field}
+                              className="capitalize"
+                            />
                           </FormControl>
                           <FormMessage />
+                          <p className="text-xs text-muted-foreground">
+                            💡 This new type will be available for future loyalty cards
+                          </p>
                         </FormItem>
                       )}
                     />

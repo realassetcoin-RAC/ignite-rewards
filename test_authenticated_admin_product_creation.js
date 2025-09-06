@@ -22,7 +22,7 @@ console.log('===============================================================\n')
 const testLoyaltyCardProducts = [
   {
     card_name: "Basic Loyalty Card",
-    card_type: "standard",
+    card_type: "Standard",
     description: "Entry-level loyalty card with basic rewards",
     subscription_plan: "basic",
     pricing_type: "free",
@@ -34,7 +34,7 @@ const testLoyaltyCardProducts = [
   },
   {
     card_name: "Premium Loyalty Card", 
-    card_type: "premium",
+    card_type: "Premium",
     description: "Premium loyalty card with enhanced benefits",
     subscription_plan: "premium",
     pricing_type: "subscription",
@@ -42,6 +42,18 @@ const testLoyaltyCardProducts = [
     monthly_fee: 9.99,
     annual_fee: 99.99,
     features: ["Premium rewards", "Priority support", "Exclusive offers", "Advanced analytics"],
+    is_active: true
+  },
+  {
+    card_name: "VIP Loyalty Card", 
+    card_type: "VIP",
+    description: "Custom VIP loyalty card with exclusive benefits",
+    subscription_plan: "premium",
+    pricing_type: "one_time",
+    one_time_fee: 199.99,
+    monthly_fee: 0,
+    annual_fee: 0,
+    features: ["VIP rewards", "Concierge service", "Exclusive events", "Priority everything"],
     is_active: true
   }
 ];

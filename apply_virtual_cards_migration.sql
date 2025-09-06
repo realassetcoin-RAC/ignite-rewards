@@ -7,10 +7,7 @@ CREATE SCHEMA IF NOT EXISTS api;
 -- Create enum types in API schema matching the frontend expectations
 DO $$
 BEGIN
-    -- Check and create card_type enum (matching the database schema)
-    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'card_type' AND typnamespace = (SELECT oid FROM pg_namespace WHERE nspname = 'api')) THEN
-        CREATE TYPE api.card_type AS ENUM ('standard', 'premium', 'enterprise');
-    END IF;
+    -- Note: We'll use TEXT for card_type to support custom types, not enum
     
     -- Check and create subscription_plan enum
     IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'subscription_plan' AND typnamespace = (SELECT oid FROM pg_namespace WHERE nspname = 'api')) THEN
@@ -32,7 +29,7 @@ END $$;
 CREATE TABLE IF NOT EXISTS api.virtual_cards (
     id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
     card_name TEXT NOT NULL,
-    card_type api.card_type NOT NULL DEFAULT 'standard',
+    card_type TEXT NOT NULL DEFAULT 'standard', -- Using TEXT to support custom types
     description TEXT,
     image_url TEXT,
     subscription_plan api.subscription_plan DEFAULT 'basic',
@@ -82,13 +79,7 @@ BEGIN
             annual_fee, features, is_active, created_by, created_at, updated_at
         )
         SELECT 
-            id, card_name, 
-            CASE 
-                WHEN card_type::text = 'standard' THEN 'standard'::api.card_type
-                WHEN card_type::text = 'premium' THEN 'premium'::api.card_type
-                WHEN card_type::text = 'enterprise' THEN 'enterprise'::api.card_type
-                ELSE 'standard'::api.card_type
-            END,
+            id, card_name, card_type::text,
             description, image_url,
             CASE 
                 WHEN subscription_plan::text = 'basic' THEN 'basic'::api.subscription_plan
@@ -277,9 +268,8 @@ GRANT EXECUTE ON FUNCTION api.create_test_admin(TEXT, TEXT) TO anon;
 
 -- Create some sample loyalty card products for testing
 INSERT INTO api.virtual_cards (card_name, card_type, description, subscription_plan, pricing_type, one_time_fee, monthly_fee, annual_fee, features, is_active) VALUES
-    ('Basic Loyalty Card', 'standard', 'Entry-level loyalty card with basic rewards', 'basic', 'free', 0, 0, 0, '["Basic rewards", "Mobile app access", "Customer support"]'::jsonb, true),
-    ('Premium Loyalty Card', 'premium', 'Premium loyalty card with enhanced benefits', 'premium', 'subscription', 0, 9.99, 99.99, '["Premium rewards", "Priority support", "Exclusive offers", "Advanced analytics"]'::jsonb, true),
-    ('Enterprise Loyalty Card', 'enterprise', 'Enterprise-level loyalty card for businesses', 'enterprise', 'one_time', 299.99, 0, 0, '["All premium features", "Custom branding", "API access", "Dedicated account manager"]'::jsonb, true)
+    ('Basic Loyalty Card', 'Standard', 'Entry-level loyalty card with basic rewards', 'basic', 'free', 0, 0, 0, '["Basic rewards", "Mobile app access", "Customer support"]'::jsonb, true),
+    ('Premium Loyalty Card', 'Premium', 'Premium loyalty card with enhanced benefits', 'premium', 'subscription', 0, 9.99, 99.99, '["Premium rewards", "Priority support", "Exclusive offers", "Advanced analytics"]'::jsonb, true)
 ON CONFLICT (id) DO NOTHING;
 
 -- Add helpful comments
