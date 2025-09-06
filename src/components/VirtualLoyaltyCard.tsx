@@ -43,8 +43,52 @@ export const VirtualLoyaltyCard: React.FC = () => {
   const { toast } = useToast();
 
   useEffect(() => {
-    loadLoyaltyCard();
+    checkAdminStatusAndLoadData();
   }, []);
+
+  const checkAdminStatusAndLoadData = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    // Check if user is admin
+    try {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("role")
+        .eq("id", user.id)
+        .single();
+
+      const userIsAdmin = profile?.role === "admin";
+      setIsAdmin(userIsAdmin);
+
+      // If admin, load user profiles for selection
+      if (userIsAdmin) {
+        loadUserProfiles();
+      }
+    } catch (error) {
+      console.error("Error checking admin status:", error);
+    }
+
+    // Load loyalty card data
+    loadLoyaltyCard();
+  };
+
+  const loadUserProfiles = async () => {
+    try {
+      const { data: profiles, error } = await supabase
+        .from("profiles")
+        .select("id, email, full_name")
+        .order("full_name", { ascending: true });
+
+      if (error) {
+        console.error("Failed to load user profiles:", error);
+      } else {
+        setUserProfiles(profiles || []);
+      }
+    } catch (error) {
+      console.error("Error loading user profiles:", error);
+    }
+  };
 
   const loadLoyaltyCard = async () => {
     try {
@@ -128,11 +172,34 @@ export const VirtualLoyaltyCard: React.FC = () => {
     }
   };
 
+  const handleUserSelect = (userId: string) => {
+    const selectedUser = userProfiles.find(u => u.id === userId);
+    if (selectedUser) {
+      setFormData(prev => ({
+        ...prev,
+        user_id: userId,
+        full_name: selectedUser.full_name || "",
+        email: selectedUser.email || ""
+      }));
+    }
+  };
+
   const createLoyaltyCard = async () => {
-    if (!formData.full_name.trim()) {
+    // Validation for regular users
+    if (!adminMode && !formData.full_name.trim()) {
       toast({
         title: "Missing Information",
         description: "Please enter your full name.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validation for admin mode
+    if (adminMode && (!formData.user_id || !formData.full_name.trim())) {
+      toast({
+        title: "Missing Information",
+        description: "Please select a user and enter their full name.",
         variant: "destructive",
       });
       return;
@@ -156,9 +223,11 @@ export const VirtualLoyaltyCard: React.FC = () => {
       // Generate loyalty number with better error handling
       const generateLoyaltyNumber = async () => {
         // Since database functions are having issues, use client-side generation as primary method
-        // This ensures the user can always create a card even if DB functions fail
         console.log('Generating loyalty number client-side due to database constraints...');
-        const initial = (user.email || 'U').charAt(0).toUpperCase();
+        
+        // Use target user's email for admin mode, or current user's email for regular mode
+        const targetEmail = adminMode ? formData.email : (user.email || 'U');
+        const initial = targetEmail.charAt(0).toUpperCase();
         const timestamp = Date.now().toString().slice(-6); // Last 6 digits of timestamp
         const random = Math.floor(Math.random() * 100).toString().padStart(2, '0'); // 2 random digits
         return initial + timestamp + random;
@@ -170,11 +239,15 @@ export const VirtualLoyaltyCard: React.FC = () => {
       // Insert into user_loyalty_cards with improved error handling
       console.log('Attempting to insert loyalty card...');
       
+      // Use target user info for admin mode, or current user info for regular mode
+      const targetUserId = adminMode ? formData.user_id : user.id;
+      const targetEmail = adminMode ? formData.email : (user.email || '');
+      
       const insertData = {
-        user_id: user.id,
+        user_id: targetUserId,
         loyalty_number: loyaltyNumber,
         full_name: formData.full_name.trim(),
-        email: user.email || '',
+        email: targetEmail,
         phone: formData.phone.trim() || null,
         is_active: true
       };
@@ -257,11 +330,16 @@ export const VirtualLoyaltyCard: React.FC = () => {
 
       setLoyaltyCard(insertResult);
       setShowCreateDialog(false);
-      setFormData({ full_name: '', phone: '' });
+      setFormData({ full_name: '', phone: '', user_id: '', email: '' });
+      setAdminMode(false);
       
+      const successMessage = adminMode 
+        ? `Virtual loyalty card created successfully for ${formData.full_name}!`
+        : "Your virtual loyalty card has been created!";
+
       toast({
         title: "Success",
-        description: "Your virtual loyalty card has been created!",
+        description: successMessage,
       });
     } catch (error: any) {
       console.error('Error creating loyalty card:', error);
@@ -306,33 +384,88 @@ export const VirtualLoyaltyCard: React.FC = () => {
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <CreditCard className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
-          <CardTitle>Create Your Virtual Loyalty Card</CardTitle>
+          <CardTitle>Add Virtual Card</CardTitle>
         </CardHeader>
         <CardContent className="text-center">
           <p className="text-muted-foreground mb-6">
-            Get your unique 8-digit loyalty number starting with your initial.
+            Create your virtual loyalty card to start earning rewards and participating in the loyalty program.
           </p>
           
           <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
             <DialogTrigger asChild>
-              <Button className="w-full">
+              <Button className="w-full" onClick={() => {
+                setFormData({ full_name: '', phone: '', user_id: '', email: '' });
+                setAdminMode(false);
+              }}>
                 <Plus className="w-4 h-4 mr-2" />
-                Create Loyalty Card
+                Add Virtual Card
               </Button>
             </DialogTrigger>
             <DialogContent className="max-w-md">
               <DialogHeader>
-                <DialogTitle>Create Your Loyalty Card</DialogTitle>
+                <DialogTitle>
+                  {adminMode ? "Add Virtual Card (Admin)" : "Create Your Virtual Loyalty Card"}
+                </DialogTitle>
               </DialogHeader>
               
               <div className="space-y-4">
+                {/* Admin Mode Toggle */}
+                {isAdmin && (
+                  <div className="flex items-center justify-between p-3 border rounded-lg bg-muted/50">
+                    <div className="flex items-center gap-2">
+                      <Shield className="w-4 h-4 text-primary" />
+                      <Label htmlFor="admin-mode" className="text-sm font-medium">
+                        Admin Mode
+                      </Label>
+                    </div>
+                    <Button
+                      type="button"
+                      variant={adminMode ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => {
+                        setAdminMode(!adminMode);
+                        if (!adminMode) {
+                          setFormData({ full_name: '', phone: '', user_id: '', email: '' });
+                        }
+                      }}
+                    >
+                      {adminMode ? "ON" : "OFF"}
+                    </Button>
+                  </div>
+                )}
+
+                {/* User Selection for Admin Mode */}
+                {adminMode && (
+                  <div>
+                    <Label htmlFor="user_select">Select User *</Label>
+                    <Select onValueChange={handleUserSelect} value={formData.user_id}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Choose a user..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {userProfiles.map((profile) => (
+                          <SelectItem key={profile.id} value={profile.id}>
+                            <div className="flex items-center gap-2">
+                              <User className="w-4 h-4" />
+                              <div>
+                                <div className="font-medium">{profile.full_name || "No Name"}</div>
+                                <div className="text-xs text-muted-foreground">{profile.email}</div>
+                              </div>
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+
                 <div>
                   <Label htmlFor="full_name">Full Name *</Label>
                   <Input
                     id="full_name"
                     value={formData.full_name}
                     onChange={(e) => setFormData(prev => ({ ...prev, full_name: e.target.value }))}
-                    placeholder="Enter your full name"
+                    placeholder={adminMode ? "User's full name" : "Enter your full name"}
                   />
                 </div>
                 
@@ -342,9 +475,16 @@ export const VirtualLoyaltyCard: React.FC = () => {
                     id="phone"
                     value={formData.phone}
                     onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
-                    placeholder="Enter your phone number"
+                    placeholder={adminMode ? "User's phone number" : "Enter your phone number"}
                   />
                 </div>
+
+                {adminMode && (
+                  <div className="text-xs text-muted-foreground p-2 bg-blue-50 rounded">
+                    <Shield className="w-3 h-3 inline mr-1" />
+                    Admin Mode: Creating virtual loyalty card for selected user
+                  </div>
+                )}
                 
                 <Button
                   onClick={createLoyaltyCard}
@@ -359,7 +499,7 @@ export const VirtualLoyaltyCard: React.FC = () => {
                   ) : (
                     <>
                       <CreditCard className="w-4 h-4 mr-2" />
-                      Create Card
+                      {adminMode ? "Add Virtual Card for User" : "Add Virtual Card"}
                     </>
                   )}
                 </Button>
