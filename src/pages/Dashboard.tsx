@@ -11,6 +11,7 @@ import TransactionsTab from "@/components/dashboard/TransactionsTab";
 import PointsGraphTab from "@/components/dashboard/PointsGraphTab";
 import ProfileTab from "@/components/dashboard/ProfileTab";
 import ReferralsTab from "@/components/dashboard/ReferralsTab";
+import ErrorBoundary from "@/components/ErrorBoundary";
 
 const Dashboard = () => {
   const { user, isAdmin, loading } = useSecureAuth();
@@ -126,31 +127,41 @@ const Dashboard = () => {
           <TabsContent value="loyalty" className={`space-y-6 ${
             isLoaded ? 'animate-fade-in-up animation-delay-800' : 'opacity-0'
           }`}>
-            <LoyaltyCardTab />
+            <ErrorBoundary>
+              <LoyaltyCardTab />
+            </ErrorBoundary>
           </TabsContent>
 
           <TabsContent value="transactions" className={`space-y-6 ${
             isLoaded ? 'animate-fade-in-up animation-delay-800' : 'opacity-0'
           }`}>
-            <TransactionsTab />
+            <ErrorBoundary>
+              <TransactionsTab />
+            </ErrorBoundary>
           </TabsContent>
 
           <TabsContent value="points" className={`space-y-6 ${
             isLoaded ? 'animate-fade-in-up animation-delay-800' : 'opacity-0'
           }`}>
-            <PointsGraphTab />
+            <ErrorBoundary>
+              <PointsGraphTab />
+            </ErrorBoundary>
           </TabsContent>
 
           <TabsContent value="profile" className={`space-y-6 ${
             isLoaded ? 'animate-fade-in-up animation-delay-800' : 'opacity-0'
           }`}>
-            <ProfileTab />
+            <ErrorBoundary>
+              <ProfileTab />
+            </ErrorBoundary>
           </TabsContent>
 
           <TabsContent value="referrals" className={`space-y-6 ${
             isLoaded ? 'animate-fade-in-up animation-delay-800' : 'opacity-0'
           }`}>
-            <ReferralsTab />
+            <ErrorBoundary>
+              <ReferralsTab />
+            </ErrorBoundary>
           </TabsContent>
         </Tabs>
       </main>
