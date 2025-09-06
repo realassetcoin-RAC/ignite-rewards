@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Shield, Eye, Lock, Database, UserCheck, FileText, Sparkles, ArrowLeft } from "lucide-react";
+import { Link } from "react-router-dom";
 
 const Privacy = () => {
   const [isLoaded, setIsLoaded] = useState(false);
@@ -44,10 +45,10 @@ const Privacy = () => {
                 isLoaded ? 'animate-fade-in-up animation-delay-200' : 'opacity-0'
               }`}
             >
-              <a href="/" className="flex items-center">
+              <Link to="/" className="flex items-center">
                 <ArrowLeft className="mr-2 h-4 w-4 group-hover:-translate-x-1 transition-transform" />
                 Back to Home
-              </a>
+              </Link>
             </Button>
           </div>
         </div>

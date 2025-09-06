@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Building2, Search, MapPin, Star, Users, Filter, Sparkles, ArrowLeft } from "lucide-react";
+import { Link } from "react-router-dom";
 
 interface Merchant {
   id: string;
@@ -200,10 +201,10 @@ const Partners = () => {
                 isLoaded ? 'animate-fade-in-up animation-delay-400' : 'opacity-0'
               }`}
             >
-              <a href="/" className="flex items-center">
+              <Link to="/" className="flex items-center">
                 <ArrowLeft className="mr-2 h-4 w-4 group-hover:-translate-x-1 transition-transform" />
                 Back to Home
-              </a>
+              </Link>
             </Button>
           </div>
         </div>
