@@ -47,6 +47,7 @@ const SubscriptionPlanManager = () => {
   const loadPlans = async () => {
     try {
       setLoading(true);
+      console.log('🔍 Loading subscription plans from api.merchant_subscription_plans...');
       const { data, error } = await supabase
         .from('merchant_subscription_plans')
         .select('*')
@@ -54,6 +55,12 @@ const SubscriptionPlanManager = () => {
       
       if (error) {
         console.error('Failed to load plans:', error);
+        console.error('Error details:', {
+          message: error.message,
+          code: error.code,
+          details: error.details,
+          hint: error.hint
+        });
         
         // Provide more specific error messages
         if (error.message?.includes('permission denied')) {
