@@ -19,6 +19,7 @@ interface Plan {
   features?: any;
   trial_days?: number | null;
   is_active: boolean;
+  popular?: boolean;
   created_at: string;
 }
 
@@ -37,6 +38,7 @@ const SubscriptionPlanManager = () => {
       features: "[]",
       trial_days: 0,
       is_active: true,
+      popular: false,
     },
   });
 
@@ -305,6 +307,30 @@ const SubscriptionPlanManager = () => {
                     )}
                   />
                 </div>
+                <FormField
+                  control={form.control}
+                  name="popular"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-center space-x-3 space-y-0">
+                      <FormControl>
+                        <input
+                          type="checkbox"
+                          checked={field.value}
+                          onChange={field.onChange}
+                          className="h-4 w-4 rounded border border-input"
+                        />
+                      </FormControl>
+                      <div className="space-y-1 leading-none">
+                        <FormLabel className="text-sm font-normal">
+                          Mark as Popular Plan
+                        </FormLabel>
+                        <p className="text-xs text-muted-foreground">
+                          This plan will be highlighted with a "Popular" badge in the merchant signup modal
+                        </p>
+                      </div>
+                    </FormItem>
+                  )}
+                />
                 <div className="flex gap-3 pt-4">
                   <Button type="submit" className="flex-1">
                     <CheckCircle2 className="w-4 h-4 mr-2" />
@@ -340,6 +366,7 @@ const SubscriptionPlanManager = () => {
                     <TableHead>Features</TableHead>
                     <TableHead>Trial</TableHead>
                     <TableHead>Status</TableHead>
+                    <TableHead>Popular</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -379,6 +406,15 @@ const SubscriptionPlanManager = () => {
                         <Badge variant={p.is_active ? 'default' : 'secondary'}>
                           {p.is_active ? 'Active' : 'Inactive'}
                         </Badge>
+                      </TableCell>
+                      <TableCell>
+                        {p.popular ? (
+                          <Badge variant="default" className="bg-primary text-primary-foreground">
+                            Popular
+                          </Badge>
+                        ) : (
+                          <span className="text-muted-foreground text-sm">-</span>
+                        )}
                       </TableCell>
                       <TableCell className="text-right">
                         <Button size="sm" variant="outline" onClick={() => openEdit(p)}>

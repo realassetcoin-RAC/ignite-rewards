@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,6 +20,21 @@ interface MerchantPlan {
   period: string;
   popular?: boolean;
   features: string[];
+}
+
+/**
+ * Database subscription plan interface
+ */
+interface DatabasePlan {
+  id: string;
+  name: string;
+  description: string;
+  price_monthly: number;
+  features: string[];
+  trial_days: number;
+  is_active: boolean;
+  popular?: boolean;
+  created_at: string;
 }
 
 /**
@@ -46,52 +61,6 @@ interface MerchantForm {
   address: string;
 }
 
-// Merchant subscription plans available
-const merchantPlans: MerchantPlan[] = [
-  {
-    id: "starter",
-    name: "Starter",
-    price: 29,
-    period: "month",
-    features: [
-      "Up to 100 customers",
-      "Basic analytics",
-      "Email support",
-      "Standard integration",
-      "Mobile app access"
-    ]
-  },
-  {
-    id: "professional",
-    name: "Professional", 
-    price: 99,
-    period: "month",
-    popular: true,
-    features: [
-      "Up to 1,000 customers",
-      "Advanced analytics",
-      "Priority support",
-      "Custom branding",
-      "API access",
-      "Multi-location support"
-    ]
-  },
-  {
-    id: "enterprise",
-    name: "Enterprise",
-    price: 299,
-    period: "month",
-    features: [
-      "Unlimited customers",
-      "Full analytics suite",
-      "24/7 dedicated support",
-      "White-label solution",
-      "Advanced API",
-      "Custom integrations",
-      "Dedicated account manager"
-    ]
-  }
-];
 
 /**
  * Merchant signup modal component that handles subscription plan selection and business enrollment
@@ -100,9 +69,11 @@ const merchantPlans: MerchantPlan[] = [
  */
 const MerchantSignupModal: React.FC<MerchantSignupModalProps> = ({ isOpen, onClose }) => {
   // State management for form and UI
-  const [selectedPlan, setSelectedPlan] = useState(1); // Default to Professional plan
+  const [selectedPlan, setSelectedPlan] = useState(0); // Default to first plan
   const [loading, setLoading] = useState(false);
+  const [plansLoading, setPlansLoading] = useState(false);
   const [step, setStep] = useState<'select' | 'details'>('select');
+  const [merchantPlans, setMerchantPlans] = useState<MerchantPlan[]>([]);
   
   // Merchant form state
   const [merchantForm, setMerchantForm] = useState<MerchantForm>({
@@ -120,12 +91,81 @@ const MerchantSignupModal: React.FC<MerchantSignupModalProps> = ({ isOpen, onClo
   const navigate = useNavigate();
 
   /**
+   * Load subscription plans from database
+   */
+  const loadPlans = async () => {
+    try {
+      setPlansLoading(true);
+      console.log('🔍 Loading subscription plans from database...');
+      
+      const { data, error } = await supabase
+        .from('merchant_subscription_plans')
+        .select('*')
+        .order('price_monthly', { ascending: true });
+      
+      if (error) {
+        console.error('Failed to load plans:', error);
+        toast({
+          title: "Error",
+          description: "Could not load subscription plans. Please try again later or contact support.",
+          variant: "destructive"
+        });
+        setMerchantPlans([]);
+        return;
+      }
+
+      if (data && data.length > 0) {
+        // Filter for active plans and convert to MerchantPlan format
+        const activePlans = data.filter((plan: any) => plan.is_active === true);
+        const convertedPlans: MerchantPlan[] = activePlans.map((plan: any) => ({
+          id: plan.id,
+          name: plan.name,
+          price: plan.price_monthly,
+          period: "month",
+          popular: plan.popular || false, // Use database popular field
+          features: Array.isArray(plan.features) ? plan.features : []
+        }));
+        
+        setMerchantPlans(convertedPlans);
+        console.log('✅ Loaded', convertedPlans.length, 'subscription plans from database');
+      } else {
+        console.log('⚠️ No active plans found in database');
+        setMerchantPlans([]);
+        toast({
+          title: "No Plans Available",
+          description: "No subscription plans are currently available. Please contact support.",
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      console.error('Error loading plans:', error);
+      setMerchantPlans([]);
+      toast({
+        title: "Error",
+        description: "An error occurred while loading subscription plans. Please try again later.",
+        variant: "destructive"
+      });
+    } finally {
+      setPlansLoading(false);
+    }
+  };
+
+  /**
+   * Load plans when modal opens
+   */
+  useEffect(() => {
+    if (isOpen) {
+      loadPlans();
+    }
+  }, [isOpen]);
+
+  /**
    * Reset modal state when it opens/closes
    */
   React.useEffect(() => {
     if (!isOpen) {
       setStep('select');
-      setSelectedPlan(1);
+      setSelectedPlan(0);
       setMerchantForm({
         businessName: "",
         contactName: "",
@@ -190,6 +230,16 @@ const MerchantSignupModal: React.FC<MerchantSignupModalProps> = ({ isOpen, onClo
 
     setLoading(true);
     const plan = merchantPlans[selectedPlan];
+    
+    if (!plan) {
+      toast({
+        title: "Error",
+        description: "No subscription plan selected. Please try again.",
+        variant: "destructive"
+      });
+      setLoading(false);
+      return;
+    }
     
     try {
       // Create merchant account with Supabase Auth
@@ -261,72 +311,102 @@ const MerchantSignupModal: React.FC<MerchantSignupModalProps> = ({ isOpen, onClo
               <p className="text-sm sm:text-base text-muted-foreground">Select the plan that best fits your business needs</p>
             </div>
 
-            <div className="relative max-w-md mx-auto">
-              <Card className="p-6 card-gradient card-shadow border-0">
-                <div className="relative">
-                  {/* Navigation buttons */}
-                  <div className="absolute top-1/2 -left-12 -translate-y-1/2">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={prevPlan}
-                      className="h-10 w-10 bg-black/20 hover:bg-black/40 border-0 text-white backdrop-blur-sm"
-                    >
-                      <ChevronLeft className="h-5 w-5" />
-                    </Button>
-                  </div>
-                  <div className="absolute top-1/2 -right-12 -translate-y-1/2">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={nextPlan}
-                      className="h-10 w-10 bg-black/20 hover:bg-black/40 border-0 text-white backdrop-blur-sm"
-                    >
-                      <ChevronRight className="h-5 w-5" />
-                    </Button>
-                  </div>
+            {plansLoading ? (
+              <div className="flex justify-center items-center min-h-[400px]">
+                <div className="text-center space-y-4">
+                  <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" />
+                  <p className="text-muted-foreground">Loading subscription plans...</p>
                 </div>
-                
-                {/* Plan details */}
-                <div className="text-center min-h-[300px] flex flex-col justify-center">
-                  <div className="flex items-center justify-center gap-2 mb-4">
-                    <h4 className="text-2xl font-bold">
-                      {merchantPlans[selectedPlan].name}
-                    </h4>
-                    {merchantPlans[selectedPlan].popular && (
-                      <Badge className="bg-primary text-primary-foreground">
-                        <Star className="w-3 h-3 mr-1" />
-                        Popular
-                      </Badge>
+              </div>
+            ) : (
+              <div className="relative max-w-md mx-auto">
+                <Card className="p-6 card-gradient card-shadow border-0">
+                  <div className="relative">
+                    {/* Navigation buttons - only show if more than 1 plan */}
+                    {merchantPlans.length > 1 && (
+                      <>
+                        <div className="absolute top-1/2 -left-12 -translate-y-1/2">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={prevPlan}
+                            className="h-10 w-10 bg-black/20 hover:bg-black/40 border-0 text-white backdrop-blur-sm"
+                          >
+                            <ChevronLeft className="h-5 w-5" />
+                          </Button>
+                        </div>
+                        <div className="absolute top-1/2 -right-12 -translate-y-1/2">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={nextPlan}
+                            className="h-10 w-10 bg-black/20 hover:bg-black/40 border-0 text-white backdrop-blur-sm"
+                          >
+                            <ChevronRight className="h-5 w-5" />
+                          </Button>
+                        </div>
+                      </>
                     )}
                   </div>
                   
-                  <div className="text-3xl font-bold text-primary mb-6">
-                    ${merchantPlans[selectedPlan].price}
-                    <span className="text-lg text-muted-foreground">
-                      /{merchantPlans[selectedPlan].period}
-                    </span>
-                  </div>
-                  
-                  <div className="space-y-3">
-                    {merchantPlans[selectedPlan].features.map((feature, index) => (
-                      <div key={index} className="flex items-center justify-center">
-                        <Check className="w-4 h-4 text-primary mr-3 flex-shrink-0" />
-                        <span className="text-muted-foreground text-left">{feature}</span>
+                  {/* Plan details */}
+                  <div className="text-center min-h-[300px] flex flex-col justify-center">
+                    {merchantPlans.length > 0 ? (
+                      <>
+                        <div className="flex items-center justify-center gap-2 mb-4">
+                          <h4 className="text-2xl font-bold">
+                            {merchantPlans[selectedPlan]?.name}
+                          </h4>
+                          {merchantPlans[selectedPlan]?.popular && (
+                            <Badge className="bg-primary text-primary-foreground">
+                              <Star className="w-3 h-3 mr-1" />
+                              Popular
+                            </Badge>
+                          )}
+                        </div>
+                        
+                        <div className="text-3xl font-bold text-primary mb-6">
+                          ${merchantPlans[selectedPlan]?.price}
+                          <span className="text-lg text-muted-foreground">
+                            /{merchantPlans[selectedPlan]?.period}
+                          </span>
+                        </div>
+                        
+                        <div className="space-y-3">
+                          {merchantPlans[selectedPlan]?.features?.map((feature, index) => (
+                            <div key={index} className="flex items-center justify-center">
+                              <Check className="w-4 h-4 text-primary mr-3 flex-shrink-0" />
+                              <span className="text-muted-foreground text-left">{feature}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </>
+                    ) : (
+                      <div className="text-center space-y-4">
+                        <div className="text-6xl">📋</div>
+                        <div>
+                          <h4 className="text-xl font-semibold text-muted-foreground mb-2">No Plans Available</h4>
+                          <p className="text-muted-foreground">
+                            No subscription plans are currently available. Please contact our support team for assistance.
+                          </p>
+                        </div>
                       </div>
-                    ))}
+                    )}
                   </div>
-                </div>
-              </Card>
-            </div>
+                </Card>
+              </div>
+            )}
 
             <div className="flex justify-center">
               <Button 
                 onClick={() => setStep('details')}
                 className="px-8"
                 variant="hero"
+                disabled={plansLoading || merchantPlans.length === 0}
               >
-                Select This Plan
+                {plansLoading ? 'Loading...' : 
+                 merchantPlans.length === 0 ? 'No Plans Available' : 
+                 'Select This Plan'}
               </Button>
             </div>
           </div>
@@ -336,7 +416,7 @@ const MerchantSignupModal: React.FC<MerchantSignupModalProps> = ({ isOpen, onClo
           <div className="space-y-6">
             <div className="text-center">
               <Badge variant="outline" className="mb-2">
-                Selected: {merchantPlans[selectedPlan].name} - ${merchantPlans[selectedPlan].price}/month
+                Selected: {merchantPlans[selectedPlan]?.name} - ${merchantPlans[selectedPlan]?.price}/month
               </Badge>
               <h3 className="text-xl font-semibold mb-2">Business Information</h3>
               <p className="text-muted-foreground">Fill in your business details to get started</p>
@@ -465,7 +545,7 @@ const MerchantSignupModal: React.FC<MerchantSignupModalProps> = ({ isOpen, onClo
                   variant="hero"
                 >
                   {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  Start Subscription - ${merchantPlans[selectedPlan].price}/month
+                  Start Subscription - ${merchantPlans[selectedPlan]?.price}/month
                 </Button>
               </div>
             </form>

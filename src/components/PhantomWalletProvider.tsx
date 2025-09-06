@@ -195,10 +195,16 @@ export const PhantomWalletProvider: React.FC<PhantomWalletProviderProps> = ({ ch
 
   // Initialize on mount - only detect Phantom, don't auto-connect
   useEffect(() => {
+    let initTimeout: NodeJS.Timeout;
+    
     // Wait for page to load before detecting Phantom
     const initializePhantom = () => {
-      detectPhantom();
-      // Removed checkConnection() to prevent auto-launching Phantom wallet
+      // Debounce initialization to prevent multiple calls
+      clearTimeout(initTimeout);
+      initTimeout = setTimeout(() => {
+        detectPhantom();
+        // Removed checkConnection() to prevent auto-launching Phantom wallet
+      }, 100);
     };
 
     if (document.readyState === 'loading') {
@@ -208,6 +214,7 @@ export const PhantomWalletProvider: React.FC<PhantomWalletProviderProps> = ({ ch
     }
 
     return () => {
+      clearTimeout(initTimeout);
       window.removeEventListener('load', initializePhantom);
     };
   }, [detectPhantom]);

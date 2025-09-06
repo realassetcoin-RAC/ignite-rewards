@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { canUserUseMFA } from '@/lib/mfa';
@@ -41,6 +41,10 @@ export const useSecureAuth = () => {
     mfaEnabled: false,
     isWalletUser: false,
   });
+
+  // Track window focus state to prevent unnecessary auth updates
+  const isWindowFocused = useRef(true);
+  const lastAuthUpdate = useRef<number>(0);
 
   const checkAdminAccess = async (): Promise<boolean> => {
     try {
@@ -229,12 +233,17 @@ export const useSecureAuth = () => {
     }
   };
 
-  const updateAuthState = async (session: Session | null) => {
-    setAuthState(prev => ({
-      ...prev,
-      loading: true,
-      error: null,
-    }));
+  const updateAuthState = async (session: Session | null, forceUpdate = false) => {
+    // Don't set loading to true if this is just a session refresh and we already have a user
+    const shouldShowLoading = forceUpdate || !authState.user;
+    
+    if (shouldShowLoading) {
+      setAuthState(prev => ({
+        ...prev,
+        loading: true,
+        error: null,
+      }));
+    }
 
     try {
       if (!session?.user) {
@@ -249,6 +258,17 @@ export const useSecureAuth = () => {
           mfaEnabled: false,
           isWalletUser: false,
         });
+        return;
+      }
+
+      // If we already have the same user and session, don't refetch everything
+      if (authState.user?.id === session.user.id && authState.session?.access_token === session.access_token && !forceUpdate) {
+        // Just update the session token if it changed
+        setAuthState(prev => ({
+          ...prev,
+          session,
+          loading: false,
+        }));
         return;
       }
 
@@ -290,22 +310,41 @@ export const useSecureAuth = () => {
   };
 
   useEffect(() => {
-    // Set up auth state listener
+    // Note: Window focus/blur handling is now managed by useRefreshPrevention hook
+    // to avoid conflicts and ensure proper refresh prevention
+    // We'll use a simple flag that gets updated by the refresh prevention hook
+
+    // Set up auth state listener with smart update logic
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
-        // Use setTimeout to prevent potential deadlocks
-        setTimeout(() => {
-          updateAuthState(session);
-        }, 0);
+        const now = Date.now();
+        const timeSinceLastUpdate = now - lastAuthUpdate.current;
+        
+        // Smart auth updates - allow updates but prevent excessive refreshes
+        const shouldUpdate = 
+          timeSinceLastUpdate > 5000 || // 5 seconds debounce
+          ['SIGNED_IN', 'SIGNED_OUT', 'TOKEN_REFRESHED'].includes(event);
+
+        if (shouldUpdate) {
+          lastAuthUpdate.current = now;
+          // Use setTimeout to prevent potential deadlocks
+          setTimeout(() => {
+            // Only force update for significant events, not token refreshes
+            const forceUpdate = ['SIGNED_IN', 'SIGNED_OUT'].includes(event);
+            updateAuthState(session, forceUpdate);
+          }, 0);
+        }
       }
     );
 
     // Check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
-      updateAuthState(session);
+      updateAuthState(session, true); // Force update on initial load
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
 
   const signOut = async () => {

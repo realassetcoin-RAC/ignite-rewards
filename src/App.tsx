@@ -19,11 +19,43 @@ import UserDashboard from "./pages/UserDashboard";
 import RoleBasedDashboard from "./components/RoleBasedDashboard";
 import AdminTestPanel from "./components/AdminTestPanel";
 import AdminDebug from "./pages/AdminDebug";
+import { useSmartRefresh } from "./hooks/useSmartRefresh";
+import { useSessionPersistence } from "./hooks/useSessionPersistence";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      refetchOnMount: false, // Prevent refetch on component mount
+      refetchOnReconnect: true, // Allow refetch on network reconnect
+      staleTime: 2 * 60 * 1000, // 2 minutes - shorter for fresher data
+      gcTime: 10 * 60 * 1000, // 10 minutes cache
+      // Smart refetch function - only refetch if data is stale
+      refetchOnWindowFocus: (query) => {
+        // Only refetch if the query is stale and it's been more than 30 seconds
+        const now = Date.now();
+        const lastFetch = query.state.dataUpdatedAt;
+        const isStale = now - lastFetch > 30000; // 30 seconds
+        
+        if (isStale) {
+          console.log('🔄 Smart refetching query:', query.queryKey);
+          return true;
+        }
+        
+        console.log('🔄 Skipping refetch, data is fresh:', query.queryKey);
+        return false;
+      },
+    },
+  },
+});
 
 const App = () => {
   const isDev = import.meta.env.DEV;
+  
+  // Initialize smart refresh system (prevents page refresh, allows component updates)
+  useSmartRefresh();
+  
+  // Initialize session persistence to maintain auth state
+  useSessionPersistence();
 
   // Dev-only debugging utilities
   useEffect(() => {

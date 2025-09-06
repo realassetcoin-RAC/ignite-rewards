@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useSecureAuth } from "@/hooks/useSecureAuth";
+import { useSmartDataRefresh } from "@/hooks/useSmartDataRefresh";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -12,6 +13,21 @@ const UserDashboard = () => {
   const { user, isAdmin, loading } = useSecureAuth();
   const [activeSection, setActiveSection] = useState<'overview' | 'loyalty' | 'referrals'>('overview');
   const [isLoaded, setIsLoaded] = useState(false);
+
+  // Smart data refresh - refreshes component data when returning to app
+  const refreshDashboardData = async () => {
+    console.log('🔄 Refreshing dashboard data...');
+    // Here you would typically refetch data from APIs
+    // For now, we'll just log the refresh
+    setIsLoaded(false);
+    setTimeout(() => setIsLoaded(true), 100); // Simulate data refresh
+  };
+
+  useSmartDataRefresh(refreshDashboardData, {
+    debounceMs: 2000, // 2 second debounce
+    enabled: true,
+    dependencies: [user?.id] // Refresh when user changes
+  });
 
   useEffect(() => {
     setIsLoaded(true);

@@ -13,6 +13,8 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
     storage: localStorage,
     persistSession: true,
     autoRefreshToken: true,
+    detectSessionInUrl: false, // Prevent auth state changes from URL changes
+    flowType: 'pkce', // Use PKCE flow for better security and stability
   },
   db: {
     schema: 'api'

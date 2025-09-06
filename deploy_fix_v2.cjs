@@ -7,25 +7,25 @@ async function deployFix() {
   const connectionConfigs = [
     // Direct connection URL format
     {
-      connectionString: 'postgresql://postgres.wndswqvqogeblksrujpg:Testwr@2025@@aws-0-us-west-1.pooler.supabase.com:6543/postgres',
+      connectionString: 'postgresql://postgres:M@r0on@2025@db.wndswqvqogeblksrujpg.supabase.co:5432/postgres',
       ssl: { rejectUnauthorized: false }
     },
     // Alternative format
     {
-      host: 'aws-0-us-west-1.pooler.supabase.com',
-      port: 6543,
+      host: 'db.wndswqvqogeblksrujpg.supabase.co',
+      port: 5432,
       database: 'postgres',
-      user: 'postgres.wndswqvqogeblksrujpg',
-      password: 'Testwr@2025@',
+      user: 'postgres',
+      password: 'M@r0on@2025',
       ssl: { rejectUnauthorized: false }
     },
     // Try without SSL first
     {
-      host: 'aws-0-us-west-1.pooler.supabase.com',
-      port: 6543,
+      host: 'db.wndswqvqogeblksrujpg.supabase.co',
+      port: 5432,
       database: 'postgres',
-      user: 'postgres.wndswqvqogeblksrujpg',
-      password: 'Testwr@2025@'
+      user: 'postgres',
+      password: 'M@r0on@2025'
     }
   ];
 

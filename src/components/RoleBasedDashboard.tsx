@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, memo } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useSecureAuth } from '@/hooks/useSecureAuth';
 
@@ -6,7 +6,7 @@ import { useSecureAuth } from '@/hooks/useSecureAuth';
  * RoleBasedDashboard component that redirects users to the appropriate dashboard
  * based on their role (admin, merchant, customer/user)
  */
-const RoleBasedDashboard = () => {
+const RoleBasedDashboard = memo(() => {
   const { user, profile, loading, isAdmin } = useSecureAuth();
 
   // Enhanced debugging for admin routing issues
@@ -72,6 +72,8 @@ const RoleBasedDashboard = () => {
       });
       return <Navigate to="/user" replace />;
   }
-};
+});
+
+RoleBasedDashboard.displayName = 'RoleBasedDashboard';
 
 export default RoleBasedDashboard;

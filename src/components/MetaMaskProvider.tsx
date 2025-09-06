@@ -320,10 +320,16 @@ export const MetaMaskProvider: React.FC<MetaMaskProviderProps> = ({ children }) 
 
   // Initialize on mount - only detect MetaMask, don't auto-connect
   useEffect(() => {
+    let initTimeout: NodeJS.Timeout;
+    
     // Wait for page to load before detecting MetaMask
     const initializeMetaMask = () => {
-      detectMetaMask();
-      // Removed checkConnection() to prevent any auto-connection behavior
+      // Debounce initialization to prevent multiple calls
+      clearTimeout(initTimeout);
+      initTimeout = setTimeout(() => {
+        detectMetaMask();
+        // Removed checkConnection() to prevent any auto-connection behavior
+      }, 100);
     };
 
     if (document.readyState === 'loading') {
@@ -333,6 +339,7 @@ export const MetaMaskProvider: React.FC<MetaMaskProviderProps> = ({ children }) 
     }
 
     return () => {
+      clearTimeout(initTimeout);
       window.removeEventListener('load', initializeMetaMask);
     };
   }, [detectMetaMask]);
