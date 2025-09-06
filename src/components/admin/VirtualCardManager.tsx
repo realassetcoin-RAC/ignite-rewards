@@ -49,7 +49,7 @@ const VirtualCardManager = ({ onStatsUpdate }: VirtualCardManagerProps) => {
   const form = useForm({
     defaultValues: {
       card_name: "",
-      card_type: "loyalty",
+      card_type: "Standard",
       description: "",
       image_url: "",
       subscription_plan: "basic",
@@ -342,7 +342,7 @@ const VirtualCardManager = ({ onStatsUpdate }: VirtualCardManagerProps) => {
     setEditingCard(card);
     
     // Check if card type or plan is custom (not in predefined list)
-    const standardTypes = ["loyalty"];
+    const standardTypes = ["loyalty", "Standard", "Premium", "Enterprise"];
     const standardPlans = ["basic", "premium", "enterprise"];
     
     const isCustomType = !standardTypes.includes(card.card_type);
@@ -475,7 +475,7 @@ const VirtualCardManager = ({ onStatsUpdate }: VirtualCardManagerProps) => {
               setEditingCard(null);
               form.reset({
                 card_name: "",
-                card_type: "loyalty",
+                card_type: "Standard",
                 description: "",
                 image_url: "",
                 subscription_plan: "basic",
@@ -557,6 +557,9 @@ const VirtualCardManager = ({ onStatsUpdate }: VirtualCardManagerProps) => {
                             </FormControl>
                             <SelectContent>
                               <SelectItem value="loyalty">Loyalty</SelectItem>
+                              <SelectItem value="Standard">Standard</SelectItem>
+                              <SelectItem value="Premium">Premium</SelectItem>
+                              <SelectItem value="Enterprise">Enterprise</SelectItem>
                               {customCardTypes.map((type) => (
                                 <SelectItem key={type} value={type}>{type}</SelectItem>
                               ))}
