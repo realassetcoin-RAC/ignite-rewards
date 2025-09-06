@@ -15,6 +15,23 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
     autoRefreshToken: true,
   },
   db: {
+    schema: 'public'
+  },
+  global: {
+    headers: {
+      'x-client-info': 'supabase-js-web'
+    }
+  }
+});
+
+// Create an additional client for API schema if needed
+export const supabaseApi = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
+  auth: {
+    storage: localStorage,
+    persistSession: true,
+    autoRefreshToken: true,
+  },
+  db: {
     schema: 'api'
   },
   global: {

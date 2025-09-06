@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { useForm } from "react-hook-form";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase, supabaseApi } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Plus, Edit2, Eye, Trash2, HelpCircle, CreditCard, AlertCircle } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -61,7 +61,8 @@ const VirtualCardManager = ({ onStatsUpdate }: VirtualCardManagerProps) => {
       is_active: true,
       custom_card_type: "",
       custom_plan: ""
-    }
+    },
+    mode: "onSubmit"
   });
 
   useEffect(() => {
@@ -90,6 +91,83 @@ const VirtualCardManager = ({ onStatsUpdate }: VirtualCardManagerProps) => {
     return formattedType;
   };
 
+  // Robust database operation that tries multiple schemas
+  const performDatabaseOperation = async (operation: 'select' | 'insert' | 'update' | 'delete', table: string, options: any) => {
+    console.log(`Attempting ${operation} on ${table}`, options);
+    
+    // Try public schema first (default)
+    try {
+      console.log('Trying public schema...');
+      let query = supabase.from(table);
+      
+      switch (operation) {
+        case 'select':
+          query = query.select(options.select || '*');
+          if (options.order) query = query.order(options.order.column, options.order.options);
+          if (options.eq) query = query.eq(options.eq.column, options.eq.value);
+          if (options.limit) query = query.limit(options.limit);
+          break;
+        case 'insert':
+          query = query.insert(options.data).select();
+          break;
+        case 'update':
+          query = query.update(options.data).eq(options.eq.column, options.eq.value).select();
+          break;
+        case 'delete':
+          query = query.delete().eq(options.eq.column, options.eq.value);
+          break;
+      }
+      
+      const result = await query;
+      console.log('Public schema result:', result);
+      
+      if (!result.error) {
+        return { ...result, schema: 'public' };
+      }
+      
+      console.log('Public schema failed, trying API schema...', result.error);
+    } catch (publicError) {
+      console.log('Public schema exception:', publicError);
+    }
+    
+    // Try API schema as fallback
+    try {
+      console.log('Trying API schema...');
+      let query = supabaseApi.from(table);
+      
+      switch (operation) {
+        case 'select':
+          query = query.select(options.select || '*');
+          if (options.order) query = query.order(options.order.column, options.order.options);
+          if (options.eq) query = query.eq(options.eq.column, options.eq.value);
+          if (options.limit) query = query.limit(options.limit);
+          break;
+        case 'insert':
+          query = query.insert(options.data).select();
+          break;
+        case 'update':
+          query = query.update(options.data).eq(options.eq.column, options.eq.value).select();
+          break;
+        case 'delete':
+          query = query.delete().eq(options.eq.column, options.eq.value);
+          break;
+      }
+      
+      const result = await query;
+      console.log('API schema result:', result);
+      
+      if (!result.error) {
+        return { ...result, schema: 'api' };
+      }
+      
+      console.log('API schema also failed:', result.error);
+      return result; // Return the last error
+    } catch (apiError) {
+      console.log('API schema exception:', apiError);
+      throw apiError;
+    }
+  };
+
   const loadCards = async () => {
     const timer = log.timer('Virtual Cards Loading');
     log.info('VIRTUAL_CARD_MANAGER', 'Starting virtual cards loading process');
@@ -100,17 +178,12 @@ const VirtualCardManager = ({ onStatsUpdate }: VirtualCardManagerProps) => {
       // Log the loading attempt
       log.debug('VIRTUAL_CARD_MANAGER', 'Attempting to load virtual cards using enhanced loading');
       
-      // Load virtual cards from api schema (configured schema)
-      const { data, error } = await supabase
-        .from('virtual_cards')
-        .select('*')
-        .order('created_at', { ascending: false });
+      // Load virtual cards using robust database operation
+      const result = await performDatabaseOperation('select', 'virtual_cards', {
+        order: { column: 'created_at', options: { ascending: false } }
+      });
       
-      const result = error 
-        ? { success: false, message: error.message, errors: [error] }
-        : { success: true, data, source: 'api.virtual_cards' };
-      
-      if (result.success) {
+      if (!result.error) {
         setCards(result.data || []);
         
         // Extract unique card types from existing cards and populate available types
@@ -134,30 +207,30 @@ const VirtualCardManager = ({ onStatsUpdate }: VirtualCardManagerProps) => {
           log.debug('VIRTUAL_CARD_MANAGER', 'Initialized with default card types', { defaultTypes });
         }
         
-        log.info('VIRTUAL_CARD_MANAGER', `Virtual cards loaded successfully from ${result.source}`, {
+        log.info('VIRTUAL_CARD_MANAGER', `Virtual cards loaded successfully from ${result.schema} schema`, {
           count: result.data?.length || 0,
-          source: result.source,
+          schema: result.schema,
           cards: result.data?.map(card => ({ id: card.id, name: card.card_name, type: card.card_type }))
         });
         
         if (result.data && result.data.length === 0) {
-          log.warn('VIRTUAL_CARD_MANAGER', 'No virtual cards found in database', { source: result.source });
+          log.warn('VIRTUAL_CARD_MANAGER', 'No virtual cards found in database', { schema: result.schema });
         }
       } else {
-        const errorId = trackVirtualCardError('load', result.errors, null, {
+        const errorId = trackVirtualCardError('load', result.error, null, {
           component: 'VirtualCardManager',
           function: 'loadCards'
         });
         
-        log.error('VIRTUAL_CARD_MANAGER', `Failed to load virtual cards: ${result.message}`, {
+        log.error('VIRTUAL_CARD_MANAGER', `Failed to load virtual cards: ${result.error.message}`, {
           errorId,
-          errors: result.errors,
-          message: result.message
+          error: result.error,
+          message: result.error.message
         });
         
         toast({
           title: "Loading Error",
-          description: `Failed to load virtual cards: ${result.message || "Unknown error"}`,
+          description: `Failed to load virtual cards: ${result.error.message || "Unknown error"}`,
           variant: "destructive",
         });
       }
@@ -194,10 +267,33 @@ const VirtualCardManager = ({ onStatsUpdate }: VirtualCardManagerProps) => {
       cardType: data.card_type,
       pricingType: data.pricing_type,
       isEditing: !!editingCard,
-      editingCardId: editingCard?.id
+      editingCardId: editingCard?.id,
+      formData: data
     });
+
+    // Add comprehensive form validation
+    console.log('Form submission data:', data);
     
     try {
+      // Basic required field validation
+      if (!data.card_name?.trim()) {
+        toast({
+          title: "Validation Error",
+          description: "Card name is required.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      if (!data.card_type?.trim()) {
+        toast({
+          title: "Validation Error", 
+          description: "Card type is required.",
+          variant: "destructive",
+        });
+        return;
+      }
+
       // Validate custom card type
       if (data.card_type === "custom" && !data.custom_card_type?.trim()) {
         toast({
@@ -263,14 +359,23 @@ const VirtualCardManager = ({ onStatsUpdate }: VirtualCardManagerProps) => {
       });
 
       let result;
+      console.log('About to submit card data to database:', cardData);
+      
       if (editingCard) {
         log.debug('VIRTUAL_CARD_MANAGER', 'Updating existing virtual card', { cardId: editingCard.id });
-        result = await supabase
-          .from("virtual_cards")
-          .update(cardData)
-          .eq("id", editingCard.id);
+        console.log('Updating virtual card with ID:', editingCard.id);
         
-        if (result.error) throw result.error;
+        result = await performDatabaseOperation('update', 'virtual_cards', {
+          data: cardData,
+          eq: { column: 'id', value: editingCard.id }
+        });
+        
+        console.log('Update result:', result);
+        
+        if (result.error) {
+          console.error('Update error:', result.error);
+          throw result.error;
+        }
         
         log.virtualCard('update', { cardId: editingCard.id, cardName: cardData.card_name });
         
@@ -280,14 +385,26 @@ const VirtualCardManager = ({ onStatsUpdate }: VirtualCardManagerProps) => {
         });
       } else {
         log.debug('VIRTUAL_CARD_MANAGER', 'Creating new virtual card');
-        result = await supabase
-          .from("virtual_cards")
-          .insert([cardData])
-          .select();
+        console.log('Creating new virtual card...');
         
-        if (result.error) throw result.error;
+        result = await performDatabaseOperation('insert', 'virtual_cards', {
+          data: [cardData]
+        });
+        
+        console.log('Insert result:', result);
+        
+        if (result.error) {
+          console.error('Insert error:', result.error);
+          throw result.error;
+        }
+        
+        if (!result.data || result.data.length === 0) {
+          console.error('No data returned from insert operation');
+          throw new Error('No data returned from insert operation');
+        }
         
         const newCardId = result.data?.[0]?.id;
+        console.log('New card created with ID:', newCardId);
         log.virtualCard('create', { cardId: newCardId, cardName: cardData.card_name });
         
         const successMessage = data.card_type === "custom" 
@@ -417,12 +534,11 @@ const VirtualCardManager = ({ onStatsUpdate }: VirtualCardManagerProps) => {
     });
 
     try {
-      const { error } = await supabase
-        .from("virtual_cards")
-        .delete()
-        .eq("id", id);
+      const result = await performDatabaseOperation('delete', 'virtual_cards', {
+        eq: { column: 'id', value: id }
+      });
 
-      if (error) throw error;
+      if (result.error) throw result.error;
 
       log.virtualCard('delete', { cardId: id, cardName: cardToDelete?.card_name });
       log.info('VIRTUAL_CARD_MANAGER', 'Virtual card deleted successfully', {
@@ -534,7 +650,10 @@ const VirtualCardManager = ({ onStatsUpdate }: VirtualCardManagerProps) => {
             </DialogHeader>
             
             <Form {...form}>
-              <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
+              <form onSubmit={(e) => {
+                console.log('Form submit event triggered');
+                form.handleSubmit(handleSubmit)(e);
+              }} className="space-y-6">
                 {/* Basic Information */}
                 <div className="space-y-4">
                   <h4 className="text-md font-medium">Basic Information</h4>
@@ -542,10 +661,14 @@ const VirtualCardManager = ({ onStatsUpdate }: VirtualCardManagerProps) => {
                     <FormField
                       control={form.control}
                       name="card_name"
+                      rules={{ 
+                        required: "Card name is required",
+                        minLength: { value: 2, message: "Card name must be at least 2 characters" }
+                      }}
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel className="flex items-center gap-2">
-                            Card Name
+                            Card Name *
                             <Tooltip>
                               <TooltipTrigger>
                                 <HelpCircle className="w-3 h-3" />
@@ -566,10 +689,11 @@ const VirtualCardManager = ({ onStatsUpdate }: VirtualCardManagerProps) => {
                     <FormField
                       control={form.control}
                       name="card_type"
+                      rules={{ required: "Card type is required" }}
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel className="flex items-center gap-2">
-                            Card Type
+                            Card Type *
                             <Tooltip>
                               <TooltipTrigger>
                                 <HelpCircle className="w-3 h-3" />
@@ -958,6 +1082,18 @@ const VirtualCardManager = ({ onStatsUpdate }: VirtualCardManagerProps) => {
                 <div className="flex gap-2 pt-4">
                   <Button type="submit" className="flex-1">
                     {editingCard ? "Update Loyalty Card" : "Create Loyalty Card"}
+                  </Button>
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    onClick={() => {
+                      console.log('Debug: Testing form submission manually');
+                      const formData = form.getValues();
+                      console.log('Current form values:', formData);
+                      handleSubmit(formData);
+                    }}
+                  >
+                    Debug Submit
                   </Button>
                   <Button 
                     type="button" 
