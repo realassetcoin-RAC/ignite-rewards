@@ -1,30 +1,30 @@
 import { Card } from "@/components/ui/card";
-import { UserPlus, ShoppingBag, Trophy, Lock } from "lucide-react";
+import { Shield, ShoppingBag, Clock, Coins } from "lucide-react";
 
 const steps = [
   {
-    icon: UserPlus,
+    icon: Shield,
     step: "01",
-    title: "Sign Up Free",
-    description: "Users can get started without any initial cost. The program is designed for seamless, free onboarding to encourage widespread adoption and participation."
+    title: "Anonymous Signup",
+    description: "No phone numbers, no email addresses, no personal data. Just download the app and get your anonymous loyalty card instantly. Complete privacy from day one."
   },
   {
     icon: ShoppingBag,
     step: "02", 
-    title: "Shop & Earn",
-    description: "Participants can engage in activities, such as shopping on an affiliated platform, to earn the governance token, $RAC. This system incentivizes engagement and provides a clear path to gaining influence within the DAO."
+    title: "Shop & Earn Notional",
+    description: "Scan QR codes at any merchant worldwide. Earn notional rewards immediately - you see them in your dashboard right away. No boundaries, no restrictions."
   },
   {
-    icon: Lock,
+    icon: Clock,
     step: "03",
-    title: "Lock Against a Program",
-    description: "With their earned $RAC tokens, users can lock them within one of the program's offerings. This action demonstrates long-term commitment and grants them specific benefits, such as voting power or eligibility for passive income."
+    title: "30-Day Vesting",
+    description: "Your notional rewards vest over 30 days. This protects against cancellations while giving you time to see your earnings grow. Cancel anytime before vesting."
   },
   {
-    icon: Trophy,
+    icon: Coins,
     step: "04",
-    title: "Redeem Over Time to Unlock Value",
-    description: "As tokens remain locked, users can progressively redeem or unlock value from their commitment. This can take the form of passive income distributions, fractional ownership of NFTs, or other rewards, ensuring a clear return on their long-term participation."
+    title: "Claim & Redeem",
+    description: "After 30 days, your rewards become real tokens. Claim them as cash, invest in fractional assets, or use at partner merchants. Multiple redemption options with bonus benefits."
   }
 ];
 
@@ -54,7 +54,8 @@ const HowItWorksSection = () => {
             </span>
           </h2>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-            Getting started is simple. Follow these four easy steps to begin earning rewards today.
+            The world's first privacy-first loyalty program. No data collection, no tracking, 
+            just pure rewards that vest in 30 days and never expire.
           </p>
         </div>
         

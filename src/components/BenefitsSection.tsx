@@ -1,31 +1,36 @@
 import { Card } from "@/components/ui/card";
-import { Users, DollarSign, Vote, Gem, Network } from "lucide-react";
+import { Shield, Globe, Clock, Eye, Lock, Coins } from "lucide-react";
 
 const benefits = [
   {
-    icon: Users,
-    title: "Become a Stakeholder",
-    description: "Earn $RAC tokens for your engagement and participation, transforming your purchases into a direct stake in our ecosystem."
+    icon: Shield,
+    title: "Complete Privacy",
+    description: "No phone numbers, no email addresses, no personal data collection. Your identity stays completely anonymous while you earn rewards."
   },
   {
-    icon: DollarSign,
-    title: "Unlock Passive Income",
-    description: "By locking your $RAC tokens, you can participate in a variety of programs and earn passive income over time, providing a clear return on your long-term commitment."
+    icon: Globe,
+    title: "Global & Mobile",
+    description: "Use your loyalty card anywhere in the world. No boundaries, no restrictions. Your rewards travel with you wherever you go."
   },
   {
-    icon: Vote,
-    title: "Shape the Future",
-    description: "Your locked tokens give you voting power on new proposals, empowering you to help shape the direction and decisions of our DAO."
+    icon: Clock,
+    title: "30-Day Vesting",
+    description: "Earn notional rewards immediately, but they vest over 30 days. This protects against cancellations while giving you time to see your earnings grow."
   },
   {
-    icon: Gem,
-    title: "Invest in Exclusive Assets",
-    description: "Gain the opportunity to invest in unique custodial and non-custodial NFTs, earning passive income or fractional ownership of valuable assets."
+    icon: Eye,
+    title: "Points Never Expire",
+    description: "Unlike traditional loyalty programs, your rewards never expire. They accumulate forever and can be claimed anytime after vesting."
   },
   {
-    icon: Network,
-    title: "Collaborate & Grow",
-    description: "Join a network of like-minded individuals, and collectively build and grow the value of our community."
+    icon: Lock,
+    title: "Saving Mindset",
+    description: "For non-custodial users, rewards automatically invest in fractional real-world assets, building your wealth while you shop."
+  },
+  {
+    icon: Coins,
+    title: "Redeem as Cash",
+    description: "Convert your vested rewards to cash, invest in assets, or use at partner merchants. Multiple redemption options with bonus benefits."
   }
 ];
 
@@ -49,13 +54,14 @@ const BenefitsSection = () => {
       <div className="relative z-10 max-w-7xl mx-auto">
         <div className="text-center mb-16">
           <h2 className="text-4xl lg:text-5xl font-bold mb-6 text-foreground">
-            Why Join Our{" "}
+            Why Choose{" "}
             <span className="bg-gradient-to-r from-primary via-purple-500 to-blue-500 bg-clip-text text-transparent animate-gradient-x">
-              Loyalty Network?
+              Privacy-First Loyalty?
             </span>
           </h2>
           <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-            Discover the power of being a true stakeholder in our community. Our network is more than a simple rewards program; it's a way to unlock lasting value and influence.
+            The world's first truly private loyalty program. No data collection, no tracking, no spam. 
+            Just pure rewards that vest in 30 days and never expire.
           </p>
         </div>
         

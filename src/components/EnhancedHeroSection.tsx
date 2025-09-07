@@ -216,23 +216,23 @@ const EnhancedHeroSection = () => {
             <h1 className={`text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold text-foreground leading-tight ${
               isLoaded ? 'animate-fade-in-up animation-delay-200' : 'opacity-0'
             }`}>
-              <span className="block mb-2">Bridge Your{" "}
+              <span className="block mb-2">Earn{" "}
                 <span className="bg-gradient-to-r from-primary via-purple-500 to-blue-500 bg-clip-text text-transparent animate-gradient-x inline-block">
-                  Loyalty
+                  Privately
                 </span>
               </span>
               <span className="block">
-                to{" "}
+                Spend{" "}
                 <span className="bg-gradient-to-r from-blue-500 via-primary to-purple-500 bg-clip-text text-transparent animate-gradient-x-reverse inline-block">
-                  Web3 Rewards
+                  Globally
                 </span>
               </span>
             </h1>
             <p className={`text-lg sm:text-xl md:text-2xl text-muted-foreground max-w-4xl mx-auto leading-relaxed px-4 ${
               isLoaded ? 'animate-fade-in-up animation-delay-400' : 'opacity-0'
             }`}>
-              Earn cryptocurrency rewards, manage NFT loyalty cards, and unlock exclusive benefits 
-              across a growing network of merchants. The future of loyalty is here.
+              The world's first privacy-first loyalty program. No phone numbers, no personal data, 
+              just pure rewards that vest in 30 days. Your privacy, your choice.
             </p>
           </div>
 
@@ -272,18 +272,18 @@ const EnhancedHeroSection = () => {
                 </a>
               </Button>
               <div className="flex flex-col sm:flex-row items-center space-y-2 sm:space-y-0 sm:space-x-6 text-sm text-muted-foreground">
-                <div className="flex items-center">
-                  <CheckCircle className="h-4 w-4 mr-1 text-green-500" />
-                  No Setup Fees
-                </div>
-                <div className="flex items-center">
-                  <Shield className="h-4 w-4 mr-1 text-blue-500" />
-                  Secure & Private
-                </div>
-                <div className="flex items-center">
-                  <Gift className="h-4 w-4 mr-1 text-purple-500" />
-                  Instant Rewards
-                </div>
+              <div className="flex items-center">
+                <CheckCircle className="h-4 w-4 mr-1 text-green-500" />
+                No Personal Data
+              </div>
+              <div className="flex items-center">
+                <Shield className="h-4 w-4 mr-1 text-blue-500" />
+                Complete Privacy
+              </div>
+              <div className="flex items-center">
+                <Gift className="h-4 w-4 mr-1 text-purple-500" />
+                30-Day Vesting
+              </div>
               </div>
             </div>
           </div>
@@ -299,8 +299,8 @@ const EnhancedHeroSection = () => {
                 </div>
               </div>
               <div className="text-3xl font-bold text-foreground mb-2 bg-gradient-to-r from-primary to-purple-500 bg-clip-text text-transparent">10,000+</div>
-              <div className="text-sm text-muted-foreground font-medium">Active Members</div>
-              <div className="text-xs text-primary/70 mt-1">Growing daily</div>
+              <div className="text-sm text-muted-foreground font-medium">Anonymous Users</div>
+              <div className="text-xs text-primary/70 mt-1">Privacy protected</div>
             </div>
             
             <div className="group text-center p-8 rounded-2xl bg-gradient-to-br from-background/30 to-background/10 backdrop-blur-md border border-purple-500/20 hover:border-purple-500/40 transition-all duration-500 transform hover:scale-105 hover:shadow-xl">
@@ -310,8 +310,8 @@ const EnhancedHeroSection = () => {
                 </div>
               </div>
               <div className="text-3xl font-bold text-foreground mb-2 bg-gradient-to-r from-purple-500 to-blue-500 bg-clip-text text-transparent">500+</div>
-              <div className="text-sm text-muted-foreground font-medium">Partner Merchants</div>
-              <div className="text-xs text-purple-500/70 mt-1">Worldwide network</div>
+              <div className="text-sm text-muted-foreground font-medium">Global Merchants</div>
+              <div className="text-xs text-purple-500/70 mt-1">No boundaries</div>
             </div>
             
             <div className="group text-center p-8 rounded-2xl bg-gradient-to-br from-background/30 to-background/10 backdrop-blur-md border border-blue-500/20 hover:border-blue-500/40 transition-all duration-500 transform hover:scale-105 hover:shadow-xl">
@@ -321,8 +321,8 @@ const EnhancedHeroSection = () => {
                 </div>
               </div>
               <div className="text-3xl font-bold text-foreground mb-2 bg-gradient-to-r from-blue-500 to-primary bg-clip-text text-transparent">$2M+</div>
-              <div className="text-sm text-muted-foreground font-medium">Rewards Distributed</div>
-              <div className="text-xs text-blue-500/70 mt-1">And counting</div>
+              <div className="text-sm text-muted-foreground font-medium">Notional Rewards</div>
+              <div className="text-xs text-blue-500/70 mt-1">Vesting in 30 days</div>
             </div>
           </div>
         </div>
