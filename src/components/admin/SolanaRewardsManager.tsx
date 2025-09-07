@@ -233,6 +233,61 @@ const SolanaRewardsManager: React.FC = () => {
     );
   }
 
+  // Show setup message if no rewards config exists
+  if (!rewardsConfig) {
+    return (
+      <div className="space-y-6">
+        <Card className="bg-gradient-to-br from-background/60 to-background/30 backdrop-blur-md border border-primary/20">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Settings className="h-5 w-5 text-primary" />
+              Solana Rewards Setup Required
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div className="p-4 rounded-lg bg-gradient-to-r from-yellow-500/10 to-yellow-500/5 border border-yellow-500/20">
+                <div className="flex items-start gap-3">
+                  <AlertTriangle className="h-5 w-5 text-yellow-500 mt-0.5" />
+                  <div>
+                    <h3 className="font-semibold text-yellow-500">Database Migration Required</h3>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      The Solana rewards system requires database tables to be created first. 
+                      Please run the migration script to set up the required tables.
+                    </p>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="p-4 rounded-lg bg-gradient-to-r from-blue-500/10 to-blue-500/5 border border-blue-500/20">
+                <h3 className="font-semibold text-blue-500 mb-2">How to Fix:</h3>
+                <ol className="text-sm text-muted-foreground space-y-1 list-decimal list-inside">
+                  <li>Open your Supabase dashboard</li>
+                  <li>Go to the SQL Editor</li>
+                  <li>Copy and paste the contents of <code className="bg-background/50 px-1 rounded">apply_solana_migration.sql</code></li>
+                  <li>Run the migration script</li>
+                  <li>Refresh this page</li>
+                </ol>
+              </div>
+
+              <div className="p-4 rounded-lg bg-gradient-to-r from-green-500/10 to-green-500/5 border border-green-500/20">
+                <h3 className="font-semibold text-green-500 mb-2">What This Will Create:</h3>
+                <ul className="text-sm text-muted-foreground space-y-1 list-disc list-inside">
+                  <li>Rewards configuration table</li>
+                  <li>User rewards tracking</li>
+                  <li>Notional earnings with 30-day vesting</li>
+                  <li>Anonymous user management</li>
+                  <li>Transaction processing tables</li>
+                  <li>Proper security policies</li>
+                </ul>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Rewards Configuration */}
