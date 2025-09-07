@@ -135,6 +135,23 @@ All colors MUST be HSL.
 }
 
 @layer utilities {
+  /* Button text contrast utilities */
+  .btn-gradient {
+    @apply bg-gradient-to-r from-primary to-purple-500 text-white hover:from-primary/90 hover:to-purple-500/90 shadow-md font-semibold;
+  }
+  
+  .btn-gradient:focus {
+    @apply text-white;
+  }
+  
+  .btn-gradient:hover {
+    @apply text-white;
+  }
+  
+  .btn-gradient:active {
+    @apply text-white;
+  }
+
   .hero-gradient {
     background: var(--gradient-hero);
   }

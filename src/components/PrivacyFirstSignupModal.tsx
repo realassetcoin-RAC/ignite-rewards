@@ -114,11 +114,11 @@ const PrivacyFirstSignupModal: React.FC<PrivacyFirstSignupModalProps> = ({
         </p>
       </div>
 
-      <div className="grid md:grid-cols-2 gap-6">
+      <div className="grid md:grid-cols-2 gap-6 w-full overflow-hidden">
         {userTypes.map((userType) => (
           <Card 
             key={userType.type}
-            className="group cursor-pointer border-2 hover:border-primary/50 transition-all duration-300 hover:shadow-lg"
+            className="group cursor-pointer border-2 hover:border-primary/50 transition-all duration-300 hover:shadow-lg overflow-hidden"
             onClick={() => handleTypeSelection(userType.type)}
           >
             <CardContent className="p-6">
@@ -143,7 +143,7 @@ const PrivacyFirstSignupModal: React.FC<PrivacyFirstSignupModalProps> = ({
                 </div>
 
                 <Button 
-                  className="w-full bg-gradient-to-r from-primary to-purple-500 hover:from-primary/90 hover:to-purple-500/90 transform hover:scale-105 transition-all duration-300"
+                  className="w-full bg-gradient-to-r from-primary to-purple-500 hover:from-primary/90 hover:to-purple-500/90 transition-all duration-300"
                   onClick={(e) => {
                     e.stopPropagation();
                     handleTypeSelection(userType.type);
@@ -182,7 +182,7 @@ const PrivacyFirstSignupModal: React.FC<PrivacyFirstSignupModalProps> = ({
         </p>
       </div>
 
-      <div className="grid md:grid-cols-2 gap-6">
+      <div className="grid md:grid-cols-2 gap-6 w-full overflow-hidden">
         <Card className="p-6">
           <div className="text-center space-y-4">
             <div className="w-16 h-16 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center shadow-lg mx-auto">
@@ -325,7 +325,7 @@ const PrivacyFirstSignupModal: React.FC<PrivacyFirstSignupModalProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto overflow-x-hidden">
         <DialogHeader>
           <DialogTitle className="text-center">
             <div className="flex items-center justify-center space-x-2 mb-2">

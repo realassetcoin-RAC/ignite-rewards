@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+// Removed Tabs import - using custom navigation
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, Wallet } from "lucide-react";
@@ -40,6 +40,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
   const [showMFAVerification, setShowMFAVerification] = useState(false);
   const [showWalletSelector, setShowWalletSelector] = useState(false);
   const [pendingUserId, setPendingUserId] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState('signin');
   
   // Hooks
   const { toast } = useToast();
@@ -276,7 +277,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
   if (showMFAVerification && pendingUserId) {
     return (
       <Dialog open={isOpen} onOpenChange={onClose}>
-        <DialogContent className="w-[calc(100vw-2rem)] sm:w-full sm:max-w-md mx-auto bg-transparent border-0 shadow-none p-0">
+        <DialogContent className="w-[calc(100vw-2rem)] sm:w-full sm:max-w-md mx-auto bg-transparent border-0 shadow-none p-0 overflow-hidden">
           <div className="rounded-lg p-[1px] bg-gradient-to-r from-primary via-purple-500 to-blue-500 animate-gradient-x">
             <div className="bg-card/95 backdrop-blur-sm border border-border/50 card-shadow rounded-lg p-4 sm:p-6">
               <MFAVerification
@@ -296,7 +297,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="w-[calc(100vw-2rem)] sm:w-full sm:max-w-md mx-auto bg-transparent border-0 shadow-none p-0">
         <div className="rounded-lg p-[1px] bg-gradient-to-r from-primary via-purple-500 to-blue-500 animate-gradient-x">
-          <div className="bg-card/95 backdrop-blur-sm border border-border/50 card-shadow rounded-lg max-h-[calc(100vh-2rem)] overflow-y-auto p-4 sm:p-6">
+          <div className="bg-card/95 backdrop-blur-sm border border-border/50 card-shadow rounded-lg max-h-[calc(100vh-2rem)] overflow-y-auto overflow-x-hidden p-4 sm:p-6">
             <DialogHeader className="space-y-3">
               <DialogTitle className="text-center text-xl sm:text-2xl font-bold bg-gradient-to-r from-primary via-purple-500 to-blue-500 bg-clip-text text-transparent animate-gradient-x">
                 Welcome to PointBridge
@@ -306,14 +307,36 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
               </DialogDescription>
             </DialogHeader>
             
-            <Tabs defaultValue="signin" className="w-full mt-4">
-              <TabsList className="grid w-full grid-cols-2 bg-accent/50 border-border/50 h-10 sm:h-11">
-                <TabsTrigger value="signin" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-sm sm:text-base">Sign In</TabsTrigger>
-                <TabsTrigger value="signup" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-sm sm:text-base">Sign Up</TabsTrigger>
-              </TabsList>
+            <div className="w-full mt-4">
+              <div className="w-full bg-background/60 backdrop-blur-md border border-primary/20 rounded-lg p-1 overflow-x-auto">
+                <div className="grid grid-cols-2 gap-1 min-w-max">
+                  <button
+                    onClick={() => setActiveTab('signin')}
+                    className={`flex items-center justify-center gap-1 px-2 py-1.5 rounded-md text-sm font-medium transition-all duration-200 ${
+                      activeTab === 'signin'
+                        ? 'bg-gradient-to-r from-primary to-purple-500 text-white shadow-sm'
+                        : 'text-muted-foreground hover:text-foreground hover:bg-foreground/5'
+                    }`}
+                  >
+                    Sign In
+                  </button>
+                  <button
+                    onClick={() => setActiveTab('signup')}
+                    className={`flex items-center justify-center gap-1 px-2 py-1.5 rounded-md text-sm font-medium transition-all duration-200 ${
+                      activeTab === 'signup'
+                        ? 'bg-gradient-to-r from-primary to-purple-500 text-white shadow-sm'
+                        : 'text-muted-foreground hover:text-foreground hover:bg-foreground/5'
+                    }`}
+                  >
+                    Sign Up
+                  </button>
+                </div>
+              </div>
               
-              <TabsContent value="signin" className="space-y-3 sm:space-y-4 mt-4">
-            <div className="max-w-md mx-auto text-left">
+              {/* Sign In Tab */}
+              {activeTab === 'signin' && (
+                <div className="space-y-3 sm:space-y-4 mt-4">
+                  <div className="max-w-md mx-auto text-left w-full overflow-hidden">
             {/* Google Sign In Button */}
             <Button 
               type="button"
@@ -404,11 +427,14 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                 Sign In
               </Button>
             </form>
-            </div>
-          </TabsContent>
-          
-          <TabsContent value="signup" className="space-y-3 sm:space-y-4 mt-4">
-            <div className="max-w-md mx-auto text-left">
+                  </div>
+                </div>
+              )}
+
+              {/* Sign Up Tab */}
+              {activeTab === 'signup' && (
+                <div className="space-y-3 sm:space-y-4 mt-4">
+                  <div className="max-w-md mx-auto text-left w-full overflow-hidden">
             {/* Google Sign In Button */}
             <Button 
               type="button"
@@ -500,9 +526,10 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                 Sign Up
               </Button>
             </form>
+                  </div>
+                </div>
+              )}
             </div>
-          </TabsContent>
-        </Tabs>
           </div>
         </div>
       </DialogContent>

@@ -28,8 +28,10 @@ import {
   ArrowRight,
   Play,
   CheckCircle,
+  Store,
   Gift,
-  Coins
+  Coins,
+  Vote
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
@@ -173,13 +175,36 @@ const EnhancedHeroSection = () => {
                         My Dashboard
                       </DropdownMenuItem>
                       {isAdmin && (
-                        <DropdownMenuItem 
-                          className="cursor-pointer"
-                          onClick={() => navigate('/admin-panel')}
-                        >
-                          <Settings className="mr-2 h-4 w-4" />
-                          Admin Panel
-                        </DropdownMenuItem>
+                        <>
+                          <DropdownMenuItem 
+                            className="cursor-pointer"
+                            onClick={() => navigate('/user')}
+                          >
+                            <User className="mr-2 h-4 w-4" />
+                            User Dashboard
+                          </DropdownMenuItem>
+                          <DropdownMenuItem 
+                            className="cursor-pointer"
+                            onClick={() => navigate('/merchant')}
+                          >
+                            <Store className="mr-2 h-4 w-4" />
+                            Merchant Dashboard
+                          </DropdownMenuItem>
+                          <DropdownMenuItem 
+                            className="cursor-pointer"
+                            onClick={() => navigate('/admin-panel')}
+                          >
+                            <Settings className="mr-2 h-4 w-4" />
+                            Admin Panel
+                          </DropdownMenuItem>
+                          <DropdownMenuItem 
+                            className="cursor-pointer"
+                            onClick={() => navigate('/dao')}
+                          >
+                            <Vote className="mr-2 h-4 w-4" />
+                            DAO Governance
+                          </DropdownMenuItem>
+                        </>
                       )}
                       <DropdownMenuSeparator />
                       <DropdownMenuItem onClick={handleSignOut} className="cursor-pointer">

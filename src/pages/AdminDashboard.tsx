@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+// Removed Tabs import - using custom navigation
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
@@ -26,6 +26,7 @@ const AdminDashboard = () => {
     totalRevenue: 0
   });
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState('cards');
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -206,47 +207,97 @@ const AdminDashboard = () => {
 
         {/* Management Tabs */}
         <Tabs defaultValue="cards" className="w-full">
-          <div className="w-full tabs-container">
-            <TabsList className="tabs-list inline-flex w-full min-w-max h-auto p-1 bg-muted/70 border border-border/60 rounded-md">
-              <TabsTrigger value="cards" className="tabs-trigger flex items-center gap-2 px-4 py-2 whitespace-nowrap">
-                <CreditCard className="h-4 w-4" />
+          <div className="w-full bg-background/60 backdrop-blur-md border border-primary/20 rounded-lg p-1 overflow-x-auto">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-1 min-w-max">
+              <button
+                onClick={() => setActiveTab('cards')}
+                className={`flex items-center justify-center gap-1 px-2 py-1.5 rounded-md text-sm font-medium transition-all duration-200 ${
+                  activeTab === 'cards'
+                    ? 'bg-gradient-to-r from-primary to-purple-500 text-white shadow-sm'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-foreground/5'
+                }`}
+              >
+                <CreditCard className="h-4 w-4 flex-shrink-0" />
                 <span className="hidden sm:inline">Virtual Cards</span>
-                <span className="sm:hidden">Cards</span>
-              </TabsTrigger>
-              <TabsTrigger value="merchants" className="tabs-trigger flex items-center gap-2 px-4 py-2 whitespace-nowrap">
-                <Users className="h-4 w-4" />
+                <span className="sm:hidden text-xs">Cards</span>
+              </button>
+              <button
+                onClick={() => setActiveTab('merchants')}
+                className={`flex items-center justify-center gap-1 px-2 py-1.5 rounded-md text-sm font-medium transition-all duration-200 ${
+                  activeTab === 'merchants'
+                    ? 'bg-gradient-to-r from-primary to-purple-500 text-white shadow-sm'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-foreground/5'
+                }`}
+              >
+                <Users className="h-4 w-4 flex-shrink-0" />
                 <span className="hidden sm:inline">Merchants</span>
-                <span className="sm:hidden">Merchants</span>
-              </TabsTrigger>
-              <TabsTrigger value="users" className="tabs-trigger flex items-center gap-2 px-4 py-2 whitespace-nowrap">
-                <UserCheck className="h-4 w-4" />
+                <span className="sm:hidden text-xs">Merchants</span>
+              </button>
+              <button
+                onClick={() => setActiveTab('users')}
+                className={`flex items-center justify-center gap-1 px-2 py-1.5 rounded-md text-sm font-medium transition-all duration-200 ${
+                  activeTab === 'users'
+                    ? 'bg-gradient-to-r from-primary to-purple-500 text-white shadow-sm'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-foreground/5'
+                }`}
+              >
+                <UserCheck className="h-4 w-4 flex-shrink-0" />
                 <span className="hidden sm:inline">Users</span>
-                <span className="sm:hidden">Users</span>
-              </TabsTrigger>
-              <TabsTrigger value="loyalty-cards" className="tabs-trigger flex items-center gap-2 px-4 py-2 whitespace-nowrap">
-                <Wallet className="h-4 w-4" />
+                <span className="sm:hidden text-xs">Users</span>
+              </button>
+              <button
+                onClick={() => setActiveTab('loyalty-cards')}
+                className={`flex items-center justify-center gap-1 px-2 py-1.5 rounded-md text-sm font-medium transition-all duration-200 ${
+                  activeTab === 'loyalty-cards'
+                    ? 'bg-gradient-to-r from-primary to-purple-500 text-white shadow-sm'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-foreground/5'
+                }`}
+              >
+                <Wallet className="h-4 w-4 flex-shrink-0" />
                 <span className="hidden sm:inline">Loyalty Cards</span>
-                <span className="sm:hidden">Loyalty</span>
-              </TabsTrigger>
-              <TabsTrigger value="referrals" className="tabs-trigger flex items-center gap-2 px-4 py-2 whitespace-nowrap">
-                <Gift className="h-4 w-4" />
+                <span className="sm:hidden text-xs">Loyalty</span>
+              </button>
+              <button
+                onClick={() => setActiveTab('referrals')}
+                className={`flex items-center justify-center gap-1 px-2 py-1.5 rounded-md text-sm font-medium transition-all duration-200 ${
+                  activeTab === 'referrals'
+                    ? 'bg-gradient-to-r from-primary to-purple-500 text-white shadow-sm'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-foreground/5'
+                }`}
+              >
+                <Gift className="h-4 w-4 flex-shrink-0" />
                 <span className="hidden sm:inline">Referrals</span>
-                <span className="sm:hidden">Refs</span>
-              </TabsTrigger>
-              <TabsTrigger value="plans" className="tabs-trigger flex items-center gap-2 px-4 py-2 whitespace-nowrap">
-                <Settings className="h-4 w-4" />
+                <span className="sm:hidden text-xs">Refs</span>
+              </button>
+              <button
+                onClick={() => setActiveTab('plans')}
+                className={`flex items-center justify-center gap-1 px-2 py-1.5 rounded-md text-sm font-medium transition-all duration-200 ${
+                  activeTab === 'plans'
+                    ? 'bg-gradient-to-r from-primary to-purple-500 text-white shadow-sm'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-foreground/5'
+                }`}
+              >
+                <Settings className="h-4 w-4 flex-shrink-0" />
                 <span className="hidden sm:inline">Plans</span>
-                <span className="sm:hidden">Plans</span>
-              </TabsTrigger>
-              <TabsTrigger value="admins" className="tabs-trigger flex items-center gap-2 px-4 py-2 whitespace-nowrap">
-                <Shield className="h-4 w-4" />
+                <span className="sm:hidden text-xs">Plans</span>
+              </button>
+              <button
+                onClick={() => setActiveTab('admins')}
+                className={`flex items-center justify-center gap-1 px-2 py-1.5 rounded-md text-sm font-medium transition-all duration-200 ${
+                  activeTab === 'admins'
+                    ? 'bg-gradient-to-r from-primary to-purple-500 text-white shadow-sm'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-foreground/5'
+                }`}
+              >
+                <Shield className="h-4 w-4 flex-shrink-0" />
                 <span className="hidden sm:inline">Admin Users</span>
-                <span className="sm:hidden">Admins</span>
-              </TabsTrigger>
-            </TabsList>
+                <span className="sm:hidden text-xs">Admins</span>
+              </button>
+            </div>
           </div>
           
-          <TabsContent value="cards">
+          <{/* Tab Content */}
+{activeTab ==="cards">
             <Card>
               <CardHeader>
                 <CardTitle>Virtual Card Management</CardTitle>
@@ -258,9 +309,10 @@ const AdminDashboard = () => {
                 <VirtualCardManager onStatsUpdate={loadStats} />
               </CardContent>
             </Card>
-          </TabsContent>
+          )}
           
-          <TabsContent value="merchants">
+          <{/* Tab Content */}
+{activeTab ==="merchants">
             <Card>
               <CardHeader>
                 <CardTitle>Merchant Management</CardTitle>
@@ -272,9 +324,10 @@ const AdminDashboard = () => {
                 <MerchantManager onStatsUpdate={loadStats} />
               </CardContent>
             </Card>
-          </TabsContent>
+          )}
 
-          <TabsContent value="users">
+          <{/* Tab Content */}
+{activeTab ==="users">
             <Card>
               <CardHeader>
                 <CardTitle>User Management</CardTitle>
@@ -286,9 +339,10 @@ const AdminDashboard = () => {
                 <UserManager onStatsUpdate={loadStats} />
               </CardContent>
             </Card>
-          </TabsContent>
+          )}
 
-          <TabsContent value="loyalty-cards">
+          <{/* Tab Content */}
+{activeTab ==="loyalty-cards">
             <Card>
               <CardHeader>
                 <CardTitle>User Loyalty Cards</CardTitle>
@@ -300,9 +354,10 @@ const AdminDashboard = () => {
                 <UserLoyaltyCardManager onStatsUpdate={loadStats} />
               </CardContent>
             </Card>
-          </TabsContent>
+          )}
 
-          <TabsContent value="referrals">
+          <{/* Tab Content */}
+{activeTab ==="referrals">
             <Card>
               <CardHeader>
                 <CardTitle>Referral Management</CardTitle>
@@ -314,9 +369,10 @@ const AdminDashboard = () => {
                 <ReferralManager />
               </CardContent>
             </Card>
-          </TabsContent>
+          )}
 
-          <TabsContent value="plans">
+          <{/* Tab Content */}
+{activeTab ==="plans">
             <Card>
               <CardHeader>
                 <CardTitle>Subscription Plan Management</CardTitle>
@@ -328,9 +384,10 @@ const AdminDashboard = () => {
                 <SubscriptionPlanManager />
               </CardContent>
             </Card>
-          </TabsContent>
+          )}
 
-          <TabsContent value="admins">
+          <{/* Tab Content */}
+{activeTab ==="admins">
             <Card>
               <CardHeader>
                 <CardTitle>Admin User Management</CardTitle>
@@ -342,8 +399,8 @@ const AdminDashboard = () => {
                 <AdminUserCreator />
               </CardContent>
             </Card>
-          </TabsContent>
-        </Tabs>
+          )}
+        </div>
       </main>
     </div>
   );

@@ -21,6 +21,7 @@ import UserDashboard from "./pages/UserDashboard";
 import RoleBasedDashboard from "./components/RoleBasedDashboard";
 import AdminTestPanel from "./components/AdminTestPanel";
 import AdminDebug from "./pages/AdminDebug";
+import DAODashboard from "./pages/DAODashboard";
 import { useSmartRefresh } from "./hooks/useSmartRefresh";
 import { useSessionPersistence } from "./hooks/useSessionPersistence";
 
@@ -92,6 +93,7 @@ const App = () => {
             {isDev && <Route path="/admin-test" element={<AdminTestPanel />} />}
             {isDev && <Route path="/admin-debug" element={<AdminDebug />} />}
             <Route path="/merchant" element={<MerchantDashboard />} />
+            <Route path="/dao" element={<DAODashboard />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

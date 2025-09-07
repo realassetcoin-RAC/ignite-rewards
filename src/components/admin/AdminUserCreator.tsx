@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+// Removed Tabs import - using custom navigation
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2, Mail, Wallet, UserPlus } from "lucide-react";
@@ -26,6 +26,7 @@ const AdminUserCreator: React.FC = () => {
   });
 
   const [loading, setLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState('email');
   const { toast } = useToast();
 
   /**
@@ -158,19 +159,36 @@ const AdminUserCreator: React.FC = () => {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <Tabs defaultValue="email" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="email" className="flex items-center gap-2">
-              <Mail className="h-4 w-4" />
-              Email & Password
-            </TabsTrigger>
-            <TabsTrigger value="wallet" className="flex items-center gap-2">
-              <Wallet className="h-4 w-4" />
-              Wallet Address
-            </TabsTrigger>
-          </TabsList>
+        <div className="w-full">
+          <div className="w-full bg-background/60 backdrop-blur-md border border-primary/20 rounded-lg p-1 overflow-x-auto">
+            <div className="grid grid-cols-2 gap-1 min-w-max">
+              <button
+                onClick={() => setActiveTab('email')}
+                className={`flex items-center justify-center gap-2 px-2 py-1.5 rounded-md text-sm font-medium transition-all duration-200 ${
+                  activeTab === 'email'
+                    ? 'bg-gradient-to-r from-primary to-purple-500 text-white shadow-sm'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-foreground/5'
+                }`}
+              >
+                <Mail className="h-4 w-4 flex-shrink-0" />
+                Email & Password
+              </button>
+              <button
+                onClick={() => setActiveTab('wallet')}
+                className={`flex items-center justify-center gap-2 px-2 py-1.5 rounded-md text-sm font-medium transition-all duration-200 ${
+                  activeTab === 'wallet'
+                    ? 'bg-gradient-to-r from-primary to-purple-500 text-white shadow-sm'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-foreground/5'
+                }`}
+              >
+                <Wallet className="h-4 w-4 flex-shrink-0" />
+                Wallet Address
+              </button>
+            </div>
+          </div>
 
-          <TabsContent value="email" className="space-y-4">
+          <{/* Tab Content */}
+{activeTab ==="email" className="space-y-4">
             <form onSubmit={handleEmailAdminCreation} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="email">Email Address *</Label>
@@ -220,9 +238,10 @@ const AdminUserCreator: React.FC = () => {
                 Create Admin Account
               </Button>
             </form>
-          </TabsContent>
+          )}
 
-          <TabsContent value="wallet" className="space-y-4">
+          <{/* Tab Content */}
+{activeTab ==="wallet" className="space-y-4">
             <form onSubmit={handleWalletAdminCreation} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="walletEmail">Email Address *</Label>
@@ -271,8 +290,8 @@ const AdminUserCreator: React.FC = () => {
                 Create Wallet-Linked Admin
               </Button>
             </form>
-          </TabsContent>
-        </Tabs>
+          )}
+        </div>
       </CardContent>
     </Card>
   );

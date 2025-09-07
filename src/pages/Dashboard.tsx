@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useSecureAuth } from "@/hooks/useSecureAuth";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+// Removed Tabs import - using custom navigation
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -93,77 +93,129 @@ const Dashboard = () => {
 
       {/* Dashboard Content */}
       <main className="relative z-10 container mx-auto px-4 py-8">
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className={`grid w-full grid-cols-5 gap-1 bg-background/60 backdrop-blur-md border border-primary/20 ${
+        <div className="space-y-6">
+          <div className={`w-full bg-background/60 backdrop-blur-md border border-primary/20 rounded-lg p-1 overflow-x-auto ${
             isLoaded ? 'animate-fade-in-up animation-delay-600' : 'opacity-0'
           }`}>
-            <TabsTrigger value="loyalty" className="flex items-center gap-1 px-2 py-1.5 hover:bg-primary/10 transition-all duration-300">
-              <CreditCard className="h-4 w-4 flex-shrink-0" />
-              <span className="hidden md:inline">Loyalty Card</span>
-              <span className="md:hidden text-xs">Card</span>
-            </TabsTrigger>
-            <TabsTrigger value="transactions" className="flex items-center gap-1 px-2 py-1.5 hover:bg-primary/10 transition-all duration-300">
-              <Activity className="h-4 w-4 flex-shrink-0" />
-              <span className="hidden md:inline">Transactions</span>
-              <span className="md:hidden text-xs">Txns</span>
-            </TabsTrigger>
-            <TabsTrigger value="points" className="flex items-center gap-1 px-2 py-1.5 hover:bg-primary/10 transition-all duration-300">
-              <TrendingUp className="h-4 w-4 flex-shrink-0" />
-              <span className="hidden md:inline">Points Graph</span>
-              <span className="md:hidden text-xs">Points</span>
-            </TabsTrigger>
-            <TabsTrigger value="profile" className="flex items-center gap-1 px-2 py-1.5 hover:bg-primary/10 transition-all duration-300">
-              <User className="h-4 w-4 flex-shrink-0" />
-              <span className="hidden md:inline">Profile</span>
-              <span className="md:hidden text-xs">Profile</span>
-            </TabsTrigger>
-            <TabsTrigger value="referrals" className="flex items-center gap-1 px-2 py-1.5 hover:bg-primary/10 transition-all duration-300">
-              <Share2 className="h-4 w-4 flex-shrink-0" />
-              <span className="hidden md:inline">Referrals</span>
-              <span className="md:hidden text-xs">Refs</span>
-            </TabsTrigger>
-          </TabsList>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-1 min-w-max">
+              <button
+                onClick={() => setActiveTab('loyalty')}
+                className={`flex items-center justify-center gap-1 px-2 py-1.5 rounded-md text-sm font-medium transition-all duration-200 ${
+                  activeTab === 'loyalty'
+                    ? 'bg-gradient-to-r from-primary to-purple-500 text-white shadow-sm'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-foreground/5'
+                }`}
+              >
+                <CreditCard className="h-4 w-4 flex-shrink-0" />
+                <span className="hidden md:inline">Loyalty Card</span>
+                <span className="md:hidden text-xs">Card</span>
+              </button>
+              <button
+                onClick={() => setActiveTab('transactions')}
+                className={`flex items-center justify-center gap-1 px-2 py-1.5 rounded-md text-sm font-medium transition-all duration-200 ${
+                  activeTab === 'transactions'
+                    ? 'bg-gradient-to-r from-primary to-purple-500 text-white shadow-sm'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-foreground/5'
+                }`}
+              >
+                <Activity className="h-4 w-4 flex-shrink-0" />
+                <span className="hidden md:inline">Transactions</span>
+                <span className="md:hidden text-xs">Txns</span>
+              </button>
+              <button
+                onClick={() => setActiveTab('points')}
+                className={`flex items-center justify-center gap-1 px-2 py-1.5 rounded-md text-sm font-medium transition-all duration-200 ${
+                  activeTab === 'points'
+                    ? 'bg-gradient-to-r from-primary to-purple-500 text-white shadow-sm'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-foreground/5'
+                }`}
+              >
+                <TrendingUp className="h-4 w-4 flex-shrink-0" />
+                <span className="hidden md:inline">Points Graph</span>
+                <span className="md:hidden text-xs">Points</span>
+              </button>
+              <button
+                onClick={() => setActiveTab('profile')}
+                className={`flex items-center justify-center gap-1 px-2 py-1.5 rounded-md text-sm font-medium transition-all duration-200 ${
+                  activeTab === 'profile'
+                    ? 'bg-gradient-to-r from-primary to-purple-500 text-white shadow-sm'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-foreground/5'
+                }`}
+              >
+                <User className="h-4 w-4 flex-shrink-0" />
+                <span className="hidden md:inline">Profile</span>
+                <span className="md:hidden text-xs">Profile</span>
+              </button>
+              <button
+                onClick={() => setActiveTab('referrals')}
+                className={`flex items-center justify-center gap-1 px-2 py-1.5 rounded-md text-sm font-medium transition-all duration-200 ${
+                  activeTab === 'referrals'
+                    ? 'bg-gradient-to-r from-primary to-purple-500 text-white shadow-sm'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-foreground/5'
+                }`}
+              >
+                <Share2 className="h-4 w-4 flex-shrink-0" />
+                <span className="hidden md:inline">Referrals</span>
+                <span className="md:hidden text-xs">Refs</span>
+              </button>
+            </div>
+          </div>
 
-          <TabsContent value="loyalty" className={`space-y-6 ${
-            isLoaded ? 'animate-fade-in-up animation-delay-800' : 'opacity-0'
-          }`}>
-            <ErrorBoundary>
-              <LoyaltyCardTab />
-            </ErrorBoundary>
-          </TabsContent>
+          {/* Loyalty Tab */}
+          {activeTab === 'loyalty' && (
+            <div className={`space-y-6 ${
+              isLoaded ? 'animate-fade-in-up animation-delay-800' : 'opacity-0'
+            }`}>
+              <ErrorBoundary>
+                <LoyaltyCardTab />
+              </ErrorBoundary>
+            </div>
+          )}
 
-          <TabsContent value="transactions" className={`space-y-6 ${
-            isLoaded ? 'animate-fade-in-up animation-delay-800' : 'opacity-0'
-          }`}>
-            <ErrorBoundary>
-              <TransactionsTab />
-            </ErrorBoundary>
-          </TabsContent>
+          {/* Transactions Tab */}
+          {activeTab === 'transactions' && (
+            <div className={`space-y-6 ${
+              isLoaded ? 'animate-fade-in-up animation-delay-800' : 'opacity-0'
+            }`}>
+              <ErrorBoundary>
+                <TransactionsTab />
+              </ErrorBoundary>
+            </div>
+          )}
 
-          <TabsContent value="points" className={`space-y-6 ${
-            isLoaded ? 'animate-fade-in-up animation-delay-800' : 'opacity-0'
-          }`}>
-            <ErrorBoundary>
-              <PointsGraphTab />
-            </ErrorBoundary>
-          </TabsContent>
+          {/* Points Tab */}
+          {activeTab === 'points' && (
+            <div className={`space-y-6 ${
+              isLoaded ? 'animate-fade-in-up animation-delay-800' : 'opacity-0'
+            }`}>
+              <ErrorBoundary>
+                <PointsGraphTab />
+              </ErrorBoundary>
+            </div>
+          )}
 
-          <TabsContent value="profile" className={`space-y-6 ${
-            isLoaded ? 'animate-fade-in-up animation-delay-800' : 'opacity-0'
-          }`}>
-            <ErrorBoundary>
-              <ProfileTab />
-            </ErrorBoundary>
-          </TabsContent>
+          {/* Profile Tab */}
+          {activeTab === 'profile' && (
+            <div className={`space-y-6 ${
+              isLoaded ? 'animate-fade-in-up animation-delay-800' : 'opacity-0'
+            }`}>
+              <ErrorBoundary>
+                <ProfileTab />
+              </ErrorBoundary>
+            </div>
+          )}
 
-          <TabsContent value="referrals" className={`space-y-6 ${
-            isLoaded ? 'animate-fade-in-up animation-delay-800' : 'opacity-0'
-          }`}>
-            <ErrorBoundary>
-              <ReferralsTab />
-            </ErrorBoundary>
-          </TabsContent>
-        </Tabs>
+          {/* Referrals Tab */}
+          {activeTab === 'referrals' && (
+            <div className={`space-y-6 ${
+              isLoaded ? 'animate-fade-in-up animation-delay-800' : 'opacity-0'
+            }`}>
+              <ErrorBoundary>
+                <ReferralsTab />
+              </ErrorBoundary>
+            </div>
+          )}
+        </div>
       </main>
     </div>
   );

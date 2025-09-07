@@ -48,6 +48,7 @@ const AdminPanel = () => {
     totalRevenue: 0
   });
   const [isLoaded, setIsLoaded] = useState(false);
+  const [activeTab, setActiveTab] = useState('cards');
   const navigate = useNavigate();
   const { toast } = useToast();
   const hasLoadedStatsRef = useRef(false);
@@ -328,114 +329,193 @@ const AdminPanel = () => {
         </div>
 
         {/* Main Admin Tabs */}
-        <Tabs defaultValue="cards" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 lg:grid-cols-9 gap-1">
-            <TabsTrigger value="cards" className="flex items-center space-x-1 px-2 py-1.5">
-              <CreditCard className="h-4 w-4 flex-shrink-0" />
-              <span className="hidden sm:inline">Virtual Cards</span>
-              <span className="sm:hidden text-xs">Cards</span>
-            </TabsTrigger>
-            <TabsTrigger value="merchants" className="flex items-center space-x-1 px-2 py-1.5">
-              <Store className="h-4 w-4 flex-shrink-0" />
-              <span className="hidden sm:inline">Merchants</span>
-              <span className="sm:hidden text-xs">Shops</span>
-            </TabsTrigger>
-            <TabsTrigger value="solana" className="flex items-center space-x-1 px-2 py-1.5">
-              <Coins className="h-4 w-4 flex-shrink-0" />
-              <span className="hidden sm:inline">Solana Rewards</span>
-              <span className="sm:hidden text-xs">Solana</span>
-            </TabsTrigger>
-            <TabsTrigger value="referrals" className="flex items-center space-x-1 px-2 py-1.5">
-              <Shield className="h-4 w-4 flex-shrink-0" />
-              <span className="hidden sm:inline">Referrals</span>
-              <span className="sm:hidden text-xs">Refs</span>
-            </TabsTrigger>
-            <TabsTrigger value="users" className="flex items-center space-x-1 px-2 py-1.5">
-              <Users className="h-4 w-4 flex-shrink-0" />
-              <span className="hidden sm:inline">Users</span>
-              <span className="sm:hidden text-xs">Users</span>
-            </TabsTrigger>
-            <TabsTrigger value="analytics" className="flex items-center space-x-1 px-2 py-1.5">
-              <BarChart3 className="h-4 w-4 flex-shrink-0" />
-              <span className="hidden sm:inline">Analytics</span>
-              <span className="sm:hidden text-xs">Stats</span>
-            </TabsTrigger>
-            <TabsTrigger value="health" className="flex items-center space-x-1 px-2 py-1.5">
-              <AlertTriangle className="h-4 w-4 flex-shrink-0" />
-              <span className="hidden sm:inline">Health</span>
-              <span className="sm:hidden text-xs">Health</span>
-            </TabsTrigger>
-            <TabsTrigger value="errors" className="flex items-center space-x-1 px-2 py-1.5">
-              <Bug className="h-4 w-4 flex-shrink-0" />
-              <span className="hidden sm:inline">Errors</span>
-              <span className="sm:hidden text-xs">Debug</span>
-            </TabsTrigger>
-            <TabsTrigger value="settings" className="flex items-center space-x-1 px-2 py-1.5">
-              <Settings className="h-4 w-4 flex-shrink-0" />
-              <span className="hidden sm:inline">Settings</span>
-              <span className="sm:hidden text-xs">Config</span>
-            </TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="cards" className="space-y-6">
-            <div>
-              <h3 className="text-2xl font-bold text-foreground mb-2">Virtual Card Management</h3>
-              <p className="text-muted-foreground mb-6">
-                Create and manage virtual cards with different pricing tiers and features.
-              </p>
-              <ErrorBoundary>
-                <VirtualCardManager onStatsUpdate={loadStats} />
-              </ErrorBoundary>
+        <div className="space-y-6">
+          <div className="w-full bg-background/60 backdrop-blur-md border border-primary/20 rounded-lg p-1 overflow-x-auto">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-9 gap-1 min-w-max">
+              <button
+                onClick={() => setActiveTab('cards')}
+                className={`flex items-center justify-center gap-1 px-2 py-1.5 rounded-md text-sm font-medium transition-all duration-200 ${
+                  activeTab === 'cards'
+                    ? 'bg-gradient-to-r from-primary to-purple-500 text-white shadow-sm'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-foreground/5'
+                }`}
+              >
+                <CreditCard className="h-4 w-4 flex-shrink-0" />
+                <span className="hidden sm:inline">Virtual Cards</span>
+                <span className="sm:hidden text-xs">Cards</span>
+              </button>
+              <button
+                onClick={() => setActiveTab('merchants')}
+                className={`flex items-center justify-center gap-1 px-2 py-1.5 rounded-md text-sm font-medium transition-all duration-200 ${
+                  activeTab === 'merchants'
+                    ? 'bg-gradient-to-r from-primary to-purple-500 text-white shadow-sm'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-foreground/5'
+                }`}
+              >
+                <Store className="h-4 w-4 flex-shrink-0" />
+                <span className="hidden sm:inline">Merchants</span>
+                <span className="sm:hidden text-xs">Shops</span>
+              </button>
+              <button
+                onClick={() => setActiveTab('solana')}
+                className={`flex items-center justify-center gap-1 px-2 py-1.5 rounded-md text-sm font-medium transition-all duration-200 ${
+                  activeTab === 'solana'
+                    ? 'bg-gradient-to-r from-primary to-purple-500 text-white shadow-sm'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-foreground/5'
+                }`}
+              >
+                <Coins className="h-4 w-4 flex-shrink-0" />
+                <span className="hidden sm:inline">Rewards</span>
+                <span className="sm:hidden text-xs">Rewards</span>
+              </button>
+              <button
+                onClick={() => setActiveTab('referrals')}
+                className={`flex items-center justify-center gap-1 px-2 py-1.5 rounded-md text-sm font-medium transition-all duration-200 ${
+                  activeTab === 'referrals'
+                    ? 'bg-gradient-to-r from-primary to-purple-500 text-white shadow-sm'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-foreground/5'
+                }`}
+              >
+                <Shield className="h-4 w-4 flex-shrink-0" />
+                <span className="hidden sm:inline">Referrals</span>
+                <span className="sm:hidden text-xs">Refs</span>
+              </button>
+              <button
+                onClick={() => setActiveTab('users')}
+                className={`flex items-center justify-center gap-1 px-2 py-1.5 rounded-md text-sm font-medium transition-all duration-200 ${
+                  activeTab === 'users'
+                    ? 'bg-gradient-to-r from-primary to-purple-500 text-white shadow-sm'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-foreground/5'
+                }`}
+              >
+                <Users className="h-4 w-4 flex-shrink-0" />
+                <span className="hidden sm:inline">Users</span>
+                <span className="sm:hidden text-xs">Users</span>
+              </button>
+              <button
+                onClick={() => setActiveTab('analytics')}
+                className={`flex items-center justify-center gap-1 px-2 py-1.5 rounded-md text-sm font-medium transition-all duration-200 ${
+                  activeTab === 'analytics'
+                    ? 'bg-gradient-to-r from-primary to-purple-500 text-white shadow-sm'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-foreground/5'
+                }`}
+              >
+                <BarChart3 className="h-4 w-4 flex-shrink-0" />
+                <span className="hidden sm:inline">Analytics</span>
+                <span className="sm:hidden text-xs">Stats</span>
+              </button>
+              <button
+                onClick={() => setActiveTab('health')}
+                className={`flex items-center justify-center gap-1 px-2 py-1.5 rounded-md text-sm font-medium transition-all duration-200 ${
+                  activeTab === 'health'
+                    ? 'bg-gradient-to-r from-primary to-purple-500 text-white shadow-sm'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-foreground/5'
+                }`}
+              >
+                <AlertTriangle className="h-4 w-4 flex-shrink-0" />
+                <span className="hidden sm:inline">Health</span>
+                <span className="sm:hidden text-xs">Health</span>
+              </button>
+              <button
+                onClick={() => setActiveTab('errors')}
+                className={`flex items-center justify-center gap-1 px-2 py-1.5 rounded-md text-sm font-medium transition-all duration-200 ${
+                  activeTab === 'errors'
+                    ? 'bg-gradient-to-r from-primary to-purple-500 text-white shadow-sm'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-foreground/5'
+                }`}
+              >
+                <Bug className="h-4 w-4 flex-shrink-0" />
+                <span className="hidden sm:inline">Errors</span>
+                <span className="sm:hidden text-xs">Debug</span>
+              </button>
+              <button
+                onClick={() => setActiveTab('settings')}
+                className={`flex items-center justify-center gap-1 px-2 py-1.5 rounded-md text-sm font-medium transition-all duration-200 ${
+                  activeTab === 'settings'
+                    ? 'bg-gradient-to-r from-primary to-purple-500 text-white shadow-sm'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-foreground/5'
+                }`}
+              >
+                <Settings className="h-4 w-4 flex-shrink-0" />
+                <span className="hidden sm:inline">Settings</span>
+                <span className="sm:hidden text-xs">Config</span>
+              </button>
             </div>
-          </TabsContent>
+          </div>
 
-          <TabsContent value="merchants" className="space-y-6">
-            <div>
-              <h3 className="text-2xl font-bold text-foreground mb-2">Merchant Management</h3>
-              <p className="text-muted-foreground mb-6">
-                Manage merchant partnerships and subscription plans.
-              </p>
-              <div className="space-y-6">
+          {/* Cards Tab */}
+          {activeTab === 'cards' && (
+            <div className="space-y-6">
+              <div>
+                <h3 className="text-2xl font-bold text-foreground mb-2">Virtual Card Management</h3>
+                <p className="text-muted-foreground mb-6">
+                  Create and manage virtual cards with different pricing tiers and features.
+                </p>
                 <ErrorBoundary>
-                  <MerchantManager onStatsUpdate={loadStats} />
-                </ErrorBoundary>
-                <ErrorBoundary>
-                  <SubscriptionPlanManager />
+                  <VirtualCardManager onStatsUpdate={loadStats} />
                 </ErrorBoundary>
               </div>
             </div>
-          </TabsContent>
+          )}
 
-          <TabsContent value="solana" className="space-y-6">
-            <div>
-              <h3 className="text-2xl font-bold text-foreground mb-2">Solana Rewards Management</h3>
-              <p className="text-muted-foreground mb-6">
-                Manage Solana contract features, rewards configuration, and anonymous user analytics.
-              </p>
-              <ErrorBoundary>
-                <SolanaRewardsManager />
-              </ErrorBoundary>
+          {/* Merchants Tab */}
+          {activeTab === 'merchants' && (
+            <div className="space-y-6">
+              <div>
+                <h3 className="text-2xl font-bold text-foreground mb-2">Merchant Management</h3>
+                <p className="text-muted-foreground mb-6">
+                  Manage merchant partnerships and subscription plans.
+                </p>
+                <div className="space-y-6">
+                  <ErrorBoundary>
+                    <MerchantManager onStatsUpdate={loadStats} />
+                  </ErrorBoundary>
+                  <ErrorBoundary>
+                    <SubscriptionPlanManager />
+                  </ErrorBoundary>
+                </div>
+              </div>
             </div>
-          </TabsContent>
+          )}
 
-          <TabsContent value="referrals" className="space-y-6">
-            <div>
-              <h3 className="text-2xl font-bold text-foreground mb-2">Referral Programs</h3>
-              <p className="text-muted-foreground mb-6">
-                Create and manage referral campaigns and rewards.
-              </p>
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Solana Rewards Tab */}
+          {activeTab === 'solana' && (
+            <div className="space-y-6">
+              <div>
+                <h3 className="text-2xl font-bold text-foreground mb-2">Rewards Management</h3>
+                <p className="text-muted-foreground mb-6">
+                  Manage Solana contract features, rewards configuration, and anonymous user analytics.
+                </p>
                 <ErrorBoundary>
-                  <ReferralCampaignManager />
-                </ErrorBoundary>
-                <ErrorBoundary>
-                  <ReferralManager />
+                  <SolanaRewardsManager />
                 </ErrorBoundary>
               </div>
             </div>
-          </TabsContent>
+          )}
 
-          <TabsContent value="users" className="space-y-6">
+          {/* Referrals Tab */}
+          {activeTab === 'referrals' && (
+            <div className="space-y-6">
+              <div>
+                <h3 className="text-2xl font-bold text-foreground mb-2">Referral Programs</h3>
+                <p className="text-muted-foreground mb-6">
+                  Create and manage referral campaigns and rewards.
+                </p>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  <ErrorBoundary>
+                    <ReferralCampaignManager />
+                  </ErrorBoundary>
+                  <ErrorBoundary>
+                    <ReferralManager />
+                  </ErrorBoundary>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Users Tab */}
+          {activeTab === 'users' && (
+            <div className="space-y-6">
             <div>
               <h3 className="text-2xl font-bold text-foreground mb-2">User Management</h3>
               <p className="text-muted-foreground mb-6">
@@ -445,9 +525,12 @@ const AdminPanel = () => {
                 <UserManager onStatsUpdate={loadStats} />
               </ErrorBoundary>
             </div>
-          </TabsContent>
+            </div>
+          )}
 
-          <TabsContent value="analytics" className="space-y-6">
+          {/* Analytics Tab */}
+          {activeTab === 'analytics' && (
+            <div className="space-y-6">
             <Card className="card-gradient border-0">
               <CardHeader>
                 <CardTitle className="flex items-center space-x-2">
@@ -468,9 +551,12 @@ const AdminPanel = () => {
                 </div>
               </CardContent>
             </Card>
-          </TabsContent>
+            </div>
+          )}
 
-          <TabsContent value="health" className="space-y-6">
+          {/* Health Tab */}
+          {activeTab === 'health' && (
+            <div className="space-y-6">
             <div>
               <h3 className="text-2xl font-bold text-foreground mb-2">API Health</h3>
               <p className="text-muted-foreground mb-6">
@@ -480,15 +566,21 @@ const AdminPanel = () => {
                 <ApiHealthTab />
               </ErrorBoundary>
             </div>
-          </TabsContent>
+            </div>
+          )}
 
-          <TabsContent value="errors" className="space-y-6">
+          {/* Errors Tab */}
+          {activeTab === 'errors' && (
+            <div className="space-y-6">
             <ErrorBoundary>
               <ErrorDashboard />
             </ErrorBoundary>
-          </TabsContent>
+            </div>
+          )}
 
-          <TabsContent value="settings" className="space-y-6">
+          {/* Settings Tab */}
+          {activeTab === 'settings' && (
+            <div className="space-y-6">
             <Card className="card-gradient border-0">
               <CardHeader>
                 <CardTitle className="flex items-center space-x-2">
@@ -509,8 +601,9 @@ const AdminPanel = () => {
                 </div>
               </CardContent>
             </Card>
-          </TabsContent>
-        </Tabs>
+            </div>
+          )}
+        </div>
       </main>
     </div>
     </AdminDashboardWrapper>

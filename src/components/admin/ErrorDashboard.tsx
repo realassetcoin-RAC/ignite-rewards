@@ -10,7 +10,7 @@ import { useSmartDataRefresh } from "@/hooks/useSmartDataRefresh";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+// Removed Tabs import - using custom navigation
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -25,6 +25,7 @@ const ErrorDashboard = () => {
   const [logSummary, setLogSummary] = useState(logger.getLogSummary());
   const [selectedError, setSelectedError] = useState<any>(null);
   const [autoRefresh, setAutoRefresh] = useState(false);
+  const [activeTab, setActiveTab] = useState('errors');
   const { toast } = useToast();
 
   // Auto-refresh every 30 seconds if enabled
@@ -231,16 +232,64 @@ const ErrorDashboard = () => {
       </div>
 
       {/* Main Content */}
-      <Tabs defaultValue="errors" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="errors">Virtual Card Errors</TabsTrigger>
-          <TabsTrigger value="recent">Recent Activity</TabsTrigger>
-          <TabsTrigger value="stats">Error Statistics</TabsTrigger>
-          <TabsTrigger value="logs">Application Logs</TabsTrigger>
-        </TabsList>
+      <div className="space-y-4">
+        <div className="w-full bg-background/60 backdrop-blur-md border border-primary/20 rounded-lg p-1 overflow-x-auto">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-1 min-w-max">
+            <button
+              onClick={() => setActiveTab('errors')}
+              className={`flex items-center justify-center gap-1 px-2 py-1.5 rounded-md text-sm font-medium transition-all duration-200 ${
+                activeTab === 'errors'
+                  ? 'bg-gradient-to-r from-primary to-purple-500 text-white shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-foreground/5'
+              }`}
+            >
+              <AlertCircle className="h-4 w-4 flex-shrink-0" />
+              <span className="hidden sm:inline">Virtual Card Errors</span>
+              <span className="sm:hidden text-xs">Errors</span>
+            </button>
+            <button
+              onClick={() => setActiveTab('recent')}
+              className={`flex items-center justify-center gap-1 px-2 py-1.5 rounded-md text-sm font-medium transition-all duration-200 ${
+                activeTab === 'recent'
+                  ? 'bg-gradient-to-r from-primary to-purple-500 text-white shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-foreground/5'
+              }`}
+            >
+              <Activity className="h-4 w-4 flex-shrink-0" />
+              <span className="hidden sm:inline">Recent Activity</span>
+              <span className="sm:hidden text-xs">Recent</span>
+            </button>
+            <button
+              onClick={() => setActiveTab('stats')}
+              className={`flex items-center justify-center gap-1 px-2 py-1.5 rounded-md text-sm font-medium transition-all duration-200 ${
+                activeTab === 'stats'
+                  ? 'bg-gradient-to-r from-primary to-purple-500 text-white shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-foreground/5'
+              }`}
+            >
+              <TrendingUp className="h-4 w-4 flex-shrink-0" />
+              <span className="hidden sm:inline">Error Statistics</span>
+              <span className="sm:hidden text-xs">Stats</span>
+            </button>
+            <button
+              onClick={() => setActiveTab('logs')}
+              className={`flex items-center justify-center gap-1 px-2 py-1.5 rounded-md text-sm font-medium transition-all duration-200 ${
+                activeTab === 'logs'
+                  ? 'bg-gradient-to-r from-primary to-purple-500 text-white shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-foreground/5'
+              }`}
+            >
+              <Database className="h-4 w-4 flex-shrink-0" />
+              <span className="hidden sm:inline">Application Logs</span>
+              <span className="sm:hidden text-xs">Logs</span>
+            </button>
+          </div>
+        </div>
 
-        <TabsContent value="errors" className="space-y-4">
-          <Card>
+        {/* Errors Tab */}
+        {activeTab === 'errors' && (
+          <div className="space-y-4">
+            <Card>
             <CardHeader>
               <CardTitle>Virtual Card Errors</CardTitle>
               <CardDescription>
@@ -310,10 +359,13 @@ const ErrorDashboard = () => {
               )}
             </CardContent>
           </Card>
-        </TabsContent>
+          </div>
+        )}
 
-        <TabsContent value="recent" className="space-y-4">
-          <Card>
+        {/* Recent Tab */}
+        {activeTab === 'recent' && (
+          <div className="space-y-4">
+            <Card>
             <CardHeader>
               <CardTitle>Recent Activity</CardTitle>
               <CardDescription>
@@ -349,10 +401,13 @@ const ErrorDashboard = () => {
               )}
             </CardContent>
           </Card>
-        </TabsContent>
+          </div>
+        )}
 
-        <TabsContent value="stats" className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Stats Tab */}
+        {activeTab === 'stats' && (
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Card>
               <CardHeader>
                 <CardTitle>Errors by Operation</CardTitle>
@@ -387,11 +442,14 @@ const ErrorDashboard = () => {
                 </div>
               </CardContent>
             </Card>
+            </div>
           </div>
-        </TabsContent>
+        )}
 
-        <TabsContent value="logs" className="space-y-4">
-          <Card>
+        {/* Logs Tab */}
+        {activeTab === 'logs' && (
+          <div className="space-y-4">
+            <Card>
             <CardHeader>
               <CardTitle>Application Logs Summary</CardTitle>
               <CardDescription>
@@ -423,8 +481,9 @@ const ErrorDashboard = () => {
               </div>
             </CardContent>
           </Card>
-        </TabsContent>
-      </Tabs>
+          </div>
+        )}
+      </div>
     </div>
   );
 };
