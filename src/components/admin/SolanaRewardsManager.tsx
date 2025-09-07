@@ -65,24 +65,30 @@ const SolanaRewardsManager: React.FC = () => {
       const { data, error } = await supabase
         .from('rewards_config')
         .select('*')
-        .single();
+        .limit(1);
 
-      if (error && error.code !== 'PGRST116') {
+      if (error) {
         console.error('Error loading rewards config:', error);
-        // If table doesn't exist, we'll handle it gracefully
-        if (error.code === 'PGRST301') {
-          console.log('Rewards config table does not exist yet. This is expected if migration hasn\'t been run.');
+        // Handle different error types
+        if (error.code === 'PGRST301' || error.message?.includes('schema cache')) {
+          console.log('Rewards config table does not exist or is not accessible. Please run the database migration.');
           return;
         }
         throw error;
       }
 
-      setRewardsConfig(data);
-      if (data) {
+      // If we have data, use the first record
+      if (data && data.length > 0) {
+        const config = data[0];
+        setRewardsConfig(config);
         setConfigForm({
-          distribution_interval: data.distribution_interval.toString(),
-          max_rewards_per_user: data.max_rewards_per_user.toString()
+          distribution_interval: config.distribution_interval.toString(),
+          max_rewards_per_user: config.max_rewards_per_user.toString()
         });
+      } else {
+        // No configuration exists yet, but table exists
+        console.log('No rewards configuration found. Table exists but is empty.');
+        setRewardsConfig(null);
       }
     } catch (error) {
       console.error('Error loading rewards config:', error);
@@ -144,15 +150,17 @@ const SolanaRewardsManager: React.FC = () => {
           throw error;
         }
       } else {
-        // Create new config
+        // Create new config (upsert to handle potential duplicates)
         const { error } = await supabase
           .from('rewards_config')
-          .insert({
+          .upsert({
             ...configData,
-            program_id: 'mock_program_id',
-            admin_authority: 'mock_admin_authority',
-            reward_token_mint: 'mock_token_mint',
+            program_id: 'default_program_id',
+            admin_authority: 'default_admin_authority',
+            reward_token_mint: 'default_token_mint',
             is_active: true
+          }, {
+            onConflict: 'program_id'
           });
 
         if (error) {
@@ -174,8 +182,8 @@ const SolanaRewardsManager: React.FC = () => {
       // Provide more specific error messages
       let errorMessage = "Failed to update rewards configuration.";
       
-      if (error?.code === 'PGRST301') {
-        errorMessage = "Table 'rewards_config' does not exist. Please run the database migration first.";
+      if (error?.code === 'PGRST301' || error?.message?.includes('schema cache')) {
+        errorMessage = "Table 'rewards_config' does not exist or is not accessible. Please run the database migration first.";
       } else if (error?.code === '42501') {
         errorMessage = "Permission denied. You need admin access to update rewards configuration.";
       } else if (error?.message) {
@@ -230,61 +238,6 @@ const SolanaRewardsManager: React.FC = () => {
           </div>
         </CardContent>
       </Card>
-    );
-  }
-
-  // Show setup message if no rewards config exists
-  if (!rewardsConfig) {
-    return (
-      <div className="space-y-6">
-        <Card className="bg-gradient-to-br from-background/60 to-background/30 backdrop-blur-md border border-primary/20">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Settings className="h-5 w-5 text-primary" />
-              Solana Rewards Setup Required
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div className="p-4 rounded-lg bg-gradient-to-r from-yellow-500/10 to-yellow-500/5 border border-yellow-500/20">
-                <div className="flex items-start gap-3">
-                  <AlertTriangle className="h-5 w-5 text-yellow-500 mt-0.5" />
-                  <div>
-                    <h3 className="font-semibold text-yellow-500">Database Migration Required</h3>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      The Solana rewards system requires database tables to be created first. 
-                      Please run the migration script to set up the required tables.
-                    </p>
-                  </div>
-                </div>
-              </div>
-              
-              <div className="p-4 rounded-lg bg-gradient-to-r from-blue-500/10 to-blue-500/5 border border-blue-500/20">
-                <h3 className="font-semibold text-blue-500 mb-2">How to Fix:</h3>
-                <ol className="text-sm text-muted-foreground space-y-1 list-decimal list-inside">
-                  <li>Open your Supabase dashboard</li>
-                  <li>Go to the SQL Editor</li>
-                  <li>Copy and paste the contents of <code className="bg-background/50 px-1 rounded">apply_solana_migration.sql</code></li>
-                  <li>Run the migration script</li>
-                  <li>Refresh this page</li>
-                </ol>
-              </div>
-
-              <div className="p-4 rounded-lg bg-gradient-to-r from-green-500/10 to-green-500/5 border border-green-500/20">
-                <h3 className="font-semibold text-green-500 mb-2">What This Will Create:</h3>
-                <ul className="text-sm text-muted-foreground space-y-1 list-disc list-inside">
-                  <li>Rewards configuration table</li>
-                  <li>User rewards tracking</li>
-                  <li>Notional earnings with 30-day vesting</li>
-                  <li>Anonymous user management</li>
-                  <li>Transaction processing tables</li>
-                  <li>Proper security policies</li>
-                </ul>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
     );
   }
 
