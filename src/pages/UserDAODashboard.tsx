@@ -3,16 +3,12 @@ import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Progress } from '@/components/ui/progress';
 import { 
   Vote, 
-  Plus, 
   Search, 
-  Filter, 
   TrendingUp, 
   Users, 
   Coins, 
@@ -21,14 +17,9 @@ import {
   XCircle, 
   AlertCircle,
   ArrowLeft,
-  Sparkles,
-  BarChart3,
-  Settings,
-  Wallet,
   Calendar,
   Hash,
   DollarSign,
-  Target,
   MessageSquare,
   ExternalLink
 } from 'lucide-react';
@@ -48,7 +39,7 @@ import {
 } from '@/types/dao';
 import { useSmartDataRefresh } from '@/hooks/useSmartDataRefresh';
 
-const DAODashboard = () => {
+const UserDAODashboard = () => {
   const [activeTab, setActiveTab] = useState('proposals');
   const [proposals, setProposals] = useState<DAOProposal[]>([]);
   const [members, setMembers] = useState<DAOMember[]>([]);
@@ -58,7 +49,6 @@ const DAODashboard = () => {
   const [statusFilter, setStatusFilter] = useState<ProposalStatus | 'all'>('all');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [isLoaded, setIsLoaded] = useState(false);
-  const [showCreateProposal, setShowCreateProposal] = useState(false);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [userMembership, setUserMembership] = useState<DAOMember | null>(null);
   
@@ -532,12 +522,12 @@ const DAODashboard = () => {
           </div>
         )}
 
-        {/* Navigation Tabs */}
+        {/* Navigation Tabs - Only Proposals, Members, and Treasury */}
         <div className={`mb-8 ${
           isLoaded ? 'animate-fade-in-up animation-delay-600' : 'opacity-0'
         }`}>
           <div className="w-full bg-background/60 backdrop-blur-md border border-primary/20 rounded-lg p-1">
-            <div className="grid grid-cols-4 gap-1">
+            <div className="grid grid-cols-3 gap-1">
               <button
                 onClick={() => setActiveTab('proposals')}
                 className={`flex items-center justify-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
@@ -571,17 +561,6 @@ const DAODashboard = () => {
                 <Coins className="h-4 w-4" />
                 <span className="hidden sm:inline">Treasury</span>
               </button>
-              <button
-                onClick={() => setActiveTab('analytics')}
-                className={`flex items-center justify-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
-                  activeTab === 'analytics'
-                    ? 'bg-gradient-to-r from-primary to-purple-500 text-white shadow-sm'
-                    : 'text-muted-foreground hover:text-foreground hover:bg-foreground/5'
-                }`}
-              >
-                <BarChart3 className="h-4 w-4" />
-                <span className="hidden sm:inline">Analytics</span>
-              </button>
             </div>
           </div>
         </div>
@@ -591,7 +570,7 @@ const DAODashboard = () => {
           {/* Proposals Tab */}
           {activeTab === 'proposals' && (
             <div className="space-y-6">
-              {/* Filters and Search */}
+              {/* Filters and Search - No Create Proposal Button */}
               <Card className="card-gradient border-primary/20 backdrop-blur-md">
                 <CardContent className="p-6">
                   <div className="flex flex-col sm:flex-row gap-4">
@@ -632,24 +611,6 @@ const DAODashboard = () => {
                         ))}
                       </SelectContent>
                     </Select>
-                    <Dialog open={showCreateProposal} onOpenChange={setShowCreateProposal}>
-                      <DialogTrigger asChild>
-                        <Button className="btn-gradient">
-                          <Plus className="w-4 h-4 mr-2" />
-                          Create Proposal
-                        </Button>
-                      </DialogTrigger>
-                      <DialogContent className="max-w-2xl">
-                        <DialogHeader>
-                          <DialogTitle>Create New Proposal</DialogTitle>
-                        </DialogHeader>
-                        <div className="p-4 text-center">
-                          <p className="text-muted-foreground">
-                            Proposal creation form will be implemented here.
-                          </p>
-                        </div>
-                      </DialogContent>
-                    </Dialog>
                   </div>
                 </CardContent>
               </Card>
@@ -696,7 +657,7 @@ const DAODashboard = () => {
                               </div>
                               <div className="flex items-center gap-2">
                                 <Badge className={getStatusColor(proposal.status)}>
-                                  {proposal.status}
+                                  {proposal.status.charAt(0).toUpperCase() + proposal.status.slice(1)}
                                 </Badge>
                                 <Badge variant="outline">
                                   {proposal.category}
@@ -854,33 +815,10 @@ const DAODashboard = () => {
               </Card>
             </div>
           )}
-
-          {/* Analytics Tab */}
-          {activeTab === 'analytics' && (
-            <div className="space-y-6">
-              <Card className="card-gradient border-primary/20 backdrop-blur-md">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <BarChart3 className="h-5 w-5 text-primary" />
-                    DAO Analytics
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-center py-8">
-                    <BarChart3 className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
-                    <h3 className="text-lg font-semibold mb-2">Analytics Dashboard</h3>
-                    <p className="text-muted-foreground">
-                      Voting patterns and participation analytics will be displayed here.
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          )}
         </div>
       </div>
     </div>
   );
 };
 
-export default DAODashboard;
+export default UserDAODashboard;

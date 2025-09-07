@@ -696,7 +696,7 @@ const DAODashboard = () => {
                               </div>
                               <div className="flex items-center gap-2">
                                 <Badge className={getStatusColor(proposal.status)}>
-                                  {proposal.status}
+                                  {proposal.status.charAt(0).toUpperCase() + proposal.status.slice(1)}
                                 </Badge>
                                 <Badge variant="outline">
                                   {proposal.category}

@@ -36,7 +36,8 @@ import {
   Sparkles,
   ArrowLeft,
   Bug,
-  Coins
+  Coins,
+  Vote
 } from "lucide-react";
 
 const AdminPanel = () => {
@@ -331,7 +332,7 @@ const AdminPanel = () => {
         {/* Main Admin Tabs */}
         <div className="space-y-6">
           <div className="w-full bg-background/60 backdrop-blur-md border border-primary/20 rounded-lg p-1 overflow-x-auto">
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-9 gap-1 min-w-max">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-10 gap-1 min-w-max">
               <button
                 onClick={() => setActiveTab('cards')}
                 className={`flex items-center justify-center gap-1 px-2 py-1.5 rounded-md text-sm font-medium transition-all duration-200 ${
@@ -379,6 +380,18 @@ const AdminPanel = () => {
                 <Shield className="h-4 w-4 flex-shrink-0" />
                 <span className="hidden sm:inline">Referrals</span>
                 <span className="sm:hidden text-xs">Refs</span>
+              </button>
+              <button
+                onClick={() => setActiveTab('dao')}
+                className={`flex items-center justify-center gap-1 px-2 py-1.5 rounded-md text-sm font-medium transition-all duration-200 ${
+                  activeTab === 'dao'
+                    ? 'bg-gradient-to-r from-primary to-purple-500 text-white shadow-sm'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-foreground/5'
+                }`}
+              >
+                <Vote className="h-4 w-4 flex-shrink-0" />
+                <span className="hidden sm:inline">DAO</span>
+                <span className="sm:hidden text-xs">DAO</span>
               </button>
               <button
                 onClick={() => setActiveTab('users')}
@@ -508,6 +521,34 @@ const AdminPanel = () => {
                   <ErrorBoundary>
                     <ReferralManager />
                   </ErrorBoundary>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* DAO Tab */}
+          {activeTab === 'dao' && (
+            <div className="space-y-6">
+              <div>
+                <h3 className="text-2xl font-bold text-foreground mb-2">DAO Governance</h3>
+                <p className="text-muted-foreground mb-6">
+                  Manage DAO proposals, voting, and governance settings.
+                </p>
+                <div className="bg-background/60 backdrop-blur-md border border-primary/20 rounded-lg p-6">
+                  <div className="text-center">
+                    <Vote className="w-12 h-12 mx-auto mb-4 text-primary" />
+                    <h4 className="text-lg font-semibold mb-2">DAO Management</h4>
+                    <p className="text-muted-foreground mb-4">
+                      Full DAO governance features are available in the dedicated DAO dashboard.
+                    </p>
+                    <Button 
+                      onClick={() => window.open('/dao', '_blank')}
+                      className="btn-gradient"
+                    >
+                      <Vote className="w-4 h-4 mr-2" />
+                      Open DAO Dashboard
+                    </Button>
+                  </div>
                 </div>
               </div>
             </div>
