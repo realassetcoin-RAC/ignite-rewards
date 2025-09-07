@@ -11,7 +11,7 @@ import {
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useSecureAuth } from "@/hooks/useSecureAuth";
 import AuthModal from "./AuthModal";
-import CustomerSignupModal from "./CustomerSignupModal";
+import PrivacyFirstSignupModal from "./PrivacyFirstSignupModal";
 import MerchantSignupModal from "./MerchantSignupModal";
 import { 
   Star, 
@@ -40,7 +40,7 @@ const EnhancedHeroSection = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
   const [authModalOpen, setAuthModalOpen] = useState(false);
-  const [customerModalOpen, setCustomerModalOpen] = useState(false);
+  const [privacySignupModalOpen, setPrivacySignupModalOpen] = useState(false);
   const [merchantModalOpen, setMerchantModalOpen] = useState(false);
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [isLoaded, setIsLoaded] = useState(false);
@@ -243,7 +243,7 @@ const EnhancedHeroSection = () => {
             <Button 
               size="lg" 
               className="group text-base sm:text-lg px-8 sm:px-10 py-3 sm:py-4 bg-gradient-to-r from-primary to-purple-500 hover:from-primary/90 hover:to-purple-500/90 transform hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-xl w-full sm:w-auto"
-              onClick={() => setCustomerModalOpen(true)}
+              onClick={() => setPrivacySignupModalOpen(true)}
             >
               <Wallet className="mr-2 sm:mr-3 h-5 w-5 sm:h-6 sm:w-6 group-hover:animate-bounce" />
               Start Earning Rewards
@@ -252,7 +252,7 @@ const EnhancedHeroSection = () => {
             <Button 
               variant="outline" 
               size="lg"
-              className="group text-base sm:text-lg px-8 sm:px-10 py-3 sm:py-4 bg-background/60 backdrop-blur-md hover:bg-background/80 transform hover:scale-105 transition-all duration-300 border-primary/30 hover:border-primary/50 w-full sm:w-auto"
+              className="group text-base sm:text-lg px-8 sm:px-10 py-3 sm:py-4 bg-gradient-to-r from-primary to-purple-500 hover:from-primary/90 hover:to-purple-500/90 transform hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-xl w-full sm:w-auto text-white border-0"
               onClick={() => setMerchantModalOpen(true)}
             >
               <TrendingUp className="mr-2 sm:mr-3 h-5 w-5 sm:h-6 sm:w-6 group-hover:animate-pulse" />
@@ -330,7 +330,7 @@ const EnhancedHeroSection = () => {
 
       {/* Modals */}
       <AuthModal isOpen={authModalOpen} onClose={() => setAuthModalOpen(false)} />
-      <CustomerSignupModal isOpen={customerModalOpen} onClose={() => setCustomerModalOpen(false)} />
+      <PrivacyFirstSignupModal isOpen={privacySignupModalOpen} onClose={() => setPrivacySignupModalOpen(false)} />
       <MerchantSignupModal isOpen={merchantModalOpen} onClose={() => setMerchantModalOpen(false)} />
     </div>
   );

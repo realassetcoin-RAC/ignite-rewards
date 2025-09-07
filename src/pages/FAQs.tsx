@@ -20,15 +20,15 @@ const FAQs = () => {
   const faqs = [
     {
       question: "What is PointBridge?",
-      answer: "PointBridge is a decentralized rewards ecosystem that connects businesses with customers through blockchain-powered loyalty programs. Users earn $RAC tokens by engaging with partner businesses, which can be redeemed for various rewards and benefits."
+      answer: "PointBridge is the world's first privacy-first loyalty program. Users earn notional rewards that vest over 30 days by shopping at partner merchants. No personal data is collected - no phone numbers, no email addresses, no tracking. Your privacy is protected while you earn rewards that never expire."
     },
     {
-      question: "How do I earn $RAC tokens?",
-      answer: "You can earn $RAC tokens by making purchases at partner merchants, completing specific actions like referrals, participating in promotional events, and engaging with the PointBridge ecosystem. Each partner business has its own reward structure."
+      question: "How do I earn rewards?",
+      answer: "Simply scan your QR code at any partner merchant when making a purchase. You'll earn notional rewards immediately (visible in your dashboard) that vest over 30 days. No signup forms, no personal information required - just scan and earn. Your rewards are protected against cancellations during the vesting period."
     },
     {
-      question: "What can I do with my $RAC tokens?",
-      answer: "RAC tokens can be redeemed for discounts, exclusive products, and services at any partner merchant within the PointBridge network. You can also trade them, stake them for additional rewards, or hold them as they may increase in value."
+      question: "What can I do with my rewards?",
+      answer: "After your rewards vest (30 days), you can redeem them as cash, invest in fractional real-world assets, or use them at partner merchants with bonus benefits. For custodial users, you can also trade your NFT loyalty card. Your rewards never expire and accumulate forever."
     },
     {
       question: "How do I become a merchant partner?",
@@ -36,41 +36,51 @@ const FAQs = () => {
     },
     {
       question: "Is PointBridge secure?",
-      answer: "Yes, PointBridge uses blockchain technology to ensure all transactions are secure, transparent, and immutable. Your tokens are stored in a secure wallet, and all data is encrypted. We follow industry best practices for security and privacy."
+      answer: "Yes, PointBridge uses blockchain technology to ensure all transactions are secure, transparent, and immutable. Since we don't collect personal information, there's no personal data to be compromised. Your rewards are protected by 30-day vesting, and all transactions are recorded on the blockchain for transparency."
     },
     {
       question: "Are there any fees for using PointBridge?",
-      answer: "For customers, PointBridge is free to use. You can earn and redeem tokens without any fees. Merchant partners pay a small transaction fee for the loyalty program services, which is significantly lower than traditional loyalty programs."
+      answer: "For customers, PointBridge is completely free to use. You can earn and redeem rewards without any fees. Merchant partners pay a small transaction fee for the loyalty program services, which is significantly lower than traditional loyalty programs. No hidden fees, no subscription costs."
     },
     {
-      question: "Can I transfer my tokens to other users?",
-      answer: "Yes, $RAC tokens can be transferred between PointBridge users. This allows you to gift tokens to friends and family or trade them with other community members. All transfers are recorded on the blockchain for transparency."
+      question: "Can I transfer my rewards to other users?",
+      answer: "Yes, after your rewards vest (30 days), you can transfer them to other users. This allows you to gift rewards to friends and family or trade them with other community members. All transfers are recorded on the blockchain for transparency. Remember, we can't help recover lost rewards due to our privacy-first design."
     },
     {
       question: "How do I track my rewards and transactions?",
-      answer: "Your dashboard provides a complete overview of your token balance, transaction history, and available rewards. You can see detailed analytics of your earnings, spending, and the current value of your tokens in real-time."
+      answer: "Your dashboard shows your notional rewards (currently vesting), vested rewards (ready to claim), and transaction history. You can see exactly when your rewards will vest and track your earnings in real-time. All data is stored anonymously - no personal information is tracked or stored."
     },
     {
       question: "What happens if I lose access to my account?",
-      answer: "We have account recovery procedures in place. If you lose access to your account, contact our support team with your registered email and identification. We'll help you regain access to your account and tokens securely."
+      answer: "Since we don't collect personal information like email addresses or phone numbers, we cannot recover lost accounts. This is by design to protect your privacy. Make sure to securely store your wallet seed phrase or private keys. If you lose access, you'll need to create a new account and start earning rewards again."
+    },
+    {
+      question: "How do I keep my account secure?",
+      answer: "Your account security is entirely in your hands. For custodial users: securely store your wallet seed phrase offline, never share your private keys, and use hardware wallets for large amounts. For non-custodial users: keep your app secure and don't share your device. Remember, we can't help recover lost accounts due to our privacy-first design."
     },
     {
       question: "How is PointBridge different from traditional loyalty programs?",
-      answer: "Unlike traditional loyalty programs that lock you into a single business, PointBridge tokens work across our entire network of partners. Your rewards never expire, have real monetary value, and give you the freedom to choose how and where to use them."
+      answer: "Unlike traditional loyalty programs that lock you into a single business, PointBridge tokens work across our entire network of partners. Your rewards never expire, have real monetary value, and give you the freedom to choose how and where to use them. Most importantly, we don't collect any personal information, ensuring complete privacy."
     }
   ];
 
   return (
     <div className="min-h-screen hero-gradient relative overflow-hidden">
-      {/* Animated Background Elements */}
-      <div className="absolute top-20 left-20 w-72 h-72 bg-gradient-to-r from-primary/20 to-purple-500/20 rounded-full mix-blend-multiply filter blur-xl animate-pulse pointer-events-none"></div>
-      <div className="absolute top-40 right-20 w-96 h-96 bg-gradient-to-r from-purple-500/20 to-blue-500/20 rounded-full mix-blend-multiply filter blur-xl animate-pulse animation-delay-2000 pointer-events-none"></div>
-      <div className="absolute -bottom-20 left-40 w-80 h-80 bg-gradient-to-r from-blue-500/20 to-primary/20 rounded-full mix-blend-multiply filter blur-xl animate-pulse animation-delay-4000 pointer-events-none"></div>
-      
-      {/* Floating Particles */}
-      <div className="absolute top-1/4 left-1/4 w-2 h-2 bg-primary/40 rounded-full animate-bounce animation-delay-1000"></div>
-      <div className="absolute top-1/3 right-1/3 w-1 h-1 bg-purple-500/60 rounded-full animate-bounce animation-delay-3000"></div>
-      <div className="absolute bottom-1/3 left-1/3 w-1.5 h-1.5 bg-blue-500/50 rounded-full animate-bounce animation-delay-5000"></div>
+      {/* Enhanced Dynamic Background matching homepage */}
+      <div className="absolute inset-0 bg-gradient-to-br from-primary/30 via-purple-500/20 to-blue-500/30">
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-transparent via-background/70 to-background/90" />
+        
+        {/* Animated Background Elements */}
+        <div className="absolute top-20 left-20 w-72 h-72 bg-gradient-to-r from-primary/20 to-purple-500/20 rounded-full mix-blend-multiply filter blur-xl animate-pulse pointer-events-none"></div>
+        <div className="absolute top-40 right-20 w-96 h-96 bg-gradient-to-r from-purple-500/20 to-blue-500/20 rounded-full mix-blend-multiply filter blur-xl animate-pulse animation-delay-2000 pointer-events-none"></div>
+        <div className="absolute -bottom-20 left-40 w-80 h-80 bg-gradient-to-r from-blue-500/20 to-primary/20 rounded-full mix-blend-multiply filter blur-xl animate-pulse animation-delay-4000 pointer-events-none"></div>
+        
+        {/* Floating Particles */}
+        <div className="absolute top-1/4 left-1/4 w-2 h-2 bg-primary/40 rounded-full animate-bounce animation-delay-1000"></div>
+        <div className="absolute top-1/3 right-1/3 w-1 h-1 bg-purple-500/60 rounded-full animate-bounce animation-delay-3000"></div>
+        <div className="absolute bottom-1/3 left-1/3 w-1.5 h-1.5 bg-blue-500/50 rounded-full animate-bounce animation-delay-5000"></div>
+        <div className="absolute top-2/3 right-1/4 w-1 h-1 bg-primary/70 rounded-full animate-bounce animation-delay-7000"></div>
+      </div>
 
       {/* Header */}
       <div className="relative z-10 container mx-auto px-4 py-6">
@@ -103,7 +113,7 @@ const FAQs = () => {
           <p className={`text-xl text-white/80 ${
             isLoaded ? 'animate-fade-in-up animation-delay-400' : 'opacity-0'
           }`}>
-            Everything you need to know about PointBridge and the $RAC token ecosystem
+            Everything you need to know about our privacy-first loyalty program and 30-day vesting system
           </p>
         </div>
       </section>

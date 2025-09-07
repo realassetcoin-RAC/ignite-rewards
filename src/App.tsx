@@ -10,6 +10,8 @@ import Privacy from "./pages/Privacy";
 import Partners from "./pages/Partners";
 import FAQs from "./pages/FAQs";
 import TermsOfService from "./pages/TermsOfService";
+import Contact from "./pages/Contact";
+import HelpCenter from "./pages/HelpCenter";
 import AdminPanel from "./pages/AdminPanel";
 import Auth from "./pages/Auth";
 import AuthCallback from "./pages/AuthCallback";
@@ -83,6 +85,8 @@ const App = () => {
             <Route path="/partners" element={<Partners />} />
             <Route path="/faqs" element={<FAQs />} />
             <Route path="/terms" element={<TermsOfService />} />
+            <Route path="/contact" element={<Contact />} />
+            <Route path="/help" element={<HelpCenter />} />
             <Route path="/admin-panel" element={<AdminPanel />} />
             <Route path="/admin" element={<Navigate to="/admin-panel" replace />} />
             {isDev && <Route path="/admin-test" element={<AdminTestPanel />} />}

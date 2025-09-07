@@ -956,7 +956,7 @@ const VirtualCardManager = ({ onStatsUpdate }: VirtualCardManagerProps) => {
                 </div>
 
                 <div className="flex gap-2 pt-4">
-                  <Button type="submit" className="flex-1">
+                  <Button type="submit" className="flex-1 bg-gradient-to-r from-primary to-purple-500 hover:from-primary/90 hover:to-purple-500/90 transform hover:scale-105 transition-all duration-300">
                     {editingCard ? "Update Loyalty Card" : "Create Loyalty Card"}
                   </Button>
                   <Button 

@@ -246,13 +246,13 @@ const SolanaWalletManager = () => {
           <p className="text-muted-foreground">No wallet found. Create or import a Solana wallet to get started.</p>
         </div>
         <div className="flex flex-col sm:flex-row gap-2">
-          <Button onClick={generateWallet} disabled={creating} className="flex-1">
+          <Button onClick={generateWallet} disabled={creating} className="flex-1 bg-gradient-to-r from-primary to-purple-500 hover:from-primary/90 hover:to-purple-500/90 transform hover:scale-105 transition-all duration-300">
             <Key className="mr-2 h-4 w-4" />
             {creating ? "Creating..." : "Generate New Wallet"}
           </Button>
           <Dialog open={showImportDialog} onOpenChange={setShowImportDialog}>
             <DialogTrigger asChild>
-              <Button variant="outline" className="flex-1">
+              <Button className="flex-1 bg-gradient-to-r from-primary to-purple-500 hover:from-primary/90 hover:to-purple-500/90 transform hover:scale-105 transition-all duration-300 text-white border-0">
                 <Upload className="mr-2 h-4 w-4" />
                 Import Wallet
               </Button>
@@ -272,18 +272,18 @@ const SolanaWalletManager = () => {
                     rows={3}
                   />
                 </div>
-                <Button onClick={importWallet} className="w-full">
+                <Button onClick={importWallet} className="w-full bg-gradient-to-r from-primary to-purple-500 hover:from-primary/90 hover:to-purple-500/90 transform hover:scale-105 transition-all duration-300">
                   Import Wallet
                 </Button>
               </div>
             </DialogContent>
           </Dialog>
           {!connected ? (
-            <Button variant="outline" className="flex-1" onClick={connectThirdPartyWallet}>
+            <Button className="flex-1 bg-gradient-to-r from-primary to-purple-500 hover:from-primary/90 hover:to-purple-500/90 transform hover:scale-105 transition-all duration-300 text-white border-0" onClick={connectThirdPartyWallet}>
               Connect Phantom/Solflare
             </Button>
           ) : (
-            <Button variant="outline" className="flex-1" onClick={disconnectThirdPartyWallet}>
+            <Button className="flex-1 bg-gradient-to-r from-primary to-purple-500 hover:from-primary/90 hover:to-purple-500/90 transform hover:scale-105 transition-all duration-300 text-white border-0" onClick={disconnectThirdPartyWallet}>
               Disconnect Wallet
             </Button>
           )}
@@ -309,7 +309,7 @@ const SolanaWalletManager = () => {
                 <p className="font-mono text-sm break-all">{seedPhrase}</p>
               </div>
               <div className="flex gap-2">
-                <Button onClick={downloadSeedPhrase} variant="outline" className="flex-1">
+                <Button onClick={downloadSeedPhrase} className="flex-1 bg-gradient-to-r from-primary to-purple-500 hover:from-primary/90 hover:to-purple-500/90 transform hover:scale-105 transition-all duration-300 text-white border-0">
                   <Download className="mr-2 h-4 w-4" />
                   Download
                 </Button>
@@ -325,7 +325,7 @@ const SolanaWalletManager = () => {
                   Copy
                 </Button>
               </div>
-              <Button onClick={() => setShowSeedDialog(false)} className="w-full">
+              <Button onClick={() => setShowSeedDialog(false)} className="w-full bg-gradient-to-r from-primary to-purple-500 hover:from-primary/90 hover:to-purple-500/90 transform hover:scale-105 transition-all duration-300">
                 I've Saved My Seed Phrase
               </Button>
             </div>

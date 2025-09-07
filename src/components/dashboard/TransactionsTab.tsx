@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useSmartDataRefresh } from "@/hooks/useSmartDataRefresh";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -39,6 +40,20 @@ const TransactionsTab = () => {
       loadTransactions();
     }
   }, [user]);
+
+  // Smart data refresh - refreshes transactions data when returning to app
+  const refreshTransactionsData = async () => {
+    console.log('🔄 Refreshing transactions data...');
+    if (user) {
+      await loadTransactions();
+    }
+  };
+
+  useSmartDataRefresh(refreshTransactionsData, {
+    debounceMs: 2000, // 2 second debounce for transactions data
+    enabled: !!user,
+    dependencies: [user?.id] // Refresh when user changes
+  });
 
   const loadTransactions = async () => {
     try {

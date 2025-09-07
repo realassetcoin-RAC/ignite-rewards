@@ -268,11 +268,11 @@ const ReferralCampaignManager = () => {
                   )}
                 />
                 <div className="flex gap-3 pt-4">
-                  <Button type="submit" className="flex-1">
+                  <Button type="submit" className="flex-1 bg-gradient-to-r from-primary to-purple-500 hover:from-primary/90 hover:to-purple-500/90 transform hover:scale-105 transition-all duration-300">
                     <CheckCircle2 className="w-4 h-4 mr-2" />
                     {editing ? 'Update Campaign' : 'Create Campaign'}
                   </Button>
-                  <Button type="button" variant="outline" onClick={() => setDialogOpen(false)} className="flex-1">
+                  <Button type="button" onClick={() => setDialogOpen(false)} className="flex-1 bg-gradient-to-r from-primary to-purple-500 hover:from-primary/90 hover:to-purple-500/90 transform hover:scale-105 transition-all duration-300 text-white border-0">
                     Cancel
                   </Button>
                 </div>

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useSmartDataRefresh } from "@/hooks/useSmartDataRefresh";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -356,6 +357,18 @@ const ApiHealthTab = () => {
     // initial run
     runAllChecks();
   }, [runAllChecks]);
+
+  // Smart data refresh - refreshes API health data when returning to app
+  const refreshHealthData = async () => {
+    console.log('🔄 Refreshing API health data...');
+    await runAllChecks();
+  };
+
+  useSmartDataRefresh(refreshHealthData, {
+    debounceMs: 5000, // 5 second debounce for health checks (they can be expensive)
+    enabled: true,
+    dependencies: [user?.id] // Refresh when user changes
+  });
 
   useEffect(() => {
     if (!autoRefresh) {

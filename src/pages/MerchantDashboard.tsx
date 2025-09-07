@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
+import { useSmartDataRefresh } from '@/hooks/useSmartDataRefresh';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { QrCode, RefreshCw, Calendar, DollarSign, Hash, CreditCard, Link as LinkIcon, Shield, Sparkles, ArrowLeft } from 'lucide-react';
+import { QrCode, RefreshCw, Calendar, DollarSign, Hash, CreditCard, Link as LinkIcon, Shield, Sparkles, ArrowLeft, Coins, Users } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { QrCodeGenerator } from '@/components/QrCodeGenerator';
+import MerchantTransactionProcessor from '@/components/solana/MerchantTransactionProcessor';
 import { format } from 'date-fns';
 import { Link, useNavigate } from 'react-router-dom';
 
@@ -42,6 +44,7 @@ const MerchantDashboard = () => {
   const [merchant, setMerchant] = useState<MerchantData | null>(null);
   const [loading, setLoading] = useState(true);
   const [showQrGenerator, setShowQrGenerator] = useState(false);
+  const [activeSection, setActiveSection] = useState<'overview' | 'transactions' | 'solana' | 'analytics'>('overview');
   const [isLoaded, setIsLoaded] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -51,6 +54,19 @@ const MerchantDashboard = () => {
     loadTransactions();
     setIsLoaded(true);
   }, []);
+
+  // Smart data refresh - refreshes merchant dashboard data when returning to app
+  const refreshMerchantData = async () => {
+    console.log('🔄 Refreshing merchant dashboard data...');
+    await loadTransactions();
+    await checkMerchantAccess();
+  };
+
+  useSmartDataRefresh(refreshMerchantData, {
+    debounceMs: 2000, // 2 second debounce for merchant data
+    enabled: true,
+    dependencies: [merchant?.id] // Refresh when merchant changes
+  });
 
   const checkMerchantAccess = async () => {
     try {
@@ -244,10 +260,49 @@ const MerchantDashboard = () => {
           </div>
         </div>
 
-        {/* Stats Cards */}
-        <div className={`grid grid-cols-1 md:grid-cols-3 gap-6 mb-8 ${
+        {/* Navigation Tabs */}
+        <div className={`mb-8 ${
           isLoaded ? 'animate-fade-in-up animation-delay-600' : 'opacity-0'
         }`}>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              variant={activeSection === 'overview' ? 'default' : 'outline'}
+              onClick={() => setActiveSection('overview')}
+              className="bg-gradient-to-r from-primary to-purple-500 hover:from-primary/90 hover:to-purple-500/90 transform hover:scale-105 transition-all duration-300"
+            >
+              Overview
+            </Button>
+            <Button
+              variant={activeSection === 'transactions' ? 'default' : 'outline'}
+              onClick={() => setActiveSection('transactions')}
+              className="bg-gradient-to-r from-primary to-purple-500 hover:from-primary/90 hover:to-purple-500/90 transform hover:scale-105 transition-all duration-300"
+            >
+              Transactions
+            </Button>
+            <Button
+              variant={activeSection === 'solana' ? 'default' : 'outline'}
+              onClick={() => setActiveSection('solana')}
+              className="bg-gradient-to-r from-primary to-purple-500 hover:from-primary/90 hover:to-purple-500/90 transform hover:scale-105 transition-all duration-300"
+            >
+              <Coins className="h-4 w-4 mr-2" />
+              Solana Rewards
+            </Button>
+            <Button
+              variant={activeSection === 'analytics' ? 'default' : 'outline'}
+              onClick={() => setActiveSection('analytics')}
+              className="bg-gradient-to-r from-primary to-purple-500 hover:from-primary/90 hover:to-purple-500/90 transform hover:scale-105 transition-all duration-300"
+            >
+              <Users className="h-4 w-4 mr-2" />
+              Analytics
+            </Button>
+          </div>
+        </div>
+
+        {/* Stats Cards */}
+        {activeSection === 'overview' && (
+          <div className={`grid grid-cols-1 md:grid-cols-3 gap-6 mb-8 ${
+            isLoaded ? 'animate-fade-in-up animation-delay-600' : 'opacity-0'
+          }`}>
           <Card className="card-gradient border-primary/20 backdrop-blur-md hover:scale-105 transition-all duration-300">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Total Transactions</CardTitle>
@@ -282,6 +337,7 @@ const MerchantDashboard = () => {
             </CardContent>
           </Card>
         </div>
+        )}
 
         {/* Action Buttons */}
         <div className="flex gap-4 mb-6">
@@ -334,7 +390,7 @@ const MerchantDashboard = () => {
               </div>
               {merchant.payment_link_url && (
                 <div className="pt-2">
-                  <Button variant="outline" asChild className="w-full">
+                  <Button asChild className="w-full bg-gradient-to-r from-primary to-purple-500 hover:from-primary/90 hover:to-purple-500/90 transform hover:scale-105 transition-all duration-300 text-white border-0">
                     <a href={merchant.payment_link_url} target="_blank" rel="noreferrer">
                       <LinkIcon className="w-4 h-4 mr-2" /> Open Payment Portal
                     </a>
@@ -421,6 +477,138 @@ const MerchantDashboard = () => {
             )}
           </CardContent>
         </Card>
+
+        {/* Transactions Section */}
+        {activeSection === 'transactions' && (
+          <div className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Recent Transactions</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {loading ? (
+                  <div className="text-center py-8">
+                    <RefreshCw className="w-8 h-8 animate-spin mx-auto mb-4 text-muted-foreground" />
+                    <p className="text-muted-foreground">Loading transactions...</p>
+                  </div>
+                ) : transactions.length === 0 ? (
+                  <div className="text-center py-8">
+                    <QrCode className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
+                    <h3 className="text-lg font-semibold mb-2">No Transactions Yet</h3>
+                    <p className="text-muted-foreground mb-4">
+                      Generate your first QR code to start collecting customer data.
+                    </p>
+                    <Button onClick={() => setShowQrGenerator(true)}>
+                      Generate QR Code
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="min-w-[100px]">Date</TableHead>
+                          <TableHead className="min-w-[120px]">Customer</TableHead>
+                          <TableHead className="min-w-[120px] hidden sm:table-cell">Loyalty Number</TableHead>
+                          <TableHead className="min-w-[80px]">Amount</TableHead>
+                          <TableHead className="min-w-[120px] hidden md:table-cell">Reference</TableHead>
+                          <TableHead className="min-w-[60px]">Points</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {transactions.map((transaction) => (
+                          <TableRow key={transaction.id}>
+                            <TableCell>
+                              <div className="flex items-center text-sm">
+                                <Calendar className="w-4 h-4 mr-2 text-muted-foreground" />
+                                {format(new Date(transaction.transaction_date), 'MMM dd, yyyy HH:mm')}
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <div>
+                                <div className="font-medium">{transaction.user_loyalty_cards?.full_name}</div>
+                                <div className="text-sm text-muted-foreground">{transaction.user_loyalty_cards?.email}</div>
+                              </div>
+                            </TableCell>
+                            <TableCell className="hidden sm:table-cell">
+                              <Badge variant="outline" className="font-mono">
+                                {transaction.loyalty_number}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="font-medium">
+                              ${Number(transaction.transaction_amount).toFixed(2)}
+                            </TableCell>
+                            <TableCell className="hidden md:table-cell">
+                              <Badge variant="secondary" className="font-mono">
+                                {transaction.transaction_reference}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant="default">
+                                {transaction.points_earned} pts
+                              </Badge>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {/* Solana Rewards Section */}
+        {activeSection === 'solana' && merchant && (
+          <div className="space-y-6">
+            <MerchantTransactionProcessor merchantId={merchant.id} />
+          </div>
+        )}
+
+        {/* Analytics Section */}
+        {activeSection === 'analytics' && (
+          <div className="space-y-6">
+            <Card className="bg-gradient-to-br from-background/60 to-background/30 backdrop-blur-md border border-primary/20">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Users className="h-5 w-5 text-primary" />
+                  Anonymous User Analytics
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div className="text-center p-6 rounded-lg bg-gradient-to-br from-primary/10 to-primary/5 border border-primary/20">
+                    <div className="text-3xl font-bold text-primary mb-2">
+                      {transactions.length}
+                    </div>
+                    <div className="text-sm text-muted-foreground">Total Transactions</div>
+                  </div>
+                  
+                  <div className="text-center p-6 rounded-lg bg-gradient-to-br from-green-500/10 to-green-500/5 border border-green-500/20">
+                    <div className="text-3xl font-bold text-green-500 mb-2">
+                      ${transactions.reduce((sum, t) => sum + Number(t.transaction_amount), 0).toFixed(2)}
+                    </div>
+                    <div className="text-sm text-muted-foreground">Total Volume</div>
+                  </div>
+                  
+                  <div className="text-center p-6 rounded-lg bg-gradient-to-br from-blue-500/10 to-blue-500/5 border border-blue-500/20">
+                    <div className="text-3xl font-bold text-blue-500 mb-2">
+                      {transactions.reduce((sum, t) => sum + t.points_earned, 0)}
+                    </div>
+                    <div className="text-sm text-muted-foreground">Rewards Distributed</div>
+                  </div>
+                </div>
+                
+                <div className="mt-6 p-4 rounded-lg bg-gradient-to-r from-primary/5 to-purple-500/5 border border-primary/10">
+                  <div className="text-sm text-muted-foreground">
+                    <strong>Privacy-First Analytics:</strong> All data is collected anonymously. No personal information is stored or tracked across merchants.
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
 
         {/* QR Code Generator Dialog */}
         {showQrGenerator && merchant && (

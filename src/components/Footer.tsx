@@ -25,7 +25,7 @@ const Footer = () => {
               PointBridge
             </h3>
             <p className="text-foreground/80 mb-6 max-w-md">
-              Join our decentralized rewards ecosystem where your engagement earns $RAC tokens. The Future of Value Is Here!
+              The world's first privacy-first loyalty program. Earn notional rewards that vest in 30 days, with no personal data collection. Your privacy, your choice.
             </p>
             <div className="flex space-x-4">
               <div className="w-10 h-10 rounded-full bg-gradient-to-r from-primary/20 to-purple-500/20 hover:from-primary/30 hover:to-purple-500/30 flex items-center justify-center transition-all duration-300 cursor-pointer transform hover:scale-110 hover:shadow-lg">
@@ -59,8 +59,8 @@ const Footer = () => {
           <div>
             <h4 className="font-semibold mb-4 text-foreground">Support</h4>
             <ul className="space-y-2 text-muted-foreground">
-              <li><a href="#" className="hover:bg-gradient-to-r hover:from-primary hover:to-blue-500 hover:bg-clip-text hover:text-transparent transition-all duration-300">Contact Us</a></li>
-              <li><a href="#" className="hover:bg-gradient-to-r hover:from-blue-500 hover:to-purple-500 hover:bg-clip-text hover:text-transparent transition-all duration-300">Help Center</a></li>
+              <li><Link to="/contact" className="hover:bg-gradient-to-r hover:from-primary hover:to-blue-500 hover:bg-clip-text hover:text-transparent transition-all duration-300">Contact Us</Link></li>
+              <li><Link to="/help" className="hover:bg-gradient-to-r hover:from-blue-500 hover:to-purple-500 hover:bg-clip-text hover:text-transparent transition-all duration-300">Help Center</Link></li>
               <li><Link to="/privacy" className="hover:bg-gradient-to-r hover:from-purple-500 hover:to-primary hover:bg-clip-text hover:text-transparent transition-all duration-300">Privacy Policy</Link></li>
               <li><Link to="/terms" className="hover:bg-gradient-to-r hover:from-primary hover:to-purple-500 hover:bg-clip-text hover:text-transparent transition-all duration-300">Terms of Service</Link></li>
             </ul>

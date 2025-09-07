@@ -15,8 +15,10 @@ import SubscriptionPlanManager from "@/components/admin/SubscriptionPlanManager"
 import UserManager from "@/components/admin/UserManager";
 import ApiHealthTab from "@/components/admin/ApiHealthTab";
 import ErrorDashboard from "@/components/admin/ErrorDashboard";
+import SolanaRewardsManager from "@/components/admin/SolanaRewardsManager";
 import AdminDashboardWrapper from "@/components/AdminDashboardWrapper";
 import { useSecureAuth } from "@/hooks/useSecureAuth";
+import { useSmartDataRefresh } from "@/hooks/useSmartDataRefresh";
 import { checkRateLimit, sanitizeErrorMessage } from "@/utils/validation";
 import ErrorBoundary from "@/components/ErrorBoundary";
 // Dev-only: load fix utilities for diagnostics without exposing in production
@@ -33,7 +35,8 @@ import {
   AlertTriangle,
   Sparkles,
   ArrowLeft,
-  Bug
+  Bug,
+  Coins
 } from "lucide-react";
 
 const AdminPanel = () => {
@@ -81,6 +84,20 @@ const AdminPanel = () => {
       setIsLoaded(true);
     }
   }, [user?.id, isAdmin, loading]);
+
+  // Smart data refresh - refreshes admin panel data when returning to app
+  const refreshAdminData = async () => {
+    console.log('🔄 Refreshing admin panel data...');
+    if (user && isAdmin) {
+      await loadStats();
+    }
+  };
+
+  useSmartDataRefresh(refreshAdminData, {
+    debounceMs: 3000, // 3 second debounce for admin data
+    enabled: !loading && isAdmin,
+    dependencies: [user?.id, isAdmin] // Refresh when user or admin status changes
+  });
 
   // Rate limiting for stats loading
   const loadStats = async () => {
@@ -312,7 +329,7 @@ const AdminPanel = () => {
 
         {/* Main Admin Tabs */}
         <Tabs defaultValue="cards" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 lg:grid-cols-8 gap-1">
+          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 lg:grid-cols-9 gap-1">
             <TabsTrigger value="cards" className="flex items-center space-x-1 px-2 py-1.5">
               <CreditCard className="h-4 w-4 flex-shrink-0" />
               <span className="hidden sm:inline">Virtual Cards</span>
@@ -322,6 +339,11 @@ const AdminPanel = () => {
               <Store className="h-4 w-4 flex-shrink-0" />
               <span className="hidden sm:inline">Merchants</span>
               <span className="sm:hidden text-xs">Shops</span>
+            </TabsTrigger>
+            <TabsTrigger value="solana" className="flex items-center space-x-1 px-2 py-1.5">
+              <Coins className="h-4 w-4 flex-shrink-0" />
+              <span className="hidden sm:inline">Solana Rewards</span>
+              <span className="sm:hidden text-xs">Solana</span>
             </TabsTrigger>
             <TabsTrigger value="referrals" className="flex items-center space-x-1 px-2 py-1.5">
               <Shield className="h-4 w-4 flex-shrink-0" />
@@ -381,6 +403,18 @@ const AdminPanel = () => {
                   <SubscriptionPlanManager />
                 </ErrorBoundary>
               </div>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="solana" className="space-y-6">
+            <div>
+              <h3 className="text-2xl font-bold text-foreground mb-2">Solana Rewards Management</h3>
+              <p className="text-muted-foreground mb-6">
+                Manage Solana contract features, rewards configuration, and anonymous user analytics.
+              </p>
+              <ErrorBoundary>
+                <SolanaRewardsManager />
+              </ErrorBoundary>
             </div>
           </TabsContent>
 

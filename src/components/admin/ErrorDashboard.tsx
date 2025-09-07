@@ -6,6 +6,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
+import { useSmartDataRefresh } from "@/hooks/useSmartDataRefresh";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -43,6 +44,18 @@ const ErrorDashboard = () => {
     setLogSummary(logger.getLogSummary());
     log.debug('ERROR_DASHBOARD', 'Data refreshed');
   };
+
+  // Smart data refresh - refreshes error dashboard data when returning to app
+  const refreshErrorData = async () => {
+    console.log('🔄 Refreshing error dashboard data...');
+    refreshData();
+  };
+
+  useSmartDataRefresh(refreshErrorData, {
+    debounceMs: 2000, // 2 second debounce for error data
+    enabled: true,
+    dependencies: [] // Refresh when component is active
+  });
 
   const exportLogs = () => {
     try {

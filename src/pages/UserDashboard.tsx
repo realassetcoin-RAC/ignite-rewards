@@ -5,13 +5,16 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Navigate, Link } from "react-router-dom";
-import { CreditCard, Activity, TrendingUp, Share2, Wallet, Sparkles, ArrowLeft } from "lucide-react";
+import { CreditCard, Activity, TrendingUp, Share2, Wallet, Sparkles, ArrowLeft, Coins, Clock } from "lucide-react";
 import LoyaltyCardTab from "@/components/dashboard/LoyaltyCardTab";
 import ReferralsTab from "@/components/dashboard/ReferralsTab";
+import RewardsTracker from "@/components/solana/RewardsTracker";
+import WalletManager from "@/components/solana/WalletManager";
+import VestingStatus from "@/components/solana/VestingStatus";
 
 const UserDashboard = () => {
   const { user, isAdmin, loading } = useSecureAuth();
-  const [activeSection, setActiveSection] = useState<'overview' | 'loyalty' | 'referrals'>('overview');
+  const [activeSection, setActiveSection] = useState<'overview' | 'loyalty' | 'referrals' | 'wallet' | 'rewards' | 'vesting'>('overview');
   const [isLoaded, setIsLoaded] = useState(false);
 
   // Smart data refresh - refreshes component data when returning to app
@@ -100,7 +103,7 @@ const UserDashboard = () => {
       {/* Content */}
       <main className="relative z-10 container mx-auto px-4 py-8 space-y-8">
         {/* Quick Actions */}
-        <div className={`grid grid-cols-1 md:grid-cols-3 gap-6 ${
+        <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 ${
           isLoaded ? 'animate-fade-in-up animation-delay-400' : 'opacity-0'
         }`}>
           <Card onClick={() => setActiveSection('loyalty')} className="cursor-pointer card-gradient border-primary/20 backdrop-blur-md hover:scale-105 hover:shadow-xl transition-all duration-300 group">
@@ -115,6 +118,42 @@ const UserDashboard = () => {
             </CardContent>
           </Card>
 
+          <Card onClick={() => setActiveSection('rewards')} className="cursor-pointer card-gradient border-primary/20 backdrop-blur-md hover:scale-105 hover:shadow-xl transition-all duration-300 group">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium flex items-center gap-2">
+                <Coins className="h-4 w-4 group-hover:animate-bounce" />
+                Rewards
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-sm text-muted-foreground">Track your notional earnings and rewards</div>
+            </CardContent>
+          </Card>
+
+          <Card onClick={() => setActiveSection('wallet')} className="cursor-pointer card-gradient border-primary/20 backdrop-blur-md hover:scale-105 hover:shadow-xl transition-all duration-300 group">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium flex items-center gap-2">
+                <Wallet className="h-4 w-4 group-hover:animate-pulse" />
+                Wallet
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-sm text-muted-foreground">Manage your Solana wallet</div>
+            </CardContent>
+          </Card>
+
+          <Card onClick={() => setActiveSection('vesting')} className="cursor-pointer card-gradient border-primary/20 backdrop-blur-md hover:scale-105 hover:shadow-xl transition-all duration-300 group">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium flex items-center gap-2">
+                <Clock className="h-4 w-4 group-hover:animate-pulse" />
+                Vesting
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-sm text-muted-foreground">View your 30-day vesting progress</div>
+            </CardContent>
+          </Card>
+
           <Card onClick={() => setActiveSection('referrals')} className="cursor-pointer card-gradient border-primary/20 backdrop-blur-md hover:scale-105 hover:shadow-xl transition-all duration-300 group">
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium flex items-center gap-2">
@@ -124,18 +163,6 @@ const UserDashboard = () => {
             </CardHeader>
             <CardContent>
               <div className="text-sm text-muted-foreground">Share your code and track rewards</div>
-            </CardContent>
-          </Card>
-
-          <Card className="card-gradient border-primary/20 backdrop-blur-md hover:scale-105 hover:shadow-xl transition-all duration-300 group">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium flex items-center gap-2">
-                <Wallet className="h-4 w-4 group-hover:animate-pulse" />
-                Connect Wallet
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-sm text-muted-foreground">Manage your Solana wallet connection in Loyalty</div>
             </CardContent>
           </Card>
         </div>
@@ -177,6 +204,30 @@ const UserDashboard = () => {
             isLoaded ? 'animate-fade-in-up animation-delay-600' : 'opacity-0'
           }`}>
             <ReferralsTab />
+          </div>
+        )}
+
+        {activeSection === 'rewards' && user && (
+          <div className={`space-y-6 ${
+            isLoaded ? 'animate-fade-in-up animation-delay-600' : 'opacity-0'
+          }`}>
+            <RewardsTracker userId={user.id} />
+          </div>
+        )}
+
+        {activeSection === 'wallet' && user && (
+          <div className={`space-y-6 ${
+            isLoaded ? 'animate-fade-in-up animation-delay-600' : 'opacity-0'
+          }`}>
+            <WalletManager userId={user.id} />
+          </div>
+        )}
+
+        {activeSection === 'vesting' && user && (
+          <div className={`space-y-6 ${
+            isLoaded ? 'animate-fade-in-up animation-delay-600' : 'opacity-0'
+          }`}>
+            <VestingStatus userId={user.id} />
           </div>
         )}
       </main>

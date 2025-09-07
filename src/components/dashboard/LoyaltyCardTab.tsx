@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useSmartDataRefresh } from "@/hooks/useSmartDataRefresh";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -39,6 +40,21 @@ const LoyaltyCardTab = () => {
       loadUserPoints();
     }
   }, [user]);
+
+  // Smart data refresh - refreshes loyalty card data when returning to app
+  const refreshLoyaltyData = async () => {
+    console.log('🔄 Refreshing loyalty card data...');
+    if (user) {
+      await loadLoyaltyCard();
+      await loadUserPoints();
+    }
+  };
+
+  useSmartDataRefresh(refreshLoyaltyData, {
+    debounceMs: 2000, // 2 second debounce for loyalty data
+    enabled: !!user,
+    dependencies: [user?.id] // Refresh when user changes
+  });
 
   const loadLoyaltyCard = async () => {
     try {

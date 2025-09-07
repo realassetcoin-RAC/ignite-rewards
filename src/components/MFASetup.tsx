@@ -227,7 +227,7 @@ const MFASetup: React.FC<MFASetupProps> = ({ onComplete, onCancel }) => {
             Wallet-based authentication users do not need MFA as their wallet provides the additional security layer.
           </p>
           {onCancel && (
-            <Button variant="outline" onClick={onCancel} className="mt-4">
+            <Button onClick={onCancel} className="mt-4 bg-gradient-to-r from-primary to-purple-500 hover:from-primary/90 hover:to-purple-500/90 transform hover:scale-105 transition-all duration-300 text-white border-0">
               Close
             </Button>
           )}
@@ -268,7 +268,7 @@ const MFASetup: React.FC<MFASetupProps> = ({ onComplete, onCancel }) => {
             <Separator />
 
             <div className="text-center">
-              <Button onClick={generateSecretAndQR} disabled={loading} className="mb-4">
+              <Button onClick={generateSecretAndQR} disabled={loading} className="mb-4 bg-gradient-to-r from-primary to-purple-500 hover:from-primary/90 hover:to-purple-500/90 transform hover:scale-105 transition-all duration-300">
                 {loading ? "Generating..." : "Generate QR Code"}
               </Button>
             </div>
@@ -311,7 +311,7 @@ const MFASetup: React.FC<MFASetupProps> = ({ onComplete, onCancel }) => {
                 </div>
 
                 <div className="text-center">
-                  <Button onClick={() => setStep('verify')} className="w-full">
+                  <Button onClick={() => setStep('verify')} className="w-full bg-gradient-to-r from-primary to-purple-500 hover:from-primary/90 hover:to-purple-500/90 transform hover:scale-105 transition-all duration-300">
                     Continue to Verification
                   </Button>
                 </div>
@@ -440,7 +440,7 @@ const MFASetup: React.FC<MFASetupProps> = ({ onComplete, onCancel }) => {
             </div>
 
             <div className="text-center">
-              <Button onClick={completeSetup} className="w-full">
+              <Button onClick={completeSetup} className="w-full bg-gradient-to-r from-primary to-purple-500 hover:from-primary/90 hover:to-purple-500/90 transform hover:scale-105 transition-all duration-300">
                 Complete Setup
               </Button>
             </div>

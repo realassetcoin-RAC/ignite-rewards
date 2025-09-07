@@ -280,12 +280,12 @@ const MFAVerification: React.FC<MFAVerificationProps> = ({
         {/* Action Buttons */}
         <div className="flex gap-3">
           {onBack && (
-            <Button variant="outline" onClick={onBack} disabled={loading} className="flex-1">
+            <Button onClick={onBack} disabled={loading} className="flex-1 bg-gradient-to-r from-primary to-purple-500 hover:from-primary/90 hover:to-purple-500/90 transform hover:scale-105 transition-all duration-300 text-white border-0">
               <ArrowLeft className="h-4 w-4 mr-2" />
               Back
             </Button>
           )}
-          <Button variant="outline" onClick={onCancel} disabled={loading} className="flex-1">
+          <Button onClick={onCancel} disabled={loading} className="flex-1 bg-gradient-to-r from-primary to-purple-500 hover:from-primary/90 hover:to-purple-500/90 transform hover:scale-105 transition-all duration-300 text-white border-0">
             Cancel
           </Button>
         </div>

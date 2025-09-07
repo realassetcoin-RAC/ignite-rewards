@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useSmartDataRefresh } from "@/hooks/useSmartDataRefresh";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -47,6 +48,18 @@ const UserManager = ({ onStatsUpdate }: UserManagerProps) => {
   useEffect(() => {
     loadData();
   }, []);
+
+  // Smart data refresh - refreshes user manager data when returning to app
+  const refreshUserData = async () => {
+    console.log('🔄 Refreshing user manager data...');
+    await loadData();
+  };
+
+  useSmartDataRefresh(refreshUserData, {
+    debounceMs: 3000, // 3 second debounce for user data
+    enabled: true,
+    dependencies: [] // Refresh when component is active
+  });
 
   const loadData = async () => {
     try {
