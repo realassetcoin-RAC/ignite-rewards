@@ -30,6 +30,18 @@ interface RewardsConfig {
   updated_at: string;
 }
 
+interface ConfigProposal {
+  id: string;
+  config_id: string;
+  proposed_distribution_interval: number;
+  proposed_max_rewards_per_user: number;
+  status: 'pending' | 'approved' | 'rejected' | 'implemented';
+  proposer_id: string;
+  created_at: string;
+  approved_at?: string;
+  implemented_at?: string;
+}
+
 interface AnonymousUser {
   id: string;
   anonymous_id: string;
@@ -48,10 +60,11 @@ interface VestingStats {
   vesting_users: number;
 }
 
-const SolanaRewardsManager: React.FC = () => {
+const RewardsManager: React.FC = () => {
   const [rewardsConfig, setRewardsConfig] = useState<RewardsConfig | null>(null);
   const [anonymousUsers, setAnonymousUsers] = useState<AnonymousUser[]>([]);
   const [vestingStats, setVestingStats] = useState<VestingStats | null>(null);
+  const [pendingProposal, setPendingProposal] = useState<ConfigProposal | null>(null);
   const [loading, setLoading] = useState(true);
   const [showAnonymousUsers, setShowAnonymousUsers] = useState(false);
   const [configForm, setConfigForm] = useState({
@@ -79,7 +92,7 @@ const SolanaRewardsManager: React.FC = () => {
 
       // If we have data, use the first record
       if (data && data.length > 0) {
-        const config = data[0];
+        const config = data[0] as unknown as RewardsConfig;
         setRewardsConfig(config);
         setConfigForm({
           distribution_interval: config.distribution_interval.toString(),
@@ -95,6 +108,29 @@ const SolanaRewardsManager: React.FC = () => {
     }
   };
 
+  const loadPendingProposal = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('config_proposals')
+        .select('*')
+        .eq('status', 'pending' as any)
+        .limit(1);
+
+      if (error) {
+        console.error('Error loading pending proposal:', error);
+        return;
+      }
+
+      if (data && data.length > 0) {
+        setPendingProposal(data[0] as unknown as ConfigProposal);
+      } else {
+        setPendingProposal(null);
+      }
+    } catch (error) {
+      console.error('Error loading pending proposal:', error);
+    }
+  };
+
   const loadAnonymousUsers = async () => {
     try {
       const { data, error } = await supabase
@@ -107,7 +143,7 @@ const SolanaRewardsManager: React.FC = () => {
         throw error;
       }
 
-      setAnonymousUsers(data || []);
+      setAnonymousUsers((data as unknown as AnonymousUser[]) || []);
     } catch (error) {
       console.error('Error loading anonymous users:', error);
     }
@@ -128,64 +164,59 @@ const SolanaRewardsManager: React.FC = () => {
     }
   };
 
-  const updateRewardsConfig = async () => {
+  const createConfigProposal = async () => {
     try {
       setLoading(true);
 
-      const configData = {
-        distribution_interval: parseInt(configForm.distribution_interval),
-        max_rewards_per_user: parseInt(configForm.max_rewards_per_user),
-        updated_at: new Date().toISOString()
+      // Check if there's already a pending proposal
+      if (pendingProposal) {
+        toast({
+          title: "Proposal Already Pending",
+          description: "There is already a pending configuration proposal. Please wait for DAO approval or cancel the existing proposal.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const proposalData = {
+        config_id: rewardsConfig?.id || 'default',
+        proposed_distribution_interval: parseInt(configForm.distribution_interval),
+        proposed_max_rewards_per_user: parseInt(configForm.max_rewards_per_user),
+        status: 'pending',
+        proposer_id: 'admin', // In a real app, this would be the current user's ID
+        created_at: new Date().toISOString()
       };
 
-      if (rewardsConfig) {
-        // Update existing config
-        const { error } = await supabase
-          .from('rewards_config')
-          .update(configData)
-          .eq('id', rewardsConfig.id);
+      const { error } = await supabase
+        .from('config_proposals')
+        .insert([proposalData as any]);
 
-        if (error) {
-          console.error('Update error details:', error);
-          throw error;
-        }
-      } else {
-        // Create new config (upsert to handle potential duplicates)
-        const { error } = await supabase
-          .from('rewards_config')
-          .upsert({
-            ...configData,
-            program_id: 'default_program_id',
-            admin_authority: 'default_admin_authority',
-            reward_token_mint: 'default_token_mint',
-            is_active: true
-          }, {
-            onConflict: 'program_id'
-          });
-
-        if (error) {
-          console.error('Insert error details:', error);
-          throw error;
-        }
+      if (error) {
+        console.error('Error creating config proposal:', error);
+        toast({
+          title: "Error",
+          description: "Failed to create configuration proposal.",
+          variant: "destructive",
+        });
+        return;
       }
 
       toast({
-        title: "Configuration Updated",
-        description: "Rewards configuration has been updated successfully.",
+        title: "Proposal Created",
+        description: "Configuration proposal has been submitted for DAO approval.",
       });
 
-      await loadRewardsConfig();
-
+      // Reload the pending proposal
+      await loadPendingProposal();
     } catch (error: any) {
-      console.error('Error updating rewards config:', error);
+      console.error('Error creating config proposal:', error);
       
-      // Provide more specific error messages
-      let errorMessage = "Failed to update rewards configuration.";
+      let errorMessage = "Failed to create configuration proposal.";
       
       if (error?.code === 'PGRST301' || error?.message?.includes('schema cache')) {
-        errorMessage = "Table 'rewards_config' does not exist or is not accessible. Please run the database migration first.";
+        errorMessage = "Table 'config_proposals' does not exist. Please run the database migration first.";
       } else if (error?.code === '42501') {
-        errorMessage = "Permission denied. You need admin access to update rewards configuration.";
+        errorMessage = "Permission denied. You need admin access to create proposals.";
       } else if (error?.message) {
         errorMessage = `Error: ${error.message}`;
       }
@@ -219,6 +250,7 @@ const SolanaRewardsManager: React.FC = () => {
       setLoading(true);
       await Promise.all([
         loadRewardsConfig(),
+        loadPendingProposal(),
         loadAnonymousUsers(),
         loadVestingStats()
       ]);
@@ -282,19 +314,19 @@ const SolanaRewardsManager: React.FC = () => {
 
             <div className="flex items-center gap-2">
               <Button
-                onClick={updateRewardsConfig}
-                disabled={loading}
+                onClick={createConfigProposal}
+                disabled={loading || !!pendingProposal}
                 className="bg-gradient-to-r from-primary to-purple-500 hover:from-primary/90 hover:to-purple-500/90"
               >
                 {loading ? (
                   <>
                     <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                    Updating...
+                    Creating Proposal...
                   </>
                 ) : (
                   <>
                     <Settings className="h-4 w-4 mr-2" />
-                    Update Configuration
+                    {pendingProposal ? 'Proposal Pending' : 'Submit for DAO Approval'}
                   </>
                 )}
               </Button>
@@ -305,6 +337,23 @@ const SolanaRewardsManager: React.FC = () => {
                 </Badge>
               )}
             </div>
+
+            {/* Pending Proposal Status */}
+            {pendingProposal && (
+              <div className="mt-4 p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
+                <div className="flex items-center gap-2 mb-2">
+                  <Clock className="h-4 w-4 text-yellow-500" />
+                  <span className="text-sm font-medium text-yellow-700 dark:text-yellow-300">
+                    Proposal Pending DAO Approval
+                  </span>
+                </div>
+                <div className="text-xs text-muted-foreground space-y-1">
+                  <div>Proposed Distribution Interval: {pendingProposal.proposed_distribution_interval} seconds</div>
+                  <div>Proposed Max Rewards Per User: {pendingProposal.proposed_max_rewards_per_user}</div>
+                  <div>Submitted: {new Date(pendingProposal.created_at).toLocaleString()}</div>
+                </div>
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>
@@ -490,4 +539,4 @@ const SolanaRewardsManager: React.FC = () => {
   );
 };
 
-export default SolanaRewardsManager;
+export default RewardsManager;

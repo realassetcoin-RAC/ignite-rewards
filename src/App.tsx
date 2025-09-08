@@ -10,7 +10,7 @@ import Privacy from "./pages/Privacy";
 import Partners from "./pages/Partners";
 import FAQs from "./pages/FAQs";
 import TermsOfService from "./pages/TermsOfService";
-import Contact from "./pages/Contact";
+import ContactUs from "./pages/ContactUs";
 import HelpCenter from "./pages/HelpCenter";
 import AdminPanel from "./pages/AdminPanel";
 import Auth from "./pages/Auth";
@@ -18,11 +18,17 @@ import AuthCallback from "./pages/AuthCallback";
 import MerchantDashboard from "./pages/MerchantDashboard";
 import NotFound from "./pages/NotFound";
 import UserDashboard from "./pages/UserDashboard";
+import UserDashboardEnhanced from "./pages/UserDashboardEnhanced";
+import UserDashboardWithBackgrounds from "./pages/UserDashboardWithBackgrounds";
+import FuturisticDashboard from "./pages/FuturisticDashboard";
 import RoleBasedDashboard from "./components/RoleBasedDashboard";
+import { ThemeProvider } from "./contexts/ThemeContext";
 import AdminTestPanel from "./components/AdminTestPanel";
 import AdminDebug from "./pages/AdminDebug";
 import DAODashboard from "./pages/DAODashboard";
 import UserDAODashboard from "./pages/UserDAODashboard";
+import DAOPublic from "./pages/DAOPublic";
+import TestPage from "./pages/TestPage";
 import { useSmartRefresh } from "./hooks/useSmartRefresh";
 import { useSessionPersistence } from "./hooks/useSessionPersistence";
 
@@ -71,10 +77,11 @@ const App = () => {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
+      <ThemeProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
@@ -83,24 +90,30 @@ const App = () => {
             <Route path="/dashboard" element={<RoleBasedDashboard />} />
             {/* Keep the old dashboard route for backward compatibility if bookmarked */}
             <Route path="/user" element={<UserDashboard />} />
+            <Route path="/user-enhanced" element={<UserDashboardEnhanced />} />
+            <Route path="/user-backgrounds" element={<UserDashboardWithBackgrounds />} />
+            <Route path="/futuristic" element={<FuturisticDashboard />} />
             <Route path="/privacy" element={<Privacy />} />
             <Route path="/partners" element={<Partners />} />
             <Route path="/faqs" element={<FAQs />} />
             <Route path="/terms" element={<TermsOfService />} />
-            <Route path="/contact" element={<Contact />} />
+            <Route path="/contact" element={<ContactUs />} />
             <Route path="/help" element={<HelpCenter />} />
             <Route path="/admin-panel" element={<AdminPanel />} />
             <Route path="/admin" element={<Navigate to="/admin-panel" replace />} />
             {isDev && <Route path="/admin-test" element={<AdminTestPanel />} />}
             {isDev && <Route path="/admin-debug" element={<AdminDebug />} />}
             <Route path="/merchant" element={<MerchantDashboard />} />
-            <Route path="/dao" element={<DAODashboard />} />
+            <Route path="/dao" element={<DAOPublic />} />
+            <Route path="/dao-admin" element={<DAODashboard />} />
             <Route path="/dao-vote" element={<UserDAODashboard />} />
+            <Route path="/test" element={<TestPage />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
-        </BrowserRouter>
-      </TooltipProvider>
+          </BrowserRouter>
+        </TooltipProvider>
+      </ThemeProvider>
     </QueryClientProvider>
   );
 };

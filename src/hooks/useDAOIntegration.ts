@@ -17,7 +17,7 @@ interface DAOIntegrationOptions {
 
 interface ChangeRequest {
   id: string;
-  type: 'loyalty_rule_change' | 'reward_structure_change' | 'merchant_settings_change' | 'platform_config_change';
+  type: 'loyalty_rule_change' | 'reward_structure_change' | 'merchant_settings_change' | 'platform_config_change' | 'loyalty_network_addition' | 'loyalty_network_update' | 'loyalty_network_removal';
   title: string;
   description: string;
   affectedComponents: string[];
@@ -285,10 +285,37 @@ export const useDAOIntegration = (options: DAOIntegrationOptions = {}) => {
     }
   }, [toast]);
 
+  // Convenience method for creating loyalty network change requests
+  const createChangeRequest = useCallback(async (params: {
+    title: string;
+    description: string;
+    changeType: 'loyalty_network_addition' | 'loyalty_network_update' | 'loyalty_network_removal';
+    priority: 'low' | 'medium' | 'high' | 'critical';
+    requiresApproval?: boolean;
+    metadata?: any;
+  }) => {
+    const { title, description, changeType, priority, requiresApproval = true, metadata } = params;
+    
+    const changeRequest: Omit<ChangeRequest, 'id' | 'createdAt' | 'status'> = {
+      type: changeType,
+      title,
+      description,
+      affectedComponents: ['loyalty_networks', 'user_loyalty_links', 'point_conversions'],
+      impactLevel: priority,
+      requiresDAOApproval: requiresApproval,
+      currentValue: metadata?.currentValue,
+      proposedValue: metadata?.proposedValue,
+      createdBy: (await supabase.auth.getUser()).data.user?.id || 'system'
+    };
+
+    return await handleLoyaltyChange(changeRequest);
+  }, [handleLoyaltyChange]);
+
   return {
     loading,
     createProposalForChange,
     handleLoyaltyChange,
+    createChangeRequest,
     requiresDAOApproval,
     getPendingChanges,
     approveChangeRequest,
@@ -349,6 +376,15 @@ function generateTags(changeRequest: Omit<ChangeRequest, 'id' | 'createdAt' | 's
       break;
     case 'platform_config_change':
       tags.push('platform', 'configuration', 'infrastructure');
+      break;
+    case 'loyalty_network_addition':
+      tags.push('loyalty', 'networks', 'integration', 'addition');
+      break;
+    case 'loyalty_network_update':
+      tags.push('loyalty', 'networks', 'integration', 'update');
+      break;
+    case 'loyalty_network_removal':
+      tags.push('loyalty', 'networks', 'integration', 'removal');
       break;
   }
 

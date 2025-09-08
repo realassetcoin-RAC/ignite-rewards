@@ -7,8 +7,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useSecureAuth } from "@/hooks/useSecureAuth";
-import { Wallet, CreditCard, Copy, Info } from "lucide-react";
-import SolanaWalletManager from "@/components/web3/SolanaWalletManager";
+import { CreditCard, Copy, Info } from "lucide-react";
 
 interface LoyaltyCard {
   id: string;
@@ -268,21 +267,6 @@ const LoyaltyCardTab = () => {
         </Card>
       )}
 
-      {/* Solana Wallet Integration */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Wallet className="h-5 w-5" />
-            Web3 Wallet
-          </CardTitle>
-          <CardDescription>
-            Manage your Solana wallet for blockchain-based rewards
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <SolanaWalletManager />
-        </CardContent>
-      </Card>
     </div>
   );
 };

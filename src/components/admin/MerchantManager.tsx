@@ -280,6 +280,7 @@ const MerchantManager = ({ onStatsUpdate }: MerchantManagerProps) => {
             <TableHeader>
               <TableRow>
                 <TableHead>Business Name</TableHead>
+                <TableHead>Merchant ID</TableHead>
                 <TableHead>Contact</TableHead>
                 <TableHead>Location</TableHead>
                 <TableHead>Plan</TableHead>
@@ -297,6 +298,24 @@ const MerchantManager = ({ onStatsUpdate }: MerchantManagerProps) => {
                       <div className="text-sm text-muted-foreground">
                         {merchant.business_type}
                       </div>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <div 
+                      className="text-sm font-mono text-muted-foreground cursor-pointer hover:text-foreground transition-colors"
+                      onClick={() => {
+                        navigator.clipboard.writeText(merchant.id);
+                        toast({
+                          title: "Copied",
+                          description: "Merchant ID copied to clipboard",
+                        });
+                      }}
+                      title="Click to copy full ID"
+                    >
+                      {merchant.id.slice(0, 8)}...
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      Click to copy full ID
                     </div>
                   </TableCell>
                   <TableCell>

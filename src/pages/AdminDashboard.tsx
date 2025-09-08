@@ -13,7 +13,8 @@ import UserManager from "@/components/admin/UserManager";
 import UserLoyaltyCardManager from "@/components/admin/UserLoyaltyCardManager";
 import ReferralManager from "@/components/admin/ReferralManager";
 import SubscriptionPlanManager from "@/components/admin/SubscriptionPlanManager";
-import { CreditCard, Users, Package, TrendingUp, Shield, UserCheck, Gift, Settings, Wallet } from "lucide-react";
+import LoyaltyNetworkManager from "@/components/admin/LoyaltyNetworkManager";
+import { CreditCard, Users, Package, TrendingUp, Shield, UserCheck, Gift, Settings, Wallet, Link } from "lucide-react";
 
 const AdminDashboard = () => {
   const [user, setUser] = useState<any>(null);
@@ -258,6 +259,18 @@ const AdminDashboard = () => {
                 <span className="sm:hidden text-xs">Loyalty</span>
               </button>
               <button
+                onClick={() => setActiveTab('loyalty-networks')}
+                className={`flex items-center justify-center gap-1 px-2 py-1.5 rounded-md text-sm font-medium transition-all duration-200 ${
+                  activeTab === 'loyalty-networks'
+                    ? 'bg-gradient-to-r from-primary to-purple-500 text-white shadow-sm'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-foreground/5'
+                }`}
+              >
+                <Link className="h-4 w-4 flex-shrink-0" />
+                <span className="hidden sm:inline">Loyalty Networks</span>
+                <span className="sm:hidden text-xs">Networks</span>
+              </button>
+              <button
                 onClick={() => setActiveTab('referrals')}
                 className={`flex items-center justify-center gap-1 px-2 py-1.5 rounded-md text-sm font-medium transition-all duration-200 ${
                   activeTab === 'referrals'
@@ -352,6 +365,21 @@ const AdminDashboard = () => {
               </CardHeader>
               <CardContent>
                 <UserLoyaltyCardManager onStatsUpdate={loadStats} />
+              </CardContent>
+            </Card>
+          )}
+
+          <{/* Tab Content */}
+{activeTab ==="loyalty-networks">
+            <Card>
+              <CardHeader>
+                <CardTitle>Loyalty Networks</CardTitle>
+                <CardDescription>
+                  Manage third-party loyalty networks and their conversion rates for point integration.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <LoyaltyNetworkManager onStatsUpdate={loadStats} />
               </CardContent>
             </Card>
           )}

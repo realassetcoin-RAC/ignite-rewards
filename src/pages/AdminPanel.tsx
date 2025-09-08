@@ -15,7 +15,8 @@ import SubscriptionPlanManager from "@/components/admin/SubscriptionPlanManager"
 import UserManager from "@/components/admin/UserManager";
 import ApiHealthTab from "@/components/admin/ApiHealthTab";
 import ErrorDashboard from "@/components/admin/ErrorDashboard";
-import SolanaRewardsManager from "@/components/admin/SolanaRewardsManager";
+import RewardsManager from "@/components/admin/RewardsManager";
+import MarketplaceManager from "@/components/admin/MarketplaceManager";
 import AdminDashboardWrapper from "@/components/AdminDashboardWrapper";
 import { useSecureAuth } from "@/hooks/useSecureAuth";
 import { useSmartDataRefresh } from "@/hooks/useSmartDataRefresh";
@@ -37,7 +38,8 @@ import {
   ArrowLeft,
   Bug,
   Coins,
-  Vote
+  Vote,
+  Building2
 } from "lucide-react";
 
 const AdminPanel = () => {
@@ -223,7 +225,7 @@ const AdminPanel = () => {
                 <h1 className={`text-lg sm:text-2xl font-bold text-foreground truncate ${
                   isLoaded ? 'animate-fade-in-up' : 'opacity-0'
                 }`}>
-                  PointBridge Admin
+                  PointBridge
                 </h1>
               </div>
               <Badge variant="secondary" className="bg-primary/10 text-primary hidden sm:inline-flex animate-pulse">
@@ -332,7 +334,7 @@ const AdminPanel = () => {
         {/* Main Admin Tabs */}
         <div className="space-y-6">
           <div className="w-full bg-background/60 backdrop-blur-md border border-primary/20 rounded-lg p-1 overflow-x-auto">
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-10 gap-1 min-w-max">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-9 gap-1 min-w-max">
               <button
                 onClick={() => setActiveTab('cards')}
                 className={`flex items-center justify-center gap-1 px-2 py-1.5 rounded-md text-sm font-medium transition-all duration-200 ${
@@ -392,6 +394,18 @@ const AdminPanel = () => {
                 <Vote className="h-4 w-4 flex-shrink-0" />
                 <span className="hidden sm:inline">DAO</span>
                 <span className="sm:hidden text-xs">DAO</span>
+              </button>
+              <button
+                onClick={() => setActiveTab('marketplace')}
+                className={`flex items-center justify-center gap-1 px-2 py-1.5 rounded-md text-sm font-medium transition-all duration-200 ${
+                  activeTab === 'marketplace'
+                    ? 'bg-gradient-to-r from-primary to-purple-500 text-white shadow-sm'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-foreground/5'
+                }`}
+              >
+                <Building2 className="h-4 w-4 flex-shrink-0" />
+                <span className="hidden sm:inline">Marketplace</span>
+                <span className="sm:hidden text-xs">Market</span>
               </button>
               <button
                 onClick={() => setActiveTab('users')}
@@ -500,7 +514,7 @@ const AdminPanel = () => {
                   Manage Solana contract features, rewards configuration, and anonymous user analytics.
                 </p>
                 <ErrorBoundary>
-                  <SolanaRewardsManager />
+                  <RewardsManager />
                 </ErrorBoundary>
               </div>
             </div>
@@ -550,6 +564,21 @@ const AdminPanel = () => {
                     </Button>
                   </div>
                 </div>
+              </div>
+            </div>
+          )}
+
+          {/* Marketplace Tab */}
+          {activeTab === 'marketplace' && (
+            <div className="space-y-6">
+              <div>
+                <h3 className="text-2xl font-bold text-foreground mb-2">Marketplace Management</h3>
+                <p className="text-muted-foreground mb-6">
+                  Manage tokenized assets, initiatives, and investment opportunities.
+                </p>
+                <ErrorBoundary>
+                  <MarketplaceManager onStatsUpdate={loadStats} />
+                </ErrorBoundary>
               </div>
             </div>
           )}

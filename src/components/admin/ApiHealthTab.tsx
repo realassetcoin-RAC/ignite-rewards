@@ -111,7 +111,18 @@ const ApiHealthTab = () => {
       "merchant_subscription_plans",
       "referral_campaigns",
       "transaction_qr_codes",
-      "subscribers"
+      "subscribers",
+      // DAO System Tables
+      "dao_organizations",
+      "dao_members",
+      "dao_proposals",
+      "dao_votes",
+      "dao_treasury",
+      "dao_transactions",
+      "dao_proposal_comments",
+      "dao_proposal_attachments",
+      "loyalty_change_requests",
+      "loyalty_change_approvals"
     ];
 
     const tableChecks: HealthCheck[] = tableNames.map((table) => ({
@@ -297,6 +308,103 @@ const ApiHealthTab = () => {
       }
     ];
 
+    // New feature health checks
+    const featureChecks: HealthCheck[] = [
+      {
+        id: "dao-system",
+        name: "DAO System",
+        description: "Check DAO system accessibility",
+        run: async () => {
+          const start = performance.now();
+          try {
+            // Check if DAO tables exist and are accessible
+            const { data, error } = await supabase
+              .from('dao_organizations')
+              .select('id')
+              .limit(1);
+            const latencyMs = performance.now() - start;
+            if (error) {
+              return { id: "dao-system", name: "DAO System", status: "error", latencyMs, message: error.message };
+            }
+            return { id: "dao-system", name: "DAO System", status: "ok", latencyMs, message: "DAO system accessible" };
+          } catch (e: any) {
+            const latencyMs = performance.now() - start;
+            return { id: "dao-system", name: "DAO System", status: "error", latencyMs, message: String(e?.message || e) };
+          }
+        }
+      },
+      {
+        id: "rewards-manager",
+        name: "Rewards Manager",
+        description: "Check RewardsManager component accessibility",
+        run: async () => {
+          const start = performance.now();
+          try {
+            // Check if rewards-related tables are accessible
+            const { data, error } = await supabase
+              .from('loyalty_transactions')
+              .select('id')
+              .limit(1);
+            const latencyMs = performance.now() - start;
+            if (error) {
+              return { id: "rewards-manager", name: "Rewards Manager", status: "error", latencyMs, message: error.message };
+            }
+            return { id: "rewards-manager", name: "Rewards Manager", status: "ok", latencyMs, message: "Rewards system accessible" };
+          } catch (e: any) {
+            const latencyMs = performance.now() - start;
+            return { id: "rewards-manager", name: "Rewards Manager", status: "error", latencyMs, message: String(e?.message || e) };
+          }
+        }
+      },
+      {
+        id: "user-dao-access",
+        name: "User DAO Access",
+        description: "Check user DAO page accessibility",
+        run: async () => {
+          const start = performance.now();
+          try {
+            // Check if user can access DAO proposals
+            const { data, error } = await supabase
+              .from('dao_proposals')
+              .select('id')
+              .limit(1);
+            const latencyMs = performance.now() - start;
+            if (error) {
+              return { id: "user-dao-access", name: "User DAO Access", status: "error", latencyMs, message: error.message };
+            }
+            return { id: "user-dao-access", name: "User DAO Access", status: "ok", latencyMs, message: "User DAO access working" };
+          } catch (e: any) {
+            const latencyMs = performance.now() - start;
+            return { id: "user-dao-access", name: "User DAO Access", status: "error", latencyMs, message: String(e?.message || e) };
+          }
+        }
+      },
+      {
+        id: "merchant-reward-generator",
+        name: "Merchant Reward Generator",
+        description: "Check manual reward generation functionality",
+        run: async () => {
+          const start = performance.now();
+          try {
+            // Check if loyalty_transactions table supports manual entries
+            const { data, error } = await supabase
+              .from('loyalty_transactions')
+              .select('transaction_type')
+              .eq('transaction_type', 'manual_entry')
+              .limit(1);
+            const latencyMs = performance.now() - start;
+            if (error) {
+              return { id: "merchant-reward-generator", name: "Merchant Reward Generator", status: "error", latencyMs, message: error.message };
+            }
+            return { id: "merchant-reward-generator", name: "Merchant Reward Generator", status: "ok", latencyMs, message: "Manual reward generation ready" };
+          } catch (e: any) {
+            const latencyMs = performance.now() - start;
+            return { id: "merchant-reward-generator", name: "Merchant Reward Generator", status: "error", latencyMs, message: String(e?.message || e) };
+          }
+        }
+      }
+    ];
+
     // Storage buckets used in the app
     const storageChecks: HealthCheck[] = [
       {
@@ -322,7 +430,7 @@ const ApiHealthTab = () => {
       }
     ];
 
-    return [authSessionCheck, ...tableChecks, ...rpcChecks, ...storageChecks];
+    return [authSessionCheck, ...tableChecks, ...rpcChecks, ...featureChecks, ...storageChecks];
   }, [user?.id]);
 
   const runAllChecks = useCallback(async () => {
