@@ -20,6 +20,8 @@ import NotFound from "./pages/NotFound";
 import UserDashboard from "./pages/UserDashboard";
 import UserDashboardEnhanced from "./pages/UserDashboardEnhanced";
 import UserDashboardWithBackgrounds from "./pages/UserDashboardWithBackgrounds";
+import TestBackgrounds from "./pages/TestBackgrounds";
+import SimpleTest from "./pages/SimpleTest";
 import FuturisticDashboard from "./pages/FuturisticDashboard";
 import RoleBasedDashboard from "./components/RoleBasedDashboard";
 import { ThemeProvider } from "./contexts/ThemeContext";
@@ -92,6 +94,8 @@ const App = () => {
             <Route path="/user" element={<UserDashboard />} />
             <Route path="/user-enhanced" element={<UserDashboardEnhanced />} />
             <Route path="/user-backgrounds" element={<UserDashboardWithBackgrounds />} />
+            <Route path="/test-backgrounds" element={<TestBackgrounds />} />
+            <Route path="/simple-test" element={<SimpleTest />} />
             <Route path="/futuristic" element={<FuturisticDashboard />} />
             <Route path="/privacy" element={<Privacy />} />
             <Route path="/partners" element={<Partners />} />

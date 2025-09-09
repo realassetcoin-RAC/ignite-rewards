@@ -8,13 +8,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import VirtualCardManager from "@/components/admin/VirtualCardManager";
 import MerchantManager from "@/components/admin/MerchantManager";
-import AdminUserCreator from "@/components/admin/AdminUserCreator";
+import { AdminUserCreator } from "@/components/admin/AdminUserCreator";
 import UserManager from "@/components/admin/UserManager";
 import UserLoyaltyCardManager from "@/components/admin/UserLoyaltyCardManager";
 import ReferralManager from "@/components/admin/ReferralManager";
 import SubscriptionPlanManager from "@/components/admin/SubscriptionPlanManager";
 import LoyaltyNetworkManager from "@/components/admin/LoyaltyNetworkManager";
-import { CreditCard, Users, Package, TrendingUp, Shield, UserCheck, Gift, Settings, Wallet, Link } from "lucide-react";
+import NFTManager from "@/components/admin/NFTManager";
+import { CreditCard, Users, Package, TrendingUp, Shield, UserCheck, Gift, Settings, Wallet, Link, Star } from "lucide-react";
 
 const AdminDashboard = () => {
   const [user, setUser] = useState<any>(null);
@@ -44,13 +45,13 @@ const AdminDashboard = () => {
         return;
       }
 
-      const { data: profile } = await supabase
+      const { data: profile, error: profileError } = await supabase
         .from("profiles")
         .select("*")
         .eq("id", user.id)
         .single();
 
-      if (!profile || profile.role !== "admin") {
+      if (profileError || !profile || profile.role !== "admin") {
         toast({
           title: "Access Denied",
           description: "You don't have admin permissions.",
@@ -207,9 +208,9 @@ const AdminDashboard = () => {
         </div>
 
         {/* Management Tabs */}
-        <Tabs defaultValue="cards" className="w-full">
+        <div className="w-full">
           <div className="w-full bg-background/60 backdrop-blur-md border border-primary/20 rounded-lg p-1 overflow-x-auto">
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-1 min-w-max">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-8 gap-1 min-w-max">
               <button
                 onClick={() => setActiveTab('cards')}
                 className={`flex items-center justify-center gap-1 px-2 py-1.5 rounded-md text-sm font-medium transition-all duration-200 ${
@@ -295,6 +296,18 @@ const AdminDashboard = () => {
                 <span className="sm:hidden text-xs">Plans</span>
               </button>
               <button
+                onClick={() => setActiveTab('nft-management')}
+                className={`flex items-center justify-center gap-1 px-2 py-1.5 rounded-md text-sm font-medium transition-all duration-200 ${
+                  activeTab === 'nft-management'
+                    ? 'bg-gradient-to-r from-primary to-purple-500 text-white shadow-sm'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-foreground/5'
+                }`}
+              >
+                <Star className="h-4 w-4 flex-shrink-0" />
+                <span className="hidden sm:inline">NFT Management</span>
+                <span className="sm:hidden text-xs">NFTs</span>
+              </button>
+              <button
                 onClick={() => setActiveTab('admins')}
                 className={`flex items-center justify-center gap-1 px-2 py-1.5 rounded-md text-sm font-medium transition-all duration-200 ${
                   activeTab === 'admins'
@@ -309,8 +322,8 @@ const AdminDashboard = () => {
             </div>
           </div>
           
-          <{/* Tab Content */}
-{activeTab ==="cards">
+          {/* Tab Content */}
+          {activeTab === "cards" && (
             <Card>
               <CardHeader>
                 <CardTitle>Virtual Card Management</CardTitle>
@@ -324,8 +337,7 @@ const AdminDashboard = () => {
             </Card>
           )}
           
-          <{/* Tab Content */}
-{activeTab ==="merchants">
+          {activeTab === "merchants" && (
             <Card>
               <CardHeader>
                 <CardTitle>Merchant Management</CardTitle>
@@ -339,8 +351,7 @@ const AdminDashboard = () => {
             </Card>
           )}
 
-          <{/* Tab Content */}
-{activeTab ==="users">
+          {activeTab === "users" && (
             <Card>
               <CardHeader>
                 <CardTitle>User Management</CardTitle>
@@ -354,8 +365,7 @@ const AdminDashboard = () => {
             </Card>
           )}
 
-          <{/* Tab Content */}
-{activeTab ==="loyalty-cards">
+          {activeTab === "loyalty-cards" && (
             <Card>
               <CardHeader>
                 <CardTitle>User Loyalty Cards</CardTitle>
@@ -369,8 +379,7 @@ const AdminDashboard = () => {
             </Card>
           )}
 
-          <{/* Tab Content */}
-{activeTab ==="loyalty-networks">
+          {activeTab === "loyalty-networks" && (
             <Card>
               <CardHeader>
                 <CardTitle>Loyalty Networks</CardTitle>
@@ -384,8 +393,7 @@ const AdminDashboard = () => {
             </Card>
           )}
 
-          <{/* Tab Content */}
-{activeTab ==="referrals">
+          {activeTab === "referrals" && (
             <Card>
               <CardHeader>
                 <CardTitle>Referral Management</CardTitle>
@@ -399,8 +407,7 @@ const AdminDashboard = () => {
             </Card>
           )}
 
-          <{/* Tab Content */}
-{activeTab ==="plans">
+          {activeTab === "plans" && (
             <Card>
               <CardHeader>
                 <CardTitle>Subscription Plan Management</CardTitle>
@@ -414,8 +421,21 @@ const AdminDashboard = () => {
             </Card>
           )}
 
-          <{/* Tab Content */}
-{activeTab ==="admins">
+          {activeTab === "nft-management" && (
+            <Card>
+              <CardHeader>
+                <CardTitle>NFT Management</CardTitle>
+                <CardDescription>
+                  Manage loyalty NFT types, minting controls, and user NFT ownership.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <NFTManager />
+              </CardContent>
+            </Card>
+          )}
+
+          {activeTab === "admins" && (
             <Card>
               <CardHeader>
                 <CardTitle>Admin User Management</CardTitle>

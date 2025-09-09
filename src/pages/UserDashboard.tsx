@@ -31,11 +31,12 @@ import RewardsTracker from "@/components/solana/RewardsTracker";
 import LoyaltyAccountLinking from "@/components/LoyaltyAccountLinking";
 import PointConversionSystem from "@/components/PointConversionSystem";
 import MarketplaceMain from "@/components/marketplace/MarketplaceMain";
+import UserNFTManager from "@/components/UserNFTManager";
 
 const UserDashboard = () => {
   const { user, isAdmin, loading } = useSecureAuth();
   const { toast } = useToast();
-  const [activeSection, setActiveSection] = useState<'overview' | 'loyalty' | 'loyalty-networks' | 'referrals' | 'rewards' | 'marketplace'>('overview');
+  const [activeSection, setActiveSection] = useState<'overview' | 'loyalty' | 'loyalty-networks' | 'referrals' | 'rewards' | 'marketplace' | 'nft-management'>('overview');
   const [isLoaded, setIsLoaded] = useState(false);
 
   const handleSignOut = async () => {
@@ -130,10 +131,10 @@ const UserDashboard = () => {
                 </div>
                 <div>
                   <h1 className={`text-3xl font-bold bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent ${
-                    isLoaded ? 'animate-fade-in-up' : 'opacity-0'
-                  }`}>
-                    PointBridge
-                  </h1>
+                  isLoaded ? 'animate-fade-in-up' : 'opacity-0'
+                }`}>
+                  PointBridge
+                </h1>
                   <p className="text-sm text-gray-400">Your Digital Rewards Hub</p>
                 </div>
               </div>
@@ -335,6 +336,34 @@ const UserDashboard = () => {
               </div>
             </CardContent>
           </Card>
+
+          <Card 
+            onClick={() => setActiveSection('nft-management')} 
+            className="cursor-pointer group bg-white/5 backdrop-blur-xl border-white/10 hover:bg-white/10 hover:border-white/20 transition-all duration-500 hover:scale-105 hover:shadow-2xl hover:shadow-yellow-500/25"
+          >
+            <CardHeader className="pb-4">
+              <div className="flex items-center justify-between">
+                <div className="p-3 bg-gradient-to-br from-yellow-500 to-orange-500 rounded-xl shadow-lg shadow-yellow-500/25">
+                  <Star className="h-6 w-6 text-white" />
+                </div>
+                <Badge className="bg-gradient-to-r from-yellow-500 to-orange-500 text-white border-0">
+                  NFTs
+                </Badge>
+              </div>
+              <CardTitle className="text-lg font-semibold text-white group-hover:text-yellow-200 transition-colors">
+                NFT Management
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-gray-400 text-sm mb-4">
+                Manage your loyalty NFTs and unlock premium features
+              </p>
+              <div className="flex items-center justify-between">
+                <span className="text-2xl font-bold text-white">0</span>
+                <span className="text-sm text-gray-400">owned</span>
+              </div>
+            </CardContent>
+          </Card>
         </div>
 
         {/* Stats Overview */}
@@ -394,8 +423,8 @@ const UserDashboard = () => {
                   <p className="text-2xl font-bold text-white">7 days</p>
                 </div>
               </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
         </div>
 
         {/* Main Content Area */}
@@ -405,15 +434,15 @@ const UserDashboard = () => {
           {activeSection === 'overview' && (
             <div className="space-y-8">
               <Card className="bg-white/5 backdrop-blur-xl border-white/10">
-                <CardHeader>
+              <CardHeader>
                   <CardTitle className="text-2xl font-bold text-white flex items-center space-x-3">
                     <div className="p-2 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg">
                       <Activity className="h-6 w-6 text-white" />
                     </div>
                     <span>Recent Activity</span>
                   </CardTitle>
-                </CardHeader>
-                <CardContent>
+              </CardHeader>
+              <CardContent>
                   <div className="space-y-4">
                     <div className="flex items-center space-x-4 p-4 bg-white/5 rounded-lg border border-white/10">
                       <div className="p-2 bg-gradient-to-br from-green-500 to-emerald-500 rounded-lg">
@@ -454,22 +483,23 @@ const UserDashboard = () => {
                       </Badge>
                     </div>
                   </div>
-                </CardContent>
-              </Card>
-            </div>
-          )}
+              </CardContent>
+            </Card>
+          </div>
+        )}
 
           {activeSection === 'loyalty' && <LoyaltyCardTab />}
           {activeSection === 'loyalty-networks' && (
             <div className="space-y-8">
               <LoyaltyAccountLinking />
               <PointConversionSystem />
-            </div>
-          )}
+          </div>
+        )}
           {activeSection === 'referrals' && <ReferralsTab />}
           {activeSection === 'rewards' && user && <RewardsTracker userId={user.id} />}
           {activeSection === 'marketplace' && <MarketplaceMain />}
-        </div>
+          {activeSection === 'nft-management' && <UserNFTManager />}
+          </div>
       </main>
     </div>
   );

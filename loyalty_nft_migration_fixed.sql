@@ -1,5 +1,6 @@
 -- Migration to extend existing tables for Custodial & Non-Custodial NFT support
 -- This modifies existing tables instead of creating new ones
+-- FIXED VERSION - Handles existing constraints properly
 
 -- 1. Extend the existing user_loyalty_cards table to support NFT features
 ALTER TABLE public.user_loyalty_cards 
@@ -43,10 +44,19 @@ CREATE TABLE IF NOT EXISTS public.nft_types (
     UNIQUE(nft_name, is_custodial)
 );
 
--- 3. Add foreign key constraint to user_loyalty_cards
-ALTER TABLE public.user_loyalty_cards 
-ADD CONSTRAINT fk_user_loyalty_cards_nft_type 
-FOREIGN KEY (nft_type_id) REFERENCES public.nft_types(id) ON DELETE SET NULL;
+-- 3. Add foreign key constraint to user_loyalty_cards (only if it doesn't exist)
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.table_constraints 
+        WHERE constraint_name = 'fk_user_loyalty_cards_nft_type' 
+        AND table_name = 'user_loyalty_cards'
+    ) THEN
+        ALTER TABLE public.user_loyalty_cards 
+        ADD CONSTRAINT fk_user_loyalty_cards_nft_type 
+        FOREIGN KEY (nft_type_id) REFERENCES public.nft_types(id) ON DELETE SET NULL;
+    END IF;
+END $$;
 
 -- 4. Extend the existing nft_card_tiers table to support new NFT types
 ALTER TABLE public.nft_card_tiers
@@ -64,10 +74,19 @@ ADD COLUMN IF NOT EXISTS upgrade_bonus_ratio DECIMAL(5,4) DEFAULT 0.0000,
 ADD COLUMN IF NOT EXISTS evolution_min_investment DECIMAL(10,2) DEFAULT 0,
 ADD COLUMN IF NOT EXISTS evolution_earnings_ratio DECIMAL(5,4) DEFAULT 0.0000;
 
--- 5. Add foreign key constraint to nft_card_tiers
-ALTER TABLE public.nft_card_tiers
-ADD CONSTRAINT fk_nft_card_tiers_nft_type 
-FOREIGN KEY (nft_type_id) REFERENCES public.nft_types(id) ON DELETE SET NULL;
+-- 5. Add foreign key constraint to nft_card_tiers (only if it doesn't exist)
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.table_constraints 
+        WHERE constraint_name = 'fk_nft_card_tiers_nft_type' 
+        AND table_name = 'nft_card_tiers'
+    ) THEN
+        ALTER TABLE public.nft_card_tiers
+        ADD CONSTRAINT fk_nft_card_tiers_nft_type 
+        FOREIGN KEY (nft_type_id) REFERENCES public.nft_types(id) ON DELETE SET NULL;
+    END IF;
+END $$;
 
 -- 6. Create NFT Evolution History table
 CREATE TABLE IF NOT EXISTS public.nft_evolution_history (
@@ -123,26 +142,63 @@ ALTER TABLE public.nft_evolution_history ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.nft_upgrade_history ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.nft_minting_control ENABLE ROW LEVEL SECURITY;
 
--- 11. Create RLS policies for new tables
-CREATE POLICY "Anyone can view active NFT types" ON public.nft_types
-    FOR SELECT USING (is_active = true);
+-- 11. Create RLS policies for new tables (only if they don't exist)
+DO $$
+BEGIN
+    -- NFT Types policies
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_policies 
+        WHERE tablename = 'nft_types' AND policyname = 'Anyone can view active NFT types'
+    ) THEN
+        CREATE POLICY "Anyone can view active NFT types" ON public.nft_types
+            FOR SELECT USING (is_active = true);
+    END IF;
 
-CREATE POLICY "Authenticated users can manage NFT types" ON public.nft_types
-    FOR ALL USING (auth.uid() IS NOT NULL);
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_policies 
+        WHERE tablename = 'nft_types' AND policyname = 'Authenticated users can manage NFT types'
+    ) THEN
+        CREATE POLICY "Authenticated users can manage NFT types" ON public.nft_types
+            FOR ALL USING (auth.uid() IS NOT NULL);
+    END IF;
 
-CREATE POLICY "Users can view their own evolution history" ON public.nft_evolution_history
-    FOR SELECT USING (user_id = auth.uid());
+    -- Evolution History policies
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_policies 
+        WHERE tablename = 'nft_evolution_history' AND policyname = 'Users can view their own evolution history'
+    ) THEN
+        CREATE POLICY "Users can view their own evolution history" ON public.nft_evolution_history
+            FOR SELECT USING (user_id = auth.uid());
+    END IF;
 
-CREATE POLICY "Users can view their own upgrade history" ON public.nft_upgrade_history
-    FOR SELECT USING (user_id = auth.uid());
+    -- Upgrade History policies
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_policies 
+        WHERE tablename = 'nft_upgrade_history' AND policyname = 'Users can view their own upgrade history'
+    ) THEN
+        CREATE POLICY "Users can view their own upgrade history" ON public.nft_upgrade_history
+            FOR SELECT USING (user_id = auth.uid());
+    END IF;
 
-CREATE POLICY "Anyone can view minting control" ON public.nft_minting_control
-    FOR SELECT USING (true);
+    -- Minting Control policies
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_policies 
+        WHERE tablename = 'nft_minting_control' AND policyname = 'Anyone can view minting control'
+    ) THEN
+        CREATE POLICY "Anyone can view minting control" ON public.nft_minting_control
+            FOR SELECT USING (true);
+    END IF;
 
-CREATE POLICY "Authenticated users can manage minting control" ON public.nft_minting_control
-    FOR ALL USING (auth.uid() IS NOT NULL);
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_policies 
+        WHERE tablename = 'nft_minting_control' AND policyname = 'Authenticated users can manage minting control'
+    ) THEN
+        CREATE POLICY "Authenticated users can manage minting control" ON public.nft_minting_control
+            FOR ALL USING (auth.uid() IS NOT NULL);
+    END IF;
+END $$;
 
--- 12. Create triggers for updated_at
+-- 12. Create triggers for updated_at (only if they don't exist)
 CREATE OR REPLACE FUNCTION update_updated_at_column()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -151,13 +207,27 @@ BEGIN
 END;
 $$ language 'plpgsql';
 
-CREATE TRIGGER update_nft_types_updated_at 
-    BEFORE UPDATE ON public.nft_types 
-    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+-- Create triggers only if they don't exist
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_trigger 
+        WHERE tgname = 'update_nft_types_updated_at'
+    ) THEN
+        CREATE TRIGGER update_nft_types_updated_at 
+            BEFORE UPDATE ON public.nft_types 
+            FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+    END IF;
 
-CREATE TRIGGER update_nft_minting_control_updated_at 
-    BEFORE UPDATE ON public.nft_minting_control 
-    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_trigger 
+        WHERE tgname = 'update_nft_minting_control_updated_at'
+    ) THEN
+        CREATE TRIGGER update_nft_minting_control_updated_at 
+            BEFORE UPDATE ON public.nft_minting_control 
+            FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+    END IF;
+END $$;
 
 -- 13. Insert NFT Types based on spreadsheet data
 INSERT INTO public.nft_types (
