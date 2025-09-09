@@ -36,7 +36,7 @@ import UserNFTManager from "@/components/UserNFTManager";
 const UserDashboard = () => {
   const { user, isAdmin, loading } = useSecureAuth();
   const { toast } = useToast();
-  const [activeSection, setActiveSection] = useState<'overview' | 'loyalty' | 'loyalty-networks' | 'referrals' | 'rewards' | 'marketplace' | 'nft-management'>('overview');
+  const [activeSection, setActiveSection] = useState<'overview' | 'loyalty' | 'loyalty-networks' | 'referrals' | 'rewards' | 'marketplace'>('overview');
   const [isLoaded, setIsLoaded] = useState(false);
 
   const handleSignOut = async () => {
@@ -211,17 +211,21 @@ const UserDashboard = () => {
                 </Badge>
               </div>
               <CardTitle className="text-lg font-semibold text-white group-hover:text-purple-200 transition-colors">
-                Loyalty Card
+                Loyalty NFT Card
               </CardTitle>
             </CardHeader>
             <CardContent>
               <p className="text-gray-400 text-sm mb-4">
-                Manage your digital loyalty cards and track your progress
+                Manage your loyalty NFT cards, track progress, and upgrade benefits
               </p>
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between mb-3">
                 <span className="text-2xl font-bold text-white">1,250</span>
                 <span className="text-sm text-gray-400">points</span>
               </div>
+              <Button size="sm" className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white border-0">
+                <Crown className="w-3 h-3 mr-1" />
+                Upgrade Card
+              </Button>
             </CardContent>
           </Card>
 
@@ -244,12 +248,16 @@ const UserDashboard = () => {
             </CardHeader>
             <CardContent>
               <p className="text-gray-400 text-sm mb-4">
-                Link your third-party loyalty accounts and convert points
+                Connect your loyalty accounts and instantly convert your points into our tokens to unlock exclusive benefits on our platform
               </p>
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between mb-3">
                 <span className="text-2xl font-bold text-white">0</span>
                 <span className="text-sm text-gray-400">linked</span>
               </div>
+              <Button size="sm" className="w-full bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white border-0">
+                <Zap className="w-3 h-3 mr-1" />
+                Convert Points
+              </Button>
             </CardContent>
           </Card>
 
@@ -337,94 +345,53 @@ const UserDashboard = () => {
             </CardContent>
           </Card>
 
-          <Card 
-            onClick={() => setActiveSection('nft-management')} 
-            className="cursor-pointer group bg-white/5 backdrop-blur-xl border-white/10 hover:bg-white/10 hover:border-white/20 transition-all duration-500 hover:scale-105 hover:shadow-2xl hover:shadow-yellow-500/25"
-          >
-            <CardHeader className="pb-4">
-              <div className="flex items-center justify-between">
-                <div className="p-3 bg-gradient-to-br from-yellow-500 to-orange-500 rounded-xl shadow-lg shadow-yellow-500/25">
-                  <Star className="h-6 w-6 text-white" />
-                </div>
-                <Badge className="bg-gradient-to-r from-yellow-500 to-orange-500 text-white border-0">
-                  NFTs
-                </Badge>
-              </div>
-              <CardTitle className="text-lg font-semibold text-white group-hover:text-yellow-200 transition-colors">
-                NFT Management
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-gray-400 text-sm mb-4">
-                Manage your loyalty NFTs and unlock premium features
-              </p>
-              <div className="flex items-center justify-between">
-                <span className="text-2xl font-bold text-white">0</span>
-                <span className="text-sm text-gray-400">owned</span>
-              </div>
-            </CardContent>
-          </Card>
         </div>
 
-        {/* Stats Overview */}
-        <div className={`grid grid-cols-1 md:grid-cols-4 gap-6 ${
+        {/* Enhanced Metrics Overview */}
+        <div className={`grid grid-cols-1 md:grid-cols-3 gap-6 ${
           isLoaded ? 'animate-fade-in-up animation-delay-800' : 'opacity-0'
         }`}>
-          <Card className="bg-white/5 backdrop-blur-xl border-white/10 hover:bg-white/10 transition-all duration-300">
+          <Card className="bg-white/5 backdrop-blur-xl border-white/10 hover:bg-white/10 transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:shadow-emerald-500/25">
             <CardContent className="p-6">
               <div className="flex items-center space-x-4">
-                <div className="p-3 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg">
-                  <Star className="h-5 w-5 text-white" />
+                <div className="p-3 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-lg shadow-lg shadow-emerald-500/25">
+                  <Coins className="h-5 w-5 text-white" />
                 </div>
                 <div>
-                  <p className="text-sm text-gray-400">Total Points</p>
-                  <p className="text-2xl font-bold text-white">1,250</p>
+                  <p className="text-sm text-gray-400">Available Points</p>
+                  <p className="text-2xl font-bold bg-gradient-to-r from-emerald-400 to-teal-400 bg-clip-text text-transparent">850</p>
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="bg-white/5 backdrop-blur-xl border-white/10 hover:bg-white/10 transition-all duration-300">
+          <Card className="bg-white/5 backdrop-blur-xl border-white/10 hover:bg-white/10 transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:shadow-blue-500/25">
             <CardContent className="p-6">
               <div className="flex items-center space-x-4">
-                <div className="p-3 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-lg">
+                <div className="p-3 bg-gradient-to-br from-blue-500 to-purple-500 rounded-lg shadow-lg shadow-blue-500/25">
                   <TrendingUp className="h-5 w-5 text-white" />
                 </div>
                 <div>
-                  <p className="text-sm text-gray-400">This Month</p>
-                  <p className="text-2xl font-bold text-white">+320</p>
+                  <p className="text-sm text-gray-400">Total Points</p>
+                  <p className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">1,250</p>
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="bg-white/5 backdrop-blur-xl border-white/10 hover:bg-white/10 transition-all duration-300">
+          <Card className="bg-white/5 backdrop-blur-xl border-white/10 hover:bg-white/10 transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:shadow-orange-500/25">
             <CardContent className="p-6">
               <div className="flex items-center space-x-4">
-                <div className="p-3 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-lg">
+                <div className="p-3 bg-gradient-to-br from-orange-500 to-pink-500 rounded-lg shadow-lg shadow-orange-500/25">
                   <Award className="h-5 w-5 text-white" />
                 </div>
                 <div>
-                  <p className="text-sm text-gray-400">Level</p>
-                  <p className="text-2xl font-bold text-white">Gold</p>
+                  <p className="text-sm text-gray-400">Lifetime Points</p>
+                  <p className="text-2xl font-bold bg-gradient-to-r from-orange-400 to-pink-400 bg-clip-text text-transparent">3,420</p>
                 </div>
               </div>
             </CardContent>
           </Card>
-
-          <Card className="bg-white/5 backdrop-blur-xl border-white/10 hover:bg-white/10 transition-all duration-300">
-            <CardContent className="p-6">
-              <div className="flex items-center space-x-4">
-                <div className="p-3 bg-gradient-to-br from-orange-500 to-red-500 rounded-lg">
-                  <Target className="h-5 w-5 text-white" />
-                </div>
-                <div>
-                  <p className="text-sm text-gray-400">Streak</p>
-                  <p className="text-2xl font-bold text-white">7 days</p>
-                </div>
-              </div>
-              </CardContent>
-            </Card>
         </div>
 
         {/* Main Content Area */}
@@ -488,7 +455,12 @@ const UserDashboard = () => {
           </div>
         )}
 
-          {activeSection === 'loyalty' && <LoyaltyCardTab />}
+          {activeSection === 'loyalty' && (
+            <div className="space-y-6">
+              <LoyaltyCardTab />
+              <UserNFTManager />
+            </div>
+          )}
           {activeSection === 'loyalty-networks' && (
             <div className="space-y-8">
               <LoyaltyAccountLinking />
@@ -498,7 +470,6 @@ const UserDashboard = () => {
           {activeSection === 'referrals' && <ReferralsTab />}
           {activeSection === 'rewards' && user && <RewardsTracker userId={user.id} />}
           {activeSection === 'marketplace' && <MarketplaceMain />}
-          {activeSection === 'nft-management' && <UserNFTManager />}
           </div>
       </main>
     </div>

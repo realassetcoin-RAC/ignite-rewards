@@ -455,4 +455,64 @@ All colors MUST be HSL.
     transform: translateY(-1px);
     box-shadow: 0 4px 12px hsl(var(--primary) / 0.15);
   }
+
+  /* Custom scrollbar styles for different components */
+  .scrollbar-thumb-gray-300 {
+    scrollbar-color: rgb(209 213 219) transparent;
+  }
+
+  .scrollbar-track-gray-100 {
+    scrollbar-width: thin;
+  }
+
+  .scrollbar-thumb-gray-300::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  .scrollbar-thumb-gray-300::-webkit-scrollbar-track {
+    background: rgb(243 244 246);
+    border-radius: 4px;
+  }
+
+  .scrollbar-thumb-gray-300::-webkit-scrollbar-thumb {
+    background: rgb(209 213 219);
+    border-radius: 4px;
+  }
+
+  .scrollbar-thumb-gray-300::-webkit-scrollbar-thumb:hover {
+    background: rgb(156 163 175);
+  }
+
+  .scrollbar-thumb-primary\/30::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .scrollbar-thumb-primary\/30::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .scrollbar-thumb-primary\/30::-webkit-scrollbar-thumb {
+    background: hsl(var(--primary) / 0.3);
+    border-radius: 3px;
+  }
+
+  .scrollbar-thumb-primary\/30::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--primary) / 0.5);
+  }
+
+  /* Smooth scrolling enhancements */
+  .overflow-y-auto {
+    scroll-behavior: smooth;
+  }
+
+  /* Backdrop blur effects for modals */
+  .backdrop-blur-xl {
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+  }
+
+  .backdrop-blur-sm {
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+  }
 }

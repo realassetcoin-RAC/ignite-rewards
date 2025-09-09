@@ -66,6 +66,7 @@ const ApiHealthTab = () => {
   const [isRunning, setIsRunning] = useState(false);
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [lastRunAt, setLastRunAt] = useState<number | null>(null);
+  const [statusFilter, setStatusFilter] = useState<HealthStatus | 'all'>('all');
   const timerRef = useRef<number | null>(null);
 
   const checks: HealthCheck[] = useMemo(() => {
@@ -520,10 +521,6 @@ const ApiHealthTab = () => {
                 {lastRunAt ? new Date(lastRunAt).toLocaleTimeString() : "-"}
               </span>
             </div>
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-muted-foreground">Auto-refresh</span>
-              <Switch checked={autoRefresh} onCheckedChange={(v) => setAutoRefresh(Boolean(v))} />
-            </div>
             <Button onClick={runAllChecks} disabled={isRunning} variant="outline">
               <RefreshCw className={`h-4 w-4 ${isRunning ? "animate-spin" : ""}`} />
               Refresh
@@ -532,10 +529,31 @@ const ApiHealthTab = () => {
         </CardHeader>
         <CardContent>
           <div className="flex flex-wrap items-center gap-2">
-            <Badge variant="outline">Total: {summary.total}</Badge>
-            <Badge className="bg-green-500/10 text-green-600 border-green-500/30">OK: {summary.okCount}</Badge>
-            <Badge className="bg-yellow-500/10 text-yellow-700 border-yellow-500/30">Warnings: {summary.warnCount}</Badge>
-            <Badge className="bg-red-500/10 text-red-600 border-red-500/30">Errors: {summary.errorCount}</Badge>
+            <Badge 
+              variant="outline" 
+              className={`cursor-pointer transition-colors hover:bg-muted ${statusFilter === 'all' ? 'bg-muted' : ''}`}
+              onClick={() => setStatusFilter('all')}
+            >
+              All: {summary.total}
+            </Badge>
+            <Badge 
+              className={`bg-green-500/10 text-green-600 border-green-500/30 cursor-pointer transition-colors hover:bg-green-500/20 ${statusFilter === 'ok' ? 'bg-green-500/20' : ''}`}
+              onClick={() => setStatusFilter('ok')}
+            >
+              OK: {summary.okCount}
+            </Badge>
+            <Badge 
+              className={`bg-yellow-500/10 text-yellow-700 border-yellow-500/30 cursor-pointer transition-colors hover:bg-yellow-500/20 ${statusFilter === 'warn' ? 'bg-yellow-500/20' : ''}`}
+              onClick={() => setStatusFilter('warn')}
+            >
+              Warnings: {summary.warnCount}
+            </Badge>
+            <Badge 
+              className={`bg-red-500/10 text-red-600 border-red-500/30 cursor-pointer transition-colors hover:bg-red-500/20 ${statusFilter === 'error' ? 'bg-red-500/20' : ''}`}
+              onClick={() => setStatusFilter('error')}
+            >
+              Errors: {summary.errorCount}
+            </Badge>
           </div>
         </CardContent>
       </Card>
@@ -556,7 +574,11 @@ const ApiHealthTab = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {checks.map((c) => {
+              {checks.filter((c) => {
+                if (statusFilter === 'all') return true;
+                const r = results[c.id];
+                return r?.status === statusFilter;
+              }).map((c) => {
                 const r = results[c.id];
                 const status = r?.status;
                 return (
