@@ -67,10 +67,20 @@ const MerchantDashboard = () => {
   const [activeTab, setActiveTab] = useState('overview');
   const [isLoaded, setIsLoaded] = useState(false);
   
-  // Search filters
+  // Search filters with logical defaults
+  const getDefaultDateRange = () => {
+    const today = new Date();
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(today.getDate() - 30);
+    
+    return {
+      dateFrom: thirtyDaysAgo.toISOString().split('T')[0],
+      dateTo: today.toISOString().split('T')[0],
+    };
+  };
+
   const [searchFilters, setSearchFilters] = useState({
-    dateFrom: '',
-    dateTo: '',
+    ...getDefaultDateRange(),
     receiptNumber: '',
     amountMin: '',
     amountMax: ''
@@ -820,6 +830,44 @@ const MerchantDashboard = () => {
           </Card>
         </div>
 
+        {/* Quick Action Buttons */}
+        <Card className="card-gradient border-primary/20 backdrop-blur-md">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-primary" />
+              Quick Actions
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-wrap gap-3 w-full">
+              <Button 
+                onClick={() => setShowQrGenerator(true)}
+                size="default"
+                className="btn-gradient"
+              >
+                <QrCode className="w-4 h-4 mr-2" />
+                Generate QR Code
+              </Button>
+              {merchant && (
+                <MerchantRewardGenerator 
+                  merchantId={merchant.id} 
+                  onTransactionCreated={loadTransactions}
+                />
+              )}
+              <Button 
+                variant="outline" 
+                size="default"
+                onClick={handleRefresh}
+                disabled={loading}
+                className="bg-background/60 backdrop-blur-md border-primary/30 hover:bg-background/80"
+              >
+                <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+                Refresh Data
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Email Management and Points Tracking */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {merchant && (
@@ -963,10 +1011,26 @@ const MerchantDashboard = () => {
               <CardContent>
                 {/* Search Filters */}
                 <div className="mb-6 p-4 bg-background/30 rounded-lg border border-primary/10">
-                  <h4 className="text-sm font-medium mb-3 flex items-center gap-2">
-                    <Search className="w-4 h-4" />
-                    Search Transactions
-                  </h4>
+                  <div className="flex items-center justify-between mb-3">
+                    <h4 className="text-sm font-medium flex items-center gap-2">
+                      <Search className="w-4 h-4" />
+                      Search Transactions
+                    </h4>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setSearchFilters({
+                        ...getDefaultDateRange(),
+                        receiptNumber: '',
+                        amountMin: '',
+                        amountMax: ''
+                      })}
+                      className="text-xs"
+                    >
+                      <X className="w-3 h-3 mr-1" />
+                      Clear Filters
+                    </Button>
+                  </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3">
                     <div>
                       <label className="text-xs text-muted-foreground">Date From</label>

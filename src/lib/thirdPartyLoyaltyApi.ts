@@ -1,510 +1,293 @@
 import { supabase } from "@/integrations/supabase/client";
 
-export interface LoyaltyProvider {
-  id: string;
-  name: string;
-  display_name: string;
-  api_endpoint: string;
-  api_key_encrypted?: string;
-  conversion_rate: number;
-  min_conversion_amount: number;
-  max_conversion_amount: number;
-}
-
 export interface PointBalance {
   points: number;
   currency?: string;
-  lastUpdated: string;
-  status: 'active' | 'inactive' | 'suspended';
+  last_updated: string;
+  provider_name: string;
 }
 
 export interface ConversionResult {
+  originalPoints: number;
+  conversionRate: number;
+  receivedTokens: number;
+  transactionId: string;
+}
+
+export interface ApiResponse<T = any> {
   success: boolean;
-  transactionId?: string;
-  convertedPoints?: number;
-  receivedTokens?: number;
+  data?: T;
   error?: string;
+  balance?: PointBalance;
+  result?: ConversionResult;
 }
 
-export interface LoyaltyAccountInfo {
-  accountId: string;
-  mobileNumber: string;
-  pointsBalance: number;
-  status: string;
-  memberSince?: string;
-  tier?: string;
-}
+// Mock point balances for different loyalty programs
+const mockBalances: Record<string, PointBalance> = {
+  'starbucks': {
+    points: 1250,
+    currency: 'stars',
+    last_updated: new Date().toISOString(),
+    provider_name: 'Starbucks Rewards'
+  },
+  'marriott': {
+    points: 45000,
+    currency: 'points',
+    last_updated: new Date().toISOString(),
+    provider_name: 'Marriott Bonvoy'
+  },
+  'american_airlines': {
+    points: 15600,
+    currency: 'miles',
+    last_updated: new Date().toISOString(),
+    provider_name: 'American Airlines AAdvantage'
+  },
+  'hilton': {
+    points: 78200,
+    currency: 'points',
+    last_updated: new Date().toISOString(),
+    provider_name: 'Hilton Honors'
+  },
+  'delta': {
+    points: 23400,
+    currency: 'miles',
+    last_updated: new Date().toISOString(),
+    provider_name: 'Delta SkyMiles'
+  }
+};
 
 /**
- * Base class for third-party loyalty API integrations
+ * Check point balance for a linked loyalty account
+ * In production, this would call the third-party API
  */
-abstract class LoyaltyProviderAPI {
-  protected provider: LoyaltyProvider;
-  protected apiKey: string;
-
-  constructor(provider: LoyaltyProvider, apiKey: string) {
-    this.provider = provider;
-    this.apiKey = apiKey;
-  }
-
-  abstract getPointBalance(mobileNumber: string): Promise<PointBalance>;
-  abstract convertPoints(mobileNumber: string, points: number): Promise<ConversionResult>;
-  abstract validateAccount(mobileNumber: string): Promise<boolean>;
-}
-
-/**
- * Starbucks Rewards API Integration
- */
-class StarbucksAPI extends LoyaltyProviderAPI {
-  async getPointBalance(mobileNumber: string): Promise<PointBalance> {
-    try {
-      // Simulate API call to Starbucks
-      const response = await this.makeAPICall('/balance', {
-        method: 'POST',
-        body: JSON.stringify({ mobileNumber })
-      });
-
-      return {
-        points: response.stars || 0,
-        currency: 'stars',
-        lastUpdated: new Date().toISOString(),
-        status: response.status || 'active'
-      };
-    } catch (error) {
-      console.error('Starbucks API error:', error);
-      throw new Error('Failed to fetch Starbucks balance');
-    }
-  }
-
-  async convertPoints(mobileNumber: string, points: number): Promise<ConversionResult> {
-    try {
-      const response = await this.makeAPICall('/convert', {
-        method: 'POST',
-        body: JSON.stringify({ mobileNumber, points })
-      });
-
-      return {
-        success: true,
-        transactionId: response.transactionId,
-        convertedPoints: points,
-        receivedTokens: Math.floor(points * this.provider.conversion_rate)
-      };
-    } catch (error) {
-      console.error('Starbucks conversion error:', error);
-      return {
-        success: false,
-        error: 'Failed to convert Starbucks points'
-      };
-    }
-  }
-
-  async validateAccount(mobileNumber: string): Promise<boolean> {
-    try {
-      const response = await this.makeAPICall('/validate', {
-        method: 'POST',
-        body: JSON.stringify({ mobileNumber })
-      });
-      return response.valid === true;
-    } catch (error) {
-      console.error('Starbucks validation error:', error);
-      return false;
-    }
-  }
-
-  private async makeAPICall(endpoint: string, options: RequestInit): Promise<any> {
-    // In a real implementation, this would make actual API calls
-    // For now, we'll simulate responses
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        // Simulate different responses based on endpoint
-        if (endpoint === '/balance') {
-          resolve({
-            stars: Math.floor(Math.random() * 1000) + 100,
-            status: 'active'
-          });
-        } else if (endpoint === '/convert') {
-          resolve({
-            transactionId: `SB_${Date.now()}`,
-            success: true
-          });
-        } else if (endpoint === '/validate') {
-          resolve({
-            valid: true,
-            accountId: `SB_${mobileNumber.replace(/\D/g, '')}`
-          });
-        }
-      }, 1000);
-    });
-  }
-}
-
-/**
- * McDonald's API Integration
- */
-class McDonaldsAPI extends LoyaltyProviderAPI {
-  async getPointBalance(mobileNumber: string): Promise<PointBalance> {
-    try {
-      const response = await this.makeAPICall('/points', {
-        method: 'GET',
-        headers: { 'X-Mobile': mobileNumber }
-      });
-
-      return {
-        points: response.points || 0,
-        currency: 'points',
-        lastUpdated: new Date().toISOString(),
-        status: response.status || 'active'
-      };
-    } catch (error) {
-      console.error('McDonald\'s API error:', error);
-      throw new Error('Failed to fetch McDonald\'s balance');
-    }
-  }
-
-  async convertPoints(mobileNumber: string, points: number): Promise<ConversionResult> {
-    try {
-      const response = await this.makeAPICall('/redeem', {
-        method: 'POST',
-        body: JSON.stringify({ mobileNumber, points })
-      });
-
-      return {
-        success: true,
-        transactionId: response.transactionId,
-        convertedPoints: points,
-        receivedTokens: Math.floor(points * this.provider.conversion_rate)
-      };
-    } catch (error) {
-      console.error('McDonald\'s conversion error:', error);
-      return {
-        success: false,
-        error: 'Failed to convert McDonald\'s points'
-      };
-    }
-  }
-
-  async validateAccount(mobileNumber: string): Promise<boolean> {
-    try {
-      const response = await this.makeAPICall('/account/validate', {
-        method: 'POST',
-        body: JSON.stringify({ mobileNumber })
-      });
-      return response.valid === true;
-    } catch (error) {
-      console.error('McDonald\'s validation error:', error);
-      return false;
-    }
-  }
-
-  private async makeAPICall(endpoint: string, options: RequestInit): Promise<any> {
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        if (endpoint === '/points') {
-          resolve({
-            points: Math.floor(Math.random() * 500) + 50,
-            status: 'active'
-          });
-        } else if (endpoint === '/redeem') {
-          resolve({
-            transactionId: `MCD_${Date.now()}`,
-            success: true
-          });
-        } else if (endpoint === '/account/validate') {
-          resolve({
-            valid: true,
-            accountId: `MCD_${mobileNumber.replace(/\D/g, '')}`
-          });
-        }
-      }, 1200);
-    });
-  }
-}
-
-/**
- * Generic API Integration for other providers
- */
-class GenericLoyaltyAPI extends LoyaltyProviderAPI {
-  async getPointBalance(mobileNumber: string): Promise<PointBalance> {
-    try {
-      const response = await this.makeAPICall('/api/balance', {
-        method: 'POST',
-        body: JSON.stringify({ mobileNumber })
-      });
-
-      return {
-        points: response.balance || 0,
-        currency: response.currency || 'points',
-        lastUpdated: new Date().toISOString(),
-        status: response.status || 'active'
-      };
-    } catch (error) {
-      console.error('Generic API error:', error);
-      throw new Error('Failed to fetch point balance');
-    }
-  }
-
-  async convertPoints(mobileNumber: string, points: number): Promise<ConversionResult> {
-    try {
-      const response = await this.makeAPICall('/api/convert', {
-        method: 'POST',
-        body: JSON.stringify({ mobileNumber, points })
-      });
-
-      return {
-        success: true,
-        transactionId: response.transactionId,
-        convertedPoints: points,
-        receivedTokens: Math.floor(points * this.provider.conversion_rate)
-      };
-    } catch (error) {
-      console.error('Generic conversion error:', error);
-      return {
-        success: false,
-        error: 'Failed to convert points'
-      };
-    }
-  }
-
-  async validateAccount(mobileNumber: string): Promise<boolean> {
-    try {
-      const response = await this.makeAPICall('/api/validate', {
-        method: 'POST',
-        body: JSON.stringify({ mobileNumber })
-      });
-      return response.valid === true;
-    } catch (error) {
-      console.error('Generic validation error:', error);
-      return false;
-    }
-  }
-
-  private async makeAPICall(endpoint: string, options: RequestInit): Promise<any> {
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        if (endpoint === '/api/balance') {
-          resolve({
-            balance: Math.floor(Math.random() * 2000) + 200,
-            currency: 'points',
-            status: 'active'
-          });
-        } else if (endpoint === '/api/convert') {
-          resolve({
-            transactionId: `GEN_${Date.now()}`,
-            success: true
-          });
-        } else if (endpoint === '/api/validate') {
-          resolve({
-            valid: true,
-            accountId: `GEN_${mobileNumber.replace(/\D/g, '')}`
-          });
-        }
-      }, 1500);
-    });
-  }
-}
-
-/**
- * Factory function to create appropriate API instance
- */
-export function createLoyaltyAPI(provider: LoyaltyProvider, apiKey: string): LoyaltyProviderAPI {
-  switch (provider.name.toLowerCase()) {
-    case 'starbucks':
-      return new StarbucksAPI(provider, apiKey);
-    case 'mcdonalds':
-      return new McDonaldsAPI(provider, apiKey);
-    default:
-      return new GenericLoyaltyAPI(provider, apiKey);
-  }
-}
-
-/**
- * Get loyalty provider configuration from database
- */
-export async function getLoyaltyProvider(networkId: string): Promise<{
-  success: boolean;
-  provider?: LoyaltyProvider;
-  error?: string;
-}> {
-  try {
-    const { data, error } = await supabase
-      .from('loyalty_networks')
-      .select('*')
-      .eq('id', networkId)
-      .eq('is_active', true)
-      .single();
-
-    if (error || !data) {
-      return { success: false, error: 'Loyalty network not found' };
-    }
-
-    const provider: LoyaltyProvider = {
-      id: data.id,
-      name: data.name,
-      display_name: data.display_name,
-      api_endpoint: data.api_endpoint || '',
-      api_key_encrypted: data.api_key_encrypted,
-      conversion_rate: data.conversion_rate,
-      min_conversion_amount: data.min_conversion_amount,
-      max_conversion_amount: data.max_conversion_amount
-    };
-
-    return { success: true, provider };
-  } catch (error) {
-    console.error('Error getting loyalty provider:', error);
-    return { success: false, error: 'Failed to get loyalty provider' };
-  }
-}
-
-/**
- * Check point balance for a user's loyalty account
- */
-export async function checkPointBalance(
+export const checkPointBalance = async (
   userId: string,
   networkId: string,
   mobileNumber: string
-): Promise<{
-  success: boolean;
-  balance?: PointBalance;
-  error?: string;
-}> {
+): Promise<ApiResponse<PointBalance>> => {
   try {
-    // Get provider configuration
-    const providerResult = await getLoyaltyProvider(networkId);
-    if (!providerResult.success || !providerResult.provider) {
-      return { success: false, error: providerResult.error };
+    console.log(`Checking balance for ${networkId} - ${mobileNumber}`);
+    
+    // Simulate API call delay
+    await new Promise(resolve => setTimeout(resolve, 1500));
+    
+    // Get mock balance
+    const balance = mockBalances[networkId];
+    
+    if (!balance) {
+      return {
+        success: false,
+        error: `No balance data available for ${networkId}`
+      };
     }
-
-    // Create API instance (in real implementation, decrypt API key)
-    const apiKey = providerResult.provider.api_key_encrypted || 'demo-key';
-    const api = createLoyaltyAPI(providerResult.provider, apiKey);
-
-    // Get point balance
-    const balance = await api.getPointBalance(mobileNumber);
-
-    // Store balance snapshot
-    await supabase
-      .from('loyalty_point_balances')
-      .insert({
-        user_loyalty_link_id: userId, // This should be the link ID, not user ID
-        points_balance: balance.points,
-        last_checked: balance.lastUpdated
-      });
-
-    return { success: true, balance };
+    
+    // Add some randomness to simulate real data
+    const randomVariation = Math.floor(Math.random() * 200) - 100; // ±100 points variation
+    const adjustedBalance = {
+      ...balance,
+      points: Math.max(0, balance.points + randomVariation),
+      last_updated: new Date().toISOString()
+    };
+    
+    return {
+      success: true,
+      balance: adjustedBalance
+    };
   } catch (error) {
     console.error('Error checking point balance:', error);
-    return { success: false, error: 'Failed to check point balance' };
+    return {
+      success: false,
+      error: 'Failed to check point balance'
+    };
   }
-}
+};
 
 /**
- * Convert points to platform tokens
+ * Convert loyalty points to platform tokens
+ * In production, this would call third-party API to deduct points and credit tokens
  */
-export async function convertPointsToTokens(
+export const convertPointsToTokens = async (
   userId: string,
   networkId: string,
   mobileNumber: string,
-  points: number
-): Promise<{
-  success: boolean;
-  result?: ConversionResult;
-  error?: string;
-}> {
+  pointsToConvert: number
+): Promise<ApiResponse<ConversionResult>> => {
   try {
-    // Get provider configuration
-    const providerResult = await getLoyaltyProvider(networkId);
-    if (!providerResult.success || !providerResult.provider) {
-      return { success: false, error: providerResult.error };
-    }
-
-    const provider = providerResult.provider;
-
-    // Validate conversion amount
-    if (points < provider.min_conversion_amount) {
-      return { 
-        success: false, 
-        error: `Minimum conversion amount is ${provider.min_conversion_amount} points` 
+    console.log(`Converting ${pointsToConvert} points from ${networkId} for user ${userId}`);
+    
+    // Get current balance
+    const balanceResult = await checkPointBalance(userId, networkId, mobileNumber);
+    if (!balanceResult.success || !balanceResult.balance) {
+      return {
+        success: false,
+        error: 'Unable to verify point balance'
       };
     }
-
-    if (points > provider.max_conversion_amount) {
-      return { 
-        success: false, 
-        error: `Maximum conversion amount is ${provider.max_conversion_amount} points` 
+    
+    const currentBalance = balanceResult.balance;
+    if (currentBalance.points < pointsToConvert) {
+      return {
+        success: false,
+        error: 'Insufficient point balance'
       };
     }
-
-    // Create API instance
-    const apiKey = provider.api_key_encrypted || 'demo-key';
-    const api = createLoyaltyAPI(provider, apiKey);
-
-    // Convert points
-    const result = await api.convertPoints(mobileNumber, points);
-
-    if (result.success) {
-      // Record conversion transaction
-      const { error: insertError } = await supabase
-        .from('loyalty_point_conversions')
-        .insert({
-          user_id: userId,
-          loyalty_network_id: networkId,
-          user_loyalty_link_id: userId, // This should be the link ID
-          third_party_points: points,
-          converted_tokens: result.receivedTokens || 0,
-          conversion_rate: provider.conversion_rate,
-          transaction_id: result.transactionId,
-          status: 'completed',
-          completed_at: new Date().toISOString()
-        });
-
-      if (insertError) {
-        console.error('Error recording conversion:', insertError);
-        // Don't fail the conversion, just log the error
-      }
+    
+    // Get conversion rate (mock data - in production, get from database)
+    const conversionRates: Record<string, number> = {
+      'starbucks': 0.05,
+      'marriott': 0.008,
+      'american_airlines': 0.015,
+      'hilton': 0.006,
+      'delta': 0.012
+    };
+    
+    const conversionRate = conversionRates[networkId] || 0.01;
+    const receivedTokens = Math.floor(pointsToConvert * conversionRate);
+    
+    // Simulate API call delay for both deduction and token credit
+    await new Promise(resolve => setTimeout(resolve, 3000));
+    
+    // TODO: In production:
+    // 1. Call third-party API to deduct points
+    // 2. Credit PointBridge tokens to user's account
+    // 3. Record transaction in database
+    
+    // Update mock balance
+    if (mockBalances[networkId]) {
+      mockBalances[networkId].points -= pointsToConvert;
+      mockBalances[networkId].last_updated = new Date().toISOString();
     }
-
-    return { success: result.success, result, error: result.error };
-  } catch (error) {
-    console.error('Error converting points:', error);
-    return { success: false, error: 'Failed to convert points' };
-  }
-}
-
-/**
- * Validate loyalty account
- */
-export async function validateLoyaltyAccount(
-  networkId: string,
-  mobileNumber: string
-): Promise<{
-  success: boolean;
-  valid?: boolean;
-  accountInfo?: LoyaltyAccountInfo;
-  error?: string;
-}> {
-  try {
-    const providerResult = await getLoyaltyProvider(networkId);
-    if (!providerResult.success || !providerResult.provider) {
-      return { success: false, error: providerResult.error };
-    }
-
-    const apiKey = providerResult.provider.api_key_encrypted || 'demo-key';
-    const api = createLoyaltyAPI(providerResult.provider, apiKey);
-
-    const isValid = await api.validateAccount(mobileNumber);
-
-    return { 
-      success: true, 
-      valid: isValid,
-      accountInfo: isValid ? {
-        accountId: `${providerResult.provider.name}_${mobileNumber.replace(/\D/g, '')}`,
-        mobileNumber,
-        pointsBalance: 0, // Will be fetched separately
-        status: 'active'
-      } : undefined
+    
+    const conversionResult: ConversionResult = {
+      originalPoints: pointsToConvert,
+      conversionRate,
+      receivedTokens,
+      transactionId: `conv_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+    };
+    
+    // TODO: Record conversion in database
+    // const { error } = await supabase
+    //   .from('loyalty_point_conversions')
+    //   .insert([{
+    //     user_id: userId,
+    //     network_id: networkId,
+    //     mobile_number: mobileNumber,
+    //     third_party_points: pointsToConvert,
+    //     converted_tokens: receivedTokens,
+    //     conversion_rate: conversionRate,
+    //     transaction_id: conversionResult.transactionId,
+    //     status: 'completed'
+    //   }]);
+    
+    return {
+      success: true,
+      result: conversionResult
     };
   } catch (error) {
-    console.error('Error validating loyalty account:', error);
-    return { success: false, error: 'Failed to validate account' };
+    console.error('Error converting points to tokens:', error);
+    return {
+      success: false,
+      error: 'Failed to convert points'
+    };
   }
-}
+};
+
+/**
+ * Get available conversion options for a user
+ */
+export const getConversionOptions = async (
+  userId: string
+): Promise<ApiResponse<any[]>> => {
+  try {
+    // TODO: Get user's linked accounts and their current balances
+    // For now, return mock conversion opportunities
+    
+    const opportunities = [
+      {
+        networkId: 'starbucks',
+        networkName: 'Starbucks Rewards',
+        availablePoints: 1250,
+        minConversion: 25,
+        maxConversion: 2000,
+        conversionRate: 0.05,
+        estimatedTokens: 62
+      },
+      {
+        networkId: 'marriott',
+        networkName: 'Marriott Bonvoy', 
+        availablePoints: 45000,
+        minConversion: 1000,
+        maxConversion: 100000,
+        conversionRate: 0.008,
+        estimatedTokens: 360
+      }
+    ];
+    
+    return {
+      success: true,
+      data: opportunities
+    };
+  } catch (error) {
+    console.error('Error getting conversion options:', error);
+    return {
+      success: false,
+      error: 'Failed to get conversion options'
+    };
+  }
+};
+
+/**
+ * Validate mobile number format for different countries
+ */
+export const validateMobileNumber = (phoneNumber: string, countryCode: string = 'US'): boolean => {
+  // Remove all non-digit characters
+  const digitsOnly = phoneNumber.replace(/\D/g, '');
+  
+  switch (countryCode.toLowerCase()) {
+    case 'us':
+    case 'ca':
+      // US/Canada: 10 digits (with or without country code)
+      return digitsOnly.length === 10 || (digitsOnly.length === 11 && digitsOnly.startsWith('1'));
+    case 'uk':
+      // UK: 10-11 digits
+      return digitsOnly.length >= 10 && digitsOnly.length <= 11;
+    case 'au':
+      // Australia: 9 digits (mobile) + country code
+      return digitsOnly.length === 9 || (digitsOnly.length === 11 && digitsOnly.startsWith('61'));
+    default:
+      // Generic: 7-15 digits
+      return digitsOnly.length >= 7 && digitsOnly.length <= 15;
+  }
+};
+
+/**
+ * Format mobile number for display
+ */
+export const formatMobileNumber = (phoneNumber: string, countryCode: string = 'US'): string => {
+  const digitsOnly = phoneNumber.replace(/\D/g, '');
+  
+  switch (countryCode.toLowerCase()) {
+    case 'us':
+    case 'ca':
+      if (digitsOnly.length === 10) {
+        return `+1 (${digitsOnly.slice(0, 3)}) ${digitsOnly.slice(3, 6)}-${digitsOnly.slice(6)}`;
+      }
+      if (digitsOnly.length === 11 && digitsOnly.startsWith('1')) {
+        const number = digitsOnly.slice(1);
+        return `+1 (${number.slice(0, 3)}) ${number.slice(3, 6)}-${number.slice(6)}`;
+      }
+      break;
+    case 'uk':
+      if (digitsOnly.length === 11 && digitsOnly.startsWith('44')) {
+        const number = digitsOnly.slice(2);
+        return `+44 ${number.slice(0, 4)} ${number.slice(4, 7)} ${number.slice(7)}`;
+      }
+      if (digitsOnly.length === 10) {
+        return `+44 ${digitsOnly.slice(0, 4)} ${digitsOnly.slice(4, 7)} ${digitsOnly.slice(7)}`;
+      }
+      break;
+  }
+  
+  // Fallback: just add country code
+  return phoneNumber;
+};

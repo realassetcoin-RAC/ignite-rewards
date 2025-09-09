@@ -1,292 +1,424 @@
 import { supabase } from "@/integrations/supabase/client";
 
-export interface OTPSession {
-  id: string;
-  user_id: string;
-  loyalty_network_id: string;
-  mobile_number: string;
-  otp_code: string;
-  expires_at: string;
-  is_used: boolean;
-  created_at: string;
-}
-
 export interface LoyaltyNetwork {
   id: string;
-  name: string;
+  network_name: string;
   display_name: string;
-  requires_mobile_verification: boolean;
+  description?: string;
+  logo_url?: string;
+  conversion_rate: number;
+  minimum_conversion: number;
+  maximum_conversion: number;
   is_active: boolean;
+  requires_mobile_verification: boolean;
+  supported_countries: string[];
+  api_endpoint?: string;
+  created_at: string;
+  updated_at: string;
 }
 
+export interface LoyaltyLink {
+  id: string;
+  user_id: string;
+  network_id: string;
+  mobile_number: string;
+  is_verified: boolean;
+  linked_at: string;
+  last_conversion?: string;
+  total_converted: number;
+}
+
+export interface OTPVerificationResult {
+  success: boolean;
+  error?: string;
+  linkId?: string;
+}
+
+export interface LoyaltyApiResponse<T = any> {
+  success: boolean;
+  data?: T;
+  error?: string;
+  message?: string;
+}
+
+// Mock data for loyalty networks (replace with actual database calls)
+const mockLoyaltyNetworks: LoyaltyNetwork[] = [
+  {
+    id: "starbucks",
+    network_name: "starbucks_rewards",
+    display_name: "Starbucks Rewards",
+    description: "Convert your Starbucks Stars to PointBridge tokens",
+    logo_url: "https://images.unsplash.com/photo-1561336313-0bd5e0b27ec8?w=100",
+    conversion_rate: 0.05,
+    minimum_conversion: 25,
+    maximum_conversion: 2000,
+    is_active: true,
+    requires_mobile_verification: true,
+    supported_countries: ["US", "CA", "UK"],
+    api_endpoint: "https://api.starbucks.com/loyalty",
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  },
+  {
+    id: "marriott",
+    network_name: "marriott_bonvoy",
+    display_name: "Marriott Bonvoy",
+    description: "Convert your Marriott Bonvoy points to PointBridge tokens",
+    logo_url: "https://images.unsplash.com/photo-1566073771259-6a8506099945?w=100",
+    conversion_rate: 0.008,
+    minimum_conversion: 1000,
+    maximum_conversion: 100000,
+    is_active: true,
+    requires_mobile_verification: true,
+    supported_countries: ["US", "CA", "UK", "AU", "DE", "FR"],
+    api_endpoint: "https://api.marriott.com/loyalty",
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  },
+  {
+    id: "american_airlines",
+    network_name: "aadvantage",
+    display_name: "American Airlines AAdvantage",
+    description: "Convert your AAdvantage miles to PointBridge tokens",
+    logo_url: "https://images.unsplash.com/photo-1556388158-158ea5ccacbd?w=100",
+    conversion_rate: 0.015,
+    minimum_conversion: 500,
+    maximum_conversion: 50000,
+    is_active: true,
+    requires_mobile_verification: true,
+    supported_countries: ["US", "CA", "MX"],
+    api_endpoint: "https://api.aa.com/loyalty",
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  },
+  {
+    id: "hilton",
+    network_name: "hilton_honors",
+    display_name: "Hilton Honors",
+    description: "Convert your Hilton Honors points to PointBridge tokens",
+    logo_url: "https://images.unsplash.com/photo-1551882547-ff40c63fe5fa?w=100",
+    conversion_rate: 0.006,
+    minimum_conversion: 1000,
+    maximum_conversion: 150000,
+    is_active: true,
+    requires_mobile_verification: true,
+    supported_countries: ["US", "CA", "UK", "AU", "JP", "DE", "FR"],
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  },
+  {
+    id: "delta",
+    network_name: "delta_skymiles",
+    display_name: "Delta SkyMiles",
+    description: "Convert your Delta SkyMiles to PointBridge tokens",
+    logo_url: "https://images.unsplash.com/photo-1540962351504-03099e0a754b?w=100",
+    conversion_rate: 0.012,
+    minimum_conversion: 500,
+    maximum_conversion: 75000,
+    is_active: true,
+    requires_mobile_verification: true,
+    supported_countries: ["US", "CA", "UK", "MX"],
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  }
+];
+
+// Mock storage for user links and OTP codes (in production, use database)
+const mockUserLinks: { [userId: string]: LoyaltyLink[] } = {};
+const mockOTPCodes: { [key: string]: { code: string; expires: number; attempts: number } } = {};
+
 /**
- * Generate and send OTP for loyalty account verification
+ * Get available loyalty networks for users to link
  */
-export async function generateLoyaltyOTP(
-  userId: string,
-  loyaltyNetworkId: string,
-  mobileNumber: string
-): Promise<{ success: boolean; error?: string; sessionId?: string }> {
+export const getAvailableLoyaltyNetworks = async (): Promise<LoyaltyApiResponse<LoyaltyNetwork[]>> => {
   try {
-    // Validate mobile number format
-    const cleanMobile = mobileNumber.replace(/\D/g, '');
-    if (cleanMobile.length < 10) {
-      return { success: false, error: 'Invalid mobile number format' };
-    }
+    // TODO: Replace with actual database call
+    // const { data, error } = await supabase
+    //   .from('loyalty_networks')
+    //   .select('*')
+    //   .eq('is_active', true)
+    //   .order('display_name');
 
-    // Check if loyalty network exists and is active
-    const { data: network, error: networkError } = await supabase
-      .from('loyalty_networks')
-      .select('id, name, display_name, requires_mobile_verification, is_active')
-      .eq('id', loyaltyNetworkId)
-      .eq('is_active', true)
-      .single();
-
-    if (networkError || !network) {
-      return { success: false, error: 'Loyalty network not found or inactive' };
-    }
-
-    if (!network.requires_mobile_verification) {
-      return { success: false, error: 'This loyalty network does not require mobile verification' };
-    }
-
-    // Check for existing unexpired OTP sessions
-    const { data: existingSessions, error: sessionError } = await supabase
-      .from('loyalty_otp_sessions')
-      .select('id')
-      .eq('user_id', userId)
-      .eq('loyalty_network_id', loyaltyNetworkId)
-      .eq('mobile_number', cleanMobile)
-      .eq('is_used', false)
-      .gt('expires_at', new Date().toISOString());
-
-    if (sessionError) {
-      console.error('Error checking existing OTP sessions:', sessionError);
-    }
-
-    if (existingSessions && existingSessions.length > 0) {
-      return { success: false, error: 'OTP already sent. Please wait before requesting another.' };
-    }
-
-    // Generate OTP code
-    const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
-    const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes from now
-
-    // Create OTP session
-    const { data: session, error: insertError } = await supabase
-      .from('loyalty_otp_sessions')
-      .insert({
-        user_id: userId,
-        loyalty_network_id: loyaltyNetworkId,
-        mobile_number: cleanMobile,
-        otp_code: otpCode,
-        expires_at: expiresAt.toISOString()
-      })
-      .select()
-      .single();
-
-    if (insertError) {
-      console.error('Error creating OTP session:', insertError);
-      return { success: false, error: 'Failed to create OTP session' };
-    }
-
-    // In a real implementation, you would send the OTP via SMS
-    // For now, we'll log it to console for development
-    console.log(`OTP for ${network.display_name} (${cleanMobile}): ${otpCode}`);
+    // For now, return mock data
+    await new Promise(resolve => setTimeout(resolve, 300));
     
-    // TODO: Integrate with SMS service (Twilio, AWS SNS, etc.)
-    // await sendSMS(cleanMobile, `Your ${network.display_name} verification code is: ${otpCode}`);
-
-    return { success: true, sessionId: session.id };
+    return {
+      success: true,
+      data: mockLoyaltyNetworks.filter(network => network.is_active)
+    };
   } catch (error) {
-    console.error('Error generating loyalty OTP:', error);
-    return { success: false, error: 'Failed to generate OTP' };
+    console.error('Error loading loyalty networks:', error);
+    return {
+      success: false,
+      error: 'Failed to load loyalty networks'
+    };
   }
-}
-
-/**
- * Verify OTP code for loyalty account linking
- */
-export async function verifyLoyaltyOTP(
-  userId: string,
-  loyaltyNetworkId: string,
-  mobileNumber: string,
-  otpCode: string
-): Promise<{ success: boolean; error?: string; sessionId?: string }> {
-  try {
-    const cleanMobile = mobileNumber.replace(/\D/g, '');
-    const cleanOtp = otpCode.replace(/\D/g, '');
-
-    if (cleanOtp.length !== 6) {
-      return { success: false, error: 'OTP code must be 6 digits' };
-    }
-
-    // Find valid OTP session
-    const { data: session, error: sessionError } = await supabase
-      .from('loyalty_otp_sessions')
-      .select('*')
-      .eq('user_id', userId)
-      .eq('loyalty_network_id', loyaltyNetworkId)
-      .eq('mobile_number', cleanMobile)
-      .eq('otp_code', cleanOtp)
-      .eq('is_used', false)
-      .gt('expires_at', new Date().toISOString())
-      .single();
-
-    if (sessionError || !session) {
-      return { success: false, error: 'Invalid or expired OTP code' };
-    }
-
-    // Mark OTP as used
-    const { error: updateError } = await supabase
-      .from('loyalty_otp_sessions')
-      .update({ is_used: true })
-      .eq('id', session.id);
-
-    if (updateError) {
-      console.error('Error marking OTP as used:', updateError);
-      return { success: false, error: 'Failed to verify OTP' };
-    }
-
-    // Create or update user loyalty link
-    const { data: link, error: linkError } = await supabase
-      .from('user_loyalty_links')
-      .upsert({
-        user_id: userId,
-        loyalty_network_id: loyaltyNetworkId,
-        mobile_number: cleanMobile,
-        is_verified: true,
-        linked_at: new Date().toISOString()
-      }, {
-        onConflict: 'user_id,loyalty_network_id'
-      })
-      .select()
-      .single();
-
-    if (linkError) {
-      console.error('Error creating loyalty link:', linkError);
-      return { success: false, error: 'Failed to create loyalty link' };
-    }
-
-    return { success: true, sessionId: session.id };
-  } catch (error) {
-    console.error('Error verifying loyalty OTP:', error);
-    return { success: false, error: 'Failed to verify OTP' };
-  }
-}
+};
 
 /**
  * Get user's linked loyalty accounts
  */
-export async function getUserLoyaltyLinks(userId: string): Promise<{
-  success: boolean;
-  data?: any[];
-  error?: string;
-}> {
+export const getUserLoyaltyLinks = async (userId: string): Promise<LoyaltyApiResponse<any[]>> => {
   try {
-    const { data, error } = await supabase
-      .from('user_loyalty_links')
-      .select(`
-        *,
-        loyalty_networks (
-          id,
-          name,
-          display_name,
-          logo_url,
-          conversion_rate,
-          min_conversion_amount,
-          max_conversion_amount
-        )
-      `)
-      .eq('user_id', userId)
-      .eq('is_verified', true);
+    // TODO: Replace with actual database call
+    // const { data, error } = await supabase
+    //   .from('user_loyalty_links')
+    //   .select(`
+    //     *,
+    //     loyalty_networks (*)
+    //   `)
+    //   .eq('user_id', userId)
+    //   .eq('is_verified', true);
 
-    if (error) {
-      console.error('Error fetching user loyalty links:', error);
-      return { success: false, error: 'Failed to fetch loyalty links' };
-    }
-
-    return { success: true, data: data || [] };
+    // For now, return mock data
+    await new Promise(resolve => setTimeout(resolve, 200));
+    
+    const userLinks = mockUserLinks[userId] || [];
+    const linkedWithNetworks = userLinks.map(link => ({
+      ...link,
+      loyalty_networks: mockLoyaltyNetworks.find(network => network.id === link.network_id)
+    }));
+    
+    return {
+      success: true,
+      data: linkedWithNetworks
+    };
   } catch (error) {
-    console.error('Error getting user loyalty links:', error);
-    return { success: false, error: 'Failed to get loyalty links' };
+    console.error('Error loading user loyalty links:', error);
+    return {
+      success: false,
+      error: 'Failed to load linked accounts'
+    };
   }
-}
+};
 
 /**
- * Get available loyalty networks for linking
+ * Check if user already has a link for a specific network
  */
-export async function getAvailableLoyaltyNetworks(): Promise<{
-  success: boolean;
-  data?: LoyaltyNetwork[];
-  error?: string;
-}> {
+export const checkExistingLoyaltyLink = async (
+  userId: string, 
+  networkId: string
+): Promise<LoyaltyApiResponse<boolean>> => {
   try {
-    const { data, error } = await supabase
-      .from('loyalty_networks')
-      .select('id, name, display_name, requires_mobile_verification, is_active, logo_url')
-      .eq('is_active', true)
-      .order('display_name');
+    // TODO: Replace with actual database call
+    // const { data, error } = await supabase
+    //   .from('user_loyalty_links')
+    //   .select('id')
+    //   .eq('user_id', userId)
+    //   .eq('network_id', networkId)
+    //   .single();
 
-    if (error) {
-      console.error('Error fetching loyalty networks:', error);
-      return { success: false, error: 'Failed to fetch loyalty networks' };
-    }
-
-    return { success: true, data: data || [] };
+    // For now, check mock data
+    const userLinks = mockUserLinks[userId] || [];
+    const exists = userLinks.some(link => link.network_id === networkId);
+    
+    return {
+      success: true,
+      data: exists,
+      exists
+    };
   } catch (error) {
-    console.error('Error getting loyalty networks:', error);
-    return { success: false, error: 'Failed to get loyalty networks' };
+    console.error('Error checking existing loyalty link:', error);
+    return {
+      success: false,
+      error: 'Failed to check existing link'
+    };
   }
-}
+};
 
 /**
- * Clean up expired OTP sessions
+ * Generate OTP for mobile verification
  */
-export async function cleanupExpiredOTPSessions(): Promise<{
-  success: boolean;
-  deletedCount?: number;
-  error?: string;
-}> {
+export const generateLoyaltyOTP = async (
+  userId: string, 
+  networkId: string, 
+  mobileNumber: string
+): Promise<LoyaltyApiResponse> => {
   try {
-    const { data, error } = await supabase.rpc('cleanup_expired_otp_sessions');
-
-    if (error) {
-      console.error('Error cleaning up expired OTP sessions:', error);
-      return { success: false, error: 'Failed to cleanup expired sessions' };
-    }
-
-    return { success: true, deletedCount: data || 0 };
+    // Generate 6-digit OTP
+    const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+    const expires = Date.now() + (10 * 60 * 1000); // 10 minutes
+    const otpKey = `${userId}-${networkId}-${mobileNumber}`;
+    
+    // Store OTP (in production, use database and send SMS)
+    mockOTPCodes[otpKey] = {
+      code: otpCode,
+      expires,
+      attempts: 0
+    };
+    
+    // TODO: Send actual SMS using Twilio or similar service
+    console.log(`🔐 Generated OTP for ${mobileNumber}: ${otpCode} (expires in 10 minutes)`);
+    
+    // Simulate SMS sending delay
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    return {
+      success: true,
+      message: 'OTP sent successfully'
+    };
   } catch (error) {
-    console.error('Error cleaning up OTP sessions:', error);
-    return { success: false, error: 'Failed to cleanup OTP sessions' };
+    console.error('Error generating OTP:', error);
+    return {
+      success: false,
+      error: 'Failed to generate OTP'
+    };
   }
-}
+};
 
 /**
- * Check if user already has a loyalty link for a specific network
+ * Verify OTP and create loyalty link
  */
-export async function checkExistingLoyaltyLink(
+export const verifyLoyaltyOTP = async (
   userId: string,
-  loyaltyNetworkId: string
-): Promise<{ success: boolean; exists?: boolean; error?: string }> {
+  networkId: string, 
+  mobileNumber: string,
+  otpCode: string
+): Promise<OTPVerificationResult> => {
   try {
-    const { data, error } = await supabase
-      .from('user_loyalty_links')
-      .select('id')
-      .eq('user_id', userId)
-      .eq('loyalty_network_id', loyaltyNetworkId)
-      .eq('is_verified', true)
-      .single();
-
-    if (error && error.code !== 'PGRST116') { // PGRST116 = no rows returned
-      console.error('Error checking existing loyalty link:', error);
-      return { success: false, error: 'Failed to check existing link' };
+    const otpKey = `${userId}-${networkId}-${mobileNumber}`;
+    const storedOTP = mockOTPCodes[otpKey];
+    
+    if (!storedOTP) {
+      return {
+        success: false,
+        error: 'OTP not found or expired'
+      };
     }
-
-    return { success: true, exists: !!data };
+    
+    // Check if OTP is expired
+    if (Date.now() > storedOTP.expires) {
+      delete mockOTPCodes[otpKey];
+      return {
+        success: false,
+        error: 'OTP has expired'
+      };
+    }
+    
+    // Check attempts limit
+    if (storedOTP.attempts >= 3) {
+      delete mockOTPCodes[otpKey];
+      return {
+        success: false,
+        error: 'Too many failed attempts'
+      };
+    }
+    
+    // Verify OTP code
+    if (storedOTP.code !== otpCode) {
+      storedOTP.attempts++;
+      return {
+        success: false,
+        error: `Invalid OTP code. ${3 - storedOTP.attempts} attempts remaining.`
+      };
+    }
+    
+    // OTP verified, create loyalty link
+    const linkId = `${userId}-${networkId}-${Date.now()}`;
+    const newLink: LoyaltyLink = {
+      id: linkId,
+      user_id: userId,
+      network_id: networkId,
+      mobile_number: mobileNumber,
+      is_verified: true,
+      linked_at: new Date().toISOString(),
+      total_converted: 0
+    };
+    
+    // Store link (in production, use database)
+    if (!mockUserLinks[userId]) {
+      mockUserLinks[userId] = [];
+    }
+    mockUserLinks[userId].push(newLink);
+    
+    // Clean up OTP
+    delete mockOTPCodes[otpKey];
+    
+    // TODO: Replace with actual database call
+    // const { data, error } = await supabase
+    //   .from('user_loyalty_links')
+    //   .insert([{
+    //     user_id: userId,
+    //     network_id: networkId,
+    //     mobile_number: mobileNumber,
+    //     is_verified: true,
+    //     linked_at: new Date().toISOString()
+    //   }]);
+    
+    return {
+      success: true,
+      linkId
+    };
   } catch (error) {
-    console.error('Error checking loyalty link:', error);
-    return { success: false, error: 'Failed to check loyalty link' };
+    console.error('Error verifying OTP:', error);
+    return {
+      success: false,
+      error: 'Failed to verify OTP'
+    };
   }
-}
+};
+
+/**
+ * Convert points from linked loyalty account
+ */
+export const convertLoyaltyPoints = async (
+  userId: string,
+  linkId: string,
+  pointsToConvert: number
+): Promise<LoyaltyApiResponse> => {
+  try {
+    // TODO: Implement actual point conversion logic
+    // This would involve:
+    // 1. Calling external API to verify and deduct points
+    // 2. Converting to PointBridge tokens based on conversion rate
+    // 3. Adding tokens to user's balance
+    // 4. Recording the transaction
+    
+    console.log(`Converting ${pointsToConvert} points for user ${userId} from link ${linkId}`);
+    
+    // Simulate API call delay
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    
+    return {
+      success: true,
+      message: 'Points converted successfully'
+    };
+  } catch (error) {
+    console.error('Error converting loyalty points:', error);
+    return {
+      success: false,
+      error: 'Failed to convert points'
+    };
+  }
+};
+
+/**
+ * Get conversion history for a user
+ */
+export const getLoyaltyConversionHistory = async (
+  userId: string
+): Promise<LoyaltyApiResponse<any[]>> => {
+  try {
+    // TODO: Replace with actual database call
+    // const { data, error } = await supabase
+    //   .from('loyalty_conversions')
+    //   .select(`
+    //     *,
+    //     loyalty_networks (display_name, logo_url)
+    //   `)
+    //   .eq('user_id', userId)
+    //   .order('converted_at', { ascending: false });
+    
+    // For now, return empty array
+    return {
+      success: true,
+      data: []
+    };
+  } catch (error) {
+    console.error('Error loading conversion history:', error);
+    return {
+      success: false,
+      error: 'Failed to load conversion history'
+    };
+  }
+};

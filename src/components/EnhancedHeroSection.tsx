@@ -174,6 +174,13 @@ const EnhancedHeroSection = () => {
                         <User className="mr-2 h-4 w-4" />
                         My Dashboard
                       </DropdownMenuItem>
+                      <DropdownMenuItem 
+                        className="cursor-pointer"
+                        onClick={() => navigate('/marketplace')}
+                      >
+                        <Building2 className="mr-2 h-4 w-4" />
+                        Marketplace
+                      </DropdownMenuItem>
                       {isAdmin && (
                         <>
                           <DropdownMenuItem 
@@ -215,16 +222,26 @@ const EnhancedHeroSection = () => {
                   </DropdownMenu>
                 </>
               ) : (
-                <Button 
-                  variant="outline" 
-                  onClick={() => {
-                    console.log('Sign In button clicked');
-                    setAuthModalOpen(true);
-                  }}
-                  className="pointer-events-auto cursor-pointer"
-                >
-                  Sign In
-                </Button>
+                <div className="flex items-center space-x-3">
+                  <Button 
+                    variant="ghost" 
+                    onClick={() => navigate('/marketplace')}
+                    className="text-muted-foreground hover:text-foreground"
+                  >
+                    <Building2 className="w-4 h-4 mr-2" />
+                    Marketplace
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    onClick={() => {
+                      console.log('Sign In button clicked');
+                      setAuthModalOpen(true);
+                    }}
+                    className="pointer-events-auto cursor-pointer"
+                  >
+                    Sign In
+                  </Button>
+                </div>
               )}
             </div>
           </div>

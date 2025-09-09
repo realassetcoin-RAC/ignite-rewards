@@ -31,6 +31,7 @@ import DAODashboard from "./pages/DAODashboard";
 import UserDAODashboard from "./pages/UserDAODashboard";
 import DAOPublic from "./pages/DAOPublic";
 import TestPage from "./pages/TestPage";
+import Marketplace from "./pages/Marketplace";
 import { useSmartRefresh } from "./hooks/useSmartRefresh";
 import { useSessionPersistence } from "./hooks/useSessionPersistence";
 
@@ -111,6 +112,7 @@ const App = () => {
             <Route path="/dao" element={<DAOPublic />} />
             <Route path="/dao-admin" element={<DAODashboard />} />
             <Route path="/dao-vote" element={<UserDAODashboard />} />
+            <Route path="/marketplace" element={<Marketplace />} />
             <Route path="/test" element={<TestPage />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />

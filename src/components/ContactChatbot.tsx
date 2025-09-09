@@ -454,19 +454,22 @@ const ContactChatbot = () => {
 
   if (!state.isOpen) {
     return (
-      <Button 
-        onClick={handleOpenChat}
-        className="w-full bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white border-0"
-      >
-        <MessageCircle className="w-4 h-4 mr-2" />
-        Start Chat
-      </Button>
+      <div className="fixed bottom-4 right-4 z-50">
+        <Button 
+          onClick={handleOpenChat}
+          size="lg"
+          className="group h-14 px-6 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white border-0 shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 rounded-full"
+        >
+          <MessageCircle className="w-5 h-5 mr-2 group-hover:animate-bounce" />
+          Start Chat
+        </Button>
+      </div>
     );
   }
 
   return (
-    <div className={`fixed bottom-4 right-4 z-50 ${state.isMinimized ? 'w-80' : 'w-96'} transition-all duration-300`}>
-      <Card className="bg-white/95 backdrop-blur-xl border border-white/20 shadow-2xl">
+    <div className={`fixed bottom-4 right-4 z-50 max-w-[calc(100vw-2rem)] ${state.isMinimized ? 'w-80' : 'w-96'} transition-all duration-300`}>
+      <Card className="bg-white/95 backdrop-blur-xl border border-white/20 shadow-2xl overflow-hidden">
         {/* Chat Header */}
         <div className="flex items-center justify-between p-4 border-b border-gray-200">
           <div className="flex items-center space-x-2">
@@ -501,7 +504,7 @@ const ContactChatbot = () => {
         {!state.isMinimized && (
           <>
             {/* Chat Messages */}
-            <CardContent className="p-4 h-80 overflow-y-auto">
+            <CardContent className="p-4 h-80 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
               <div className="space-y-4">
                 {messages.map((message) => (
                   <div
