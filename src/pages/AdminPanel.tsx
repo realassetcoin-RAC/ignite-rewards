@@ -17,6 +17,7 @@ import ApiHealthTab from "@/components/admin/ApiHealthTab";
 import ErrorDashboard from "@/components/admin/ErrorDashboard";
 import RewardsManager from "@/components/admin/RewardsManager";
 import MarketplaceManager from "@/components/admin/MarketplaceManager";
+import LoyaltyProvidersManager from "@/components/admin/LoyaltyProvidersManager";
 import AdminDashboardWrapper from "@/components/AdminDashboardWrapper";
 import { useSecureAuth } from "@/hooks/useSecureAuth";
 import { useSmartDataRefresh } from "@/hooks/useSmartDataRefresh";
@@ -591,9 +592,14 @@ const AdminPanel = () => {
               <p className="text-muted-foreground mb-6">
                 View and manage user accounts and subscriptions.
               </p>
-              <ErrorBoundary>
-                <UserManager onStatsUpdate={loadStats} />
-              </ErrorBoundary>
+              <div className="space-y-6">
+                <ErrorBoundary>
+                  <UserManager onStatsUpdate={loadStats} />
+                </ErrorBoundary>
+                <ErrorBoundary>
+                  <LoyaltyProvidersManager />
+                </ErrorBoundary>
+              </div>
             </div>
             </div>
           )}
