@@ -154,6 +154,7 @@ const DAOManager: React.FC = () => {
       setOrganizations(orgsWithStats);
     } catch (error) {
       console.error('Error loading organizations:', error);
+      setOrganizations([]);
     }
   };
 
@@ -177,6 +178,7 @@ const DAOManager: React.FC = () => {
       setProposals(proposalsWithNames);
     } catch (error) {
       console.error('Error loading proposals:', error);
+      setProposals([]);
     }
   };
 
@@ -201,6 +203,7 @@ const DAOManager: React.FC = () => {
       setMembers(membersWithNames);
     } catch (error) {
       console.error('Error loading members:', error);
+      setMembers([]);
     }
   };
 
@@ -335,7 +338,7 @@ const DAOManager: React.FC = () => {
     return (
       <Badge className={config.color}>
         <Icon className="w-3 h-3 mr-1" />
-        {status.charAt(0).toUpperCase() + status.slice(1)}
+        {status ? status.charAt(0).toUpperCase() + status.slice(1) : 'Unknown'}
       </Badge>
     );
   };
@@ -352,7 +355,7 @@ const DAOManager: React.FC = () => {
 
     return (
       <Badge className={config.color}>
-        {role.charAt(0).toUpperCase() + role.slice(1)}
+        {role ? role.charAt(0).toUpperCase() + role.slice(1) : 'Unknown'}
       </Badge>
     );
   };
@@ -684,17 +687,17 @@ const DAOManager: React.FC = () => {
                     <TableRow key={member.id}>
                       <TableCell>
                         <div>
-                          <div className="font-medium">{member.user_name}</div>
-                          <div className="text-sm text-muted-foreground">{member.user_email}</div>
+                          <div className="font-medium">{member.user_name || 'Unknown User'}</div>
+                          <div className="text-sm text-muted-foreground">{member.user_email || 'No email'}</div>
                         </div>
                       </TableCell>
                       <TableCell>
                         {organizations.find(org => org.id === member.dao_id)?.name || 'Unknown'}
                       </TableCell>
-                      <TableCell>{getRoleBadge(member.role)}</TableCell>
-                      <TableCell>{member.governance_tokens.toLocaleString()}</TableCell>
+                      <TableCell>{getRoleBadge(member.role || 'member')}</TableCell>
+                      <TableCell>{(member.governance_tokens || 0).toLocaleString()}</TableCell>
                       <TableCell>
-                        {format(new Date(member.joined_at), 'MMM dd, yyyy')}
+                        {member.joined_at ? format(new Date(member.joined_at), 'MMM dd, yyyy') : 'Unknown'}
                       </TableCell>
                       <TableCell>
                         <div className="flex space-x-2">

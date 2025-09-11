@@ -17,7 +17,7 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
     flowType: 'pkce', // Use PKCE flow for better security and stability
   },
   db: {
-    schema: 'api'
+    schema: 'public'
   },
   global: {
     headers: {
