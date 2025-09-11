@@ -215,7 +215,10 @@ const CustomerSignupModal: React.FC<CustomerSignupModalProps> = ({ isOpen, onClo
           title: "Account Created Successfully!",
           description: `Please check your email to verify your account. Your ${selectedCardData.name} will be activated once verified.`,
         });
-        onClose();
+        // Add a small delay to ensure user sees the success message
+        setTimeout(() => {
+          onClose();
+        }, 1500);
       } else {
         // Paid card - will need payment after email verification
         toast({
@@ -223,7 +226,10 @@ const CustomerSignupModal: React.FC<CustomerSignupModalProps> = ({ isOpen, onClo
           description: `Please check your email to verify your account. After verification, you'll be able to purchase your ${selectedCardData.name} ($${selectedCardData.price}).`,
         });
         // Here you would integrate with your payment system (Stripe, etc.) after email verification
-        onClose();
+        // Add a small delay to ensure user sees the success message
+        setTimeout(() => {
+          onClose();
+        }, 1500);
       }
     } catch (error: any) {
       console.error('Customer signup error:', error);

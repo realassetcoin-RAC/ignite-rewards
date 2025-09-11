@@ -136,7 +136,7 @@ const UserNavigation: React.FC<UserNavigationProps> = ({ className = '' }) => {
           
           <DropdownMenuItem 
             className="cursor-pointer text-white hover:bg-slate-800/50 focus:bg-slate-800/50"
-            onClick={() => navigate('/dashboard')}
+            onClick={() => navigate('/user')}
           >
             <User className="mr-3 h-4 w-4" />
             User Dashboard
@@ -162,10 +162,10 @@ const UserNavigation: React.FC<UserNavigationProps> = ({ className = '' }) => {
           
           <DropdownMenuItem 
             className="cursor-pointer text-white hover:bg-slate-800/50 focus:bg-slate-800/50"
-            onClick={() => navigate('/dao-governance')}
+            onClick={() => navigate('/dao-voting')}
           >
             <Vote className="mr-3 h-4 w-4" />
-            DAO Governance
+            DAO Voting
           </DropdownMenuItem>
           
           <DropdownMenuSeparator className="bg-gray-600" />

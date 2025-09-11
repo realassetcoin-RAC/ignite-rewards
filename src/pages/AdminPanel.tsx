@@ -492,15 +492,16 @@ const AdminPanel = () => {
 
         {/* Main Admin Tabs */}
         <div className="space-y-6">
-          <div className="w-full max-w-full bg-background/60 backdrop-blur-md border border-primary/20 rounded-lg p-1 overflow-hidden tab-container">
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-9 gap-1 w-full max-w-full">
+          <div className="w-full bg-background/60 backdrop-blur-md border border-primary/20 rounded-lg p-1" style={{overflowX: 'hidden', maxWidth: '100%'}}>
+            <div className="flex flex-wrap w-full" style={{maxWidth: '100%'}}>
               <button
                 onClick={() => setActiveTab('cards')}
-                className={`flex items-center justify-center gap-1 px-1 py-1.5 rounded-md text-sm font-medium transition-all duration-200 w-full max-w-full overflow-hidden ${
+                className={`flex items-center justify-center gap-1 px-1 py-1.5 rounded-md text-sm font-medium transition-all duration-200 ${
                   activeTab === 'cards'
                     ? 'bg-gradient-to-r from-primary to-purple-500 text-white shadow-sm'
                     : 'text-muted-foreground hover:text-foreground hover:bg-foreground/5'
                 }`}
+                style={{minWidth: 0, maxWidth: '100%', flex: '1 1 auto'}}
               >
                 <CreditCard className="h-4 w-4 flex-shrink-0" />
                 <span className="hidden sm:inline truncate">Virtual Cards</span>
@@ -508,11 +509,12 @@ const AdminPanel = () => {
               </button>
               <button
                 onClick={() => setActiveTab('merchants')}
-                className={`flex items-center justify-center gap-1 px-1 py-1.5 rounded-md text-sm font-medium transition-all duration-200 w-full max-w-full overflow-hidden ${
+                className={`flex items-center justify-center gap-1 px-1 py-1.5 rounded-md text-sm font-medium transition-all duration-200 ${
                   activeTab === 'merchants'
                     ? 'bg-gradient-to-r from-primary to-purple-500 text-white shadow-sm'
                     : 'text-muted-foreground hover:text-foreground hover:bg-foreground/5'
                 }`}
+                style={{minWidth: 0, maxWidth: '100%', flex: '1 1 auto'}}
               >
                 <Store className="h-4 w-4 flex-shrink-0" />
                 <span className="hidden sm:inline truncate">Merchants</span>
@@ -520,11 +522,12 @@ const AdminPanel = () => {
               </button>
               <button
                 onClick={() => setActiveTab('solana')}
-                className={`flex items-center justify-center gap-1 px-1 py-1.5 rounded-md text-sm font-medium transition-all duration-200 w-full max-w-full overflow-hidden ${
+                className={`flex items-center justify-center gap-1 px-1 py-1.5 rounded-md text-sm font-medium transition-all duration-200 ${
                   activeTab === 'solana'
                     ? 'bg-gradient-to-r from-primary to-purple-500 text-white shadow-sm'
                     : 'text-muted-foreground hover:text-foreground hover:bg-foreground/5'
                 }`}
+                style={{minWidth: 0, maxWidth: '100%', flex: '1 1 auto'}}
               >
                 <Coins className="h-4 w-4 flex-shrink-0" />
                 <span className="hidden sm:inline truncate">Rewards</span>
@@ -532,11 +535,12 @@ const AdminPanel = () => {
               </button>
               <button
                 onClick={() => setActiveTab('referrals')}
-                className={`flex items-center justify-center gap-1 px-1 py-1.5 rounded-md text-sm font-medium transition-all duration-200 w-full max-w-full overflow-hidden ${
+                className={`flex items-center justify-center gap-1 px-1 py-1.5 rounded-md text-sm font-medium transition-all duration-200 ${
                   activeTab === 'referrals'
                     ? 'bg-gradient-to-r from-primary to-purple-500 text-white shadow-sm'
                     : 'text-muted-foreground hover:text-foreground hover:bg-foreground/5'
                 }`}
+                style={{minWidth: 0, maxWidth: '100%', flex: '1 1 auto'}}
               >
                 <Shield className="h-4 w-4 flex-shrink-0" />
                 <span className="hidden sm:inline truncate">Referrals</span>
@@ -544,11 +548,12 @@ const AdminPanel = () => {
               </button>
               <button
                 onClick={() => setActiveTab('dao')}
-                className={`flex items-center justify-center gap-1 px-1 py-1.5 rounded-md text-sm font-medium transition-all duration-200 w-full max-w-full overflow-hidden ${
+                className={`flex items-center justify-center gap-1 px-1 py-1.5 rounded-md text-sm font-medium transition-all duration-200 ${
                   activeTab === 'dao'
                     ? 'bg-gradient-to-r from-primary to-purple-500 text-white shadow-sm'
                     : 'text-muted-foreground hover:text-foreground hover:bg-foreground/5'
                 }`}
+                style={{minWidth: 0, maxWidth: '100%', flex: '1 1 auto'}}
               >
                 <Vote className="h-4 w-4 flex-shrink-0" />
                 <span className="hidden sm:inline truncate">DAO</span>
@@ -556,11 +561,12 @@ const AdminPanel = () => {
               </button>
               <button
                 onClick={() => setActiveTab('test-data')}
-                className={`flex items-center justify-center gap-1 px-1 py-1.5 rounded-md text-sm font-medium transition-all duration-200 w-full max-w-full overflow-hidden ${
+                className={`flex items-center justify-center gap-1 px-1 py-1.5 rounded-md text-sm font-medium transition-all duration-200 ${
                   activeTab === 'test-data'
                     ? 'bg-gradient-to-r from-primary to-purple-500 text-white shadow-sm'
                     : 'text-muted-foreground hover:text-foreground hover:bg-foreground/5'
                 }`}
+                style={{minWidth: 0, maxWidth: '100%', flex: '1 1 auto'}}
               >
                 <Building2 className="h-4 w-4 flex-shrink-0" />
                 <span className="hidden sm:inline truncate">Test Data</span>
@@ -568,11 +574,12 @@ const AdminPanel = () => {
               </button>
               <button
                 onClick={() => setActiveTab('marketplace')}
-                className={`flex items-center justify-center gap-1 px-1 py-1.5 rounded-md text-sm font-medium transition-all duration-200 w-full max-w-full overflow-hidden ${
+                className={`flex items-center justify-center gap-1 px-1 py-1.5 rounded-md text-sm font-medium transition-all duration-200 ${
                   activeTab === 'marketplace'
                     ? 'bg-gradient-to-r from-primary to-purple-500 text-white shadow-sm'
                     : 'text-muted-foreground hover:text-foreground hover:bg-foreground/5'
                 }`}
+                style={{minWidth: 0, maxWidth: '100%', flex: '1 1 auto'}}
               >
                 <Building2 className="h-4 w-4 flex-shrink-0" />
                 <span className="hidden sm:inline truncate">Marketplace</span>
@@ -580,11 +587,12 @@ const AdminPanel = () => {
               </button>
               <button
                 onClick={() => setActiveTab('users')}
-                className={`flex items-center justify-center gap-1 px-1 py-1.5 rounded-md text-sm font-medium transition-all duration-200 w-full max-w-full overflow-hidden ${
+                className={`flex items-center justify-center gap-1 px-1 py-1.5 rounded-md text-sm font-medium transition-all duration-200 ${
                   activeTab === 'users'
                     ? 'bg-gradient-to-r from-primary to-purple-500 text-white shadow-sm'
                     : 'text-muted-foreground hover:text-foreground hover:bg-foreground/5'
                 }`}
+                style={{minWidth: 0, maxWidth: '100%', flex: '1 1 auto'}}
               >
                 <Users className="h-4 w-4 flex-shrink-0" />
                 <span className="hidden sm:inline truncate">Users</span>
@@ -592,11 +600,12 @@ const AdminPanel = () => {
               </button>
               <button
                 onClick={() => setActiveTab('analytics')}
-                className={`flex items-center justify-center gap-1 px-1 py-1.5 rounded-md text-sm font-medium transition-all duration-200 w-full max-w-full overflow-hidden ${
+                className={`flex items-center justify-center gap-1 px-1 py-1.5 rounded-md text-sm font-medium transition-all duration-200 ${
                   activeTab === 'analytics'
                     ? 'bg-gradient-to-r from-primary to-purple-500 text-white shadow-sm'
                     : 'text-muted-foreground hover:text-foreground hover:bg-foreground/5'
                 }`}
+                style={{minWidth: 0, maxWidth: '100%', flex: '1 1 auto'}}
               >
                 <BarChart3 className="h-4 w-4 flex-shrink-0" />
                 <span className="hidden sm:inline truncate">Analytics</span>
@@ -604,11 +613,12 @@ const AdminPanel = () => {
               </button>
               <button
                 onClick={() => setActiveTab('health')}
-                className={`flex items-center justify-center gap-1 px-1 py-1.5 rounded-md text-sm font-medium transition-all duration-200 w-full max-w-full overflow-hidden ${
+                className={`flex items-center justify-center gap-1 px-1 py-1.5 rounded-md text-sm font-medium transition-all duration-200 ${
                   activeTab === 'health'
                     ? 'bg-gradient-to-r from-primary to-purple-500 text-white shadow-sm'
                     : 'text-muted-foreground hover:text-foreground hover:bg-foreground/5'
                 }`}
+                style={{minWidth: 0, maxWidth: '100%', flex: '1 1 auto'}}
               >
                 <AlertTriangle className="h-4 w-4 flex-shrink-0" />
                 <span className="hidden sm:inline truncate">Health</span>
@@ -616,11 +626,12 @@ const AdminPanel = () => {
               </button>
               <button
                 onClick={() => setActiveTab('errors')}
-                className={`flex items-center justify-center gap-1 px-1 py-1.5 rounded-md text-sm font-medium transition-all duration-200 w-full max-w-full overflow-hidden ${
+                className={`flex items-center justify-center gap-1 px-1 py-1.5 rounded-md text-sm font-medium transition-all duration-200 ${
                   activeTab === 'errors'
                     ? 'bg-gradient-to-r from-primary to-purple-500 text-white shadow-sm'
                     : 'text-muted-foreground hover:text-foreground hover:bg-foreground/5'
                 }`}
+                style={{minWidth: 0, maxWidth: '100%', flex: '1 1 auto'}}
               >
                 <Bug className="h-4 w-4 flex-shrink-0" />
                 <span className="hidden sm:inline truncate">Errors</span>
@@ -628,11 +639,12 @@ const AdminPanel = () => {
               </button>
               <button
                 onClick={() => setActiveTab('settings')}
-                className={`flex items-center justify-center gap-1 px-1 py-1.5 rounded-md text-sm font-medium transition-all duration-200 w-full max-w-full overflow-hidden ${
+                className={`flex items-center justify-center gap-1 px-1 py-1.5 rounded-md text-sm font-medium transition-all duration-200 ${
                   activeTab === 'settings'
                     ? 'bg-gradient-to-r from-primary to-purple-500 text-white shadow-sm'
                     : 'text-muted-foreground hover:text-foreground hover:bg-foreground/5'
                 }`}
+                style={{minWidth: 0, maxWidth: '100%', flex: '1 1 auto'}}
               >
                 <Settings className="h-4 w-4 flex-shrink-0" />
                 <span className="hidden sm:inline truncate">Settings</span>

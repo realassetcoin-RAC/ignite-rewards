@@ -9,6 +9,8 @@ export type ProposalStatus =
   | 'passed'
   | 'rejected'
   | 'executed'
+  | 'approved'
+  | 'implemented'
   | 'cancelled';
 
 export type VotingType = 

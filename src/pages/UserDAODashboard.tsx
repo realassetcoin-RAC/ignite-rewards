@@ -44,6 +44,7 @@ import {
   MEMBER_ROLES
 } from '@/types/dao';
 import { useSmartDataRefresh } from '@/hooks/useSmartDataRefresh';
+import { DAOService } from '@/lib/daoService';
 
 const UserDAODashboard = () => {
   const [activeTab, setActiveTab] = useState('proposals');
@@ -93,25 +94,34 @@ const UserDAODashboard = () => {
 
       setCurrentUser(user);
 
-      // For now, create a mock membership for all authenticated users
-      // In production, this would check the actual database
-      const mockMembership: DAOMember = {
+      // Get DAO organizations to find the user's membership
+      const organizations = await DAOService.getOrganizations();
+      if (organizations.length > 0) {
+        const daoId = organizations[0].id;
+        const membership = await DAOService.getUserMembership(daoId, user.id);
+        
+        if (membership) {
+          setUserMembership(membership);
+          console.log('UserDAO: User membership loaded:', membership);
+        } else {
+          // User is not a member, create a default membership for display
+          const defaultMembership: DAOMember = {
         id: `member-${user.id}`,
-        dao_id: 'sample-dao-1',
+            dao_id: daoId,
         user_id: user.id,
-        wallet_address: 'Mock123...',
+            wallet_address: 'Not connected',
         role: 'member',
-        governance_tokens: 1000, // Default tokens for new members
-        voting_power: 3.0,
+            governance_tokens: 0,
+            voting_power: 0,
         joined_at: new Date().toISOString(),
         last_active_at: new Date().toISOString(),
-        is_active: true,
+            is_active: false,
         user_email: user.email,
         user_full_name: user.user_metadata?.full_name || 'DAO Member'
       };
-
-      setUserMembership(mockMembership);
-      console.log('UserDAO: User membership set:', mockMembership);
+          setUserMembership(defaultMembership);
+        }
+      }
     } catch (error) {
       console.error('Error checking user membership:', error);
     } finally {
@@ -123,25 +133,40 @@ const UserDAODashboard = () => {
     try {
       setLoading(true);
       
-      // Load sample DAO data (in a real app, this would come from the database)
-      const sampleDAO: DAOOrganization = {
-        id: 'sample-dao-1',
-        name: 'RAC Rewards DAO',
-        description: 'Governance for the RAC Rewards loyalty platform',
-        logo_url: '/rac-card.jpg',
-        governance_token_symbol: 'RAC',
-        min_proposal_threshold: 1000,
-        voting_period_days: 7,
-        execution_delay_hours: 24,
-        quorum_percentage: 10.0,
-        super_majority_threshold: 66.67,
-        governance_token_decimals: 9,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        is_active: true
-      };
+      // Load DAO organizations from database
+      const organizations = await DAOService.getOrganizations();
+      if (organizations.length === 0) {
+        console.warn('No DAO organizations found');
+        setProposals([]);
+        setMembers([]);
+        setDaoStats({
+          total_members: 0,
+          active_members: 0,
+          total_proposals: 0,
+          active_proposals: 0,
+          total_treasury_value: 0,
+          treasury_currency: 'SOL',
+          participation_rate: 0,
+          average_voting_power: 0
+        });
+        return;
+      }
 
-      // Sample proposals
+      const daoId = organizations[0].id;
+
+      // Load proposals, members, and stats from database
+      const [proposalsData, membersData, statsData] = await Promise.all([
+        DAOService.getProposals(daoId),
+        DAOService.getMembers(daoId),
+        DAOService.getDAOStats(daoId)
+      ]);
+
+      setProposals(proposalsData);
+      setMembers(membersData);
+      setDaoStats(statsData);
+
+      // Fallback to sample data if database is empty
+      if (proposalsData.length === 0) {
       const sampleProposals: DAOProposal[] = [
         {
           id: 'prop-1',
@@ -311,6 +336,7 @@ const UserDAODashboard = () => {
       setProposals(sampleProposals);
       setMembers(sampleMembers);
       setDaoStats(sampleStats);
+      }
 
     } catch (error) {
       console.error('Error loading DAO data:', error);
@@ -397,22 +423,16 @@ const UserDAODashboard = () => {
         return;
       }
 
-      const { data, error } = await supabase.rpc('cast_vote', {
-        user_id_param: currentUser.id,
-        proposal_id_param: proposalId,
-        choice_param: choice,
-        reason_param: reason || null
-      });
-
-      if (error) {
-        console.error('Voting error:', error);
+      if (!userMembership) {
         toast({
-          title: "Voting Failed",
-          description: error.message || "Failed to cast vote. Please try again.",
+          title: "Membership Required",
+          description: "You must be a DAO member to vote on proposals.",
           variant: "destructive",
         });
         return;
       }
+
+      await DAOService.castVote(proposalId, currentUser.id, choice, userMembership.voting_power, reason);
 
       toast({
         title: "Vote Cast Successfully",
@@ -505,25 +525,25 @@ const UserDAODashboard = () => {
       <div className="absolute top-1/3 right-1/3 w-1 h-1 bg-purple-500/60 rounded-full animate-bounce animation-delay-3000"></div>
       <div className="absolute bottom-1/3 left-1/3 w-1.5 h-1.5 bg-blue-500/50 rounded-full animate-bounce animation-delay-5000"></div>
 
-      <div className="relative z-10 container mx-auto px-4 py-8 max-w-full">
+      <div className="relative z-10 w-full max-w-full px-4 py-8">
         {/* Header */}
         <div className="mb-8">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center space-x-3">
-              <div className="flex items-center space-x-2">
-                <div className="relative">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 gap-4" style={{maxWidth: '100%', overflow: 'hidden'}}>
+            <div className="flex items-center space-x-3 min-w-0 flex-1">
+              <div className="flex items-center space-x-2 min-w-0">
+                <div className="relative flex-shrink-0">
                   <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-blue-500 rounded-xl flex items-center justify-center shadow-lg shadow-purple-500/25">
                     <Sparkles className="h-6 w-6 text-white" />
                   </div>
                   <div className="absolute -top-1 -right-1 w-4 h-4 bg-gradient-to-r from-pink-500 to-red-500 rounded-full animate-pulse"></div>
                 </div>
-                <div>
-                  <h1 className={`text-2xl sm:text-3xl font-bold bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent ${
+                <div className="min-w-0 flex-1">
+                  <h1 className={`text-xl sm:text-2xl font-bold bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent truncate ${
                     isLoaded ? 'animate-fade-in-up' : 'opacity-0'
                   }`}>
                     PointBridge DAO
                   </h1>
-                  <p className={`text-sm text-gray-400 ${
+                  <p className={`text-xs sm:text-sm text-gray-400 truncate ${
                     isLoaded ? 'animate-fade-in-up animation-delay-200' : 'opacity-0'
                   }`}>
                     Decentralized governance for the RAC Rewards platform
@@ -533,30 +553,32 @@ const UserDAODashboard = () => {
             </div>
             
             {/* Authentication Status and Navigation */}
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-2 sm:space-x-4 min-w-0 flex-shrink-0">
               {user ? (
-                <div className="flex items-center space-x-3">
+                <div className="flex items-center space-x-2 sm:space-x-3 min-w-0">
                   {/* User Status Badge */}
                   <Badge 
                     variant="outline" 
-                    className="border-primary/40 text-primary bg-primary/10 backdrop-blur-sm"
+                    className="border-primary/40 text-primary bg-primary/10 backdrop-blur-sm flex-shrink-0"
                   >
                     {isAdmin ? (
                       <>
                         <Shield className="w-3 h-3 mr-1" />
-                        Admin
+                        <span className="hidden sm:inline">Admin</span>
+                        <span className="sm:hidden">A</span>
                       </>
                     ) : (
                       <>
                         <User className="w-3 h-3 mr-1" />
-                        Member
+                        <span className="hidden sm:inline">Member</span>
+                        <span className="sm:hidden">M</span>
                       </>
                     )}
                   </Badge>
                   
                   {/* User Info */}
-                  <div className="hidden sm:flex flex-col items-end">
-                    <span className="text-sm font-medium text-white">
+                  <div className="hidden md:flex flex-col items-end min-w-0">
+                    <span className="text-sm font-medium text-white truncate max-w-32">
                       {profile?.full_name || user.email}
                     </span>
                     <span className="text-xs text-white/70">
@@ -569,10 +591,10 @@ const UserDAODashboard = () => {
                     variant="outline" 
                     size="sm"
                     onClick={signOut}
-                    className="bg-background/60 backdrop-blur-md hover:bg-background/80 border-primary/30 hover:border-primary/50"
+                    className="bg-background/60 backdrop-blur-md hover:bg-background/80 border-primary/30 hover:border-primary/50 flex-shrink-0"
                   >
-                    <LogOut className="w-4 h-4 mr-2" />
-                    Sign Out
+                    <LogOut className="w-4 h-4 sm:mr-2" />
+                    <span className="hidden sm:inline">Sign Out</span>
                   </Button>
                 </div>
               ) : (
@@ -580,10 +602,10 @@ const UserDAODashboard = () => {
                   variant="outline" 
                   size="sm"
                   onClick={() => navigate('/auth')}
-                  className="bg-background/60 backdrop-blur-md hover:bg-background/80 border-primary/30 hover:border-primary/50"
+                  className="bg-background/60 backdrop-blur-md hover:bg-background/80 border-primary/30 hover:border-primary/50 flex-shrink-0"
                 >
-                  <User className="w-4 h-4 mr-2" />
-                  Sign In
+                  <User className="w-4 h-4 sm:mr-2" />
+                  <span className="hidden sm:inline">Sign In</span>
                 </Button>
               )}
               
@@ -591,10 +613,11 @@ const UserDAODashboard = () => {
                 variant="outline" 
                 size="sm" 
                 onClick={() => navigate('/')}
-                className="group bg-background/60 backdrop-blur-md hover:bg-background/80 border-primary/30 hover:border-primary/50"
+                className="group bg-background/60 backdrop-blur-md hover:bg-background/80 border-primary/30 hover:border-primary/50 flex-shrink-0"
               >
-                <ArrowLeft className="mr-2 h-4 w-4 group-hover:-translate-x-1 transition-transform" />
-                Back to Home
+                <ArrowLeft className="mr-1 sm:mr-2 h-4 w-4 group-hover:-translate-x-1 transition-transform" />
+                <span className="hidden sm:inline">Back to Home</span>
+                <span className="sm:hidden">Back</span>
               </Button>
             </div>
           </div>
@@ -684,37 +707,40 @@ const UserDAODashboard = () => {
         <div className={`mb-8 ${
           isLoaded ? 'animate-fade-in-up animation-delay-600' : 'opacity-0'
         }`}>
-          <div className="w-full max-w-full bg-background/60 backdrop-blur-md border border-primary/20 rounded-lg p-1 overflow-hidden tab-container">
-            <div className="grid grid-cols-3 gap-1 w-full max-w-full">
+          <div className="w-full bg-background/60 backdrop-blur-md border border-primary/20 rounded-lg p-1" style={{overflowX: 'hidden', maxWidth: '100%'}}>
+            <div className="flex w-full" style={{maxWidth: '100%'}}>
               <button
                 onClick={() => setActiveTab('proposals')}
-                className={`flex items-center justify-center gap-1 px-1 py-2 rounded-md text-sm font-medium transition-all duration-200 w-full max-w-full overflow-hidden ${
+                className={`flex-1 flex items-center justify-center gap-1 px-1 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
                   activeTab === 'proposals'
                     ? 'bg-gradient-to-r from-primary to-purple-500 text-white shadow-sm'
                     : 'text-muted-foreground hover:text-foreground hover:bg-foreground/5'
                 }`}
+                style={{minWidth: 0, maxWidth: '33.333%'}}
               >
                 <Vote className="h-4 w-4 flex-shrink-0" />
                 <span className="hidden sm:inline truncate text-xs">Proposals</span>
               </button>
               <button
                 onClick={() => setActiveTab('members')}
-                className={`flex items-center justify-center gap-1 px-1 py-2 rounded-md text-sm font-medium transition-all duration-200 w-full max-w-full overflow-hidden ${
+                className={`flex-1 flex items-center justify-center gap-1 px-1 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
                   activeTab === 'members'
                     ? 'bg-gradient-to-r from-primary to-purple-500 text-white shadow-sm'
                     : 'text-muted-foreground hover:text-foreground hover:bg-foreground/5'
                 }`}
+                style={{minWidth: 0, maxWidth: '33.333%'}}
               >
                 <Users className="h-4 w-4 flex-shrink-0" />
                 <span className="hidden sm:inline truncate text-xs">Members</span>
               </button>
               <button
                 onClick={() => setActiveTab('treasury')}
-                className={`flex items-center justify-center gap-1 px-1 py-2 rounded-md text-sm font-medium transition-all duration-200 w-full max-w-full overflow-hidden ${
+                className={`flex-1 flex items-center justify-center gap-1 px-1 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
                   activeTab === 'treasury'
                     ? 'bg-gradient-to-r from-primary to-purple-500 text-white shadow-sm'
                     : 'text-muted-foreground hover:text-foreground hover:bg-foreground/5'
                 }`}
+                style={{minWidth: 0, maxWidth: '33.333%'}}
               >
                 <Coins className="h-4 w-4 flex-shrink-0" />
                 <span className="hidden sm:inline truncate text-xs">Treasury</span>
@@ -888,14 +914,16 @@ const UserDAODashboard = () => {
                                 <div className="grid grid-cols-3 gap-2">
                                   <Button 
                                     size="sm" 
-                                    className="bg-green-500 hover:bg-green-600 text-white border-green-500 w-full"
+                                    className="!bg-green-500 !hover:bg-green-600 !text-white !border-green-500 w-full"
+                                    style={{ backgroundColor: '#10b981', borderColor: '#10b981' }}
                                     onClick={() => handleVote(proposal.id, 'yes')}
                                   >
                                     Approve
                                   </Button>
                                   <Button 
                                     size="sm" 
-                                    className="bg-red-500 hover:bg-red-600 text-white border-red-500 w-full"
+                                    className="!bg-red-500 !hover:bg-red-600 !text-white !border-red-500 w-full"
+                                    style={{ backgroundColor: '#ef4444', borderColor: '#ef4444' }}
                                     onClick={() => handleVote(proposal.id, 'no')}
                                   >
                                     Reject
@@ -903,7 +931,8 @@ const UserDAODashboard = () => {
                                   <Button 
                                     size="sm" 
                                     variant="outline"
-                                    className="bg-white border-gray-300 text-gray-700 hover:bg-gray-50 w-full"
+                                    className="!bg-white !border-gray-300 !text-gray-700 !hover:bg-gray-50 w-full"
+                                    style={{ backgroundColor: '#ffffff', borderColor: '#d1d5db', color: '#374151' }}
                                     onClick={() => handleVote(proposal.id, 'abstain')}
                                   >
                                     Abstain
@@ -1166,7 +1195,8 @@ const UserDAODashboard = () => {
                   <div className="grid grid-cols-3 gap-2 w-full">
                     <Button 
                       size="sm" 
-                      className="bg-green-500 hover:bg-green-600 text-white border-green-500 w-full"
+                      className="!bg-green-500 !hover:bg-green-600 !text-white !border-green-500 w-full"
+                      style={{ backgroundColor: '#10b981', borderColor: '#10b981' }}
                       onClick={() => {
                         handleVote(selectedProposal.id, 'yes');
                         setShowProposalDetails(false);
@@ -1176,7 +1206,8 @@ const UserDAODashboard = () => {
                     </Button>
                     <Button 
                       size="sm" 
-                      className="bg-red-500 hover:bg-red-600 text-white border-red-500 w-full"
+                      className="!bg-red-500 !hover:bg-red-600 !text-white !border-red-500 w-full"
+                      style={{ backgroundColor: '#ef4444', borderColor: '#ef4444' }}
                       onClick={() => {
                         handleVote(selectedProposal.id, 'no');
                         setShowProposalDetails(false);
@@ -1187,7 +1218,8 @@ const UserDAODashboard = () => {
                     <Button 
                       size="sm" 
                       variant="outline"
-                      className="bg-white border-gray-300 text-gray-700 hover:bg-gray-50 w-full"
+                      className="!bg-white !border-gray-300 !text-gray-700 !hover:bg-gray-50 w-full"
+                      style={{ backgroundColor: '#ffffff', borderColor: '#d1d5db', color: '#374151' }}
                       onClick={() => {
                         handleVote(selectedProposal.id, 'abstain');
                         setShowProposalDetails(false);

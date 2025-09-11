@@ -35,6 +35,9 @@ interface AuthModalProps {
  * @returns {JSX.Element} The authentication modal component
  */
 const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
+  // Debug: Log when component mounts
+  console.log('🔍 AuthModal component rendered', { isOpen });
+  
   // Form state management
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -87,10 +90,10 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
   }, [user, termsLoading, hasAcceptedTerms, hasAcceptedPrivacy]);
 
   /**
-   * Close modal automatically when user becomes authenticated
+   * Close modal automatically when user becomes authenticated and verified
    */
   useEffect(() => {
-    if (user && !authLoading) {
+    if (user && !authLoading && user.email_confirmed_at) {
       onClose();
     }
   }, [user, authLoading, onClose]);
@@ -108,7 +111,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
     const redirectUrl = `${window.location.origin}/`;
     
     try {
-      const { error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
@@ -140,7 +143,11 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
           title: "Account created",
           description: "Please check your email to verify your account.",
         });
-        onClose();
+        
+        // Add a small delay to ensure user sees the success message
+        setTimeout(() => {
+          onClose();
+        }, 1500);
       }
     } catch (error) {
       toast({
@@ -219,13 +226,30 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
    * Handle Google OAuth sign in
    */
   const handleGoogleSignIn = async () => {
+    console.log('🚀 Starting Google OAuth sign in...');
+    console.log('🔍 Button clicked - function called');
+    alert('Google button clicked!'); // Simple test to verify button works
     setGoogleLoading(true);
     
     try {
+      // Test if Supabase client is available
+      console.log('🔍 Supabase client test:', { 
+        hasSupabase: !!supabase, 
+        hasAuth: !!supabase?.auth,
+        hasSignInWithOAuth: !!supabase?.auth?.signInWithOAuth 
+      });
+      
+      const redirectUrl = `${window.location.origin}/auth/callback`;
+      console.log('📋 Google OAuth config:', {
+        provider: 'google',
+        redirectTo: redirectUrl,
+        currentOrigin: window.location.origin
+      });
+
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
+          redirectTo: redirectUrl,
           queryParams: {
             access_type: 'offline',
             prompt: 'consent',
@@ -233,18 +257,32 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
         }
       });
 
+      console.log('📋 Google OAuth response:', { data, error });
+
       if (error) {
-        console.error('Google OAuth error:', error);
+        console.error('❌ Google OAuth error:', error);
+        
+        // Provide specific error messages based on the error
+        let errorMessage = error.message || "Unable to connect to Google. Please try again.";
+        
+        if (error.message?.includes("provider is not enabled")) {
+          errorMessage = "Google sign-in is not configured. Please contact support or use email signup.";
+        } else if (error.message?.includes("configuration")) {
+          errorMessage = "Google sign-in configuration error. Please try again later.";
+        }
+        
         toast({
           title: "Google sign in failed",
-          description: error.message || "Unable to connect to Google. Please try again.",
+          description: errorMessage,
           variant: "destructive"
         });
         setGoogleLoading(false);
       } else if (data?.url) {
+        console.log('✅ Google OAuth URL generated, redirecting to:', data.url);
         // Redirect to Google OAuth page
         window.location.href = data.url;
       } else {
+        console.error('❌ No OAuth URL generated');
         toast({
           title: "Configuration Error",
           description: "Google OAuth is not properly configured. Please contact support.",
@@ -253,7 +291,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
         setGoogleLoading(false);
       }
     } catch (error) {
-      console.error('Google signin error:', error);
+      console.error('💥 Google signin error:', error);
       toast({
         title: "Error",
         description: error instanceof Error ? error.message : "Failed to sign in with Google. Please try again.",
@@ -342,6 +380,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
               </DialogDescription>
             </DialogHeader>
             
+            
             <div className="w-full mt-4">
               <div className="w-full bg-background/60 backdrop-blur-md border border-primary/20 rounded-lg p-1">
                 <div className="flex gap-1">
@@ -377,7 +416,11 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
               type="button"
               variant="outline"
               className="w-full h-11 sm:h-12 border-primary/40 text-primary bg-primary/10 hover:bg-primary/20 backdrop-blur-sm transition-smooth"
-              onClick={handleGoogleSignIn}
+              onClick={() => {
+                console.log('Button clicked directly!');
+                alert('Direct button click test!');
+                handleGoogleSignIn();
+              }}
               disabled={googleLoading || loading}
             >
               {googleLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}

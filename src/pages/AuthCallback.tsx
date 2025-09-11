@@ -19,63 +19,143 @@ const AuthCallback = () => {
   }, []);
 
   useEffect(() => {
-    const handleAuthCallback = async () => {
+    let timeoutId: NodeJS.Timeout;
+    let authStateSubscription: any;
+
+    const processUserSession = async (user: any) => {
       try {
-        // Get the current session
-        const { data: { session } } = await supabase.auth.getSession();
+        console.log('✅ AuthCallback: Processing authentication for user:', user.email);
         
-        if (session?.user) {
-          console.log('AuthCallback: Processing authentication for user:', session.user.email);
+        // First, try to get the user profile
+        let profileResult = await supabase
+          .from('profiles')
+          .select('id, email, full_name, role, created_at, updated_at')
+          .eq('id', user.id)
+          .single();
+        
+        let profile = profileResult.data;
+        
+        // If profile doesn't exist, create it (fallback for OAuth users)
+        if (!profile && profileResult.error?.code === 'PGRST116') {
+          console.log('⚠️ AuthCallback: Profile not found, creating one for OAuth user...');
           
-          // Get user profile, admin status, and terms acceptance in parallel
-          const [profileResult, isAdmin, termsAcceptance] = await Promise.all([
-            supabase
-              .from('profiles')
-              .select('id, email, full_name, role, created_at, updated_at')
-              .eq('id', session.user.id)
-              .single(),
-            robustAdminCheck(),
-            TermsPrivacyService.getUserAcceptance(session.user.id)
-          ]);
+          const { data: newProfile, error: createError } = await supabase
+            .from('profiles')
+            .insert({
+              id: user.id,
+              email: user.email,
+              full_name: user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0] || 'User',
+              role: 'user'
+            })
+            .select('id, email, full_name, role, created_at, updated_at')
+            .single();
           
-          const profile = profileResult.data;
-          
-          // Check if user needs to accept terms and privacy
-          const needsTermsAcceptance = !termsAcceptance || !termsAcceptance.terms_accepted || !termsAcceptance.privacy_accepted;
-          
-          if (needsTermsAcceptance) {
-            console.log('AuthCallback: User needs to accept terms and privacy, redirecting to terms page');
-            // Redirect to a terms acceptance page or show modal
-            // For now, we'll redirect to home where they can sign in and accept terms
-            navigate('/?showTerms=true');
-            return;
+          if (createError) {
+            console.error('❌ AuthCallback: Error creating profile:', createError);
+            // Continue anyway, the user might still be able to use the app
+          } else {
+            console.log('✅ AuthCallback: Profile created successfully:', newProfile);
+            profile = newProfile;
           }
-          
-          // Use the same routing logic as the rest of the app
-          const dashboardUrl = getDashboardUrl(isAdmin, profile);
-          
-          console.log('AuthCallback: Routing decision:', {
-            isAdmin,
-            profile: profile,
-            role: profile?.role,
-            dashboardUrl,
-            termsAccepted: termsAcceptance?.terms_accepted,
-            privacyAccepted: termsAcceptance?.privacy_accepted
-          });
-          
-          navigate(dashboardUrl);
-        } else {
-          // No session, redirect to home
-          console.log('AuthCallback: No session found, redirecting to home');
-          navigate('/');
         }
+        
+        // Get admin status and terms acceptance
+        const [isAdmin, termsAcceptance] = await Promise.all([
+          robustAdminCheck(),
+          TermsPrivacyService.getUserAcceptance(user.id)
+        ]);
+        
+        // Check if user needs to accept terms and privacy
+        const needsTermsAcceptance = !termsAcceptance || !termsAcceptance.terms_accepted || !termsAcceptance.privacy_accepted;
+        
+        if (needsTermsAcceptance) {
+          console.log('⚠️ AuthCallback: User needs to accept terms and privacy, redirecting to terms page');
+          navigate('/?showTerms=true');
+          return;
+        }
+        
+        // Use the same routing logic as the rest of the app
+        const dashboardUrl = getDashboardUrl(isAdmin, profile);
+        
+        console.log('🎯 AuthCallback: Routing decision:', {
+          isAdmin,
+          profile: profile,
+          role: profile?.role,
+          dashboardUrl,
+          termsAccepted: termsAcceptance?.terms_accepted,
+          privacyAccepted: termsAcceptance?.privacy_accepted
+        });
+        
+        navigate(dashboardUrl);
       } catch (error) {
-        console.error('Auth callback error:', error);
+        console.error('💥 AuthCallback: Error processing user session:', error);
         navigate('/');
       }
     };
 
-    handleAuthCallback();
+    const handleAuthCallback = async () => {
+      try {
+        console.log('🔄 AuthCallback: Starting OAuth callback handling...');
+        
+        // Listen for auth state changes (this is more reliable for OAuth callbacks)
+        authStateSubscription = supabase.auth.onAuthStateChange(async (event, session) => {
+          console.log('🔔 AuthCallback: Auth state change:', { 
+            event, 
+            hasSession: !!session,
+            userId: session?.user?.id,
+            userEmail: session?.user?.email,
+            userMetadata: session?.user?.user_metadata
+          });
+          
+          if (event === 'SIGNED_IN' && session?.user) {
+            console.log('✅ AuthCallback: User signed in via OAuth, processing session...');
+            await processUserSession(session.user);
+          } else if (event === 'SIGNED_OUT') {
+            console.log('❌ AuthCallback: User signed out, redirecting to home');
+            navigate('/');
+          } else if (event === 'TOKEN_REFRESHED') {
+            console.log('🔄 AuthCallback: Token refreshed, checking session...');
+            if (session?.user) {
+              await processUserSession(session.user);
+            }
+          }
+        });
+
+        // Also try to get the current session immediately
+        const { data: authData, error: authError } = await supabase.auth.getSession();
+        
+        if (authError) {
+          console.error('❌ AuthCallback: Error getting session:', authError);
+          navigate('/');
+          return;
+        }
+        
+        if (authData?.session?.user) {
+          console.log('✅ AuthCallback: Found existing session, processing...');
+          await processUserSession(authData.session.user);
+        } else {
+          console.log('⏳ AuthCallback: No session found, waiting for OAuth callback...');
+          
+          // Set a timeout to redirect if no auth state change occurs
+          timeoutId = setTimeout(() => {
+            console.log('⏰ AuthCallback: Timeout waiting for OAuth callback, redirecting to home');
+            navigate('/');
+          }, 10000); // 10 second timeout
+        }
+        
+      } catch (error) {
+        console.error('💥 AuthCallback: Error during callback handling:', error);
+        navigate('/');
+      }
+    };
+
+    // Start the callback handling
+    timeoutId = setTimeout(handleAuthCallback, 100);
+    
+    return () => {
+      if (timeoutId) clearTimeout(timeoutId);
+      if (authStateSubscription) authStateSubscription.data.subscription.unsubscribe();
+    };
   }, [navigate]);
 
   return (

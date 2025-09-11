@@ -28,6 +28,9 @@ const HeroSection = () => {
   
   // Authentication hook
   const { user, signOut, profile, isAdmin } = useSecureAuth();
+  
+  // Toast hook
+  const { toast } = useToast();
 
   /**
    * Handle user sign out with error handling
@@ -49,6 +52,77 @@ const HeroSection = () => {
       return profile.full_name.split(' ').map(n => n[0]).join('').toUpperCase();
     }
     return user?.email?.charAt(0).toUpperCase() || 'U';
+  };
+
+  /**
+   * Handle customer signup button click - check if user is already logged in
+   */
+  const handleCustomerSignupClick = () => {
+    if (user) {
+      // User is already logged in
+      if (profile?.role === 'customer' || profile?.role === 'user') {
+        toast({
+          title: "Already a Customer!",
+          description: "You're already signed up as a customer. Visit your dashboard to manage your account.",
+        });
+        // Navigate to user dashboard
+        navigate('/user');
+      } else if (profile?.role === 'merchant') {
+        toast({
+          title: "Merchant Account Detected",
+          description: "You're currently signed in as a merchant. Sign out to create a customer account, or visit your merchant dashboard.",
+        });
+      } else if (isAdmin) {
+        toast({
+          title: "Admin Account Detected",
+          description: "You're currently signed in as an admin. Sign out to create a customer account, or visit your admin dashboard.",
+        });
+      } else {
+        toast({
+          title: "Already Signed In",
+          description: "You're already signed in. Visit your dashboard to manage your account.",
+        });
+        navigate('/user');
+      }
+    } else {
+      // User is not logged in, open customer signup modal
+      setCustomerModalOpen(true);
+    }
+  };
+
+  /**
+   * Handle merchant signup button click - check if user is already logged in
+   */
+  const handleMerchantSignupClick = () => {
+    if (user) {
+      // User is already logged in
+      if (profile?.role === 'merchant') {
+        toast({
+          title: "Already a Merchant!",
+          description: "You're already signed up as a merchant. Visit your merchant dashboard to manage your business.",
+        });
+        navigate('/merchant');
+      } else if (profile?.role === 'customer' || profile?.role === 'user') {
+        toast({
+          title: "Customer Account Detected",
+          description: "You're currently signed in as a customer. Sign out to create a merchant account, or visit your customer dashboard.",
+        });
+      } else if (isAdmin) {
+        toast({
+          title: "Admin Account Detected",
+          description: "You're currently signed in as an admin. Sign out to create a merchant account, or visit your admin dashboard.",
+        });
+      } else {
+        toast({
+          title: "Already Signed In",
+          description: "You're already signed in. Visit your dashboard to manage your account.",
+        });
+        navigate('/user');
+      }
+    } else {
+      // User is not logged in, open merchant signup modal
+      setMerchantModalOpen(true);
+    }
   };
 
   // Use centralized dashboard routing logic
@@ -196,7 +270,7 @@ const HeroSection = () => {
                 variant="hero" 
                 size="lg" 
                 className="text-lg px-8 py-4 h-auto font-semibold"
-                onClick={() => setCustomerModalOpen(true)}
+                onClick={handleCustomerSignupClick}
               >
                 Join as Customer
               </Button>
@@ -204,7 +278,7 @@ const HeroSection = () => {
                 variant="outline" 
                 size="lg" 
                 className="text-lg px-8 py-4 h-auto border-primary/40 text-primary hover:bg-primary/10 backdrop-blur-sm transition-smooth font-semibold"
-                onClick={() => setMerchantModalOpen(true)}
+                onClick={handleMerchantSignupClick}
               >
                 Partner with Us
               </Button>

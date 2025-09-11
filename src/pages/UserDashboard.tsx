@@ -4,6 +4,9 @@ import { useSmartDataRefresh } from "@/hooks/useSmartDataRefresh";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Navigate, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -23,7 +26,19 @@ import {
   Users,
   Award,
   Target,
-  Building2
+  Building2,
+  Vote,
+  Search,
+  Clock,
+  CheckCircle,
+  XCircle,
+  AlertCircle,
+  Calendar,
+  Hash,
+  DollarSign,
+  MessageSquare,
+  ExternalLink,
+  Shield
 } from "lucide-react";
 import LoyaltyCardTab from "@/components/dashboard/LoyaltyCardTab";
 import ReferralsTab from "@/components/dashboard/ReferralsTab";
@@ -32,12 +47,39 @@ import LoyaltyAccountLinking from "@/components/LoyaltyAccountLinking";
 import PointConversionSystem from "@/components/PointConversionSystem";
 import MarketplaceMain from "@/components/marketplace/MarketplaceMain";
 import UserNFTManager from "@/components/UserNFTManager";
+import { format } from 'date-fns';
+import { 
+  DAOOrganization, 
+  DAOProposal, 
+  DAOMember, 
+  DAOStats, 
+  ProposalStatus, 
+  VotingType,
+  PROPOSAL_CATEGORIES,
+  VOTING_TYPES,
+  MEMBER_ROLES
+} from '@/types/dao';
+import { DAOService } from '@/lib/daoService';
 
 const UserDashboard = () => {
   const { user, isAdmin, loading } = useSecureAuth();
   const { toast } = useToast();
-  const [activeSection, setActiveSection] = useState<'overview' | 'loyalty' | 'loyalty-networks' | 'referrals' | 'rewards' | 'marketplace'>('overview');
+  const [activeSection, setActiveSection] = useState<'overview' | 'loyalty' | 'loyalty-networks' | 'referrals' | 'rewards' | 'marketplace' | 'dao'>('overview');
   const [isLoaded, setIsLoaded] = useState(false);
+  
+  // DAO state variables
+  const [daoActiveTab, setDaoActiveTab] = useState('proposals');
+  const [proposals, setProposals] = useState<DAOProposal[]>([]);
+  const [members, setMembers] = useState<DAOMember[]>([]);
+  const [daoStats, setDaoStats] = useState<DAOStats | null>(null);
+  const [daoLoading, setDaoLoading] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState<ProposalStatus | 'all'>('all');
+  const [categoryFilter, setCategoryFilter] = useState<string>('all');
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [userMembership, setUserMembership] = useState<DAOMember | null>(null);
+  const [selectedProposal, setSelectedProposal] = useState<DAOProposal | null>(null);
+  const [showProposalDetails, setShowProposalDetails] = useState(false);
 
   const handleSignOut = async () => {
     try {
@@ -73,9 +115,161 @@ const UserDashboard = () => {
     dependencies: [user?.id] // Refresh when user changes
   });
 
+  // DAO functions
+  const loadDAOData = async () => {
+    if (activeSection !== 'dao') return;
+    
+    try {
+      setDaoLoading(true);
+      
+      // Load DAO organizations from database
+      const organizations = await DAOService.getOrganizations();
+      if (organizations.length === 0) {
+        console.warn('No DAO organizations found');
+        setProposals([]);
+        setMembers([]);
+        setDaoStats({
+          total_members: 0,
+          active_members: 0,
+          total_proposals: 0,
+          active_proposals: 0,
+          total_treasury_value: 0,
+          treasury_currency: 'SOL',
+          participation_rate: 0,
+          average_voting_power: 0
+        });
+        return;
+      }
+
+      const daoId = organizations[0].id;
+
+      // Load proposals, members, and stats from database
+      const [proposalsData, membersData, statsData] = await Promise.all([
+        DAOService.getProposals(daoId),
+        DAOService.getMembers(daoId),
+        DAOService.getDAOStats(daoId)
+      ]);
+
+      setProposals(proposalsData);
+      setMembers(membersData);
+      setDaoStats(statsData);
+
+      // Fallback to sample data if database is empty
+      if (proposalsData.length === 0) {
+        const sampleProposals: DAOProposal[] = [
+          {
+            id: 'prop-1',
+            dao_id: daoId,
+            title: 'Increase RAC token rewards for loyalty program',
+            description: 'Proposal to increase RAC token rewards from 10% to 15% for all loyalty program participants.',
+            category: 'treasury',
+            status: 'active',
+            voting_type: 'single_choice',
+            choices: ['Yes', 'No', 'Abstain'],
+            votes: { 'Yes': 45, 'No': 12, 'Abstain': 3 },
+            total_votes: 60,
+            voting_power_required: 1000,
+            voting_start: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+            voting_end: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString(),
+            execution_delay: 24,
+            proposer_id: 'user-1',
+            proposer_name: 'DAO Member',
+            created_at: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
+            updated_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString()
+          }
+        ];
+        setProposals(sampleProposals);
+      }
+
+    } catch (error) {
+      console.error('Error loading DAO data:', error);
+    } finally {
+      setDaoLoading(false);
+    }
+  };
+
+  const checkUserMembership = async () => {
+    if (activeSection !== 'dao') return;
+    
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      setCurrentUser(user);
+
+      // Get DAO organizations to find the user's membership
+      const organizations = await DAOService.getOrganizations();
+      if (organizations.length > 0) {
+        const daoId = organizations[0].id;
+        const membership = await DAOService.getUserMembership(daoId, user.id);
+        
+        if (membership) {
+          setUserMembership(membership);
+        } else {
+          // User is not a member, create a default membership for display
+          const defaultMembership: DAOMember = {
+            id: `member-${user.id}`,
+            dao_id: daoId,
+            user_id: user.id,
+            wallet_address: 'Not connected',
+            role: 'member',
+            governance_tokens: 0,
+            voting_power: 0,
+            joined_at: new Date().toISOString(),
+            last_active_at: new Date().toISOString(),
+            is_active: false,
+            user_email: user.email,
+            user_full_name: user.user_metadata?.full_name || 'DAO Member'
+          };
+          setUserMembership(defaultMembership);
+        }
+      }
+    } catch (error) {
+      console.error('Error checking user membership:', error);
+    }
+  };
+
+  const castVote = async (proposalId: string, choice: string, reason?: string) => {
+    try {
+      if (!userMembership) {
+        toast({
+          title: "Membership Required",
+          description: "You must be a DAO member to vote on proposals.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      await DAOService.castVote(proposalId, currentUser.id, choice, userMembership.voting_power, reason);
+
+      toast({
+        title: "Vote Cast Successfully",
+        description: `Your vote for "${choice}" has been recorded.`,
+      });
+
+      // Refresh the proposals to show updated vote counts
+      await loadDAOData();
+    } catch (error) {
+      console.error('Voting error:', error);
+      toast({
+        title: "Voting Failed",
+        description: "Failed to cast vote. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
   useEffect(() => {
     setIsLoaded(true);
   }, []);
+
+  // Load DAO data when DAO section is active
+  useEffect(() => {
+    if (activeSection === 'dao') {
+      loadDAOData();
+      checkUserMembership();
+    }
+  }, [activeSection]);
 
   if (loading) {
     return (
@@ -345,6 +539,34 @@ const UserDashboard = () => {
             </CardContent>
           </Card>
 
+          <Card 
+            onClick={() => setActiveSection('dao')} 
+            className="cursor-pointer group bg-white/5 backdrop-blur-xl border-white/10 hover:bg-white/10 hover:border-white/20 transition-all duration-500 hover:scale-105 hover:shadow-2xl hover:shadow-emerald-500/25"
+          >
+            <CardHeader className="pb-4">
+              <div className="flex items-center justify-between">
+                <div className="p-3 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-xl shadow-lg shadow-emerald-500/25">
+                  <Vote className="h-6 w-6 text-white" />
+                </div>
+                <Badge className="bg-gradient-to-r from-emerald-500 to-teal-500 text-white border-0">
+                  Govern
+                </Badge>
+              </div>
+              <CardTitle className="text-lg font-semibold text-white group-hover:text-emerald-200 transition-colors">
+                DAO Governance
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-gray-400 text-sm mb-4">
+                Participate in decentralized governance and vote on proposals
+              </p>
+              <div className="flex items-center justify-between">
+                <span className="text-2xl font-bold text-white">{proposals.length}</span>
+                <span className="text-sm text-gray-400">proposals</span>
+              </div>
+            </CardContent>
+          </Card>
+
         </div>
 
         {/* Enhanced Metrics Overview */}
@@ -470,8 +692,335 @@ const UserDashboard = () => {
           {activeSection === 'referrals' && <ReferralsTab />}
           {activeSection === 'rewards' && user && <RewardsTracker userId={user.id} />}
           {activeSection === 'marketplace' && <MarketplaceMain />}
+          
+          {activeSection === 'dao' && (
+            <div className="space-y-6">
+              {/* DAO Header */}
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-2xl font-bold text-white">DAO Governance</h2>
+                  <p className="text-gray-400">Participate in decentralized decision making</p>
+                </div>
+                {userMembership && (
+                  <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30">
+                    <Shield className="w-3 h-3 mr-1" />
+                    {userMembership.role === 'admin' ? 'Admin' : 'Member'}
+                  </Badge>
+                )}
+              </div>
+
+              {/* DAO Tabs */}
+              <div className="flex space-x-1 bg-white/5 rounded-lg p-1">
+                <button
+                  onClick={() => setDaoActiveTab('proposals')}
+                  className={`flex-1 px-4 py-2 rounded-md text-sm font-medium transition-all ${
+                    daoActiveTab === 'proposals'
+                      ? 'bg-emerald-500 text-white shadow-lg'
+                      : 'text-gray-400 hover:text-white hover:bg-white/10'
+                  }`}
+                >
+                  <Vote className="w-4 h-4 inline mr-2" />
+                  Proposals
+                </button>
+                <button
+                  onClick={() => setDaoActiveTab('members')}
+                  className={`flex-1 px-4 py-2 rounded-md text-sm font-medium transition-all ${
+                    daoActiveTab === 'members'
+                      ? 'bg-emerald-500 text-white shadow-lg'
+                      : 'text-gray-400 hover:text-white hover:bg-white/10'
+                  }`}
+                >
+                  <Users className="w-4 h-4 inline mr-2" />
+                  Members
+                </button>
+                <button
+                  onClick={() => setDaoActiveTab('stats')}
+                  className={`flex-1 px-4 py-2 rounded-md text-sm font-medium transition-all ${
+                    daoActiveTab === 'stats'
+                      ? 'bg-emerald-500 text-white shadow-lg'
+                      : 'text-gray-400 hover:text-white hover:bg-white/10'
+                  }`}
+                >
+                  <TrendingUp className="w-4 h-4 inline mr-2" />
+                  Statistics
+                </button>
+              </div>
+
+              {/* DAO Content */}
+              {daoActiveTab === 'proposals' && (
+                <div className="space-y-4">
+                  {/* Search and Filters */}
+                  <div className="flex flex-col sm:flex-row gap-4">
+                    <div className="flex-1">
+                      <div className="relative">
+                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                        <Input
+                          placeholder="Search proposals..."
+                          value={searchTerm}
+                          onChange={(e) => setSearchTerm(e.target.value)}
+                          className="pl-10 bg-white/5 border-white/10 text-white placeholder-gray-400"
+                        />
+                      </div>
+                    </div>
+                    <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as ProposalStatus | 'all')}>
+                      <SelectTrigger className="w-full sm:w-48 bg-white/5 border-white/10 text-white">
+                        <SelectValue placeholder="Filter by status" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Status</SelectItem>
+                        <SelectItem value="active">Active</SelectItem>
+                        <SelectItem value="passed">Passed</SelectItem>
+                        <SelectItem value="rejected">Rejected</SelectItem>
+                        <SelectItem value="executed">Executed</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Proposals List */}
+                  <div className="space-y-4">
+                    {daoLoading ? (
+                      <div className="flex items-center justify-center py-8">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-500"></div>
+                      </div>
+                    ) : proposals.length === 0 ? (
+                      <Card className="bg-white/5 border-white/10">
+                        <CardContent className="flex flex-col items-center justify-center py-8">
+                          <Vote className="w-12 h-12 text-gray-400 mb-4" />
+                          <h3 className="text-lg font-semibold text-white mb-2">No Proposals Found</h3>
+                          <p className="text-gray-400 text-center">There are no proposals available at the moment.</p>
+                        </CardContent>
+                      </Card>
+                    ) : (
+                      proposals
+                        .filter(proposal => {
+                          const matchesSearch = proposal.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                                               proposal.description.toLowerCase().includes(searchTerm.toLowerCase());
+                          const matchesStatus = statusFilter === 'all' || proposal.status === statusFilter;
+                          return matchesSearch && matchesStatus;
+                        })
+                        .map((proposal) => (
+                          <Card key={proposal.id} className="bg-white/5 border-white/10 hover:bg-white/10 transition-colors">
+                            <CardHeader>
+                              <div className="flex items-start justify-between">
+                                <div className="flex-1">
+                                  <CardTitle className="text-lg text-white mb-2">{proposal.title}</CardTitle>
+                                  <p className="text-gray-400 text-sm mb-4 line-clamp-2">{proposal.description}</p>
+                                  <div className="flex items-center space-x-4 text-sm text-gray-400">
+                                    <div className="flex items-center">
+                                      <Calendar className="w-4 h-4 mr-1" />
+                                      Ends {format(new Date(proposal.voting_end), 'MMM dd, yyyy')}
+                                    </div>
+                                    <div className="flex items-center">
+                                      <Users className="w-4 h-4 mr-1" />
+                                      {proposal.total_votes} votes
+                                    </div>
+                                    <Badge 
+                                      className={`${
+                                        proposal.status === 'active' ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' :
+                                        proposal.status === 'passed' ? 'bg-blue-500/20 text-blue-400 border-blue-500/30' :
+                                        proposal.status === 'rejected' ? 'bg-red-500/20 text-red-400 border-red-500/30' :
+                                        'bg-gray-500/20 text-gray-400 border-gray-500/30'
+                                      }`}
+                                    >
+                                      {proposal.status}
+                                    </Badge>
+                                  </div>
+                                </div>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => {
+                                    setSelectedProposal(proposal);
+                                    setShowProposalDetails(true);
+                                  }}
+                                  className="bg-emerald-500/10 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/20"
+                                >
+                                  <Vote className="w-4 h-4 mr-2" />
+                                  Vote
+                                </Button>
+                              </div>
+                            </CardHeader>
+                          </Card>
+                        ))
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {daoActiveTab === 'members' && (
+                <div className="space-y-4">
+                  <Card className="bg-white/5 border-white/10">
+                    <CardHeader>
+                      <CardTitle className="text-white">DAO Members</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      {members.length === 0 ? (
+                        <div className="flex flex-col items-center justify-center py-8">
+                          <Users className="w-12 h-12 text-gray-400 mb-4" />
+                          <h3 className="text-lg font-semibold text-white mb-2">No Members Found</h3>
+                          <p className="text-gray-400 text-center">No members have joined the DAO yet.</p>
+                        </div>
+                      ) : (
+                        <div className="space-y-3">
+                          {members.map((member) => (
+                            <div key={member.id} className="flex items-center justify-between p-3 bg-white/5 rounded-lg">
+                              <div className="flex items-center space-x-3">
+                                <div className="w-10 h-10 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-full flex items-center justify-center">
+                                  <User className="w-5 h-5 text-white" />
+                                </div>
+                                <div>
+                                  <p className="text-white font-medium">{member.user_full_name || member.user_email}</p>
+                                  <p className="text-gray-400 text-sm">{member.role}</p>
+                                </div>
+                              </div>
+                              <div className="text-right">
+                                <p className="text-white font-medium">{member.governance_tokens} tokens</p>
+                                <p className="text-gray-400 text-sm">{member.voting_power}% voting power</p>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                </div>
+              )}
+
+              {daoActiveTab === 'stats' && (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                  <Card className="bg-white/5 border-white/10">
+                    <CardContent className="p-6">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-gray-400 text-sm">Total Members</p>
+                          <p className="text-2xl font-bold text-white">{daoStats?.total_members || 0}</p>
+                        </div>
+                        <Users className="w-8 h-8 text-emerald-400" />
+                      </div>
+                    </CardContent>
+                  </Card>
+                  
+                  <Card className="bg-white/5 border-white/10">
+                    <CardContent className="p-6">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-gray-400 text-sm">Active Proposals</p>
+                          <p className="text-2xl font-bold text-white">{daoStats?.active_proposals || 0}</p>
+                        </div>
+                        <Vote className="w-8 h-8 text-blue-400" />
+                      </div>
+                    </CardContent>
+                  </Card>
+                  
+                  <Card className="bg-white/5 border-white/10">
+                    <CardContent className="p-6">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-gray-400 text-sm">Treasury Value</p>
+                          <p className="text-2xl font-bold text-white">{daoStats?.total_treasury_value || 0}</p>
+                          <p className="text-xs text-gray-400">{daoStats?.treasury_currency || 'SOL'}</p>
+                        </div>
+                        <Coins className="w-8 h-8 text-yellow-400" />
+                      </div>
+                    </CardContent>
+                  </Card>
+                  
+                  <Card className="bg-white/5 border-white/10">
+                    <CardContent className="p-6">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-gray-400 text-sm">Participation Rate</p>
+                          <p className="text-2xl font-bold text-white">{daoStats?.participation_rate || 0}%</p>
+                        </div>
+                        <TrendingUp className="w-8 h-8 text-purple-400" />
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              )}
+            </div>
+          )}
           </div>
       </main>
+
+      {/* Proposal Details Dialog */}
+      <Dialog open={showProposalDetails} onOpenChange={setShowProposalDetails}>
+        <DialogContent className="max-w-2xl bg-slate-900 border-slate-700 text-white">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold text-white">
+              {selectedProposal?.title}
+            </DialogTitle>
+          </DialogHeader>
+          
+          {selectedProposal && (
+            <div className="space-y-6">
+              <div>
+                <h4 className="font-semibold text-white mb-2">Description</h4>
+                <p className="text-gray-300 text-sm leading-relaxed">
+                  {selectedProposal.description}
+                </p>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <h4 className="font-semibold text-white mb-2">Status</h4>
+                  <Badge 
+                    className={`${
+                      selectedProposal.status === 'active' ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' :
+                      selectedProposal.status === 'passed' ? 'bg-blue-500/20 text-blue-400 border-blue-500/30' :
+                      selectedProposal.status === 'rejected' ? 'bg-red-500/20 text-red-400 border-red-500/30' :
+                      'bg-gray-500/20 text-gray-400 border-gray-500/30'
+                    }`}
+                  >
+                    {selectedProposal.status}
+                  </Badge>
+                </div>
+                <div>
+                  <h4 className="font-semibold text-white mb-2">Voting Ends</h4>
+                  <p className="text-gray-300 text-sm">
+                    {format(new Date(selectedProposal.voting_end), 'MMM dd, yyyy HH:mm')}
+                  </p>
+                </div>
+              </div>
+              
+              <div>
+                <h4 className="font-semibold text-white mb-3">Vote Options</h4>
+                <div className="space-y-2">
+                  {selectedProposal.choices.map((choice, index) => (
+                    <div key={index} className="flex items-center justify-between p-3 bg-white/5 rounded-lg">
+                      <span className="text-white font-medium">{choice}</span>
+                      <div className="flex items-center space-x-2">
+                        <span className="text-gray-400 text-sm">
+                          {selectedProposal.votes[choice] || 0} votes
+                        </span>
+                        <Button
+                          size="sm"
+                          onClick={() => {
+                            castVote(selectedProposal.id, choice);
+                            setShowProposalDetails(false);
+                          }}
+                          className="bg-emerald-500 hover:bg-emerald-600 text-white"
+                          disabled={selectedProposal.status !== 'active' || !userMembership}
+                        >
+                          Vote
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              
+              {!userMembership && (
+                <div className="p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
+                  <p className="text-yellow-400 text-sm">
+                    You need to be a DAO member to vote on proposals.
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

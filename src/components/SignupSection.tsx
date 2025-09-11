@@ -4,6 +4,9 @@ import { Card } from "@/components/ui/card";
 import CustomerSignupModal from "./CustomerSignupModal";
 import MerchantSignupModal from "./MerchantSignupModal";
 import { Users, Store, CreditCard, Building2 } from "lucide-react";
+import { useSecureAuth } from "@/hooks/useSecureAuth";
+import { useToast } from "@/hooks/use-toast";
+import { useNavigate } from "react-router-dom";
 
 /**
  * Signup section component that provides entry points for customer and merchant registration
@@ -14,6 +17,81 @@ const SignupSection = () => {
   // Modal state management
   const [customerModalOpen, setCustomerModalOpen] = useState(false);
   const [merchantModalOpen, setMerchantModalOpen] = useState(false);
+  
+  // Hooks
+  const { user, profile, isAdmin } = useSecureAuth();
+  const { toast } = useToast();
+  const navigate = useNavigate();
+
+  /**
+   * Handle customer signup button click - check if user is already logged in
+   */
+  const handleCustomerSignupClick = () => {
+    if (user) {
+      // User is already logged in
+      if (profile?.role === 'customer' || profile?.role === 'user') {
+        toast({
+          title: "Already a Customer!",
+          description: "You're already signed up as a customer. Visit your dashboard to manage your account.",
+        });
+        navigate('/user');
+      } else if (profile?.role === 'merchant') {
+        toast({
+          title: "Merchant Account Detected",
+          description: "You're currently signed in as a merchant. Sign out to create a customer account, or visit your merchant dashboard.",
+        });
+      } else if (isAdmin) {
+        toast({
+          title: "Admin Account Detected",
+          description: "You're currently signed in as an admin. Sign out to create a customer account, or visit your admin dashboard.",
+        });
+      } else {
+        toast({
+          title: "Already Signed In",
+          description: "You're already signed in. Visit your dashboard to manage your account.",
+        });
+        navigate('/user');
+      }
+    } else {
+      // User is not logged in, open customer signup modal
+      setCustomerModalOpen(true);
+    }
+  };
+
+  /**
+   * Handle merchant signup button click - check if user is already logged in
+   */
+  const handleMerchantSignupClick = () => {
+    if (user) {
+      // User is already logged in
+      if (profile?.role === 'merchant') {
+        toast({
+          title: "Already a Merchant!",
+          description: "You're already signed up as a merchant. Visit your merchant dashboard to manage your business.",
+        });
+        navigate('/merchant');
+      } else if (profile?.role === 'customer' || profile?.role === 'user') {
+        toast({
+          title: "Customer Account Detected",
+          description: "You're currently signed in as a customer. Sign out to create a merchant account, or visit your customer dashboard.",
+        });
+      } else if (isAdmin) {
+        toast({
+          title: "Admin Account Detected",
+          description: "You're currently signed in as an admin. Sign out to create a merchant account, or visit your admin dashboard.",
+        });
+      } else {
+        toast({
+          title: "Already Signed In",
+          description: "You're already signed in. Visit your dashboard to manage your account.",
+        });
+        navigate('/user');
+      }
+    } else {
+      // User is not logged in, open merchant signup modal
+      setMerchantModalOpen(true);
+    }
+  };
 
   return (
     <section id="signup" className="relative py-20 px-6 mb-16 overflow-hidden">
@@ -80,7 +158,7 @@ const SignupSection = () => {
               <Button 
                 size="lg" 
                 className="w-full text-lg py-6 font-semibold bg-gradient-to-r from-primary to-purple-500 hover:from-primary/90 hover:to-purple-500/90 text-white shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
-                onClick={() => setCustomerModalOpen(true)}
+                onClick={handleCustomerSignupClick}
               >
                 Get Your Card
               </Button>
@@ -121,7 +199,7 @@ const SignupSection = () => {
                 variant="outline" 
                 size="lg" 
                 className="w-full text-lg py-6 font-semibold border-blue-500/50 text-blue-500 hover:bg-gradient-to-r hover:from-blue-500/10 hover:to-primary/10 hover:border-blue-500/70 transition-all duration-300 transform hover:scale-105"
-                onClick={() => setMerchantModalOpen(true)}
+                onClick={handleMerchantSignupClick}
               >
                 Start Partnership
               </Button>

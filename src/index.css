@@ -140,6 +140,18 @@ All colors MUST be HSL.
     overflow-x: hidden;
     max-width: 100vw;
   }
+
+  /* Prevent any element from causing horizontal overflow */
+  * {
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Specifically target common overflow culprits */
+  .flex, .grid, .container, .w-full, .max-w-full {
+    max-width: 100% !important;
+    overflow-x: hidden !important;
+  }
 }
 
 @layer utilities {

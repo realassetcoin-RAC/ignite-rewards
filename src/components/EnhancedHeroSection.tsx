@@ -208,10 +208,10 @@ const EnhancedHeroSection = () => {
                           </DropdownMenuItem>
                           <DropdownMenuItem 
                             className="cursor-pointer"
-                            onClick={() => navigate('/dao')}
+                            onClick={() => navigate('/dao-voting')}
                           >
                             <Vote className="mr-2 h-4 w-4" />
-                            DAO Governance
+                            DAO Voting
                           </DropdownMenuItem>
                         </>
                       )}
