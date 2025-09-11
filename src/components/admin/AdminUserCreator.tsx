@@ -160,11 +160,11 @@ const AdminUserCreator: React.FC = () => {
       </CardHeader>
       <CardContent>
         <div className="w-full">
-          <div className="w-full bg-background/60 backdrop-blur-md border border-primary/20 rounded-lg p-1 overflow-x-auto">
-            <div className="grid grid-cols-2 gap-1 min-w-max">
+          <div className="w-full bg-background/60 backdrop-blur-md border border-primary/20 rounded-lg p-1">
+            <div className="flex gap-1">
               <button
                 onClick={() => setActiveTab('email')}
-                className={`flex items-center justify-center gap-2 px-2 py-1.5 rounded-md text-sm font-medium transition-all duration-200 ${
+                className={`flex items-center justify-center gap-2 px-2 py-1.5 rounded-md text-sm font-medium transition-all duration-200 flex-1 min-w-0 ${
                   activeTab === 'email'
                     ? 'bg-gradient-to-r from-primary to-purple-500 text-white shadow-sm'
                     : 'text-muted-foreground hover:text-foreground hover:bg-foreground/5'
@@ -175,7 +175,7 @@ const AdminUserCreator: React.FC = () => {
               </button>
               <button
                 onClick={() => setActiveTab('wallet')}
-                className={`flex items-center justify-center gap-2 px-2 py-1.5 rounded-md text-sm font-medium transition-all duration-200 ${
+                className={`flex items-center justify-center gap-2 px-2 py-1.5 rounded-md text-sm font-medium transition-all duration-200 flex-1 min-w-0 ${
                   activeTab === 'wallet'
                     ? 'bg-gradient-to-r from-primary to-purple-500 text-white shadow-sm'
                     : 'text-muted-foreground hover:text-foreground hover:bg-foreground/5'

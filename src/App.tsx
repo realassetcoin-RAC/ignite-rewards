@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -29,10 +29,11 @@ import AdminTestPanel from "./components/AdminTestPanel";
 import AdminDebug from "./pages/AdminDebug";
 import DAODashboard from "./pages/DAODashboard";
 import UserDAODashboard from "./pages/UserDAODashboard";
-import DAOPublic from "./pages/DAOPublic";
 import TestPage from "./pages/TestPage";
+import Marketplace from "./pages/Marketplace";
 import { useSmartRefresh } from "./hooks/useSmartRefresh";
 import { useSessionPersistence } from "./hooks/useSessionPersistence";
+import ContactChatbot from "@/components/ContactChatbot";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -62,6 +63,7 @@ const queryClient = new QueryClient({
 
 const App = () => {
   const isDev = import.meta.env.DEV;
+  const [isInitialized, setIsInitialized] = useState(false);
   
   // Initialize smart refresh system (prevents page refresh, allows component updates)
   useSmartRefresh();
@@ -76,6 +78,23 @@ const App = () => {
       import('@/utils/fixAdminUser');
     }
   }, [isDev]);
+
+  // Add initialization delay to prevent 404 flash
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsInitialized(true);
+    }, 100);
+    return () => clearTimeout(timer);
+  }, []);
+
+  // Show loading state during initialization
+  if (!isInitialized) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
 
   return (
     <QueryClientProvider client={queryClient}>
@@ -108,13 +127,17 @@ const App = () => {
             {isDev && <Route path="/admin-test" element={<AdminTestPanel />} />}
             {isDev && <Route path="/admin-debug" element={<AdminDebug />} />}
             <Route path="/merchant" element={<MerchantDashboard />} />
-            <Route path="/dao" element={<DAOPublic />} />
+            <Route path="/dao-voting" element={<UserDAODashboard />} />
             <Route path="/dao-admin" element={<DAODashboard />} />
             <Route path="/dao-vote" element={<UserDAODashboard />} />
+            <Route path="/dao-governance" element={<Navigate to="/dao-voting" replace />} />
+            <Route path="/marketplace" element={<Marketplace />} />
             <Route path="/test" element={<TestPage />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
+          {/* Global chatbot for pre-login routes only */}
+          <ContactChatbot />
           </BrowserRouter>
         </TooltipProvider>
       </ThemeProvider>

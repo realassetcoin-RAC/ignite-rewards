@@ -17,7 +17,10 @@ export const formatCurrency = (amount: number, currency: string = 'USD'): string
 /**
  * Format large numbers with appropriate suffixes
  */
-export const formatNumber = (num: number): string => {
+export const formatNumber = (num: number | undefined | null): string => {
+  if (num === undefined || num === null || isNaN(num)) {
+    return '0';
+  }
   if (num >= 1000000) {
     return (num / 1000000).toFixed(1) + 'M';
   }

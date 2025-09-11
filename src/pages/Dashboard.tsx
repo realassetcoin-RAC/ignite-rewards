@@ -12,6 +12,8 @@ import PointsGraphTab from "@/components/dashboard/PointsGraphTab";
 import ProfileTab from "@/components/dashboard/ProfileTab";
 import ReferralsTab from "@/components/dashboard/ReferralsTab";
 import ErrorBoundary from "@/components/ErrorBoundary";
+import UserNavigation from "@/components/UserNavigation";
+import HomeNavigation from "@/components/HomeNavigation";
 
 const Dashboard = () => {
   const { user, isAdmin, loading } = useSecureAuth();
@@ -68,24 +70,8 @@ const Dashboard = () => {
               )}
             </div>
             <div className="flex items-center space-x-4">
-              <span className={`text-sm text-muted-foreground ${
-                isLoaded ? 'animate-fade-in-up animation-delay-200' : 'opacity-0'
-              }`}>
-                Welcome, {user.email}
-              </span>
-              <Button 
-                variant="outline" 
-                size="sm" 
-                asChild
-                className={`group bg-background/60 backdrop-blur-md hover:bg-background/80 border-primary/30 hover:border-primary/50 transform hover:scale-105 transition-all duration-300 ${
-                  isLoaded ? 'animate-fade-in-up animation-delay-400' : 'opacity-0'
-                }`}
-              >
-                <Link to="/" className="flex items-center">
-                  <ArrowLeft className="mr-2 h-4 w-4 group-hover:-translate-x-1 transition-transform" />
-                  Back to Home
-                </Link>
-              </Button>
+              <HomeNavigation variant="home" showText={true} />
+              <UserNavigation />
             </div>
           </div>
         </div>
@@ -94,13 +80,13 @@ const Dashboard = () => {
       {/* Dashboard Content */}
       <main className="relative z-10 container mx-auto px-4 py-8">
         <div className="space-y-6">
-          <div className={`w-full bg-background/60 backdrop-blur-md border border-primary/20 rounded-lg p-1 overflow-x-auto ${
+          <div className={`w-full bg-background/60 backdrop-blur-md border border-primary/20 rounded-lg p-1 ${
             isLoaded ? 'animate-fade-in-up animation-delay-600' : 'opacity-0'
           }`}>
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-1 min-w-max">
+            <div className="flex flex-wrap gap-1">
               <button
                 onClick={() => setActiveTab('loyalty')}
-                className={`flex items-center justify-center gap-1 px-2 py-1.5 rounded-md text-sm font-medium transition-all duration-200 ${
+                className={`flex items-center justify-center gap-1 px-2 py-1.5 rounded-md text-sm font-medium transition-all duration-200 flex-1 min-w-0 ${
                   activeTab === 'loyalty'
                     ? 'bg-gradient-to-r from-primary to-purple-500 text-white shadow-sm'
                     : 'text-muted-foreground hover:text-foreground hover:bg-foreground/5'
@@ -112,7 +98,7 @@ const Dashboard = () => {
               </button>
               <button
                 onClick={() => setActiveTab('transactions')}
-                className={`flex items-center justify-center gap-1 px-2 py-1.5 rounded-md text-sm font-medium transition-all duration-200 ${
+                className={`flex items-center justify-center gap-1 px-2 py-1.5 rounded-md text-sm font-medium transition-all duration-200 flex-1 min-w-0 ${
                   activeTab === 'transactions'
                     ? 'bg-gradient-to-r from-primary to-purple-500 text-white shadow-sm'
                     : 'text-muted-foreground hover:text-foreground hover:bg-foreground/5'
@@ -124,7 +110,7 @@ const Dashboard = () => {
               </button>
               <button
                 onClick={() => setActiveTab('points')}
-                className={`flex items-center justify-center gap-1 px-2 py-1.5 rounded-md text-sm font-medium transition-all duration-200 ${
+                className={`flex items-center justify-center gap-1 px-2 py-1.5 rounded-md text-sm font-medium transition-all duration-200 flex-1 min-w-0 ${
                   activeTab === 'points'
                     ? 'bg-gradient-to-r from-primary to-purple-500 text-white shadow-sm'
                     : 'text-muted-foreground hover:text-foreground hover:bg-foreground/5'
@@ -136,7 +122,7 @@ const Dashboard = () => {
               </button>
               <button
                 onClick={() => setActiveTab('profile')}
-                className={`flex items-center justify-center gap-1 px-2 py-1.5 rounded-md text-sm font-medium transition-all duration-200 ${
+                className={`flex items-center justify-center gap-1 px-2 py-1.5 rounded-md text-sm font-medium transition-all duration-200 flex-1 min-w-0 ${
                   activeTab === 'profile'
                     ? 'bg-gradient-to-r from-primary to-purple-500 text-white shadow-sm'
                     : 'text-muted-foreground hover:text-foreground hover:bg-foreground/5'
@@ -148,7 +134,7 @@ const Dashboard = () => {
               </button>
               <button
                 onClick={() => setActiveTab('referrals')}
-                className={`flex items-center justify-center gap-1 px-2 py-1.5 rounded-md text-sm font-medium transition-all duration-200 ${
+                className={`flex items-center justify-center gap-1 px-2 py-1.5 rounded-md text-sm font-medium transition-all duration-200 flex-1 min-w-0 ${
                   activeTab === 'referrals'
                     ? 'bg-gradient-to-r from-primary to-purple-500 text-white shadow-sm'
                     : 'text-muted-foreground hover:text-foreground hover:bg-foreground/5'

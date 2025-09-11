@@ -118,6 +118,11 @@ const RewardsManager: React.FC = () => {
 
       if (error) {
         console.error('Error loading pending proposal:', error);
+        // If table doesn't exist, just return without error
+        if (error.message.includes('relation') || error.message.includes('does not exist')) {
+          console.warn('Config proposals table does not exist yet');
+          return;
+        }
         return;
       }
 
@@ -193,11 +198,20 @@ const RewardsManager: React.FC = () => {
 
       if (error) {
         console.error('Error creating config proposal:', error);
-        toast({
-          title: "Error",
-          description: "Failed to create configuration proposal.",
-          variant: "destructive",
-        });
+        // If table doesn't exist, show a different message
+        if (error.message.includes('relation') || error.message.includes('does not exist')) {
+          toast({
+            title: "Database Setup Required",
+            description: "DAO configuration table needs to be set up. Please run the database migrations.",
+            variant: "destructive",
+          });
+        } else {
+          toast({
+            title: "Error",
+            description: "Failed to create configuration proposal.",
+            variant: "destructive",
+          });
+        }
         return;
       }
 

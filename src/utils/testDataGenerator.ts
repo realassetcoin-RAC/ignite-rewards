@@ -1,0 +1,523 @@
+import { supabase } from '@/integrations/supabase/client';
+
+interface TestUser {
+  id: string;
+  email: string;
+  full_name: string;
+  phone?: string;
+  role: 'user' | 'merchant' | 'admin';
+  created_at: string;
+}
+
+interface TestMerchant {
+  id: string;
+  business_name: string;
+  business_type: string;
+  contact_email: string;
+  phone: string;
+  city: string;
+  country: string;
+  status: 'active' | 'pending' | 'suspended';
+  subscription_plan: string;
+  subscription_start_date: string;
+  subscription_end_date: string;
+  created_at: string;
+}
+
+interface TestDAO {
+  id: string;
+  name: string;
+  description: string;
+  governance_token: string;
+  treasury_address?: string;
+  voting_threshold: number;
+  proposal_threshold: number;
+  status: 'active' | 'inactive' | 'suspended';
+  created_at: string;
+}
+
+interface TestProposal {
+  id: string;
+  dao_id: string;
+  proposer_id: string;
+  title: string;
+  description: string;
+  category: string;
+  voting_type: string;
+  status: 'draft' | 'active' | 'passed' | 'rejected' | 'executed' | 'cancelled';
+  votes_for: number;
+  votes_against: number;
+  total_votes: number;
+  created_at: string;
+  voting_start: string;
+  voting_end: string;
+}
+
+interface TestTransaction {
+  id: string;
+  merchant_id: string;
+  user_id: string;
+  amount: number;
+  reward_points: number;
+  receipt_number: string;
+  status: 'completed' | 'pending' | 'failed';
+  created_at: string;
+}
+
+interface TestMarketplaceListing {
+  id: string;
+  title: string;
+  description: string;
+  short_description: string;
+  image_url: string;
+  listing_type: 'asset' | 'initiative';
+  status: 'active' | 'draft' | 'completed' | 'cancelled';
+  total_funding_goal: number;
+  current_funding_amount: number;
+  current_investor_count: number;
+  campaign_type: 'time_bound' | 'goal_bound';
+  end_date: string;
+  expected_return_rate: number;
+  risk_level: 'low' | 'medium' | 'high';
+  minimum_investment: number;
+  maximum_investment: number;
+  asset_type: string;
+  token_symbol: string;
+  total_token_supply: number;
+  token_price: number;
+  is_featured: boolean;
+  is_verified: boolean;
+  tags: string[];
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+}
+
+class TestDataGenerator {
+  private users: TestUser[] = [];
+  private merchants: TestMerchant[] = [];
+  private daos: TestDAO[] = [];
+  private proposals: TestProposal[] = [];
+  private transactions: TestTransaction[] = [];
+  private marketplaceListings: TestMarketplaceListing[] = [];
+
+  // Generate random data helpers
+  private randomChoice<T>(array: T[]): T {
+    return array[Math.floor(Math.random() * array.length)];
+  }
+
+  private randomInt(min: number, max: number): number {
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+  }
+
+  private randomFloat(min: number, max: number, decimals: number = 2): number {
+    return parseFloat((Math.random() * (max - min) + min).toFixed(decimals));
+  }
+
+  private randomDate(start: Date, end: Date): string {
+    return new Date(start.getTime() + Math.random() * (end.getTime() - start.getTime())).toISOString();
+  }
+
+  private generateId(): string {
+    return Math.random().toString(36).substr(2, 9);
+  }
+
+  // Generate test users
+  generateUsers(count: number = 50): TestUser[] {
+    const firstNames = ['John', 'Jane', 'Michael', 'Sarah', 'David', 'Emily', 'Robert', 'Jessica', 'William', 'Ashley', 'James', 'Amanda', 'Christopher', 'Jennifer', 'Daniel', 'Lisa', 'Matthew', 'Nancy', 'Anthony', 'Karen'];
+    const lastNames = ['Smith', 'Johnson', 'Williams', 'Brown', 'Jones', 'Garcia', 'Miller', 'Davis', 'Rodriguez', 'Martinez', 'Hernandez', 'Lopez', 'Gonzalez', 'Wilson', 'Anderson', 'Thomas', 'Taylor', 'Moore', 'Jackson', 'Martin'];
+    const domains = ['gmail.com', 'yahoo.com', 'hotmail.com', 'outlook.com', 'company.com'];
+
+    for (let i = 0; i < count; i++) {
+      const firstName = this.randomChoice(firstNames);
+      const lastName = this.randomChoice(lastNames);
+      const domain = this.randomChoice(domains);
+      
+      this.users.push({
+        id: this.generateId(),
+        email: `${firstName.toLowerCase()}.${lastName.toLowerCase()}${i}@${domain}`,
+        full_name: `${firstName} ${lastName}`,
+        phone: `+1-${this.randomInt(200, 999)}-${this.randomInt(100, 999)}-${this.randomInt(1000, 9999)}`,
+        role: this.randomChoice(['user', 'merchant', 'admin']),
+        created_at: this.randomDate(new Date(2023, 0, 1), new Date())
+      });
+    }
+
+    return this.users;
+  }
+
+  // Generate test merchants
+  generateMerchants(count: number = 20): TestMerchant[] {
+    const businessTypes = ['Restaurant', 'Retail Store', 'Service Provider', 'Online Store', 'Gym', 'Salon', 'Gas Station', 'Grocery Store', 'Pharmacy', 'Electronics Store'];
+    const cities = ['New York', 'Los Angeles', 'Chicago', 'Houston', 'Phoenix', 'Philadelphia', 'San Antonio', 'San Diego', 'Dallas', 'San Jose'];
+    const countries = ['United States', 'Canada', 'United Kingdom', 'Australia', 'Germany', 'France', 'Japan', 'Brazil', 'India', 'Mexico'];
+    const subscriptionPlans = ['Basic', 'Professional', 'Enterprise', 'Premium'];
+
+    for (let i = 0; i < count; i++) {
+      const businessType = this.randomChoice(businessTypes);
+      const city = this.randomChoice(cities);
+      const country = this.randomChoice(countries);
+      const plan = this.randomChoice(subscriptionPlans);
+      
+      const startDate = this.randomDate(new Date(2023, 0, 1), new Date());
+      const endDate = new Date(startDate);
+      endDate.setFullYear(endDate.getFullYear() + 1);
+
+      this.merchants.push({
+        id: this.generateId(),
+        business_name: `${businessType} ${i + 1}`,
+        business_type: businessType,
+        contact_email: `merchant${i + 1}@business.com`,
+        phone: `+1-${this.randomInt(200, 999)}-${this.randomInt(100, 999)}-${this.randomInt(1000, 9999)}`,
+        city,
+        country,
+        status: this.randomChoice(['active', 'pending', 'suspended']),
+        subscription_plan: plan,
+        subscription_start_date: startDate,
+        subscription_end_date: endDate.toISOString(),
+        created_at: startDate
+      });
+    }
+
+    return this.merchants;
+  }
+
+  // Generate test DAOs
+  generateDAOs(count: number = 5): TestDAO[] {
+    const daoNames = ['RAC Governance DAO', 'Community Treasury DAO', 'Development Fund DAO', 'Marketing DAO', 'Partnership DAO'];
+    const descriptions = [
+      'Decentralized governance for the RAC Rewards platform',
+      'Community-managed treasury for platform development',
+      'Funding mechanism for new feature development',
+      'Marketing and promotion initiatives',
+      'Strategic partnerships and collaborations'
+    ];
+    const tokens = ['RAC', 'GOV', 'TREASURY', 'DEV', 'MKT'];
+
+    for (let i = 0; i < count; i++) {
+      this.daos.push({
+        id: this.generateId(),
+        name: daoNames[i] || `DAO ${i + 1}`,
+        description: descriptions[i] || `Description for DAO ${i + 1}`,
+        governance_token: tokens[i] || 'TOKEN',
+        treasury_address: `0x${Math.random().toString(16).substr(2, 40)}`,
+        voting_threshold: this.randomInt(51, 75),
+        proposal_threshold: this.randomInt(1, 10),
+        status: this.randomChoice(['active', 'inactive', 'suspended']),
+        created_at: this.randomDate(new Date(2023, 0, 1), new Date())
+      });
+    }
+
+    return this.daos;
+  }
+
+  // Generate test proposals
+  generateProposals(count: number = 30): TestProposal[] {
+    const titles = [
+      'Increase reward points for premium users',
+      'Implement new loyalty program features',
+      'Allocate funds for marketing campaign',
+      'Update platform security measures',
+      'Add new payment methods',
+      'Expand to new markets',
+      'Improve user interface design',
+      'Implement AI-powered recommendations',
+      'Add social media integration',
+      'Create mobile app for merchants'
+    ];
+    const descriptions = [
+      'This proposal aims to increase the reward points given to premium users to incentivize higher engagement.',
+      'We propose implementing new features in the loyalty program to enhance user experience.',
+      'Allocate a portion of the treasury for a comprehensive marketing campaign.',
+      'Update and strengthen the platform\'s security measures to protect user data.',
+      'Add support for additional payment methods to improve user convenience.',
+      'Expand the platform to new geographical markets to increase user base.',
+      'Redesign the user interface to be more intuitive and user-friendly.',
+      'Implement AI-powered recommendation system to personalize user experience.',
+      'Add integration with popular social media platforms.',
+      'Develop a dedicated mobile application for merchants.'
+    ];
+    const categories = ['governance', 'treasury', 'technical', 'community'];
+    const votingTypes = ['simple_majority', 'super_majority', 'unanimous'];
+
+    for (let i = 0; i < count; i++) {
+      const dao = this.randomChoice(this.daos);
+      const user = this.randomChoice(this.users);
+      const createdDate = this.randomDate(new Date(2023, 0, 1), new Date());
+      const votingStart = new Date(createdDate);
+      votingStart.setDate(votingStart.getDate() + 1);
+      const votingEnd = new Date(votingStart);
+      votingEnd.setDate(votingEnd.getDate() + 7);
+
+      this.proposals.push({
+        id: this.generateId(),
+        dao_id: dao.id,
+        proposer_id: user.id,
+        title: this.randomChoice(titles),
+        description: this.randomChoice(descriptions),
+        category: this.randomChoice(categories),
+        voting_type: this.randomChoice(votingTypes),
+        status: this.randomChoice(['draft', 'active', 'passed', 'rejected', 'executed', 'cancelled']),
+        votes_for: this.randomInt(0, 100),
+        votes_against: this.randomInt(0, 50),
+        total_votes: this.randomInt(10, 150),
+        created_at: createdDate,
+        voting_start: votingStart.toISOString(),
+        voting_end: votingEnd.toISOString()
+      });
+    }
+
+    return this.proposals;
+  }
+
+  // Generate test transactions
+  generateTransactions(count: number = 200): TestTransaction[] {
+    for (let i = 0; i < count; i++) {
+      const merchant = this.randomChoice(this.merchants);
+      const user = this.randomChoice(this.users);
+      const amount = this.randomFloat(10, 1000);
+      const rewardPoints = Math.floor(amount); // 1 point per dollar
+
+      this.transactions.push({
+        id: this.generateId(),
+        merchant_id: merchant.id,
+        user_id: user.id,
+        amount,
+        reward_points: rewardPoints,
+        receipt_number: `RCP-${this.randomInt(100000, 999999)}`,
+        status: this.randomChoice(['completed', 'pending', 'failed']),
+        created_at: this.randomDate(new Date(2023, 0, 1), new Date())
+      });
+    }
+
+    return this.transactions;
+  }
+
+  // Generate test marketplace listings
+  generateMarketplaceListings(count: number = 15): TestMarketplaceListing[] {
+    const titles = [
+      'Downtown Office Building',
+      'Green Energy Startup',
+      'Tech Innovation Fund',
+      'Real Estate Development',
+      'Sustainable Agriculture Project',
+      'Healthcare Technology Initiative',
+      'Educational Platform Development',
+      'Renewable Energy Infrastructure',
+      'Smart City Solutions',
+      'Biotech Research Fund'
+    ];
+    const descriptions = [
+      'Premium office space in the heart of downtown with high rental yields and appreciation potential.',
+      'Revolutionary solar panel technology startup seeking funding for expansion and R&D.',
+      'Investment fund focused on emerging technology companies with high growth potential.',
+      'Mixed-use real estate development project in growing metropolitan area.',
+      'Sustainable farming initiative using advanced agricultural technology.',
+      'Healthcare technology platform improving patient care through AI and data analytics.',
+      'Educational technology platform revolutionizing online learning experiences.',
+      'Large-scale renewable energy infrastructure project with long-term returns.',
+      'Smart city technology solutions for urban development and sustainability.',
+      'Biotechnology research fund supporting breakthrough medical discoveries.'
+    ];
+    const assetTypes = ['real_estate', 'startup', 'fund', 'infrastructure', 'technology'];
+    const riskLevels = ['low', 'medium', 'high'];
+    const tags = ['real-estate', 'technology', 'sustainability', 'healthcare', 'education', 'energy', 'infrastructure'];
+
+    for (let i = 0; i < count; i++) {
+      const title = this.randomChoice(titles);
+      const description = this.randomChoice(descriptions);
+      const createdDate = this.randomDate(new Date(2023, 0, 1), new Date());
+      const endDate = new Date(createdDate);
+      endDate.setDate(endDate.getDate() + this.randomInt(30, 365));
+
+      this.marketplaceListings.push({
+        id: this.generateId(),
+        title: `${title} ${i + 1}`,
+        description: `${description} This is listing number ${i + 1}.`,
+        short_description: `${title} - Investment opportunity`,
+        image_url: `https://images.unsplash.com/photo-${1500000000000 + i}?w=500`,
+        listing_type: this.randomChoice(['asset', 'initiative']),
+        status: this.randomChoice(['active', 'draft', 'completed', 'cancelled']),
+        total_funding_goal: this.randomInt(100000, 10000000),
+        current_funding_amount: this.randomInt(0, 5000000),
+        current_investor_count: this.randomInt(0, 100),
+        campaign_type: this.randomChoice(['time_bound', 'goal_bound']),
+        end_date: endDate.toISOString(),
+        expected_return_rate: this.randomFloat(5, 25),
+        risk_level: this.randomChoice(riskLevels),
+        minimum_investment: this.randomInt(100, 10000),
+        maximum_investment: this.randomInt(10000, 1000000),
+        asset_type: this.randomChoice(assetTypes),
+        token_symbol: `TKN${i + 1}`,
+        total_token_supply: this.randomInt(1000000, 10000000),
+        token_price: this.randomFloat(0.1, 10),
+        is_featured: Math.random() > 0.7,
+        is_verified: Math.random() > 0.3,
+        tags: [this.randomChoice(tags), this.randomChoice(tags)].filter((tag, index, arr) => arr.indexOf(tag) === index),
+        created_by: this.randomChoice(this.users).id,
+        created_at: createdDate,
+        updated_at: createdDate
+      });
+    }
+
+    return this.marketplaceListings;
+  }
+
+  // Insert data into database
+  async insertTestData(): Promise<void> {
+    try {
+      console.log('🚀 Starting test data generation...');
+
+      // Generate all test data
+      this.generateUsers(50);
+      this.generateMerchants(20);
+      this.generateDAOs(5);
+      this.generateProposals(30);
+      this.generateTransactions(200);
+      this.generateMarketplaceListings(15);
+
+      console.log('📊 Generated test data:');
+      console.log(`- Users: ${this.users.length}`);
+      console.log(`- Merchants: ${this.merchants.length}`);
+      console.log(`- DAOs: ${this.daos.length}`);
+      console.log(`- Proposals: ${this.proposals.length}`);
+      console.log(`- Transactions: ${this.transactions.length}`);
+      console.log(`- Marketplace Listings: ${this.marketplaceListings.length}`);
+
+      // Insert users (profiles table)
+      console.log('👥 Inserting users...');
+      const userProfiles = this.users.map(user => ({
+        id: user.id,
+        email: user.email,
+        full_name: user.full_name,
+        phone: user.phone,
+        role: user.role,
+        created_at: user.created_at
+      }));
+
+      const { error: usersError } = await supabase
+        .from('profiles')
+        .upsert(userProfiles);
+
+      if (usersError) {
+        console.error('Error inserting users:', usersError);
+      } else {
+        console.log('✅ Users inserted successfully');
+      }
+
+      // Insert merchants
+      console.log('🏪 Inserting merchants...');
+      const { error: merchantsError } = await supabase
+        .from('merchants')
+        .upsert(this.merchants);
+
+      if (merchantsError) {
+        console.error('Error inserting merchants:', merchantsError);
+      } else {
+        console.log('✅ Merchants inserted successfully');
+      }
+
+      // Insert DAOs
+      console.log('🗳️ Inserting DAOs...');
+      const { error: daosError } = await supabase
+        .from('dao_organizations')
+        .upsert(this.daos);
+
+      if (daosError) {
+        console.error('Error inserting DAOs:', daosError);
+      } else {
+        console.log('✅ DAOs inserted successfully');
+      }
+
+      // Insert proposals
+      console.log('📋 Inserting proposals...');
+      const { error: proposalsError } = await supabase
+        .from('dao_proposals')
+        .upsert(this.proposals);
+
+      if (proposalsError) {
+        console.error('Error inserting proposals:', proposalsError);
+      } else {
+        console.log('✅ Proposals inserted successfully');
+      }
+
+      // Insert transactions
+      console.log('💳 Inserting transactions...');
+      const { error: transactionsError } = await supabase
+        .from('transactions')
+        .upsert(this.transactions);
+
+      if (transactionsError) {
+        console.error('Error inserting transactions:', transactionsError);
+      } else {
+        console.log('✅ Transactions inserted successfully');
+      }
+
+      // Insert marketplace listings
+      console.log('🏪 Inserting marketplace listings...');
+      const { error: listingsError } = await supabase
+        .from('marketplace_listings')
+        .upsert(this.marketplaceListings);
+
+      if (listingsError) {
+        console.error('Error inserting marketplace listings:', listingsError);
+      } else {
+        console.log('✅ Marketplace listings inserted successfully');
+      }
+
+      console.log('🎉 Test data generation completed successfully!');
+
+    } catch (error) {
+      console.error('❌ Error generating test data:', error);
+      throw error;
+    }
+  }
+
+  // Clear all test data
+  async clearTestData(): Promise<void> {
+    try {
+      console.log('🧹 Clearing test data...');
+
+      const tables = [
+        'marketplace_listings',
+        'transactions',
+        'dao_proposals',
+        'dao_organizations',
+        'merchants',
+        'profiles'
+      ];
+
+      for (const table of tables) {
+        const { error } = await supabase
+          .from(table)
+          .delete()
+          .neq('id', '00000000-0000-0000-0000-000000000000'); // Delete all records
+
+        if (error) {
+          console.error(`Error clearing ${table}:`, error);
+        } else {
+          console.log(`✅ Cleared ${table}`);
+        }
+      }
+
+      console.log('🎉 Test data cleared successfully!');
+    } catch (error) {
+      console.error('❌ Error clearing test data:', error);
+      throw error;
+    }
+  }
+
+  // Get generated data for inspection
+  getGeneratedData() {
+    return {
+      users: this.users,
+      merchants: this.merchants,
+      daos: this.daos,
+      proposals: this.proposals,
+      transactions: this.transactions,
+      marketplaceListings: this.marketplaceListings
+    };
+  }
+}
+
+export default TestDataGenerator;

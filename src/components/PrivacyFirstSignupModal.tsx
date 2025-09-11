@@ -3,6 +3,13 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from "@/components/ui/carousel";
 import { useToast } from "@/hooks/use-toast";
 import { 
   Shield, 
@@ -16,7 +23,10 @@ import {
   ArrowRight,
   Download,
   QrCode,
-  Smartphone
+  Smartphone,
+  Wallet,
+  ExternalLink,
+  Loader2
 } from "lucide-react";
 
 interface PrivacyFirstSignupModalProps {
@@ -53,33 +63,35 @@ const PrivacyFirstSignupModal: React.FC<PrivacyFirstSignupModalProps> = ({
   const userTypes = [
     {
       type: 'custodial' as const,
-      title: "Crypto-Savvy User",
-      subtitle: "Full Control & Privacy",
-      icon: Lock,
-      description: "For users familiar with blockchain and crypto",
+      title: "Start Earning Rewards",
+      subtitle: "For Customers",
+      icon: Shield,
+      description: "Create a custodial loyalty NFT card and start earning rewards",
       features: [
-        "Own your NFT loyalty card",
-        "Full control over rewards",
-        "Can trade/sell your NFT",
-        "Direct wallet integration",
-        "Higher reward rates"
+        "Create loyalty NFT card instantly",
+        "Start earning rewards immediately",
+        "No crypto knowledge required",
+        "Simple and secure",
+        "Access to all platform features"
       ],
-      color: "from-blue-500 to-purple-500"
+      color: "from-blue-500 to-purple-500",
+      badge: "For Customers"
     },
     {
       type: 'non-custodial' as const,
-      title: "Traditional User",
-      subtitle: "Simple & Private",
-      icon: Shield,
-      description: "For users who want simplicity without crypto knowledge",
+      title: "Connect Your Wallet",
+      subtitle: "For NFT Holders",
+      icon: Wallet,
+      description: "Already have an NFT from our marketplace? Connect your wallet",
       features: [
-        "No crypto knowledge needed",
-        "Automatic investment in real assets",
-        "Forced savings mindset",
-        "Traditional user experience",
-        "Fractional ownership of assets"
+        "Connect your Web3 wallet",
+        "Load your existing NFT",
+        "Access premium features",
+        "Full control over your assets",
+        "Trade and manage your NFTs"
       ],
-      color: "from-green-500 to-blue-500"
+      color: "from-green-500 to-emerald-500",
+      badge: "For NFT Holders"
     }
   ];
 
@@ -108,54 +120,77 @@ const PrivacyFirstSignupModal: React.FC<PrivacyFirstSignupModalProps> = ({
   const renderStep1 = () => (
     <div className="space-y-6">
       <div className="text-center mb-8">
-        <h3 className="text-2xl font-bold mb-2">Choose Your Privacy Level</h3>
+        <h3 className="text-2xl font-bold mb-2">Choose Your Signup Option</h3>
         <p className="text-muted-foreground">
-          Both options provide complete privacy - no personal data collection
+          Select how you want to join our loyalty program
         </p>
       </div>
 
-      <div className="grid md:grid-cols-2 gap-6 w-full overflow-hidden">
-        {userTypes.map((userType) => (
-          <Card 
-            key={userType.type}
-            className="group cursor-pointer border-2 hover:border-primary/50 transition-all duration-300 hover:shadow-lg overflow-hidden"
-            onClick={() => handleTypeSelection(userType.type)}
-          >
-            <CardContent className="p-6">
-              <div className="text-center space-y-4">
-                <div className={`w-16 h-16 rounded-full bg-gradient-to-r ${userType.color} flex items-center justify-center shadow-lg mx-auto group-hover:scale-110 transition-transform`}>
-                  <userType.icon className="w-8 h-8 text-white" />
-                </div>
-                
-                <div>
-                  <h4 className="text-xl font-bold mb-1">{userType.title}</h4>
-                  <p className="text-sm text-muted-foreground mb-3">{userType.subtitle}</p>
-                  <p className="text-sm text-muted-foreground">{userType.description}</p>
-                </div>
+      <div className="w-full max-w-2xl mx-auto">
+        <Carousel
+          className="w-full"
+          opts={{
+            align: "center",
+            loop: true,
+            skipSnaps: false,
+            dragFree: false,
+          }}
+        >
+          <CarouselContent className="-ml-2 md:-ml-4">
+            {userTypes.map((userType, index) => (
+              <CarouselItem key={userType.type} className="pl-2 md:pl-4 basis-full">
+                <div className="p-1">
+                  <Card 
+                    className="group cursor-pointer border-2 hover:border-primary/50 transition-all duration-300 hover:shadow-lg overflow-hidden h-full max-w-sm mx-auto"
+                    onClick={() => handleTypeSelection(userType.type)}
+                  >
+                    <CardContent className="p-6">
+                      <div className="text-center space-y-4">
+                        {userType.badge && (
+                          <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/20">
+                            {userType.badge}
+                          </Badge>
+                        )}
+                        
+                        <div className={`w-16 h-16 rounded-full bg-gradient-to-r ${userType.color} flex items-center justify-center shadow-lg mx-auto group-hover:scale-110 transition-transform`}>
+                          <userType.icon className="w-8 h-8 text-white" />
+                        </div>
+                        
+                        <div>
+                          <h4 className="text-xl font-bold mb-1">{userType.title}</h4>
+                          <p className="text-sm text-muted-foreground mb-3">{userType.subtitle}</p>
+                          <p className="text-sm text-muted-foreground">{userType.description}</p>
+                        </div>
 
-                <div className="space-y-2">
-                  {userType.features.map((feature, index) => (
-                    <div key={index} className="flex items-center text-sm">
-                      <CheckCircle className="w-4 h-4 text-green-500 mr-2 flex-shrink-0" />
-                      <span>{feature}</span>
-                    </div>
-                  ))}
-                </div>
+                        <div className="space-y-2">
+                          {userType.features.map((feature, featureIndex) => (
+                            <div key={featureIndex} className="flex items-center text-sm">
+                              <CheckCircle className="w-4 h-4 text-green-500 mr-2 flex-shrink-0" />
+                              <span>{feature}</span>
+                            </div>
+                          ))}
+                        </div>
 
-                <Button 
-                  className="w-full bg-gradient-to-r from-primary to-purple-500 hover:from-primary/90 hover:to-purple-500/90 transition-all duration-300"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleTypeSelection(userType.type);
-                  }}
-                >
-                  Choose This Option
-                  <ArrowRight className="w-4 h-4 ml-2" />
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+                        <Button 
+                          className="w-full bg-gradient-to-r from-primary to-purple-500 hover:from-primary/90 hover:to-purple-500/90 transition-all duration-300"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleTypeSelection(userType.type);
+                          }}
+                        >
+                          {userType.type === 'custodial' ? 'Start Earning' : 'Connect Wallet'}
+                          <ArrowRight className="w-4 h-4 ml-2" />
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              </CarouselItem>
+            ))}
+          </CarouselContent>
+          <CarouselPrevious className="hidden md:flex -left-12" />
+          <CarouselNext className="hidden md:flex -right-12" />
+        </Carousel>
       </div>
 
       <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-4">

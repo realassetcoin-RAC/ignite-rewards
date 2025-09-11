@@ -1,9 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Navigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
+import { useSecureAuth } from '@/hooks/useSecureAuth';
+import UserNavigation from '@/components/UserNavigation';
+import HomeNavigation from '@/components/HomeNavigation';
+import BreadcrumbNavigation from '@/components/BreadcrumbNavigation';
 import { 
   TrendingUp, 
   DollarSign, 
@@ -15,8 +20,10 @@ import {
   RefreshCw,
   Plus,
   Star,
-  Shield
+  Shield,
+  Sparkles
 } from 'lucide-react';
+import racLogo from '@/assets/rac-logo-exact.svg';
 import MarketplaceListingCard from './MarketplaceListingCard';
 import MarketplaceFilters from './MarketplaceFilters';
 import InvestmentModal from './InvestmentModal';
@@ -35,12 +42,124 @@ import {
   formatCurrency,
   formatNumber
 } from '@/lib/marketplaceUtils';
+import { MarketplaceService } from '@/lib/marketplaceService';
 
 interface MarketplaceMainProps {
   className?: string;
 }
 
+// Mock data - moved outside component to prevent re-creation on every render
+const mockListings: MarketplaceListing[] = [
+  {
+    id: '1',
+    title: 'Downtown Office Building',
+    description: 'Premium office space in the heart of downtown with high rental yields and appreciation potential.',
+    short_description: 'Premium downtown office building with excellent rental yields',
+    image_url: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=500',
+    listing_type: 'asset',
+    status: 'active',
+    total_funding_goal: 5000000,
+    current_funding_amount: 3200000,
+    current_investor_count: 45,
+    campaign_type: 'time_bound',
+    end_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+    expected_return_rate: 12.5,
+    risk_level: 'medium',
+    minimum_investment: 1000,
+    maximum_investment: 100000,
+    asset_type: 'real_estate',
+    token_symbol: 'DOB',
+    total_token_supply: 1000000,
+    token_price: 5,
+    is_featured: true,
+    is_verified: true,
+    tags: ['real-estate', 'commercial', 'downtown'],
+    created_by: 'admin',
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+    funding_progress_percentage: 64,
+    days_remaining: 30,
+    is_expired: false
+  },
+  {
+    id: '2',
+    title: 'Green Energy Solar Farm',
+    description: 'Large-scale solar energy project with guaranteed government contracts and environmental benefits.',
+    short_description: 'Sustainable solar energy project with government backing',
+    image_url: 'https://images.unsplash.com/photo-1509391366360-2e959784a276?w=500',
+    listing_type: 'initiative',
+    status: 'active',
+    total_funding_goal: 8000000,
+    current_funding_amount: 2400000,
+    current_investor_count: 32,
+    campaign_type: 'time_bound',
+    end_date: new Date(Date.now() + 45 * 24 * 60 * 60 * 1000).toISOString(),
+    expected_return_rate: 15.2,
+    risk_level: 'low',
+    minimum_investment: 500,
+    maximum_investment: 50000,
+    asset_type: 'other',
+    token_symbol: 'SOLAR',
+    total_token_supply: 1600000,
+    token_price: 5,
+    is_featured: false,
+    is_verified: true,
+    tags: ['renewable-energy', 'solar', 'green'],
+    created_by: 'admin',
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+    funding_progress_percentage: 30,
+    days_remaining: 45,
+    is_expired: false
+  },
+  {
+    id: '3',
+    title: 'Tech Startup Equity',
+    description: 'Early-stage AI startup with innovative machine learning solutions for healthcare applications.',
+    short_description: 'AI healthcare startup with breakthrough technology',
+    image_url: 'https://images.unsplash.com/photo-1551434678-e076c223a692?w=500',
+    listing_type: 'asset',
+    status: 'active',
+    total_funding_goal: 3000000,
+    current_funding_amount: 1800000,
+    current_investor_count: 28,
+    campaign_type: 'open_ended',
+    expected_return_rate: 25.0,
+    risk_level: 'high',
+    minimum_investment: 2000,
+    maximum_investment: 200000,
+    asset_type: 'startup_equity',
+    token_symbol: 'AIHC',
+    total_token_supply: 600000,
+    token_price: 5,
+    is_featured: true,
+    is_verified: false,
+    tags: ['startup', 'ai', 'healthcare', 'tech'],
+    created_by: 'admin',
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+    funding_progress_percentage: 60,
+    days_remaining: null,
+    is_expired: false
+  }
+];
+
+const mockStats: MarketplaceStats = {
+  total_listings: 3,
+  active_listings: 3,
+  total_funding_raised: 7400000,
+  total_investments: 105,
+  total_users_invested: 105,
+  average_investment_amount: 70476,
+  top_performing_assets: [],
+  recent_investments: []
+};
+
 const MarketplaceMain: React.FC<MarketplaceMainProps> = ({ className = '' }) => {
+  // All hooks must be called at the top level, before any conditional returns
+  const { user, loading: authLoading } = useSecureAuth();
+  const { toast } = useToast();
+  
   const [listings, setListings] = useState<MarketplaceListing[]>([]);
   const [filteredListings, setFilteredListings] = useState<MarketplaceListing[]>([]);
   const [displayedListings, setDisplayedListings] = useState<MarketplaceListing[]>([]);
@@ -60,231 +179,195 @@ const MarketplaceMain: React.FC<MarketplaceMainProps> = ({ className = '' }) => 
     total: 0,
     total_pages: 0
   });
-  const [userBalance] = useState(10000); // TODO: Get from user context
-  const [nftTier] = useState<NFTCardTier | null>(null); // TODO: Get from NFT context
-  const { toast } = useToast();
+  const [userBalance] = useState(10000);
+  const [nftTier] = useState<NFTCardTier | null>(null);
 
-  // Mock data - replace with actual API calls
-  const mockListings: MarketplaceListing[] = [
-    {
-      id: '1',
-      title: 'Downtown Office Building',
-      description: 'Premium office space in the heart of downtown with high rental yields and appreciation potential.',
-      short_description: 'Premium downtown office building with excellent rental yields',
-      image_url: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=500',
-      listing_type: 'asset',
-      status: 'active',
-      total_funding_goal: 5000000,
-      current_funding_amount: 3200000,
-      current_investor_count: 45,
-      campaign_type: 'time_bound',
-      end_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-      expected_return_rate: 12.5,
-      risk_level: 'medium',
-      minimum_investment: 1000,
-      maximum_investment: 100000,
-      asset_type: 'real_estate',
-      token_symbol: 'DOB',
-      total_token_supply: 1000000,
-      token_price: 5,
-      is_featured: true,
-      is_verified: true,
-      tags: ['real-estate', 'commercial', 'downtown'],
-      created_by: 'admin',
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-      funding_progress_percentage: 64,
-      days_remaining: 30,
-      is_expired: false
-    },
-    {
-      id: '2',
-      title: 'Green Energy Startup',
-      description: 'Revolutionary solar panel technology startup seeking funding for expansion and R&D.',
-      short_description: 'Solar technology startup with innovative panel design',
-      image_url: 'https://images.unsplash.com/photo-1466611653911-95081537e5b7?w=500',
-      listing_type: 'initiative',
-      status: 'active',
-      total_funding_goal: 2000000,
-      current_funding_amount: 850000,
-      current_investor_count: 23,
-      campaign_type: 'time_bound',
-      end_date: new Date(Date.now() + 45 * 24 * 60 * 60 * 1000).toISOString(),
-      expected_return_rate: 25.0,
-      risk_level: 'high',
-      minimum_investment: 500,
-      maximum_investment: 50000,
-      asset_type: 'startup_equity',
-      token_symbol: 'GES',
-      total_token_supply: 2000000,
-      token_price: 1,
-      is_featured: false,
-      is_verified: true,
-      tags: ['startup', 'green-energy', 'solar'],
-      created_by: 'admin',
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-      funding_progress_percentage: 42.5,
-      days_remaining: 45,
-      is_expired: false
-    },
-    {
-      id: '3',
-      title: 'Gold Commodity Fund',
-      description: 'Diversified gold investment fund with professional management and storage.',
-      short_description: 'Professional gold investment fund with secure storage',
-      image_url: 'https://images.unsplash.com/photo-1559827260-dc66d52bef19?w=500',
-      listing_type: 'asset',
-      status: 'active',
-      total_funding_goal: 10000000,
-      current_funding_amount: 7500000,
-      current_investor_count: 156,
-      campaign_type: 'open_ended',
-      expected_return_rate: 8.5,
-      risk_level: 'low',
-      minimum_investment: 2500,
-      maximum_investment: 250000,
-      asset_type: 'commodity',
-      token_symbol: 'GOLD',
-      total_token_supply: 10000000,
-      token_price: 1,
-      is_featured: true,
-      is_verified: true,
-      tags: ['commodity', 'gold', 'precious-metals'],
-      created_by: 'admin',
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-      funding_progress_percentage: 75,
-      days_remaining: null,
-      is_expired: false
-    }
-  ];
-
-  const mockStats: MarketplaceStats = {
-    total_listings: 3,
-    active_listings: 3,
-    total_investments: 224,
-    total_funding_raised: 11550000,
-    total_users_invested: 156,
-    average_investment_amount: 51562.5,
-    top_performing_assets: mockListings.slice(0, 2),
-    recent_investments: []
-  };
-
-  // Load data
-  useEffect(() => {
-    loadListings();
-    loadStats();
-  }, []);
-
-  // Apply filters and sorting
-  useEffect(() => {
-    let filtered = filterListings(listings, filters);
-    filtered = sortListings(filtered, sort);
-    
-    setFilteredListings(filtered);
-    
-    const paginated = paginateListings(filtered, pagination.page, pagination.limit);
-    setDisplayedListings(paginated.listings);
-    setPagination(prev => ({
-      ...prev,
-      total: paginated.pagination.total,
-      total_pages: paginated.pagination.total_pages
-    }));
-  }, [listings, filters, sort, pagination.page, pagination.limit]);
-
-  const loadListings = async () => {
+  // All useCallback hooks
+  const loadListings = useCallback(async () => {
     setLoading(true);
     try {
-      // TODO: Replace with actual API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      setListings(mockListings);
+      const data = await MarketplaceService.getListings();
+      setListings(data);
     } catch (error) {
+      console.error('Failed to load listings:', error);
+      setListings(mockListings);
       toast({
-        title: "Error",
-        description: "Failed to load marketplace listings",
-        variant: "destructive",
+        title: "Warning",
+        description: "Using demo data. Database connection failed.",
+        variant: "default",
       });
     } finally {
       setLoading(false);
     }
-  };
+  }, [toast]);
 
-  const loadStats = async () => {
+  const loadStats = useCallback(async () => {
     try {
-      // TODO: Replace with actual API call
-      setStats(mockStats);
+      const data = await MarketplaceService.getMarketplaceStats();
+      setStats(data);
     } catch (error) {
       console.error('Failed to load stats:', error);
+      setStats(mockStats);
     }
-  };
+  }, []);
 
-  const handleInvest = (listing: MarketplaceListing) => {
+  const handleInvest = useCallback((listing: MarketplaceListing) => {
     setSelectedListing(listing);
     setShowInvestmentModal(true);
-  };
+  }, []);
 
-  const handleInvestmentSuccess = (investment: MarketplaceInvestment) => {
+  const handleInvestmentSuccess = useCallback((investment: MarketplaceInvestment) => {
     toast({
       title: "Investment Successful!",
       description: `You've invested ${formatCurrency(investment.investment_amount)} in ${selectedListing?.title}`,
     });
-    
-    // Refresh listings to update funding amounts
     loadListings();
-  };
+  }, [toast, selectedListing?.title, loadListings]);
 
-  const handleFiltersChange = (newFilters: MarketplaceFiltersType) => {
+  const handleFiltersChange = useCallback((newFilters: MarketplaceFiltersType) => {
     setFilters(newFilters);
     setPagination(prev => ({ ...prev, page: 1 }));
-  };
+  }, []);
 
-  const handleSortChange = (field: string, direction: 'asc' | 'desc') => {
+  const handleSortChange = useCallback((field: string, direction: 'asc' | 'desc') => {
     setSort({ field: field as any, direction });
-  };
+  }, []);
 
-  const handleLoadMore = () => {
+  const handleLoadMore = useCallback(() => {
     if (pagination.page < pagination.total_pages) {
       setPagination(prev => ({ ...prev, page: prev.page + 1 }));
     }
-  };
+  }, [pagination.page, pagination.total_pages]);
 
-  const handleResetFilters = () => {
+  const handleResetFilters = useCallback(() => {
     setFilters({});
     setPagination(prev => ({ ...prev, page: 1 }));
-  };
+  }, []);
 
-  if (loading) {
+  // All useEffect hooks
+  useEffect(() => {
+    if (user) {
+      loadListings();
+      loadStats();
+    }
+  }, [user, loadListings, loadStats]);
+
+  useEffect(() => {
+    let filtered = filterListings(listings, filters);
+    filtered = sortListings(filtered, sort);
+    setFilteredListings(filtered);
+  }, [listings, filters, sort]);
+
+  useEffect(() => {
+    const paginated = paginateListings(filteredListings, pagination.page, pagination.limit);
+    setDisplayedListings(paginated.listings);
+  }, [filteredListings, pagination.page, pagination.limit]);
+
+  useEffect(() => {
+    const totalPages = Math.ceil(filteredListings.length / pagination.limit);
+    setPagination(prev => ({
+      ...prev,
+      total: filteredListings.length,
+      total_pages: totalPages
+    }));
+  }, [filteredListings.length, pagination.limit]);
+
+  // Authentication checks - AFTER all hooks
+  if (authLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center space-y-4">
-          <div className="w-16 h-16 border-4 border-purple-500/20 border-t-purple-500 rounded-full animate-spin mx-auto"></div>
-          <p className="text-gray-400">Loading marketplace...</p>
+          <div className="w-16 h-16 border-4 border-primary/20 border-t-primary rounded-full animate-spin mx-auto"></div>
+          <p className="text-muted-foreground">Loading marketplace...</p>
         </div>
       </div>
     );
   }
 
+  if (!user) {
+    return <Navigate to="/" replace />;
+  }
+
   return (
-    <div className={`min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 ${className}`}>
-      <div className="container mx-auto px-6 py-8 space-y-8">
+    <div className={`min-h-screen bg-gradient-to-br from-slate-950 via-blue-950 to-slate-950 relative overflow-hidden ${className}`}>
+      {/* Enhanced Background Effects */}
+      <div className="absolute inset-0 opacity-30">
+        <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_50%_50%,rgba(0,31,63,0.4),transparent_50%)]"></div>
+        <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_80%_20%,rgba(255,133,27,0.2),transparent_50%)]"></div>
+        <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_20%_80%,rgba(0,31,63,0.3),transparent_50%)]"></div>
+      </div>
+      
+      {/* Floating Elements */}
+      <div className="absolute top-20 left-20 w-32 h-32 bg-gradient-to-br from-orange-500/20 to-orange-600/20 rounded-2xl rotate-45 animate-float pointer-events-none"></div>
+      <div className="absolute top-40 right-32 w-24 h-24 bg-gradient-to-br from-blue-900/20 to-blue-950/20 rounded-full animate-float-delayed pointer-events-none"></div>
+      <div className="absolute bottom-32 left-1/4 w-20 h-20 bg-gradient-to-br from-orange-400/20 to-orange-500/20 rounded-lg rotate-12 animate-float-slow pointer-events-none"></div>
+      
+      {/* Grid Pattern */}
+      <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:50px_50px]"></div>
+
+      {/* Navigation Header */}
+      <header className="relative z-50 border-b bg-slate-950/80 backdrop-blur-xl border-orange-500/20">
+        <div className="container mx-auto px-6 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <div className="flex items-center space-x-3">
+                 <div className="relative">
+                   <img 
+                     src={racLogo} 
+                     alt="RAC Logo" 
+                     className="w-10 h-10"
+                   />
+                 </div>
+                 <div>
+                   <h1 className="text-2xl font-bold bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
+                     RAC
+                   </h1>
+                   <p className="text-sm text-gray-400">Marketplace</p>
+                 </div>
+              </div>
+            </div>
+            <div className="flex items-center space-x-4">
+              <HomeNavigation variant="home" showText={true} />
+              <UserNavigation />
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <div className="container mx-auto px-6 py-8 space-y-8 relative z-10">
+        {/* Breadcrumb Navigation */}
+        <BreadcrumbNavigation className="mb-4" />
+        
         {/* Header */}
-        <div className="text-center space-y-4">
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">
-            Tokenized Asset Marketplace
-          </h1>
+        <div className="text-center space-y-6">
+           {/* Logo and Title */}
+           <div className="flex items-center justify-center space-x-4">
+             <div className="bg-black/20 backdrop-blur-sm rounded-2xl p-4">
+               <img 
+                 src={racLogo} 
+                 alt="RAC Logo" 
+                 className="h-12 lg:h-16"
+               />
+             </div>
+             <div>
+               <h1 className="text-4xl font-bold bg-gradient-to-r from-orange-500 via-orange-400 to-blue-500 bg-clip-text text-transparent animate-gradient-x">
+                 RAC
+               </h1>
+               <p className="text-lg text-orange-500 font-semibold">Marketplace</p>
+             </div>
+           </div>
           <p className="text-xl text-gray-300 max-w-3xl mx-auto">
-            Invest your loyalty rewards in tokenized assets and initiatives. Earn passive income through fractional ownership.
+            Invest your $RAC tokens in tokenized assets and initiatives. Earn passive income through fractional ownership in the RAC ecosystem.
           </p>
         </div>
 
         {/* Stats Cards */}
         {stats && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <Card className="bg-gradient-to-br from-green-500/10 to-emerald-500/10 border-green-500/20">
+            <Card className="bg-gradient-to-br from-slate-900/60 to-slate-800/30 backdrop-blur-md border border-orange-500/20">
               <CardContent className="p-6">
                 <div className="flex items-center space-x-3">
-                  <DollarSign className="w-8 h-8 text-green-400" />
+                  <DollarSign className="w-8 h-8 text-orange-500" />
                   <div>
                     <p className="text-sm text-gray-400">Total Funding Raised</p>
                     <p className="text-2xl font-bold text-white">
@@ -295,10 +378,10 @@ const MarketplaceMain: React.FC<MarketplaceMainProps> = ({ className = '' }) => 
               </CardContent>
             </Card>
 
-            <Card className="bg-gradient-to-br from-blue-500/10 to-cyan-500/10 border-blue-500/20">
+            <Card className="bg-gradient-to-br from-slate-900/60 to-slate-800/30 backdrop-blur-md border border-orange-500/20">
               <CardContent className="p-6">
                 <div className="flex items-center space-x-3">
-                  <Target className="w-8 h-8 text-blue-400" />
+                  <Target className="w-8 h-8 text-orange-500" />
                   <div>
                     <p className="text-sm text-gray-400">Active Listings</p>
                     <p className="text-2xl font-bold text-white">
@@ -309,29 +392,29 @@ const MarketplaceMain: React.FC<MarketplaceMainProps> = ({ className = '' }) => 
               </CardContent>
             </Card>
 
-            <Card className="bg-gradient-to-br from-purple-500/10 to-pink-500/10 border-purple-500/20">
+            <Card className="bg-gradient-to-br from-slate-900/60 to-slate-800/30 backdrop-blur-md border border-orange-500/20">
               <CardContent className="p-6">
                 <div className="flex items-center space-x-3">
-                  <Users className="w-8 h-8 text-purple-400" />
+                  <Users className="w-8 h-8 text-orange-500" />
                   <div>
                     <p className="text-sm text-gray-400">Total Investors</p>
                     <p className="text-2xl font-bold text-white">
-                      {formatNumber(stats.total_users_invested)}
+                      {formatNumber(stats.total_investments)}
                     </p>
                   </div>
                 </div>
               </CardContent>
             </Card>
 
-            <Card className="bg-gradient-to-br from-orange-500/10 to-red-500/10 border-orange-500/20">
+            <Card className="bg-gradient-to-br from-slate-900/60 to-slate-800/30 backdrop-blur-md border border-orange-500/20">
               <CardContent className="p-6">
                 <div className="flex items-center space-x-3">
-                  <TrendingUp className="w-8 h-8 text-orange-400" />
+                  <TrendingUp className="w-8 h-8 text-orange-500" />
                   <div>
                     <p className="text-sm text-gray-400">Avg. Investment</p>
-                    <p className="text-2xl font-bold text-white">
-                      {formatCurrency(stats.average_investment_amount)}
-                    </p>
+                     <p className="text-2xl font-bold text-white">
+                       {formatCurrency(stats.average_investment_amount)}
+                     </p>
                   </div>
                 </div>
               </CardContent>
@@ -339,147 +422,130 @@ const MarketplaceMain: React.FC<MarketplaceMainProps> = ({ className = '' }) => 
           </div>
         )}
 
-        {/* Controls */}
-        <div className="flex flex-col lg:flex-row gap-6">
-          {/* Filters */}
-          <div className="lg:w-1/4">
-            <MarketplaceFilters
-              filters={filters}
-              onFiltersChange={handleFiltersChange}
-              onReset={handleResetFilters}
-            />
-          </div>
+        {/* Filters and Controls */}
+        <div className="space-y-6">
+          <MarketplaceFilters
+            filters={filters}
+            onFiltersChange={handleFiltersChange}
+            onReset={handleResetFilters}
+          />
 
-          {/* Listings */}
-          <div className="lg:w-3/4 space-y-6">
-            {/* Listings Header */}
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-              <div>
-                <h2 className="text-2xl font-bold text-white">
-                  Available Investments
-                </h2>
-                <p className="text-gray-400">
-                  {pagination.total} listings found
-                </p>
-              </div>
-
-              <div className="flex items-center space-x-3">
-                {/* Sort */}
-                <Select
-                  value={`${sort.field}-${sort.direction}`}
-                  onValueChange={(value) => {
-                    const [field, direction] = value.split('-');
-                    handleSortChange(field, direction as 'asc' | 'desc');
-                  }}
-                >
-                  <SelectTrigger className="w-48 bg-white/5 border-white/20 text-white">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className="bg-slate-800 border-slate-700">
-                    <SelectItem value="created_at-desc">Newest First</SelectItem>
-                    <SelectItem value="created_at-asc">Oldest First</SelectItem>
-                    <SelectItem value="expected_return_rate-desc">Highest Return</SelectItem>
-                    <SelectItem value="expected_return_rate-asc">Lowest Return</SelectItem>
-                    <SelectItem value="current_funding_amount-desc">Most Funded</SelectItem>
-                    <SelectItem value="current_funding_amount-asc">Least Funded</SelectItem>
-                    <SelectItem value="risk_level-asc">Lowest Risk</SelectItem>
-                    <SelectItem value="risk_level-desc">Highest Risk</SelectItem>
-                  </SelectContent>
-                </Select>
-
-                {/* View Mode */}
-                <div className="flex border border-white/20 rounded-lg">
-                  <Button
-                    variant={viewMode === 'grid' ? 'default' : 'ghost'}
-                    size="sm"
-                    onClick={() => setViewMode('grid')}
-                    className={viewMode === 'grid' ? 'bg-purple-500 text-white' : 'bg-transparent text-white hover:bg-white/10'}
-                  >
-                    <Grid3X3 className="w-4 h-4" />
-                  </Button>
-                  <Button
-                    variant={viewMode === 'list' ? 'default' : 'ghost'}
-                    size="sm"
-                    onClick={() => setViewMode('list')}
-                    className={viewMode === 'list' ? 'bg-purple-500 text-white' : 'bg-transparent text-white hover:bg-white/10'}
-                  >
-                    <List className="w-4 h-4" />
-                  </Button>
-                </div>
-
-                {/* Refresh */}
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={loadListings}
-                  className="bg-white/5 border-white/20 text-white hover:bg-white/10"
-                >
-                  <RefreshCw className="w-4 h-4" />
-                </Button>
-              </div>
+          {/* Controls */}
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div className="flex items-center space-x-4">
+              <Select value={`${sort.field}-${sort.direction}`} onValueChange={(value) => {
+                const [field, direction] = value.split('-');
+                handleSortChange(field, direction as 'asc' | 'desc');
+              }}>
+                 <SelectTrigger className="w-48 bg-slate-900/60 backdrop-blur-md border border-orange-500/20">
+                  <SelectValue placeholder="Sort by" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="created_at-desc">Newest First</SelectItem>
+                  <SelectItem value="created_at-asc">Oldest First</SelectItem>
+                  <SelectItem value="total_funding_goal-desc">Highest Goal</SelectItem>
+                  <SelectItem value="total_funding_goal-asc">Lowest Goal</SelectItem>
+                  <SelectItem value="expected_return_rate-desc">Highest Return</SelectItem>
+                  <SelectItem value="expected_return_rate-asc">Lowest Return</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
-            {/* Listings Grid */}
-            {displayedListings.length > 0 ? (
-              <div className={`grid gap-6 ${
-                viewMode === 'grid' 
-                  ? 'grid-cols-1 md:grid-cols-2 xl:grid-cols-3' 
-                  : 'grid-cols-1'
-              }`}>
-                {displayedListings.map((listing) => (
-                  <MarketplaceListingCard
-                    key={listing.id}
-                    listing={listing}
-                    onInvest={handleInvest}
-                    showInvestButton={true}
-                    className={viewMode === 'list' ? 'flex flex-row' : ''}
-                  />
-                ))}
-              </div>
-            ) : (
-              <Card className="bg-white/5 border-white/10">
-                <CardContent className="p-12 text-center">
-                  <Target className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                  <h3 className="text-xl font-semibold text-white mb-2">No listings found</h3>
-                  <p className="text-gray-400 mb-6">
-                    Try adjusting your filters or check back later for new opportunities.
-                  </p>
-                  <Button
-                    onClick={handleResetFilters}
-                    className="bg-purple-500 hover:bg-purple-600 text-white"
-                  >
-                    Clear Filters
-                  </Button>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Load More */}
-            {pagination.page < pagination.total_pages && (
-              <div className="text-center">
+            <div className="flex items-center space-x-4">
+              {/* View Mode */}
+              <div className="flex border border-white/20 rounded-lg">
                 <Button
-                  onClick={handleLoadMore}
-                  className="bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-white border-0"
+                  variant={viewMode === 'grid' ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => setViewMode('grid')}
+                  className="rounded-r-none"
                 >
-                  Load More Listings
+                  <Grid3X3 className="w-4 h-4" />
+                </Button>
+                <Button
+                  variant={viewMode === 'list' ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => setViewMode('list')}
+                  className="rounded-l-none"
+                >
+                  <List className="w-4 h-4" />
                 </Button>
               </div>
-            )}
+
+              {/* Refresh */}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={loadListings}
+                disabled={loading}
+              >
+                <RefreshCw className="w-4 h-4" />
+              </Button>
+            </div>
           </div>
         </div>
+
+        {/* Listings Grid */}
+        {loading ? (
+          <div className="flex justify-center items-center py-12">
+             <RefreshCw className="w-8 h-8 animate-spin text-orange-500" />
+          </div>
+        ) : displayedListings.length > 0 ? (
+          <div className={`grid gap-6 ${
+            viewMode === 'grid' 
+              ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3' 
+              : 'grid-cols-1'
+          }`}>
+            {displayedListings.map((listing) => (
+              <MarketplaceListingCard
+                key={listing.id}
+                listing={listing}
+                onInvest={handleInvest}
+                showInvestButton={true}
+                className={viewMode === 'list' ? 'flex flex-row' : ''}
+              />
+            ))}
+          </div>
+        ) : (
+           <Card className="bg-gradient-to-br from-slate-900/60 to-slate-800/30 backdrop-blur-md border border-orange-500/20">
+            <CardContent className="p-12 text-center">
+              <Target className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+              <h3 className="text-xl font-semibold mb-2">No Listings Found</h3>
+              <p className="text-gray-400 mb-6">
+                Try adjusting your filters or check back later for new opportunities.
+              </p>
+               <Button
+                 onClick={handleResetFilters}
+                 className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white border-0"
+               >
+                Clear Filters
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+
+        {pagination.page < pagination.total_pages && (
+          <div className="text-center">
+             <Button
+               onClick={handleLoadMore}
+               className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white border-0"
+             >
+              Load More Listings
+            </Button>
+          </div>
+        )}
       </div>
 
-      {/* Investment Modal */}
-      {selectedListing && (
-        <InvestmentModal
-          listing={selectedListing}
-          isOpen={showInvestmentModal}
-          onClose={() => setShowInvestmentModal(false)}
-          onSuccess={handleInvestmentSuccess}
-          userBalance={userBalance}
-          nftTier={nftTier}
-        />
-      )}
+       {/* Investment Modal */}
+       {selectedListing && (
+         <InvestmentModal
+           listing={selectedListing}
+           userBalance={userBalance}
+           isOpen={showInvestmentModal}
+           onClose={() => setShowInvestmentModal(false)}
+           onSuccess={handleInvestmentSuccess}
+         />
+       )}
     </div>
   );
 };

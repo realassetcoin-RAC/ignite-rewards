@@ -52,14 +52,19 @@ export const MetaMaskProvider: React.FC<MetaMaskProviderProps> = ({ children }) 
 
   // Detect MetaMask provider
   const detectMetaMask = useCallback(() => {
-    const provider = (window as any)?.ethereum;
-    
-    if (provider?.isMetaMask) {
-      setEthereum(provider);
-      return provider;
+    try {
+      const provider = (window as any)?.ethereum;
+      
+      if (provider?.isMetaMask) {
+        setEthereum(provider);
+        return provider;
+      }
+      
+      return null;
+    } catch (error) {
+      console.warn('Error detecting MetaMask wallet:', error);
+      return null;
     }
-    
-    return null;
   }, []);
 
   // Handle account changes

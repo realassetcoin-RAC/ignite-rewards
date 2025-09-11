@@ -67,10 +67,16 @@ const MerchantDashboard = () => {
   const [activeTab, setActiveTab] = useState('overview');
   const [isLoaded, setIsLoaded] = useState(false);
   
-  // Search filters
+  // Search filters with blank date fields by default
+  const getDefaultDateRange = () => {
+    return {
+      dateFrom: '',
+      dateTo: '',
+    };
+  };
+
   const [searchFilters, setSearchFilters] = useState({
-    dateFrom: '',
-    dateTo: '',
+    ...getDefaultDateRange(),
     receiptNumber: '',
     amountMin: '',
     amountMax: ''
@@ -516,7 +522,7 @@ const MerchantDashboard = () => {
   }
 
   return (
-    <div className="min-h-screen hero-gradient relative overflow-x-hidden">
+    <div className="min-h-screen hero-gradient relative overflow-x-hidden flex flex-col">
       {/* Animated Background Elements */}
       <div className="absolute top-20 left-20 w-72 h-72 bg-gradient-to-r from-primary/20 to-purple-500/20 rounded-full mix-blend-multiply filter blur-xl animate-pulse pointer-events-none"></div>
       <div className="absolute top-40 right-20 w-96 h-96 bg-gradient-to-r from-purple-500/20 to-blue-500/20 rounded-full mix-blend-multiply filter blur-xl animate-pulse animation-delay-2000 pointer-events-none"></div>
@@ -528,7 +534,7 @@ const MerchantDashboard = () => {
       <div className="absolute bottom-1/3 left-1/3 w-1.5 h-1.5 bg-blue-500/50 rounded-full animate-bounce animation-delay-5000"></div>
 
       {/* Header */}
-      <header className="relative z-10 border-b bg-background/80 backdrop-blur-md border-border/50">
+      <header className="relative z-10 border-b bg-background/80 backdrop-blur-md border-border/50 flex-shrink-0">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
@@ -586,7 +592,7 @@ const MerchantDashboard = () => {
       </header>
 
       {/* Content */}
-      <main className="relative z-10 container mx-auto px-4 py-8 space-y-8">
+      <main className="relative z-10 container mx-auto px-4 py-8 space-y-8 flex-grow overflow-y-auto">
         {/* Welcome Section */}
         <div className={`mb-8 ${
           isLoaded ? 'animate-fade-in-up animation-delay-400' : 'opacity-0'
@@ -820,6 +826,44 @@ const MerchantDashboard = () => {
           </Card>
         </div>
 
+        {/* Quick Action Buttons */}
+        <Card className="card-gradient border-primary/20 backdrop-blur-md">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-primary" />
+              Quick Actions
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-wrap gap-3 w-full">
+              <Button 
+                onClick={() => setShowQrGenerator(true)}
+                size="default"
+                className="btn-gradient"
+              >
+                <QrCode className="w-4 h-4 mr-2" />
+                Generate QR Code
+              </Button>
+              {merchant && (
+                <MerchantRewardGenerator 
+                  merchantId={merchant.id} 
+                  onTransactionCreated={loadTransactions}
+                />
+              )}
+              <Button 
+                variant="outline" 
+                size="default"
+                onClick={handleRefresh}
+                disabled={loading}
+                className="bg-background/60 backdrop-blur-md border-primary/30 hover:bg-background/80"
+              >
+                <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+                Refresh Data
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Email Management and Points Tracking */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {merchant && (
@@ -963,10 +1007,26 @@ const MerchantDashboard = () => {
               <CardContent>
                 {/* Search Filters */}
                 <div className="mb-6 p-4 bg-background/30 rounded-lg border border-primary/10">
-                  <h4 className="text-sm font-medium mb-3 flex items-center gap-2">
-                    <Search className="w-4 h-4" />
-                    Search Transactions
-                  </h4>
+                  <div className="flex items-center justify-between mb-3">
+                    <h4 className="text-sm font-medium flex items-center gap-2">
+                      <Search className="w-4 h-4" />
+                      Search Transactions
+                    </h4>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setSearchFilters({
+                        ...getDefaultDateRange(),
+                        receiptNumber: '',
+                        amountMin: '',
+                        amountMax: ''
+                      })}
+                      className="text-xs"
+                    >
+                      <X className="w-3 h-3 mr-1" />
+                      Clear Filters
+                    </Button>
+                  </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3">
                     <div>
                       <label className="text-xs text-muted-foreground">Date From</label>

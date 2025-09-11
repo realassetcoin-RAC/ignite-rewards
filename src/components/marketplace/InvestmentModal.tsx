@@ -21,8 +21,6 @@ import { MarketplaceListing, MarketplaceInvestment, NFTCardTier } from '@/types/
 import { 
   formatCurrency, 
   validateInvestmentAmount, 
-  calculateEffectiveInvestment,
-  calculateTokensReceived,
   canUserInvest
 } from '@/lib/marketplaceUtils';
 import { 

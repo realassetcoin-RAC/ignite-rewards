@@ -31,6 +31,9 @@ import LoyaltyCardTab from "@/components/dashboard/LoyaltyCardTab";
 import ReferralsTab from "@/components/dashboard/ReferralsTab";
 import RewardsTracker from "@/components/solana/RewardsTracker";
 import ThemeSelector from "@/components/ThemeSelector";
+import UserNavigation from "@/components/UserNavigation";
+import HomeNavigation from "@/components/HomeNavigation";
+import BreadcrumbNavigation from "@/components/BreadcrumbNavigation";
 
 const UserDashboardEnhanced = () => {
   const { user, isAdmin, loading } = useSecureAuth();
@@ -168,42 +171,9 @@ const UserDashboardEnhanced = () => {
               </div>
             </div>
             <div className="flex items-center space-x-4">
-              {/* User Information */}
-              <div className="flex items-center space-x-4 text-sm">
-                <div className={`flex items-center space-x-2 bg-white/5 backdrop-blur-sm rounded-lg px-3 py-2 border ${theme.border}`}>
-                  <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-                  <span className={theme.textSecondary}>Welcome,</span>
-                  <span className={`font-medium ${theme.textPrimary}`}>{user?.email}</span>
-                </div>
-              </div>
-              
+              <HomeNavigation variant="home" showText={true} />
               <ThemeSelector />
-              
-              <Button 
-                variant="outline" 
-                size="sm" 
-                asChild
-                className={`group bg-white/5 backdrop-blur-sm hover:bg-white/10 ${theme.border} hover:border-white/30 ${theme.textPrimary} hover:text-white transform hover:scale-105 transition-all duration-300 ${
-                  isLoaded ? 'animate-fade-in-up animation-delay-200' : 'opacity-0'
-                }`}
-              >
-                <Link to="/" className="flex items-center">
-                  <ArrowLeft className="mr-2 h-4 w-4 group-hover:-translate-x-1 transition-transform" />
-                  Back to Home
-                </Link>
-              </Button>
-              
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={handleSignOut}
-                className={`group bg-white/5 backdrop-blur-sm hover:bg-white/10 ${theme.border} hover:border-white/30 ${theme.textPrimary} hover:text-white transform hover:scale-105 transition-all duration-300 ${
-                  isLoaded ? 'animate-fade-in-up animation-delay-300' : 'opacity-0'
-                }`}
-              >
-                <LogOut className="mr-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
-                Sign Out
-              </Button>
+              <UserNavigation />
             </div>
           </div>
         </div>
@@ -211,6 +181,8 @@ const UserDashboardEnhanced = () => {
 
       {/* Content */}
       <main className="relative z-10 container mx-auto px-6 py-8">
+        {/* Breadcrumb Navigation */}
+        <BreadcrumbNavigation className="mb-6" />
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
           {/* Fixed Loyalty Card Sidebar */}
           <div className="lg:col-span-1">

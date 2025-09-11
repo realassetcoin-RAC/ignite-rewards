@@ -74,7 +74,7 @@ const ContactUs = () => {
             </div>
             <div className="flex items-center space-x-4">
               <Button 
-                variant="outline" 
+                variant="minimal" 
                 size="sm" 
                 asChild
                 className={`group bg-white/5 backdrop-blur-sm hover:bg-white/10 border-white/20 hover:border-white/30 text-white hover:text-white transform hover:scale-105 transition-all duration-300 ${
@@ -196,7 +196,17 @@ const ContactUs = () => {
               </div>
 
               <div className="pt-2">
-                <ContactChatbot />
+                <Button 
+                  onClick={() => {
+                    // Trigger the global chatbot to open
+                    const event = new CustomEvent('openChatbot');
+                    window.dispatchEvent(event);
+                  }}
+                  className="w-full bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white border-0"
+                >
+                  <MessageCircle className="w-4 h-4 mr-2" />
+                  Start Chat
+                </Button>
               </div>
             </CardContent>
           </Card>

@@ -270,11 +270,11 @@ const LoyaltyAccountLinking = ({ onLinkAdded }: LoyaltyAccountLinkingProps) => {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Link className="w-5 h-5" />
-            Link a Loyalty Network
+            <Link className="w-5 h-5 text-primary" />
+            Link Loyalty Networks
           </CardTitle>
           <CardDescription>
-            Connect your third-party loyalty accounts to convert points into platform tokens
+            Connect your loyalty accounts and instantly convert your points into our tokens to unlock exclusive benefits on our platform
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -288,37 +288,54 @@ const LoyaltyAccountLinking = ({ onLinkAdded }: LoyaltyAccountLinkingProps) => {
               {availableNetworks.map((network) => {
                 const isLinked = getLinkedNetworkIds().includes(network.id);
                 return (
-                  <Card key={network.id} className="relative">
+                  <Card 
+                    key={network.id} 
+                    className={`relative transition-all duration-300 ${
+                      isLinked 
+                        ? 'bg-green-500/5 border-green-500/20' 
+                        : 'bg-white/5 backdrop-blur-xl border-white/10 hover:bg-white/10 hover:border-white/20 hover:scale-105'
+                    }`}
+                  >
                     <CardContent className="p-4">
-                      <div className="flex items-center gap-3 mb-3">
+                      <div className="flex items-center gap-3 mb-4">
                         {network.logo_url ? (
                           <img 
                             src={network.logo_url} 
                             alt={network.display_name}
-                            className="w-10 h-10 rounded"
+                            className="w-12 h-12 rounded-lg object-cover shadow-md"
                           />
                         ) : (
-                          <div className="w-10 h-10 bg-gray-200 rounded flex items-center justify-center">
-                            <Shield className="w-5 h-5 text-gray-500" />
+                          <div className="w-12 h-12 bg-gradient-to-br from-primary/20 to-purple-500/20 rounded-lg flex items-center justify-center">
+                            <Shield className="w-6 h-6 text-primary" />
                           </div>
                         )}
-                        <div>
-                          <h3 className="font-medium">{network.display_name}</h3>
-                          <p className="text-sm text-muted-foreground">
-                            {network.requires_mobile_verification ? "Mobile verification required" : "No verification required"}
+                        <div className="flex-1">
+                          <h3 className="font-semibold text-white">{network.display_name}</h3>
+                          <p className="text-xs text-gray-400">
+                            Rate: 1 = {network.conversion_rate} PB tokens
                           </p>
                         </div>
                       </div>
                       
+                      <div className="mb-4">
+                        <p className="text-sm text-gray-300 mb-2">
+                          {network.description}
+                        </p>
+                        <div className="flex items-center gap-2 text-xs text-gray-400">
+                          <Smartphone className="w-3 h-3" />
+                          <span>Mobile verification required</span>
+                        </div>
+                      </div>
+                      
                       {isLinked ? (
-                        <div className="flex items-center gap-2 text-green-600">
+                        <div className="flex items-center gap-2 px-3 py-2 bg-green-500/20 text-green-400 rounded-lg border border-green-500/30">
                           <CheckCircle className="w-4 h-4" />
-                          <span className="text-sm font-medium">Linked</span>
+                          <span className="text-sm font-medium">Successfully Linked</span>
                         </div>
                       ) : (
                         <Button 
                           onClick={() => handleStartLinkingProcess(network)}
-                          className="w-full"
+                          className="w-full bg-gradient-to-r from-primary to-purple-500 hover:from-primary/90 hover:to-purple-500/90 text-white border-0"
                           size="sm"
                         >
                           <Link className="w-4 h-4 mr-2" />

@@ -9,6 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Check, ChevronLeft, ChevronRight, Loader2, CreditCard } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
+import { Checkbox } from "@/components/ui/checkbox";
 
 /**
  * Virtual card configuration interface
@@ -83,6 +84,10 @@ const CustomerSignupModal: React.FC<CustomerSignupModalProps> = ({ isOpen, onClo
   // City search state
   const [cityResults, setCityResults] = useState<any[]>([]);
   const [showCityDropdown, setShowCityDropdown] = useState(false);
+  
+  // Terms acceptance state
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const [acceptedPrivacy, setAcceptedPrivacy] = useState(false);
   
   const { toast } = useToast();
   const navigate = useNavigate();

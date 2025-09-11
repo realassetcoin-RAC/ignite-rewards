@@ -74,7 +74,7 @@ const Auth = () => {
         </p>
         <button 
           onClick={() => navigate('/', { replace: true })}
-          className={`bg-gradient-to-r from-primary to-purple-500 hover:from-primary/90 hover:to-purple-500/90 text-primary-foreground px-6 py-2 rounded-lg transform hover:scale-105 transition-all duration-300 ${
+          className={`px-6 py-2 rounded-lg border transform hover:scale-105 transition-all duration-300 ${
             isLoaded ? 'animate-fade-in-up animation-delay-600' : 'opacity-0'
           }`}
         >

@@ -14,6 +14,9 @@ import { useSecureAuth } from "@/hooks/useSecureAuth";
 import MFAVerification from "@/components/MFAVerification";
 import WalletSelector from "@/components/WalletSelector";
 import { canUserUseMFA } from "@/lib/mfa";
+import { Checkbox } from "@/components/ui/checkbox";
+import { TermsPrivacyService } from "@/lib/termsPrivacyService";
+import { useTermsPrivacy } from "@/hooks/useTermsPrivacy";
 
 /**
  * Authentication modal component props
@@ -41,10 +44,19 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
   const [showWalletSelector, setShowWalletSelector] = useState(false);
   const [pendingUserId, setPendingUserId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState('signin');
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const [acceptedPrivacy, setAcceptedPrivacy] = useState(false);
   
   // Hooks
   const { toast } = useToast();
   const { user, loading: authLoading } = useSecureAuth();
+  const { 
+    hasAcceptedTerms, 
+    hasAcceptedPrivacy, 
+    needsAcceptance, 
+    isLoading: termsLoading, 
+    saveAcceptance 
+  } = useTermsPrivacy();
   const navigate = useNavigate();
   const { connect, connected, disconnect, publicKey } = useWallet();
 
@@ -59,8 +71,20 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
       setGoogleLoading(false);
       setShowMFAVerification(false);
       setPendingUserId(null);
+      setAcceptedTerms(false);
+      setAcceptedPrivacy(false);
     }
   }, [isOpen]);
+
+  /**
+   * Sync local checkbox state with hook state when user is authenticated
+   */
+  useEffect(() => {
+    if (user && !termsLoading) {
+      setAcceptedTerms(hasAcceptedTerms);
+      setAcceptedPrivacy(hasAcceptedPrivacy);
+    }
+  }, [user, termsLoading, hasAcceptedTerms, hasAcceptedPrivacy]);
 
   /**
    * Close modal automatically when user becomes authenticated
@@ -70,6 +94,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
       onClose();
     }
   }, [user, authLoading, onClose]);
+
 
   /**
    * Handle email/password sign up
@@ -106,6 +131,11 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
           });
         }
       } else {
+        // Save terms and privacy acceptance
+        if (data.user) {
+          await saveAcceptance(acceptedTerms, acceptedPrivacy);
+        }
+        
         toast({
           title: "Account created",
           description: "Please check your email to verify your account.",
@@ -152,6 +182,11 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
         }
         
         // No MFA required, complete sign in
+        // Only save terms and privacy acceptance if user has newly accepted them
+        if (acceptedTerms && acceptedPrivacy && (!hasAcceptedTerms || !hasAcceptedPrivacy)) {
+          await saveAcceptance(acceptedTerms, acceptedPrivacy);
+        }
+
         // Get user role for redirect
         const { data: profile } = await supabase
           .from('profiles')
@@ -308,11 +343,11 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
             </DialogHeader>
             
             <div className="w-full mt-4">
-              <div className="w-full bg-background/60 backdrop-blur-md border border-primary/20 rounded-lg p-1 overflow-x-auto">
-                <div className="grid grid-cols-2 gap-1 min-w-max">
+              <div className="w-full bg-background/60 backdrop-blur-md border border-primary/20 rounded-lg p-1">
+                <div className="flex gap-1">
                   <button
                     onClick={() => setActiveTab('signin')}
-                    className={`flex items-center justify-center gap-1 px-2 py-1.5 rounded-md text-sm font-medium transition-all duration-200 ${
+                    className={`flex items-center justify-center gap-1 px-2 py-1.5 rounded-md text-sm font-medium transition-all duration-200 flex-1 min-w-0 ${
                       activeTab === 'signin'
                         ? 'bg-gradient-to-r from-primary to-purple-500 text-white shadow-sm'
                         : 'text-muted-foreground hover:text-foreground hover:bg-foreground/5'
@@ -322,7 +357,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                   </button>
                   <button
                     onClick={() => setActiveTab('signup')}
-                    className={`flex items-center justify-center gap-1 px-2 py-1.5 rounded-md text-sm font-medium transition-all duration-200 ${
+                    className={`flex items-center justify-center gap-1 px-2 py-1.5 rounded-md text-sm font-medium transition-all duration-200 flex-1 min-w-0 ${
                       activeTab === 'signup'
                         ? 'bg-gradient-to-r from-primary to-purple-500 text-white shadow-sm'
                         : 'text-muted-foreground hover:text-foreground hover:bg-foreground/5'
@@ -418,10 +453,51 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                   className="h-10 sm:h-11 bg-card/50 border-border/50 focus:border-primary/50 transition-smooth text-sm sm:text-base"
                 />
               </div>
+              
+              {/* Terms and Privacy Checkboxes - Only show if user hasn't accepted them */}
+              {needsAcceptance && (
+                <div className="space-y-3">
+                  <div className="flex items-start space-x-2">
+                    <Checkbox 
+                      id="terms-signin" 
+                      checked={acceptedTerms}
+                      onCheckedChange={(checked) => setAcceptedTerms(checked as boolean)}
+                      required
+                    />
+                    <label 
+                      htmlFor="terms-signin" 
+                      className="text-xs text-muted-foreground leading-relaxed cursor-pointer"
+                    >
+                      I agree to the{' '}
+                      <a href="/terms" target="_blank" className="text-primary hover:underline">
+                        Terms of Service
+                      </a>
+                    </label>
+                  </div>
+                  <div className="flex items-start space-x-2">
+                    <Checkbox 
+                      id="privacy-signin" 
+                      checked={acceptedPrivacy}
+                      onCheckedChange={(checked) => setAcceptedPrivacy(checked as boolean)}
+                      required
+                    />
+                    <label 
+                      htmlFor="privacy-signin" 
+                      className="text-xs text-muted-foreground leading-relaxed cursor-pointer"
+                    >
+                      I agree to the{' '}
+                      <a href="/privacy" target="_blank" className="text-primary hover:underline">
+                        Privacy Policy
+                      </a>
+                    </label>
+                  </div>
+                </div>
+              )}
+              
               <Button 
                 type="submit" 
                 className="w-full h-11 sm:h-12 bg-primary hover:bg-primary/90 text-primary-foreground glow-shadow transition-smooth text-sm sm:text-base" 
-                disabled={loading || googleLoading}
+                disabled={loading || googleLoading || (needsAcceptance && (!acceptedTerms || !acceptedPrivacy))}
               >
                 {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Sign In
@@ -517,10 +593,49 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                   className="h-10 sm:h-11 bg-card/50 border-border/50 focus:border-primary/50 transition-smooth text-sm sm:text-base"
                 />
               </div>
+              
+              {/* Terms and Privacy Checkboxes - Always show for sign-up */}
+              <div className="space-y-3">
+                <div className="flex items-start space-x-2">
+                  <Checkbox 
+                    id="terms-signup" 
+                    checked={acceptedTerms}
+                    onCheckedChange={(checked) => setAcceptedTerms(checked as boolean)}
+                    required
+                  />
+                  <label 
+                    htmlFor="terms-signup" 
+                    className="text-xs text-muted-foreground leading-relaxed cursor-pointer"
+                  >
+                    I agree to the{' '}
+                    <a href="/terms" target="_blank" className="text-primary hover:underline">
+                      Terms of Service
+                    </a>
+                  </label>
+                </div>
+                <div className="flex items-start space-x-2">
+                  <Checkbox 
+                    id="privacy-signup" 
+                    checked={acceptedPrivacy}
+                    onCheckedChange={(checked) => setAcceptedPrivacy(checked as boolean)}
+                    required
+                  />
+                  <label 
+                    htmlFor="privacy-signup" 
+                    className="text-xs text-muted-foreground leading-relaxed cursor-pointer"
+                  >
+                    I agree to the{' '}
+                    <a href="/privacy" target="_blank" className="text-primary hover:underline">
+                      Privacy Policy
+                    </a>
+                  </label>
+                </div>
+              </div>
+              
               <Button 
                 type="submit" 
                 className="w-full h-11 sm:h-12 bg-primary hover:bg-primary/90 text-primary-foreground glow-shadow transition-smooth text-sm sm:text-base" 
-                disabled={loading || googleLoading}
+                disabled={loading || googleLoading || !acceptedTerms || !acceptedPrivacy}
               >
                 {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Sign Up

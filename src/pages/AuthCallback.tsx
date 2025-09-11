@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Loader2, Sparkles } from "lucide-react";
 import { getDashboardUrl } from "@/lib/dashboard-routing";
 import { robustAdminCheck } from "@/utils/adminVerification";
+import { TermsPrivacyService } from "@/lib/termsPrivacyService";
 
 /**
  * Auth callback page that handles role-based redirects after OAuth authentication
@@ -26,17 +27,29 @@ const AuthCallback = () => {
         if (session?.user) {
           console.log('AuthCallback: Processing authentication for user:', session.user.email);
           
-          // Get user profile and admin status in parallel
-          const [profileResult, isAdmin] = await Promise.all([
+          // Get user profile, admin status, and terms acceptance in parallel
+          const [profileResult, isAdmin, termsAcceptance] = await Promise.all([
             supabase
               .from('profiles')
               .select('id, email, full_name, role, created_at, updated_at')
               .eq('id', session.user.id)
               .single(),
-            robustAdminCheck()
+            robustAdminCheck(),
+            TermsPrivacyService.getUserAcceptance(session.user.id)
           ]);
           
           const profile = profileResult.data;
+          
+          // Check if user needs to accept terms and privacy
+          const needsTermsAcceptance = !termsAcceptance || !termsAcceptance.terms_accepted || !termsAcceptance.privacy_accepted;
+          
+          if (needsTermsAcceptance) {
+            console.log('AuthCallback: User needs to accept terms and privacy, redirecting to terms page');
+            // Redirect to a terms acceptance page or show modal
+            // For now, we'll redirect to home where they can sign in and accept terms
+            navigate('/?showTerms=true');
+            return;
+          }
           
           // Use the same routing logic as the rest of the app
           const dashboardUrl = getDashboardUrl(isAdmin, profile);
@@ -45,7 +58,9 @@ const AuthCallback = () => {
             isAdmin,
             profile: profile,
             role: profile?.role,
-            dashboardUrl
+            dashboardUrl,
+            termsAccepted: termsAcceptance?.terms_accepted,
+            privacyAccepted: termsAcceptance?.privacy_accepted
           });
           
           navigate(dashboardUrl);

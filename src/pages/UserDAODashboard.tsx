@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Progress } from '@/components/ui/progress';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { 
   Vote, 
   Search, 
@@ -21,10 +22,15 @@ import {
   Hash,
   DollarSign,
   MessageSquare,
-  ExternalLink
+  ExternalLink,
+  Sparkles,
+  User,
+  Shield,
+  LogOut
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useSecureAuth } from '@/hooks/useSecureAuth';
 import { format } from 'date-fns';
 import { 
   DAOOrganization, 
@@ -51,9 +57,13 @@ const UserDAODashboard = () => {
   const [isLoaded, setIsLoaded] = useState(false);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [userMembership, setUserMembership] = useState<DAOMember | null>(null);
+  const [selectedProposal, setSelectedProposal] = useState<DAOProposal | null>(null);
+  const [showProposalDetails, setShowProposalDetails] = useState(false);
+  const [authLoading, setAuthLoading] = useState(true);
   
   const { toast } = useToast();
   const navigate = useNavigate();
+  const { user, profile, isAdmin, signOut } = useSecureAuth();
 
   useEffect(() => {
     loadDAOData();
@@ -76,7 +86,10 @@ const UserDAODashboard = () => {
   const checkUserMembership = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!user) {
+        setAuthLoading(false);
+        return;
+      }
 
       setCurrentUser(user);
 
@@ -98,8 +111,11 @@ const UserDAODashboard = () => {
       };
 
       setUserMembership(mockMembership);
+      console.log('UserDAO: User membership set:', mockMembership);
     } catch (error) {
       console.error('Error checking user membership:', error);
+    } finally {
+      setAuthLoading(false);
     }
   };
 
@@ -370,6 +386,83 @@ const UserDAODashboard = () => {
     return (proposal.yes_votes / proposal.total_votes) * 100;
   };
 
+  const handleVote = async (proposalId: string, choice: 'yes' | 'no' | 'abstain', reason?: string) => {
+    try {
+      if (!currentUser) {
+        toast({
+          title: "Authentication Required",
+          description: "Please sign in to vote on proposals.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const { data, error } = await supabase.rpc('cast_vote', {
+        user_id_param: currentUser.id,
+        proposal_id_param: proposalId,
+        choice_param: choice,
+        reason_param: reason || null
+      });
+
+      if (error) {
+        console.error('Voting error:', error);
+        toast({
+          title: "Voting Failed",
+          description: error.message || "Failed to cast vote. Please try again.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      toast({
+        title: "Vote Cast Successfully",
+        description: `Your ${choice} vote has been recorded.`,
+      });
+
+      // Refresh the data to show updated vote counts
+      await loadDAOData();
+    } catch (error) {
+      console.error('Error casting vote:', error);
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred while voting.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleViewDetails = (proposal: DAOProposal) => {
+    setSelectedProposal(proposal);
+    setShowProposalDetails(true);
+  };
+
+  // Show loading state while checking authentication
+  if (authLoading) {
+    return (
+      <div className="min-h-screen hero-gradient relative overflow-hidden flex items-center justify-center">
+        <div className="absolute top-20 left-20 w-72 h-72 bg-gradient-to-r from-primary/20 to-purple-500/20 rounded-full mix-blend-multiply filter blur-xl animate-pulse pointer-events-none"></div>
+        <div className="absolute top-40 right-20 w-96 h-96 bg-gradient-to-r from-purple-500/20 to-blue-500/20 rounded-full mix-blend-multiply filter blur-xl animate-pulse animation-delay-2000 pointer-events-none"></div>
+        
+        <Card className="relative z-10 w-full max-w-md card-gradient border-primary/20 backdrop-blur-md">
+          <CardContent className="p-6 text-center">
+            <div className="w-16 h-16 bg-primary rounded-lg flex items-center justify-center mx-auto mb-4">
+              <Vote className="h-8 w-8 text-primary-foreground animate-pulse" />
+            </div>
+            <h2 className="text-xl font-semibold text-foreground mb-2">
+              Loading DAO...
+            </h2>
+            <p className="text-muted-foreground mb-4">
+              Please wait while we load the RAC Rewards DAO.
+            </p>
+            <div className="flex justify-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   // Only require authentication, not specific DAO membership
   if (!currentUser) {
     return (
@@ -401,7 +494,7 @@ const UserDAODashboard = () => {
   }
 
   return (
-    <div className="min-h-screen hero-gradient relative overflow-x-hidden">
+    <div className="min-h-screen hero-gradient relative">
       {/* Animated Background Elements */}
       <div className="absolute top-20 left-20 w-72 h-72 bg-gradient-to-r from-primary/20 to-purple-500/20 rounded-full mix-blend-multiply filter blur-xl animate-pulse pointer-events-none"></div>
       <div className="absolute top-40 right-20 w-96 h-96 bg-gradient-to-r from-purple-500/20 to-blue-500/20 rounded-full mix-blend-multiply filter blur-xl animate-pulse animation-delay-2000 pointer-events-none"></div>
@@ -412,40 +505,105 @@ const UserDAODashboard = () => {
       <div className="absolute top-1/3 right-1/3 w-1 h-1 bg-purple-500/60 rounded-full animate-bounce animation-delay-3000"></div>
       <div className="absolute bottom-1/3 left-1/3 w-1.5 h-1.5 bg-blue-500/50 rounded-full animate-bounce animation-delay-5000"></div>
 
-      <div className="relative z-10 container mx-auto px-4 py-8 max-w-full overflow-hidden">
+      <div className="relative z-10 container mx-auto px-4 py-8 max-w-full">
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center space-x-2">
-              <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-                <Vote className="h-5 w-5 text-primary-foreground" />
+            <div className="flex items-center space-x-3">
+              <div className="flex items-center space-x-2">
+                <div className="relative">
+                  <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-blue-500 rounded-xl flex items-center justify-center shadow-lg shadow-purple-500/25">
+                    <Sparkles className="h-6 w-6 text-white" />
+                  </div>
+                  <div className="absolute -top-1 -right-1 w-4 h-4 bg-gradient-to-r from-pink-500 to-red-500 rounded-full animate-pulse"></div>
+                </div>
+                <div>
+                  <h1 className={`text-2xl sm:text-3xl font-bold bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent ${
+                    isLoaded ? 'animate-fade-in-up' : 'opacity-0'
+                  }`}>
+                    PointBridge DAO
+                  </h1>
+                  <p className={`text-sm text-gray-400 ${
+                    isLoaded ? 'animate-fade-in-up animation-delay-200' : 'opacity-0'
+                  }`}>
+                    Decentralized governance for the RAC Rewards platform
+                  </p>
+                </div>
               </div>
-              <h1 className={`text-2xl sm:text-3xl font-bold text-foreground ${
-                isLoaded ? 'animate-fade-in-up' : 'opacity-0'
-              }`}>
-                RAC Rewards DAO
-              </h1>
             </div>
-            <Button 
-              variant="outline" 
-              size="sm" 
-              asChild
-              className="group bg-background/60 backdrop-blur-md hover:bg-background/80 border-primary/30 hover:border-primary/50"
-            >
-              <button onClick={() => navigate('/')} className="flex items-center">
+            
+            {/* Authentication Status and Navigation */}
+            <div className="flex items-center space-x-4">
+              {user ? (
+                <div className="flex items-center space-x-3">
+                  {/* User Status Badge */}
+                  <Badge 
+                    variant="outline" 
+                    className="border-primary/40 text-primary bg-primary/10 backdrop-blur-sm"
+                  >
+                    {isAdmin ? (
+                      <>
+                        <Shield className="w-3 h-3 mr-1" />
+                        Admin
+                      </>
+                    ) : (
+                      <>
+                        <User className="w-3 h-3 mr-1" />
+                        Member
+                      </>
+                    )}
+                  </Badge>
+                  
+                  {/* User Info */}
+                  <div className="hidden sm:flex flex-col items-end">
+                    <span className="text-sm font-medium text-white">
+                      {profile?.full_name || user.email}
+                    </span>
+                    <span className="text-xs text-white/70">
+                      Connected
+                    </span>
+                  </div>
+                  
+                  {/* Sign Out Button */}
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={signOut}
+                    className="bg-background/60 backdrop-blur-md hover:bg-background/80 border-primary/30 hover:border-primary/50"
+                  >
+                    <LogOut className="w-4 h-4 mr-2" />
+                    Sign Out
+                  </Button>
+                </div>
+              ) : (
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => navigate('/auth')}
+                  className="bg-background/60 backdrop-blur-md hover:bg-background/80 border-primary/30 hover:border-primary/50"
+                >
+                  <User className="w-4 h-4 mr-2" />
+                  Sign In
+                </Button>
+              )}
+              
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => navigate('/')}
+                className="group bg-background/60 backdrop-blur-md hover:bg-background/80 border-primary/30 hover:border-primary/50"
+              >
                 <ArrowLeft className="mr-2 h-4 w-4 group-hover:-translate-x-1 transition-transform" />
                 Back to Home
-              </button>
-            </Button>
+              </Button>
+            </div>
           </div>
-          <p className={`text-sm sm:text-base text-muted-foreground ${
-            isLoaded ? 'animate-fade-in-up animation-delay-200' : 'opacity-0'
-          }`}>
-            Decentralized governance for the RAC Rewards platform
-          </p>
+          
+          {/* DAO Membership Status */}
           {userMembership && (
-            <div className="mt-2 flex items-center gap-2">
+            <div className="mt-4 flex items-center gap-2">
               <Badge variant="secondary" className="bg-green-100 text-green-800">
+                <Vote className="w-3 h-3 mr-1" />
                 Member: {userMembership.governance_tokens.toLocaleString()} RAC tokens
               </Badge>
               <Badge variant="outline">
@@ -526,40 +684,40 @@ const UserDAODashboard = () => {
         <div className={`mb-8 ${
           isLoaded ? 'animate-fade-in-up animation-delay-600' : 'opacity-0'
         }`}>
-          <div className="w-full bg-background/60 backdrop-blur-md border border-primary/20 rounded-lg p-1">
-            <div className="grid grid-cols-3 gap-1">
+          <div className="w-full max-w-full bg-background/60 backdrop-blur-md border border-primary/20 rounded-lg p-1 overflow-hidden">
+            <div className="grid grid-cols-3 gap-1 w-full max-w-full">
               <button
                 onClick={() => setActiveTab('proposals')}
-                className={`flex items-center justify-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
+                className={`flex items-center justify-center gap-1 px-1 py-2 rounded-md text-sm font-medium transition-all duration-200 w-full max-w-full overflow-hidden ${
                   activeTab === 'proposals'
                     ? 'bg-gradient-to-r from-primary to-purple-500 text-white shadow-sm'
                     : 'text-muted-foreground hover:text-foreground hover:bg-foreground/5'
                 }`}
               >
-                <Vote className="h-4 w-4" />
-                <span className="hidden sm:inline">Proposals</span>
+                <Vote className="h-4 w-4 flex-shrink-0" />
+                <span className="hidden sm:inline truncate text-xs">Proposals</span>
               </button>
               <button
                 onClick={() => setActiveTab('members')}
-                className={`flex items-center justify-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
+                className={`flex items-center justify-center gap-1 px-1 py-2 rounded-md text-sm font-medium transition-all duration-200 w-full max-w-full overflow-hidden ${
                   activeTab === 'members'
                     ? 'bg-gradient-to-r from-primary to-purple-500 text-white shadow-sm'
                     : 'text-muted-foreground hover:text-foreground hover:bg-foreground/5'
                 }`}
               >
-                <Users className="h-4 w-4" />
-                <span className="hidden sm:inline">Members</span>
+                <Users className="h-4 w-4 flex-shrink-0" />
+                <span className="hidden sm:inline truncate text-xs">Members</span>
               </button>
               <button
                 onClick={() => setActiveTab('treasury')}
-                className={`flex items-center justify-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
+                className={`flex items-center justify-center gap-1 px-1 py-2 rounded-md text-sm font-medium transition-all duration-200 w-full max-w-full overflow-hidden ${
                   activeTab === 'treasury'
                     ? 'bg-gradient-to-r from-primary to-purple-500 text-white shadow-sm'
                     : 'text-muted-foreground hover:text-foreground hover:bg-foreground/5'
                 }`}
               >
-                <Coins className="h-4 w-4" />
-                <span className="hidden sm:inline">Treasury</span>
+                <Coins className="h-4 w-4 flex-shrink-0" />
+                <span className="hidden sm:inline truncate text-xs">Treasury</span>
               </button>
             </div>
           </div>
@@ -705,8 +863,8 @@ const UserDAODashboard = () => {
                                 </div>
                                 <Progress value={calculateVotingProgress(proposal)} className="h-2" />
                                 <div className="flex justify-between text-xs text-muted-foreground mt-1">
-                                  <span>Yes: {proposal.yes_votes}</span>
-                                  <span>No: {proposal.no_votes}</span>
+                                  <span>Approve: {proposal.yes_votes}</span>
+                                  <span>Reject: {proposal.no_votes}</span>
                                   <span>Abstain: {proposal.abstain_votes}</span>
                                 </div>
                               </div>
@@ -726,12 +884,43 @@ const UserDAODashboard = () => {
                           
                           <div className="flex flex-col gap-2 lg:min-w-[200px]">
                             {proposal.status === 'active' && proposal.can_vote && (
-                              <Button className="btn-gradient w-full">
-                                <Vote className="w-4 h-4 mr-2" />
-                                Vote
-                              </Button>
+                              <div className="space-y-2">
+                                <div className="grid grid-cols-3 gap-2">
+                                  <Button 
+                                    size="sm" 
+                                    className="bg-green-500 hover:bg-green-600 text-white border-green-500 w-full"
+                                    onClick={() => handleVote(proposal.id, 'yes')}
+                                  >
+                                    Approve
+                                  </Button>
+                                  <Button 
+                                    size="sm" 
+                                    className="bg-red-500 hover:bg-red-600 text-white border-red-500 w-full"
+                                    onClick={() => handleVote(proposal.id, 'no')}
+                                  >
+                                    Reject
+                                  </Button>
+                                  <Button 
+                                    size="sm" 
+                                    variant="outline"
+                                    className="bg-white border-gray-300 text-gray-700 hover:bg-gray-50 w-full"
+                                    onClick={() => handleVote(proposal.id, 'abstain')}
+                                  >
+                                    Abstain
+                                  </Button>
+                                </div>
+                              </div>
                             )}
-                            <Button variant="outline" className="w-full bg-background/60 backdrop-blur-md border-primary/30">
+                            {userMembership && (
+                              <div className="text-xs text-muted-foreground text-center">
+                                Your voting power: {userMembership.voting_power}%
+                              </div>
+                            )}
+                            <Button 
+                              variant="outline" 
+                              className="w-full bg-background/60 backdrop-blur-md border-primary/30"
+                              onClick={() => handleViewDetails(proposal)}
+                            >
                               <MessageSquare className="w-4 h-4 mr-2" />
                               View Details
                             </Button>
@@ -817,6 +1006,208 @@ const UserDAODashboard = () => {
           )}
         </div>
       </div>
+
+      {/* Proposal Details Modal */}
+      <Dialog open={showProposalDetails} onOpenChange={setShowProposalDetails}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              {getStatusIcon(selectedProposal?.status || 'draft')}
+              {selectedProposal?.title}
+            </DialogTitle>
+          </DialogHeader>
+          
+          {selectedProposal && (
+            <div className="space-y-6">
+              {/* Proposal Status and Metadata */}
+              <div className="flex flex-wrap items-center gap-4">
+                <Badge className={getStatusColor(selectedProposal.status)}>
+                  {selectedProposal.status.charAt(0).toUpperCase() + selectedProposal.status.slice(1)}
+                </Badge>
+                <Badge variant="outline">{selectedProposal.category}</Badge>
+                <Badge variant="secondary">{selectedProposal.voting_type.replace('_', ' ')}</Badge>
+                {selectedProposal.treasury_impact_amount > 0 && (
+                  <Badge variant="outline" className="text-green-600">
+                    <DollarSign className="w-3 h-3 mr-1" />
+                    {selectedProposal.treasury_impact_amount} {selectedProposal.treasury_impact_currency}
+                  </Badge>
+                )}
+              </div>
+
+              {/* Proposal Description */}
+              <div>
+                <h3 className="text-lg font-semibold mb-2">Description</h3>
+                <p className="text-muted-foreground mb-4">{selectedProposal.description}</p>
+                
+                {selectedProposal.full_description && (
+                  <div>
+                    <h4 className="text-md font-semibold mb-2">Full Details</h4>
+                    <p className="text-muted-foreground whitespace-pre-wrap">
+                      {selectedProposal.full_description}
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              {/* Voting Information */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg">Voting Timeline</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Created:</span>
+                      <span>{format(new Date(selectedProposal.created_at), 'MMM dd, yyyy HH:mm')}</span>
+                    </div>
+                    {selectedProposal.start_time && (
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Voting Started:</span>
+                        <span>{format(new Date(selectedProposal.start_time), 'MMM dd, yyyy HH:mm')}</span>
+                      </div>
+                    )}
+                    {selectedProposal.end_time && (
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Voting Ends:</span>
+                        <span>{format(new Date(selectedProposal.end_time), 'MMM dd, yyyy HH:mm')}</span>
+                      </div>
+                    )}
+                    {selectedProposal.execution_time && (
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Executed:</span>
+                        <span>{format(new Date(selectedProposal.execution_time), 'MMM dd, yyyy HH:mm')}</span>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg">Voting Results</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="space-y-2">
+                      <div className="flex justify-between text-sm">
+                        <span>Total Votes:</span>
+                        <span className="font-semibold">{selectedProposal.total_votes}</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span>Participation Rate:</span>
+                        <span className="font-semibold">{selectedProposal.participation_rate.toFixed(1)}%</span>
+                      </div>
+                    </div>
+                    
+                    {selectedProposal.total_votes > 0 && (
+                      <div className="space-y-2">
+                        <div className="flex justify-between text-sm">
+                          <span className="text-green-600">Approve:</span>
+                          <span className="font-semibold">{selectedProposal.yes_votes}</span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                          <span className="text-red-600">Reject:</span>
+                          <span className="font-semibold">{selectedProposal.no_votes}</span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-600">Abstain:</span>
+                          <span className="font-semibold">{selectedProposal.abstain_votes}</span>
+                        </div>
+                        
+                        <div className="mt-3">
+                          <Progress value={calculateVotingProgress(selectedProposal)} className="h-2" />
+                          <div className="text-xs text-muted-foreground mt-1 text-center">
+                            {calculateVotingProgress(selectedProposal).toFixed(1)}% Approve
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Tags */}
+              {selectedProposal.tags.length > 0 && (
+                <div>
+                  <h3 className="text-lg font-semibold mb-2">Tags</h3>
+                  <div className="flex flex-wrap gap-2">
+                    {selectedProposal.tags.map((tag, index) => (
+                      <Badge key={index} variant="secondary">
+                        {tag}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* External Links */}
+              {selectedProposal.external_links && Object.keys(selectedProposal.external_links).length > 0 && (
+                <div>
+                  <h3 className="text-lg font-semibold mb-2">External Links</h3>
+                  <div className="space-y-2">
+                    {Object.entries(selectedProposal.external_links).map(([key, url]) => (
+                      <div key={key} className="flex items-center gap-2">
+                        <ExternalLink className="w-4 h-4 text-muted-foreground" />
+                        <a 
+                          href={url} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="text-primary hover:underline"
+                        >
+                          {key}
+                        </a>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Action Buttons */}
+              <div className="flex gap-3 pt-4 border-t">
+                {selectedProposal.status === 'active' && selectedProposal.can_vote && (
+                  <div className="grid grid-cols-3 gap-2 w-full">
+                    <Button 
+                      size="sm" 
+                      className="bg-green-500 hover:bg-green-600 text-white border-green-500 w-full"
+                      onClick={() => {
+                        handleVote(selectedProposal.id, 'yes');
+                        setShowProposalDetails(false);
+                      }}
+                    >
+                      Approve
+                    </Button>
+                    <Button 
+                      size="sm" 
+                      className="bg-red-500 hover:bg-red-600 text-white border-red-500 w-full"
+                      onClick={() => {
+                        handleVote(selectedProposal.id, 'no');
+                        setShowProposalDetails(false);
+                      }}
+                    >
+                      Reject
+                    </Button>
+                    <Button 
+                      size="sm" 
+                      variant="outline"
+                      className="bg-white border-gray-300 text-gray-700 hover:bg-gray-50 w-full"
+                      onClick={() => {
+                        handleVote(selectedProposal.id, 'abstain');
+                        setShowProposalDetails(false);
+                      }}
+                    >
+                      Abstain
+                    </Button>
+                  </div>
+                )}
+                <Button 
+                  variant="outline" 
+                  onClick={() => setShowProposalDetails(false)}
+                >
+                  Close
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

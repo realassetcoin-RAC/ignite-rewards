@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
 import { 
   AlertTriangle, 
   CheckCircle, 
@@ -281,11 +282,10 @@ const LoyaltyChangeApproval: React.FC<LoyaltyChangeApprovalProps> = ({
                 <div className="grid grid-cols-2 gap-2 mt-2">
                   {commonComponents.map(component => (
                     <label key={component} className="flex items-center space-x-2">
-                      <input
-                        type="checkbox"
+                      <Checkbox
                         checked={changeForm.affectedComponents.includes(component)}
-                        onChange={(e) => {
-                          if (e.target.checked) {
+                        onCheckedChange={(checked) => {
+                          if (checked) {
                             setChangeForm(prev => ({
                               ...prev,
                               affectedComponents: [...prev.affectedComponents, component]

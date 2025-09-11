@@ -1,0 +1,82 @@
+/* RAC Theme Colors - Based on openrac.io branding guidelines */
+
+:root {
+  /* RAC Primary Colors */
+  --rac-deep-blue: #001F3F;
+  --rac-vibrant-orange: #FF851B;
+  --rac-orange-light: #FFA500;
+  --rac-orange-dark: #E55A2B;
+  
+  /* RAC Background Colors */
+  --rac-bg-primary: #0F172A; /* slate-950 */
+  --rac-bg-secondary: #1E293B; /* slate-800 */
+  --rac-bg-tertiary: #334155; /* slate-700 */
+  
+  /* RAC Text Colors */
+  --rac-text-primary: #FFFFFF;
+  --rac-text-secondary: #E2E8F0; /* slate-200 */
+  --rac-text-muted: #94A3B8; /* slate-400 */
+  
+  /* RAC Border Colors */
+  --rac-border-primary: rgba(255, 133, 27, 0.2);
+  --rac-border-secondary: rgba(255, 133, 27, 0.3);
+  --rac-border-accent: rgba(255, 133, 27, 0.5);
+}
+
+/* RAC Background Gradients */
+.rac-bg-gradient {
+  background: linear-gradient(135deg, var(--rac-bg-primary) 0%, #1E3A8A 50%, var(--rac-bg-primary) 100%);
+}
+
+.rac-bg-gradient-radial {
+  background: radial-gradient(circle at 50% 50%, rgba(0, 31, 63, 0.4) 0%, transparent 50%);
+}
+
+.rac-bg-gradient-orange {
+  background: radial-gradient(circle at 80% 20%, rgba(255, 133, 27, 0.2) 0%, transparent 50%);
+}
+
+/* RAC Card Styles */
+.rac-card {
+  background: linear-gradient(135deg, rgba(30, 41, 59, 0.6) 0%, rgba(51, 65, 85, 0.3) 100%);
+  backdrop-filter: blur(16px);
+  border: 1px solid var(--rac-border-primary);
+}
+
+/* RAC Button Styles */
+.rac-button-primary {
+  background: linear-gradient(135deg, var(--rac-vibrant-orange) 0%, var(--rac-orange-dark) 100%);
+  color: var(--rac-text-primary);
+  border: none;
+  transition: all 0.3s ease;
+}
+
+.rac-button-primary:hover {
+  background: linear-gradient(135deg, var(--rac-orange-dark) 0%, #D97706 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(255, 133, 27, 0.3);
+}
+
+/* RAC Text Gradients */
+.rac-text-gradient {
+  background: linear-gradient(135deg, var(--rac-vibrant-orange) 0%, var(--rac-orange-light) 50%, #3B82F6 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* RAC Navigation Styles */
+.rac-nav-header {
+  background: rgba(15, 23, 42, 0.8);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--rac-border-primary);
+}
+
+/* RAC Floating Elements */
+.rac-float-orange {
+  background: linear-gradient(135deg, rgba(255, 133, 27, 0.2) 0%, rgba(255, 165, 0, 0.2) 100%);
+}
+
+.rac-float-blue {
+  background: linear-gradient(135deg, rgba(30, 58, 138, 0.2) 0%, rgba(15, 23, 42, 0.2) 100%);
+}

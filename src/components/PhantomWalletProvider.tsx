@@ -45,14 +45,19 @@ export const PhantomWalletProvider: React.FC<PhantomWalletProviderProps> = ({ ch
 
   // Detect Phantom provider
   const detectPhantom = useCallback(() => {
-    const provider = (window as any)?.phantom?.solana;
-    
-    if (provider?.isPhantom) {
-      setPhantom(provider);
-      return provider;
+    try {
+      const provider = (window as any)?.phantom?.solana;
+      
+      if (provider?.isPhantom) {
+        setPhantom(provider);
+        return provider;
+      }
+      
+      return null;
+    } catch (error) {
+      console.warn('Error detecting Phantom wallet:', error);
+      return null;
     }
-    
-    return null;
   }, []);
 
   // Check for existing connection on load

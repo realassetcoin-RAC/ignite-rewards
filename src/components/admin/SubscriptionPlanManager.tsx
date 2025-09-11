@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { Plus, Edit2, DollarSign, CheckCircle2 } from "lucide-react";
 
@@ -313,10 +314,9 @@ const SubscriptionPlanManager = () => {
                   render={({ field }) => (
                     <FormItem className="flex flex-row items-center space-x-3 space-y-0">
                       <FormControl>
-                        <input
-                          type="checkbox"
+                        <Checkbox
                           checked={field.value}
-                          onChange={field.onChange}
+                          onCheckedChange={field.onChange}
                           className="h-4 w-4 rounded border border-input"
                         />
                       </FormControl>

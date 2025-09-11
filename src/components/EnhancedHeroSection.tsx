@@ -13,6 +13,7 @@ import { useSecureAuth } from "@/hooks/useSecureAuth";
 import AuthModal from "./AuthModal";
 import PrivacyFirstSignupModal from "./PrivacyFirstSignupModal";
 import MerchantSignupModal from "./MerchantSignupModal";
+import HomePageCarousel from "./HomePageCarousel";
 import { 
   Star, 
   TrendingUp, 
@@ -31,7 +32,8 @@ import {
   Store,
   Gift,
   Coins,
-  Vote
+  Vote,
+  Building2
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
@@ -174,6 +176,13 @@ const EnhancedHeroSection = () => {
                         <User className="mr-2 h-4 w-4" />
                         My Dashboard
                       </DropdownMenuItem>
+                      <DropdownMenuItem 
+                        className="cursor-pointer"
+                        onClick={() => navigate('/marketplace')}
+                      >
+                        <Building2 className="mr-2 h-4 w-4" />
+                        Marketplace
+                      </DropdownMenuItem>
                       {isAdmin && (
                         <>
                           <DropdownMenuItem 
@@ -215,16 +224,26 @@ const EnhancedHeroSection = () => {
                   </DropdownMenu>
                 </>
               ) : (
-                <Button 
-                  variant="outline" 
-                  onClick={() => {
-                    console.log('Sign In button clicked');
-                    setAuthModalOpen(true);
-                  }}
-                  className="pointer-events-auto cursor-pointer"
-                >
-                  Sign In
-                </Button>
+                <div className="flex items-center space-x-3">
+                  <Button 
+                    variant="ghost" 
+                    onClick={() => navigate('/marketplace')}
+                    className="text-muted-foreground hover:text-foreground"
+                  >
+                    <Building2 className="w-4 h-4 mr-2" />
+                    Marketplace
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    onClick={() => {
+                      console.log('Sign In button clicked');
+                      setAuthModalOpen(true);
+                    }}
+                    className="pointer-events-auto cursor-pointer"
+                  >
+                    Sign In
+                  </Button>
+                </div>
               )}
             </div>
           </div>
@@ -261,29 +280,14 @@ const EnhancedHeroSection = () => {
             </p>
           </div>
 
-          {/* Enhanced CTA Buttons */}
-          <div className={`flex flex-col sm:flex-row gap-4 sm:gap-6 justify-center items-center pt-8 px-4 ${
+          {/* Enhanced CTA Carousel */}
+          <div className={`pt-8 px-4 ${
             isLoaded ? 'animate-fade-in-up animation-delay-600' : 'opacity-0'
           }`}>
-            <Button 
-              size="lg" 
-              className="group text-base sm:text-lg px-8 sm:px-10 py-3 sm:py-4 bg-gradient-to-r from-primary to-purple-500 hover:from-primary/90 hover:to-purple-500/90 transform hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-xl w-full sm:w-auto"
-              onClick={() => setPrivacySignupModalOpen(true)}
-            >
-              <Wallet className="mr-2 sm:mr-3 h-5 w-5 sm:h-6 sm:w-6 group-hover:animate-bounce" />
-              Start Earning Rewards
-              <ArrowRight className="ml-2 sm:ml-3 h-4 w-4 sm:h-5 sm:w-5 group-hover:translate-x-1 transition-transform" />
-            </Button>
-            <Button 
-              variant="outline" 
-              size="lg"
-              className="group text-base sm:text-lg px-8 sm:px-10 py-3 sm:py-4 bg-gradient-to-r from-primary to-purple-500 hover:from-primary/90 hover:to-purple-500/90 transform hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-xl w-full sm:w-auto text-white border-0"
-              onClick={() => setMerchantModalOpen(true)}
-            >
-              <TrendingUp className="mr-2 sm:mr-3 h-5 w-5 sm:h-6 sm:w-6 group-hover:animate-pulse" />
-              Join as Merchant
-              <Globe className="ml-2 sm:ml-3 h-4 w-4 sm:h-5 sm:w-5 group-hover:rotate-12 transition-transform" />
-            </Button>
+            <HomePageCarousel
+              onStartEarning={() => setAuthModalOpen(true)}
+              onJoinMerchant={() => setMerchantModalOpen(true)}
+            />
           </div>
 
           {/* Enhanced Learn More Section */}

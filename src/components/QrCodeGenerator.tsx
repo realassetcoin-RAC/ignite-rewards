@@ -34,7 +34,6 @@ export const QrCodeGenerator: React.FC<QrCodeGeneratorProps> = ({
   currencySymbol = '$',
 }) => {
   const [amount, setAmount] = useState('');
-  const [rewardPoints, setRewardPoints] = useState('');
   const [receiptNumber, setReceiptNumber] = useState('');
   const [qrCodeUrl, setQrCodeUrl] = useState('');
   const [qrCodeData, setQrCodeData] = useState<QrCodeData | null>(null);
@@ -43,22 +42,23 @@ export const QrCodeGenerator: React.FC<QrCodeGeneratorProps> = ({
   const { toast } = useToast();
 
   const generateQrCode = async () => {
-    if (!amount || !rewardPoints || !receiptNumber) {
+    if (!amount || !receiptNumber) {
       toast({
         title: "Missing Information",
-        description: "Please enter transaction amount, reward points, and receipt number.",
+        description: "Please enter transaction amount and receipt number.",
         variant: "destructive",
       });
       return;
     }
 
     const amountNum = parseFloat(amount);
-    const pointsNum = parseInt(rewardPoints);
+    // Calculate reward points automatically based on transaction amount (1 point per dollar)
+    const pointsNum = Math.floor(amountNum);
 
-    if (amountNum <= 0 || pointsNum <= 0) {
+    if (amountNum <= 0) {
       toast({
         title: "Invalid Values",
-        description: "Amount and reward points must be greater than 0.",
+        description: "Transaction amount must be greater than 0.",
         variant: "destructive",
       });
       return;
@@ -181,7 +181,6 @@ export const QrCodeGenerator: React.FC<QrCodeGeneratorProps> = ({
 
   const resetForm = () => {
     setAmount('');
-    setRewardPoints('');
     setReceiptNumber('');
     setQrCodeUrl('');
     setQrCodeData(null);
@@ -214,17 +213,6 @@ export const QrCodeGenerator: React.FC<QrCodeGeneratorProps> = ({
                   />
                 </div>
 
-                <div>
-                  <Label htmlFor="rewardPoints">Reward Points</Label>
-                  <Input
-                    id="rewardPoints"
-                    type="number"
-                    min="1"
-                    placeholder="10"
-                    value={rewardPoints}
-                    onChange={(e) => setRewardPoints(e.target.value)}
-                  />
-                </div>
 
                 <div>
                   <Label htmlFor="receiptNumber">Receipt Number</Label>
@@ -273,7 +261,7 @@ export const QrCodeGenerator: React.FC<QrCodeGeneratorProps> = ({
                     </div>
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Reward Points:</span>
-                      <Badge variant="default">{rewardPoints} pts</Badge>
+                      <Badge variant="default">{Math.floor(parseFloat(amount) || 0)} pts</Badge>
                     </div>
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Receipt Number:</span>

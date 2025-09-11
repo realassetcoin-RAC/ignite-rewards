@@ -23,6 +23,7 @@ import {
   ArrowLeft,
   Sparkles,
   BarChart3,
+  Play,
   Settings,
   Wallet,
   Calendar,
@@ -53,14 +54,21 @@ const DAODashboard = () => {
   const [proposals, setProposals] = useState<DAOProposal[]>([]);
   const [members, setMembers] = useState<DAOMember[]>([]);
   const [daoStats, setDaoStats] = useState<DAOStats | null>(null);
+  const [selectedOrgId, setSelectedOrgId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<ProposalStatus | 'all'>('all');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [isLoaded, setIsLoaded] = useState(false);
   const [showCreateProposal, setShowCreateProposal] = useState(false);
+  const [newProposal, setNewProposal] = useState<{ title: string; description: string; category: string; voting_type: VotingType }>(
+    { title: '', description: '', category: 'governance', voting_type: 'simple_majority' }
+  );
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [userMembership, setUserMembership] = useState<DAOMember | null>(null);
+  const [selectedProposal, setSelectedProposal] = useState<DAOProposal | null>(null);
+  const [showProposalDetails, setShowProposalDetails] = useState(false);
+  const [authLoading, setAuthLoading] = useState(true);
   
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -86,7 +94,10 @@ const DAODashboard = () => {
   const checkUserMembership = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!user) {
+        setAuthLoading(false);
+        return;
+      }
 
       setCurrentUser(user);
 
@@ -108,203 +119,125 @@ const DAODashboard = () => {
       };
 
       setUserMembership(mockMembership);
+      console.log('DAO: User membership set:', mockMembership);
     } catch (error) {
       console.error('Error checking user membership:', error);
+    } finally {
+      setAuthLoading(false);
     }
   };
 
   const loadDAOData = async () => {
     try {
       setLoading(true);
-      
-      // Load sample DAO data (in a real app, this would come from the database)
-      const sampleDAO: DAOOrganization = {
-        id: 'sample-dao-1',
-        name: 'RAC Rewards DAO',
-        description: 'Governance for the RAC Rewards loyalty platform',
-        logo_url: '/rac-card.jpg',
-        governance_token_symbol: 'RAC',
-        min_proposal_threshold: 1000,
-        voting_period_days: 7,
-        execution_delay_hours: 24,
-        quorum_percentage: 10.0,
-        super_majority_threshold: 66.67,
-        governance_token_decimals: 9,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        is_active: true
-      };
-
-      // Sample proposals
-      const sampleProposals: DAOProposal[] = [
-        {
-          id: 'prop-1',
-          dao_id: 'sample-dao-1',
-          proposer_id: 'user-1',
-          title: 'Increase loyalty point rewards by 20%',
-          description: 'Proposal to increase the loyalty point multiplier from 1x to 1.2x for all merchants',
-          full_description: 'This proposal aims to increase customer engagement by boosting the loyalty point rewards. The change would affect all merchants on the platform and require updates to the reward calculation system.',
-          category: 'governance',
-          voting_type: 'simple_majority',
-          status: 'active',
-          start_time: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-          end_time: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString(),
-          total_votes: 45,
-          yes_votes: 28,
-          no_votes: 12,
-          abstain_votes: 5,
-          participation_rate: 75.0,
-          treasury_impact_amount: 0,
-          treasury_impact_currency: 'SOL',
-          tags: ['rewards', 'engagement', 'merchants'],
-          created_at: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
-          updated_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-          dao_name: 'RAC Rewards DAO',
-          proposer_email: 'admin@rac.com',
-          proposer_tokens: 5000,
-          voting_status: 'active',
-          can_vote: true,
-          can_execute: false
-        },
-        {
-          id: 'prop-2',
-          dao_id: 'sample-dao-1',
-          proposer_id: 'user-2',
-          title: 'Add Solana USDC as payment option',
-          description: 'Enable USDC payments on Solana blockchain for loyalty transactions',
-          full_description: 'This proposal would integrate Solana USDC as a payment method, allowing users to pay for loyalty transactions using USDC. This would require integration with Solana wallet providers and USDC token handling.',
-          category: 'technical',
-          voting_type: 'super_majority',
-          status: 'passed',
-          start_time: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(),
-          end_time: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
-          execution_time: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-          total_votes: 52,
-          yes_votes: 38,
-          no_votes: 8,
-          abstain_votes: 6,
-          participation_rate: 86.7,
-          treasury_impact_amount: 5000,
-          treasury_impact_currency: 'USDC',
-          tags: ['solana', 'usdc', 'payments', 'blockchain'],
-          created_at: new Date(Date.now() - 12 * 24 * 60 * 60 * 1000).toISOString(),
-          updated_at: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
-          executed_at: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
-          dao_name: 'RAC Rewards DAO',
-          proposer_email: 'dev@rac.com',
-          proposer_tokens: 3000,
-          voting_status: 'ended',
-          can_vote: false,
-          can_execute: false
-        },
-        {
-          id: 'prop-3',
-          dao_id: 'sample-dao-1',
-          proposer_id: 'user-3',
-          title: 'Implement quadratic voting for governance',
-          description: 'Change voting mechanism from simple majority to quadratic voting',
-          full_description: 'This proposal would implement quadratic voting to reduce the influence of large token holders and promote more democratic decision-making. The voting power would be calculated as the square root of token holdings.',
-          category: 'governance',
-          voting_type: 'super_majority',
-          status: 'draft',
-          treasury_impact_amount: 0,
-          treasury_impact_currency: 'SOL',
-          tags: ['voting', 'governance', 'democracy'],
-          created_at: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
-          updated_at: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
-          total_votes: 0,
-          yes_votes: 0,
-          no_votes: 0,
-          abstain_votes: 0,
-          participation_rate: 0,
-          dao_name: 'RAC Rewards DAO',
-          proposer_email: 'governance@rac.com',
-          proposer_tokens: 2000,
-          voting_status: 'upcoming',
-          can_vote: false,
-          can_execute: false
-        }
-      ];
-
-      // Sample members
-      const sampleMembers: DAOMember[] = [
-        {
-          id: 'member-1',
-          dao_id: 'sample-dao-1',
-          user_id: 'user-1',
-          wallet_address: 'ABC123...',
-          role: 'admin',
-          governance_tokens: 5000,
-          voting_power: 15.2,
-          joined_at: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
-          last_active_at: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString(),
-          is_active: true,
-          user_email: 'admin@rac.com',
-          user_full_name: 'Admin User'
-        },
-        {
-          id: 'member-2',
-          dao_id: 'sample-dao-1',
-          user_id: 'user-2',
-          wallet_address: 'DEF456...',
-          role: 'moderator',
-          governance_tokens: 3000,
-          voting_power: 9.1,
-          joined_at: new Date(Date.now() - 25 * 24 * 60 * 60 * 1000).toISOString(),
-          last_active_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-          is_active: true,
-          user_email: 'dev@rac.com',
-          user_full_name: 'Developer User'
-        },
-        {
-          id: 'member-3',
-          dao_id: 'sample-dao-1',
-          user_id: 'user-3',
-          wallet_address: 'GHI789...',
-          role: 'member',
-          governance_tokens: 2000,
-          voting_power: 6.1,
-          joined_at: new Date(Date.now() - 20 * 24 * 60 * 60 * 1000).toISOString(),
-          last_active_at: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
-          is_active: true,
-          user_email: 'governance@rac.com',
-          user_full_name: 'Governance User'
-        }
-      ];
-
-      // Add current user as a member if they're not already in the list
-      if (currentUser && !sampleMembers.find(m => m.user_id === currentUser.id)) {
-        sampleMembers.push({
-          id: `member-${currentUser.id}`,
-          dao_id: 'sample-dao-1',
-          user_id: currentUser.id,
-          wallet_address: 'Mock123...',
-          role: 'member',
-          governance_tokens: 1000,
-          voting_power: 3.0,
-          joined_at: new Date().toISOString(),
-          last_active_at: new Date().toISOString(),
-          is_active: true,
-          user_email: currentUser.email,
-          user_full_name: currentUser.user_metadata?.full_name || 'DAO Member'
-        });
+      // Load DAO org
+      const { data: orgs, error: orgErr } = await supabase
+        .from('dao_organizations')
+        .select('*')
+        .eq('is_active', true)
+        .limit(1);
+      if (orgErr) {
+        console.error('Error loading DAO organization:', orgErr);
+      }
+      const org = orgs && orgs.length > 0 ? orgs[0] as any : null;
+      if (org) {
+        setSelectedOrgId(org.id);
       }
 
-      // Sample stats
-      const sampleStats: DAOStats = {
-        total_members: 127,
-        active_members: 89,
-        total_proposals: 23,
-        active_proposals: 1,
-        total_treasury_value: 125000,
-        treasury_currency: 'SOL',
-        participation_rate: 78.5,
-        average_voting_power: 8.3
-      };
+      // Load proposals
+      if (org) {
+        const { data: dbProposals, error: propErr } = await supabase
+          .from('dao_proposals')
+          .select('*')
+          .eq('dao_id', org.id)
+          .order('created_at', { ascending: false });
+        if (propErr) {
+          console.error('Error loading proposals:', propErr);
+        }
+        const mapped: DAOProposal[] = (dbProposals || []).map((p: any) => ({
+          id: p.id,
+          dao_id: p.dao_id,
+          proposer_id: p.proposer_id,
+          title: p.title,
+          description: p.description,
+          full_description: p.full_description,
+          category: p.category,
+          voting_type: p.voting_type,
+          status: p.status,
+          start_time: p.start_time,
+          end_time: p.end_time,
+          execution_time: p.execution_time,
+          total_votes: p.total_votes,
+          yes_votes: p.yes_votes,
+          no_votes: p.no_votes,
+          abstain_votes: p.abstain_votes,
+          participation_rate: p.participation_rate,
+          treasury_impact_amount: 0,
+          treasury_impact_currency: 'SOL',
+          tags: [],
+          created_at: p.created_at,
+          updated_at: p.updated_at,
+          dao_name: org.name,
+          proposer_email: '',
+          proposer_tokens: 0,
+          voting_status: p.status === 'active' ? 'active' : (p.status === 'draft' ? 'upcoming' : 'ended'),
+          can_vote: !!currentUser,
+          can_execute: false
+        }));
+        setProposals(mapped);
+      } else {
+        setProposals([]);
+      }
 
-      setProposals(sampleProposals);
-      setMembers(sampleMembers);
-      setDaoStats(sampleStats);
+      // Load members
+      if (org) {
+        const { data: dbMembers, error: memErr } = await supabase
+          .from('dao_members')
+          .select('*')
+          .eq('dao_id', org.id)
+          .order('joined_at', { ascending: false });
+        if (memErr) {
+          console.error('Error loading members:', memErr);
+        }
+        const mappedMembers: DAOMember[] = (dbMembers || []).map((m: any) => ({
+          id: m.id,
+          dao_id: m.dao_id,
+          user_id: m.user_id,
+          wallet_address: m.wallet_address,
+          role: m.role,
+          governance_tokens: Number(m.governance_tokens) || 0,
+          voting_power: Number(m.voting_power) || 0,
+          joined_at: m.joined_at,
+          last_active_at: m.last_active_at,
+          is_active: m.is_active,
+          user_email: m.user_email,
+          user_full_name: m.user_full_name
+        }));
+        setMembers(mappedMembers);
+      } else {
+        setMembers([]);
+      }
+
+      // Basic stats
+      if (org) {
+        const stats: DAOStats = {
+          total_members: members.length,
+          active_members: members.filter(m => m.is_active).length,
+          total_proposals: proposals.length,
+          active_proposals: proposals.filter(p => p.status === 'active').length,
+          total_treasury_value: 0,
+          treasury_currency: 'SOL',
+          participation_rate: proposals.length > 0 ? (
+            proposals.reduce((acc, p) => acc + (p.participation_rate || 0), 0) / proposals.length
+          ) : 0,
+          average_voting_power: members.length > 0 ? (
+            members.reduce((acc, m) => acc + (m.voting_power || 0), 0) / members.length
+          ) : 0
+        };
+        setDaoStats(stats);
+      } else {
+        setDaoStats(null);
+      }
 
     } catch (error) {
       console.error('Error loading DAO data:', error);
@@ -315,6 +248,32 @@ const DAODashboard = () => {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleCreateProposal = async () => {
+    try {
+      if (!currentUser || !selectedOrgId) return;
+      const payload = {
+        dao_id: selectedOrgId,
+        proposer_id: currentUser.id,
+        title: newProposal.title,
+        description: newProposal.description,
+        category: newProposal.category,
+        voting_type: newProposal.voting_type,
+        status: 'draft'
+      } as any;
+      const { error } = await supabase.from('dao_proposals').insert([payload]);
+      if (error) {
+        toast({ title: 'Error', description: 'Failed to create proposal', variant: 'destructive' });
+        return;
+      }
+      setShowCreateProposal(false);
+      setNewProposal({ title: '', description: '', category: 'governance', voting_type: 'simple_majority' });
+      await loadDAOData();
+      toast({ title: 'Proposal Created', description: 'Proposal saved as draft.' });
+    } catch (e) {
+      toast({ title: 'Error', description: 'Failed to create proposal', variant: 'destructive' });
     }
   };
 
@@ -379,6 +338,198 @@ const DAODashboard = () => {
     if (proposal.total_votes === 0) return 0;
     return (proposal.yes_votes / proposal.total_votes) * 100;
   };
+
+  const handleVote = async (proposalId: string, choice: 'yes' | 'no' | 'abstain', reason?: string) => {
+    try {
+      if (!currentUser) {
+        toast({
+          title: "Authentication Required",
+          description: "Please sign in to vote on proposals.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const { data, error } = await supabase.rpc('cast_vote', {
+        user_id_param: currentUser.id,
+        proposal_id_param: proposalId,
+        choice_param: choice,
+        reason_param: reason || null
+      });
+
+      if (error) {
+        console.error('Voting error:', error);
+        toast({
+          title: "Voting Failed",
+          description: error.message || "Failed to cast vote. Please try again.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      toast({
+        title: "Vote Cast Successfully",
+        description: `Your ${choice} vote has been recorded.`,
+      });
+
+      // Refresh the data to show updated vote counts
+      await loadDAOData();
+    } catch (error) {
+      console.error('Error casting vote:', error);
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred while voting.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleStartProposal = async (proposalId: string) => {
+    try {
+      if (!currentUser) {
+        toast({
+          title: "Authentication Required",
+          description: "Please sign in to start proposals.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const { error } = await supabase
+        .from('dao_proposals')
+        .update({ 
+          status: 'active',
+          start_time: new Date().toISOString(),
+          end_time: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString() // 7 days from now
+        })
+        .eq('id', proposalId)
+        .eq('proposer_id', currentUser.id);
+
+      if (error) {
+        console.error('Error starting proposal:', error);
+        toast({
+          title: "Failed to Start Proposal",
+          description: error.message || "You can only start your own proposals.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      toast({
+        title: "Proposal Started",
+        description: "The proposal is now active for voting.",
+      });
+
+      await loadDAOData();
+    } catch (error) {
+      console.error('Error starting proposal:', error);
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleExecuteProposal = async (proposalId: string) => {
+    try {
+      if (!currentUser) {
+        toast({
+          title: "Authentication Required",
+          description: "Please sign in to execute proposals.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const { error } = await supabase
+        .from('dao_proposals')
+        .update({ 
+          status: 'executed',
+          execution_time: new Date().toISOString()
+        })
+        .eq('id', proposalId);
+
+      if (error) {
+        console.error('Error executing proposal:', error);
+        toast({
+          title: "Failed to Execute Proposal",
+          description: error.message || "Failed to execute proposal.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      toast({
+        title: "Proposal Executed",
+        description: "The proposal has been executed successfully.",
+      });
+
+      await loadDAOData();
+    } catch (error) {
+      console.error('Error executing proposal:', error);
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const getUserVote = async (proposalId: string) => {
+    try {
+      if (!currentUser) return null;
+
+      const { data, error } = await supabase
+        .from('dao_votes')
+        .select('choice, reason, created_at')
+        .eq('proposal_id', proposalId)
+        .eq('voter_id', currentUser.id)
+        .single();
+
+      if (error && error.code !== 'PGRST116') { // PGRST116 = no rows returned
+        console.error('Error fetching user vote:', error);
+        return null;
+      }
+
+      return data;
+    } catch (error) {
+      console.error('Error fetching user vote:', error);
+      return null;
+    }
+  };
+
+  const handleViewDetails = (proposal: DAOProposal) => {
+    setSelectedProposal(proposal);
+    setShowProposalDetails(true);
+  };
+
+  // Show loading state while checking authentication
+  if (authLoading) {
+    return (
+      <div className="min-h-screen hero-gradient relative overflow-hidden flex items-center justify-center">
+        <div className="absolute top-20 left-20 w-72 h-72 bg-gradient-to-r from-primary/20 to-purple-500/20 rounded-full mix-blend-multiply filter blur-xl animate-pulse pointer-events-none"></div>
+        <div className="absolute top-40 right-20 w-96 h-96 bg-gradient-to-r from-purple-500/20 to-blue-500/20 rounded-full mix-blend-multiply filter blur-xl animate-pulse animation-delay-2000 pointer-events-none"></div>
+        
+        <Card className="relative z-10 w-full max-w-md card-gradient border-primary/20 backdrop-blur-md">
+          <CardContent className="p-6 text-center">
+            <div className="w-16 h-16 bg-primary rounded-lg flex items-center justify-center mx-auto mb-4">
+              <Vote className="h-8 w-8 text-primary-foreground animate-pulse" />
+            </div>
+            <h2 className="text-xl font-semibold text-foreground mb-2">
+              Loading DAO...
+            </h2>
+            <p className="text-muted-foreground mb-4">
+              Please wait while we load the RAC Rewards DAO.
+            </p>
+            <div className="flex justify-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   // Only require authentication, not specific DAO membership
   if (!currentUser) {
@@ -744,8 +895,8 @@ const DAODashboard = () => {
                                 </div>
                                 <Progress value={calculateVotingProgress(proposal)} className="h-2" />
                                 <div className="flex justify-between text-xs text-muted-foreground mt-1">
-                                  <span>Yes: {proposal.yes_votes}</span>
-                                  <span>No: {proposal.no_votes}</span>
+                                  <span>Approve: {proposal.yes_votes}</span>
+                                  <span>Reject: {proposal.no_votes}</span>
                                   <span>Abstain: {proposal.abstain_votes}</span>
                                 </div>
                               </div>
@@ -765,12 +916,61 @@ const DAODashboard = () => {
                           
                           <div className="flex flex-col gap-2 lg:min-w-[200px]">
                             {proposal.status === 'active' && proposal.can_vote && (
-                              <Button className="btn-gradient w-full">
-                                <Vote className="w-4 h-4 mr-2" />
-                                Vote
+                              <div className="space-y-2">
+                                <div className="grid grid-cols-3 gap-2">
+                                  <Button 
+                                    size="sm" 
+                                    className="bg-green-500 hover:bg-green-600 text-white border-green-500 w-full"
+                                    onClick={() => handleVote(proposal.id, 'yes')}
+                                  >
+                                    Approve
+                                  </Button>
+                                  <Button 
+                                    size="sm" 
+                                    className="bg-red-500 hover:bg-red-600 text-white border-red-500 w-full"
+                                    onClick={() => handleVote(proposal.id, 'no')}
+                                  >
+                                    Reject
+                                  </Button>
+                                  <Button 
+                                    size="sm" 
+                                    variant="outline"
+                                    className="bg-white border-gray-300 text-gray-700 hover:bg-gray-50 w-full"
+                                    onClick={() => handleVote(proposal.id, 'abstain')}
+                                  >
+                                    Abstain
+                                  </Button>
+                                </div>
+                              </div>
+                            )}
+                            {userMembership && (
+                              <div className="text-xs text-muted-foreground text-center">
+                                Your voting power: {userMembership.voting_power}%
+                              </div>
+                            )}
+                            {proposal.status === 'draft' && proposal.proposer_id === currentUser?.id && (
+                              <Button 
+                                className="btn-gradient w-full"
+                                onClick={() => handleStartProposal(proposal.id)}
+                              >
+                                <Play className="w-4 h-4 mr-2" />
+                                Start Voting
                               </Button>
                             )}
-                            <Button variant="outline" className="w-full bg-background/60 backdrop-blur-md border-primary/30">
+                            {proposal.status === 'passed' && userMembership?.role === 'admin' && (
+                              <Button 
+                                className="bg-green-600 hover:bg-green-700 text-white w-full"
+                                onClick={() => handleExecuteProposal(proposal.id)}
+                              >
+                                <CheckCircle className="w-4 h-4 mr-2" />
+                                Execute
+                              </Button>
+                            )}
+                            <Button 
+                              variant="outline" 
+                              className="w-full bg-background/60 backdrop-blur-md border-primary/30"
+                              onClick={() => handleViewDetails(proposal)}
+                            >
                               <MessageSquare className="w-4 h-4 mr-2" />
                               View Details
                             </Button>
@@ -879,6 +1079,232 @@ const DAODashboard = () => {
           )}
         </div>
       </div>
+
+      {/* Proposal Details Modal */}
+      <Dialog open={showProposalDetails} onOpenChange={setShowProposalDetails}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              {getStatusIcon(selectedProposal?.status || 'draft')}
+              {selectedProposal?.title}
+            </DialogTitle>
+          </DialogHeader>
+          
+          {selectedProposal && (
+            <div className="space-y-6">
+              {/* Proposal Status and Metadata */}
+              <div className="flex flex-wrap items-center gap-4">
+                <Badge className={getStatusColor(selectedProposal.status)}>
+                  {selectedProposal.status.charAt(0).toUpperCase() + selectedProposal.status.slice(1)}
+                </Badge>
+                <Badge variant="outline">{selectedProposal.category}</Badge>
+                <Badge variant="secondary">{selectedProposal.voting_type.replace('_', ' ')}</Badge>
+                {selectedProposal.treasury_impact_amount > 0 && (
+                  <Badge variant="outline" className="text-green-600">
+                    <DollarSign className="w-3 h-3 mr-1" />
+                    {selectedProposal.treasury_impact_amount} {selectedProposal.treasury_impact_currency}
+                  </Badge>
+                )}
+              </div>
+
+              {/* Proposal Description */}
+              <div>
+                <h3 className="text-lg font-semibold mb-2">Description</h3>
+                <p className="text-muted-foreground mb-4">{selectedProposal.description}</p>
+                
+                {selectedProposal.full_description && (
+                  <div>
+                    <h4 className="text-md font-semibold mb-2">Full Details</h4>
+                    <p className="text-muted-foreground whitespace-pre-wrap">
+                      {selectedProposal.full_description}
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              {/* Voting Information */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg">Voting Timeline</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Created:</span>
+                      <span>{format(new Date(selectedProposal.created_at), 'MMM dd, yyyy HH:mm')}</span>
+                    </div>
+                    {selectedProposal.start_time && (
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Voting Started:</span>
+                        <span>{format(new Date(selectedProposal.start_time), 'MMM dd, yyyy HH:mm')}</span>
+                      </div>
+                    )}
+                    {selectedProposal.end_time && (
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Voting Ends:</span>
+                        <span>{format(new Date(selectedProposal.end_time), 'MMM dd, yyyy HH:mm')}</span>
+                      </div>
+                    )}
+                    {selectedProposal.execution_time && (
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Executed:</span>
+                        <span>{format(new Date(selectedProposal.execution_time), 'MMM dd, yyyy HH:mm')}</span>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg">Voting Results</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="space-y-2">
+                      <div className="flex justify-between text-sm">
+                        <span>Total Votes:</span>
+                        <span className="font-semibold">{selectedProposal.total_votes}</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span>Participation Rate:</span>
+                        <span className="font-semibold">{selectedProposal.participation_rate.toFixed(1)}%</span>
+                      </div>
+                    </div>
+                    
+                    {selectedProposal.total_votes > 0 && (
+                      <div className="space-y-2">
+                        <div className="flex justify-between text-sm">
+                          <span className="text-green-600">Approve:</span>
+                          <span className="font-semibold">{selectedProposal.yes_votes}</span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                          <span className="text-red-600">Reject:</span>
+                          <span className="font-semibold">{selectedProposal.no_votes}</span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-600">Abstain:</span>
+                          <span className="font-semibold">{selectedProposal.abstain_votes}</span>
+                        </div>
+                        
+                        <div className="mt-3">
+                          <Progress value={calculateVotingProgress(selectedProposal)} className="h-2" />
+                          <div className="text-xs text-muted-foreground mt-1 text-center">
+                            {calculateVotingProgress(selectedProposal).toFixed(1)}% Approve
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Tags */}
+              {selectedProposal.tags.length > 0 && (
+                <div>
+                  <h3 className="text-lg font-semibold mb-2">Tags</h3>
+                  <div className="flex flex-wrap gap-2">
+                    {selectedProposal.tags.map((tag, index) => (
+                      <Badge key={index} variant="secondary">
+                        {tag}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* External Links */}
+              {selectedProposal.external_links && Object.keys(selectedProposal.external_links).length > 0 && (
+                <div>
+                  <h3 className="text-lg font-semibold mb-2">External Links</h3>
+                  <div className="space-y-2">
+                    {Object.entries(selectedProposal.external_links).map(([key, url]) => (
+                      <div key={key} className="flex items-center gap-2">
+                        <ExternalLink className="w-4 h-4 text-muted-foreground" />
+                        <a 
+                          href={url} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="text-primary hover:underline"
+                        >
+                          {key}
+                        </a>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Action Buttons */}
+              <div className="flex gap-3 pt-4 border-t">
+                {selectedProposal.status === 'active' && selectedProposal.can_vote && (
+                  <div className="grid grid-cols-3 gap-2 w-full">
+                    <Button 
+                      size="sm" 
+                      className="bg-green-500 hover:bg-green-600 text-white border-green-500 w-full"
+                      onClick={() => {
+                        handleVote(selectedProposal.id, 'yes');
+                        setShowProposalDetails(false);
+                      }}
+                    >
+                      Approve
+                    </Button>
+                    <Button 
+                      size="sm" 
+                      className="bg-red-500 hover:bg-red-600 text-white border-red-500 w-full"
+                      onClick={() => {
+                        handleVote(selectedProposal.id, 'no');
+                        setShowProposalDetails(false);
+                      }}
+                    >
+                      Reject
+                    </Button>
+                    <Button 
+                      size="sm" 
+                      variant="outline"
+                      className="bg-white border-gray-300 text-gray-700 hover:bg-gray-50 w-full"
+                      onClick={() => {
+                        handleVote(selectedProposal.id, 'abstain');
+                        setShowProposalDetails(false);
+                      }}
+                    >
+                      Abstain
+                    </Button>
+                  </div>
+                )}
+                {selectedProposal.status === 'draft' && selectedProposal.proposer_id === currentUser?.id && (
+                  <Button 
+                    className="bg-primary hover:bg-primary/90"
+                    onClick={() => {
+                      handleStartProposal(selectedProposal.id);
+                      setShowProposalDetails(false);
+                    }}
+                  >
+                    <Play className="w-4 h-4 mr-2" />
+                    Start Voting
+                  </Button>
+                )}
+                {selectedProposal.status === 'passed' && userMembership?.role === 'admin' && (
+                  <Button 
+                    className="bg-green-600 hover:bg-green-700 text-white"
+                    onClick={() => {
+                      handleExecuteProposal(selectedProposal.id);
+                      setShowProposalDetails(false);
+                    }}
+                  >
+                    <CheckCircle className="w-4 h-4 mr-2" />
+                    Execute Proposal
+                  </Button>
+                )}
+                <Button 
+                  variant="outline" 
+                  onClick={() => setShowProposalDetails(false)}
+                >
+                  Close
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

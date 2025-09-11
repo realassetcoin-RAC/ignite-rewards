@@ -44,10 +44,10 @@ const Privacy = () => {
               </h1>
             </div>
             <Button 
-              variant="outline" 
+              variant="minimal" 
               size="sm" 
               asChild
-              className={`group bg-background/60 backdrop-blur-md hover:bg-background/80 border-primary/30 hover:border-primary/50 transform hover:scale-105 transition-all duration-300 ${
+              className={`group transform hover:scale-105 transition-all duration-300 ${
                 isLoaded ? 'animate-fade-in-up animation-delay-200' : 'opacity-0'
               }`}
             >

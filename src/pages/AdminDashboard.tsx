@@ -209,11 +209,11 @@ const AdminDashboard = () => {
 
         {/* Management Tabs */}
         <div className="w-full">
-          <div className="w-full bg-background/60 backdrop-blur-md border border-primary/20 rounded-lg p-1 overflow-x-auto">
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-8 gap-1 min-w-max">
+          <div className="w-full bg-background/60 backdrop-blur-md border border-primary/20 rounded-lg p-1">
+            <div className="flex flex-wrap gap-1">
               <button
                 onClick={() => setActiveTab('cards')}
-                className={`flex items-center justify-center gap-1 px-2 py-1.5 rounded-md text-sm font-medium transition-all duration-200 ${
+                className={`flex items-center justify-center gap-1 px-2 py-1.5 rounded-md text-sm font-medium transition-all duration-200 flex-1 min-w-0 ${
                   activeTab === 'cards'
                     ? 'bg-gradient-to-r from-primary to-purple-500 text-white shadow-sm'
                     : 'text-muted-foreground hover:text-foreground hover:bg-foreground/5'
@@ -225,7 +225,7 @@ const AdminDashboard = () => {
               </button>
               <button
                 onClick={() => setActiveTab('merchants')}
-                className={`flex items-center justify-center gap-1 px-2 py-1.5 rounded-md text-sm font-medium transition-all duration-200 ${
+                className={`flex items-center justify-center gap-1 px-2 py-1.5 rounded-md text-sm font-medium transition-all duration-200 flex-1 min-w-0 ${
                   activeTab === 'merchants'
                     ? 'bg-gradient-to-r from-primary to-purple-500 text-white shadow-sm'
                     : 'text-muted-foreground hover:text-foreground hover:bg-foreground/5'
@@ -237,7 +237,7 @@ const AdminDashboard = () => {
               </button>
               <button
                 onClick={() => setActiveTab('users')}
-                className={`flex items-center justify-center gap-1 px-2 py-1.5 rounded-md text-sm font-medium transition-all duration-200 ${
+                className={`flex items-center justify-center gap-1 px-2 py-1.5 rounded-md text-sm font-medium transition-all duration-200 flex-1 min-w-0 ${
                   activeTab === 'users'
                     ? 'bg-gradient-to-r from-primary to-purple-500 text-white shadow-sm'
                     : 'text-muted-foreground hover:text-foreground hover:bg-foreground/5'
@@ -249,7 +249,7 @@ const AdminDashboard = () => {
               </button>
               <button
                 onClick={() => setActiveTab('loyalty-cards')}
-                className={`flex items-center justify-center gap-1 px-2 py-1.5 rounded-md text-sm font-medium transition-all duration-200 ${
+                className={`flex items-center justify-center gap-1 px-2 py-1.5 rounded-md text-sm font-medium transition-all duration-200 flex-1 min-w-0 ${
                   activeTab === 'loyalty-cards'
                     ? 'bg-gradient-to-r from-primary to-purple-500 text-white shadow-sm'
                     : 'text-muted-foreground hover:text-foreground hover:bg-foreground/5'
@@ -261,7 +261,7 @@ const AdminDashboard = () => {
               </button>
               <button
                 onClick={() => setActiveTab('loyalty-networks')}
-                className={`flex items-center justify-center gap-1 px-2 py-1.5 rounded-md text-sm font-medium transition-all duration-200 ${
+                className={`flex items-center justify-center gap-1 px-2 py-1.5 rounded-md text-sm font-medium transition-all duration-200 flex-1 min-w-0 ${
                   activeTab === 'loyalty-networks'
                     ? 'bg-gradient-to-r from-primary to-purple-500 text-white shadow-sm'
                     : 'text-muted-foreground hover:text-foreground hover:bg-foreground/5'
@@ -273,7 +273,7 @@ const AdminDashboard = () => {
               </button>
               <button
                 onClick={() => setActiveTab('referrals')}
-                className={`flex items-center justify-center gap-1 px-2 py-1.5 rounded-md text-sm font-medium transition-all duration-200 ${
+                className={`flex items-center justify-center gap-1 px-2 py-1.5 rounded-md text-sm font-medium transition-all duration-200 flex-1 min-w-0 ${
                   activeTab === 'referrals'
                     ? 'bg-gradient-to-r from-primary to-purple-500 text-white shadow-sm'
                     : 'text-muted-foreground hover:text-foreground hover:bg-foreground/5'
@@ -285,7 +285,7 @@ const AdminDashboard = () => {
               </button>
               <button
                 onClick={() => setActiveTab('plans')}
-                className={`flex items-center justify-center gap-1 px-2 py-1.5 rounded-md text-sm font-medium transition-all duration-200 ${
+                className={`flex items-center justify-center gap-1 px-2 py-1.5 rounded-md text-sm font-medium transition-all duration-200 flex-1 min-w-0 ${
                   activeTab === 'plans'
                     ? 'bg-gradient-to-r from-primary to-purple-500 text-white shadow-sm'
                     : 'text-muted-foreground hover:text-foreground hover:bg-foreground/5'
@@ -297,7 +297,7 @@ const AdminDashboard = () => {
               </button>
               <button
                 onClick={() => setActiveTab('nft-management')}
-                className={`flex items-center justify-center gap-1 px-2 py-1.5 rounded-md text-sm font-medium transition-all duration-200 ${
+                className={`flex items-center justify-center gap-1 px-2 py-1.5 rounded-md text-sm font-medium transition-all duration-200 flex-1 min-w-0 ${
                   activeTab === 'nft-management'
                     ? 'bg-gradient-to-r from-primary to-purple-500 text-white shadow-sm'
                     : 'text-muted-foreground hover:text-foreground hover:bg-foreground/5'
@@ -309,7 +309,7 @@ const AdminDashboard = () => {
               </button>
               <button
                 onClick={() => setActiveTab('admins')}
-                className={`flex items-center justify-center gap-1 px-2 py-1.5 rounded-md text-sm font-medium transition-all duration-200 ${
+                className={`flex items-center justify-center gap-1 px-2 py-1.5 rounded-md text-sm font-medium transition-all duration-200 flex-1 min-w-0 ${
                   activeTab === 'admins'
                     ? 'bg-gradient-to-r from-primary to-purple-500 text-white shadow-sm'
                     : 'text-muted-foreground hover:text-foreground hover:bg-foreground/5'

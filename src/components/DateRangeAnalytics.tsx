@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { DatePicker } from '@/components/ui/date-picker';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -42,15 +43,8 @@ export const DateRangeAnalytics: React.FC<DateRangeAnalyticsProps> = ({
   const [isVisible, setIsVisible] = useState(false);
   const { toast } = useToast();
 
-  // Set default date range to current month
-  useEffect(() => {
-    const now = new Date();
-    const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
-    const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-    
-    setDateFrom(firstDay.toISOString().split('T')[0]);
-    setDateTo(lastDay.toISOString().split('T')[0]);
-  }, []);
+  // Initialize with blank date fields - user must select dates
+  // Removed automatic date setting to allow blank fields by default
 
   const loadAnalytics = async () => {
     if (!dateFrom || !dateTo) {
@@ -174,20 +168,18 @@ export const DateRangeAnalytics: React.FC<DateRangeAnalyticsProps> = ({
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <Label htmlFor="dateFrom">From Date</Label>
-              <Input
-                id="dateFrom"
-                type="date"
-                value={dateFrom}
-                onChange={(e) => setDateFrom(e.target.value)}
+              <DatePicker
+                date={dateFrom ? new Date(dateFrom) : undefined}
+                onSelect={(date) => setDateFrom(date?.toISOString().split('T')[0] || '')}
+                placeholder="Select start date"
               />
             </div>
             <div>
               <Label htmlFor="dateTo">To Date</Label>
-              <Input
-                id="dateTo"
-                type="date"
-                value={dateTo}
-                onChange={(e) => setDateTo(e.target.value)}
+              <DatePicker
+                date={dateTo ? new Date(dateTo) : undefined}
+                onSelect={(date) => setDateTo(date?.toISOString().split('T')[0] || '')}
+                placeholder="Select end date"
               />
             </div>
             <div className="flex items-end">

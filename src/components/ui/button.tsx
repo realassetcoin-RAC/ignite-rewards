@@ -21,6 +21,7 @@ const buttonVariants = cva(
         hero: "hero-gradient text-white shadow-lg glow-shadow hover:shadow-xl transition-smooth font-semibold",
         reward: "bg-reward-gold text-white hover:bg-reward-gold/90 font-semibold shadow-md",
         gradient: "bg-gradient-to-r from-primary to-purple-500 text-white hover:from-primary/90 hover:to-purple-500/90 shadow-md font-semibold",
+        minimal: "bg-background/60 backdrop-blur-md border border-border/60 text-foreground hover:bg-background/80 transition-smooth",
       },
       size: {
         default: "h-10 px-4 py-2",

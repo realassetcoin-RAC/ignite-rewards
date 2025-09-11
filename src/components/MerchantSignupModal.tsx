@@ -6,7 +6,14 @@ import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Check, ChevronLeft, ChevronRight, Loader2, Building2, Star } from "lucide-react";
+import { Check, ChevronLeft, ChevronRight, Loader2, Building2, Star, ArrowRight } from "lucide-react";
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from "@/components/ui/carousel";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 
@@ -319,96 +326,86 @@ const MerchantSignupModal: React.FC<MerchantSignupModalProps> = ({ isOpen, onClo
                 </div>
               </div>
             ) : (
-              <div className="relative max-w-md mx-auto">
-                <Card className="p-6 card-gradient card-shadow border-0">
-                  <div className="relative">
-                    {/* Navigation buttons - only show if more than 1 plan */}
-                    {merchantPlans.length > 1 && (
-                      <>
-                        <div className="absolute top-1/2 -left-12 -translate-y-1/2">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={prevPlan}
-                            className="h-10 w-10 bg-black/20 hover:bg-black/40 border-0 text-white backdrop-blur-sm"
-                          >
-                            <ChevronLeft className="h-5 w-5" />
-                          </Button>
-                        </div>
-                        <div className="absolute top-1/2 -right-12 -translate-y-1/2">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={nextPlan}
-                            className="h-10 w-10 bg-black/20 hover:bg-black/40 border-0 text-white backdrop-blur-sm"
-                          >
-                            <ChevronRight className="h-5 w-5" />
-                          </Button>
-                        </div>
-                      </>
-                    )}
-                  </div>
-                  
-                  {/* Plan details */}
-                  <div className="text-center min-h-[300px] flex flex-col justify-center">
+              <div className="w-full max-w-2xl mx-auto">
+                <Carousel
+                  className="w-full"
+                  opts={{
+                    align: "center",
+                    loop: true,
+                    skipSnaps: false,
+                    dragFree: false,
+                  }}
+                  onSelect={(index) => setSelectedPlan(index || 0)}
+                >
+                  <CarouselContent className="-ml-2 md:-ml-4">
                     {merchantPlans.length > 0 ? (
-                      <>
-                        <div className="flex items-center justify-center gap-2 mb-4">
-                          <h4 className="text-2xl font-bold">
-                            {merchantPlans[selectedPlan]?.name}
-                          </h4>
-                          {merchantPlans[selectedPlan]?.popular && (
-                            <Badge className="bg-primary text-primary-foreground">
-                              <Star className="w-3 h-3 mr-1" />
-                              Popular
-                            </Badge>
-                          )}
-                        </div>
-                        
-                        <div className="text-3xl font-bold text-primary mb-6">
-                          ${merchantPlans[selectedPlan]?.price}
-                          <span className="text-lg text-muted-foreground">
-                            /{merchantPlans[selectedPlan]?.period}
-                          </span>
-                        </div>
-                        
-                        <div className="space-y-3">
-                          {merchantPlans[selectedPlan]?.features?.map((feature, index) => (
-                            <div key={index} className="flex items-center justify-center">
-                              <Check className="w-4 h-4 text-primary mr-3 flex-shrink-0" />
-                              <span className="text-muted-foreground text-left">{feature}</span>
-                            </div>
-                          ))}
-                        </div>
-                      </>
+                      merchantPlans.map((plan, index) => (
+                        <CarouselItem key={plan.id} className="pl-2 md:pl-4 basis-full">
+                          <div className="p-1">
+                            <Card className="group cursor-pointer border-2 hover:border-primary/50 transition-all duration-300 hover:shadow-lg overflow-hidden h-full max-w-sm mx-auto card-gradient card-shadow border-0">
+                              <div className="p-6 text-center min-h-[400px] flex flex-col justify-center">
+                                {plan.popular && (
+                                  <Badge className="bg-primary text-primary-foreground mb-4 w-fit mx-auto">
+                                    <Star className="w-3 h-3 mr-1" />
+                                    Popular
+                                  </Badge>
+                                )}
+                                
+                                <h4 className="text-2xl font-bold mb-4">{plan.name}</h4>
+                                
+                                <div className="text-3xl font-bold text-primary mb-6">
+                                  ${plan.price}
+                                  <span className="text-lg text-muted-foreground">/{plan.period}</span>
+                                </div>
+                                
+                                <div className="space-y-3 flex-grow">
+                                  {plan.features?.map((feature, featureIndex) => (
+                                    <div key={featureIndex} className="flex items-center justify-center">
+                                      <Check className="w-4 h-4 text-primary mr-3 flex-shrink-0" />
+                                      <span className="text-muted-foreground text-left">{feature}</span>
+                                    </div>
+                                  ))}
+                                </div>
+                                
+                                <Button 
+                                  className="w-full mt-6 bg-gradient-to-r from-primary to-purple-500 hover:opacity-90 transition-all duration-300 transform hover:scale-105"
+                                  onClick={() => setStep('details')}
+                                >
+                                  Select This Plan
+                                  <ArrowRight className="w-4 h-4 ml-2" />
+                                </Button>
+                              </div>
+                            </Card>
+                          </div>
+                        </CarouselItem>
+                      ))
                     ) : (
-                      <div className="text-center space-y-4">
-                        <div className="text-6xl">📋</div>
-                        <div>
-                          <h4 className="text-xl font-semibold text-muted-foreground mb-2">No Plans Available</h4>
-                          <p className="text-muted-foreground">
-                            No subscription plans are currently available. Please contact our support team for assistance.
-                          </p>
+                      <CarouselItem className="pl-2 md:pl-4 basis-full">
+                        <div className="p-1">
+                          <Card className="max-w-sm mx-auto">
+                            <div className="p-6 text-center space-y-4">
+                              <div className="text-6xl">📋</div>
+                              <div>
+                                <h4 className="text-xl font-semibold text-muted-foreground mb-2">No Plans Available</h4>
+                                <p className="text-muted-foreground">
+                                  No subscription plans are currently available. Please contact our support team for assistance.
+                                </p>
+                              </div>
+                            </div>
+                          </Card>
                         </div>
-                      </div>
+                      </CarouselItem>
                     )}
-                  </div>
-                </Card>
+                  </CarouselContent>
+                  {merchantPlans.length > 1 && (
+                    <>
+                      <CarouselPrevious className="hidden md:flex -left-12" />
+                      <CarouselNext className="hidden md:flex -right-12" />
+                    </>
+                  )}
+                </Carousel>
               </div>
             )}
-
-            <div className="flex justify-center">
-              <Button 
-                onClick={() => setStep('details')}
-                className="px-8"
-                variant="hero"
-                disabled={plansLoading || merchantPlans.length === 0}
-              >
-                {plansLoading ? 'Loading...' : 
-                 merchantPlans.length === 0 ? 'No Plans Available' : 
-                 'Select This Plan'}
-              </Button>
-            </div>
           </div>
         )}
 

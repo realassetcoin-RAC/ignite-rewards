@@ -11,6 +11,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Edit2, Calendar, Gift, CheckCircle2 } from "lucide-react";
+import { DatePicker } from "@/components/ui/date-picker";
 
 interface ReferralCampaign {
   id: string;
@@ -227,7 +228,11 @@ const ReferralCampaignManager = () => {
                           <Calendar className="w-3 h-3" /> Start Date
                         </FormLabel>
                         <FormControl>
-                          <Input type="date" {...field} />
+                          <DatePicker
+                            date={field.value ? new Date(field.value) : undefined}
+                            onSelect={(date) => field.onChange(date?.toISOString().split('T')[0])}
+                            placeholder="Select start date"
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -242,7 +247,11 @@ const ReferralCampaignManager = () => {
                           <Calendar className="w-3 h-3" /> End Date
                         </FormLabel>
                         <FormControl>
-                          <Input type="date" {...field} />
+                          <DatePicker
+                            date={field.value ? new Date(field.value) : undefined}
+                            onSelect={(date) => field.onChange(date?.toISOString().split('T')[0])}
+                            placeholder="Select end date"
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -312,17 +321,41 @@ const ReferralCampaignManager = () => {
                         <div className="text-sm text-muted-foreground">{c.description}</div>
                       </TableCell>
                       <TableCell>
-                        <Badge variant="secondary">{c.reward_points} pts</Badge>
-                      </TableCell>
-                      <TableCell>
-                        <div className="text-sm">
-                          {new Date(c.start_date).toLocaleDateString()} → {new Date(c.end_date).toLocaleDateString()}
+                        <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-1 px-3 py-1 bg-gradient-to-r from-emerald-500/20 to-teal-500/20 text-emerald-600 rounded-full border border-emerald-500/30">
+                            <Gift className="w-3 h-3" />
+                            <span className="font-medium">{c.reward_points}</span>
+                            <span className="text-xs">pts</span>
+                          </div>
                         </div>
                       </TableCell>
                       <TableCell>
-                        <Badge variant={c.is_active ? 'default' : 'secondary'}>
-                          {c.is_active ? 'Active' : 'Inactive'}
-                        </Badge>
+                        <div className="flex flex-col gap-1">
+                          <div className="flex items-center gap-2 text-sm">
+                            <Calendar className="w-3 h-3 text-muted-foreground" />
+                            <span className="text-muted-foreground">Start:</span>
+                            <span className="font-medium">{new Date(c.start_date).toLocaleDateString()}</span>
+                          </div>
+                          <div className="flex items-center gap-2 text-sm">
+                            <Calendar className="w-3 h-3 text-muted-foreground" />
+                            <span className="text-muted-foreground">End:</span>
+                            <span className="font-medium">{new Date(c.end_date).toLocaleDateString()}</span>
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <div className={`flex items-center gap-1 px-3 py-1 rounded-full border ${
+                            c.is_active 
+                              ? 'bg-green-500/20 text-green-600 border-green-500/30' 
+                              : 'bg-gray-500/20 text-gray-600 border-gray-500/30'
+                          }`}>
+                            <CheckCircle2 className="w-3 h-3" />
+                            <span className="font-medium text-xs">
+                              {c.is_active ? 'Active' : 'Inactive'}
+                            </span>
+                          </div>
+                        </div>
                       </TableCell>
                       <TableCell className="text-right">
                         <Button size="sm" variant="outline" onClick={() => openEdit(c)}>

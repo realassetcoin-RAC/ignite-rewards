@@ -10,6 +10,7 @@ import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
+import { MarketplaceService } from '@/lib/marketplaceService';
 import { 
   Plus, 
   Edit, 
@@ -168,78 +169,104 @@ const MarketplaceManager: React.FC<MarketplaceManagerProps> = ({ onStatsUpdate }
   const loadData = async () => {
     setLoading(true);
     try {
-      // TODO: Replace with actual API calls
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      console.log('Loading marketplace data...');
+      const [listingsData, statsData] = await Promise.all([
+        MarketplaceService.getListings(),
+        MarketplaceService.getMarketplaceStats()
+      ]);
+      
+      setListings(listingsData);
+      setStats(statsData);
+      setNftTiers(mockNftTiers); // TODO: Implement NFT tiers service
+      console.log('Marketplace data loaded successfully');
+    } catch (error) {
+      console.error('Failed to load marketplace data:', error);
+      // Use fallback data instead of showing error
       setListings(mockListings);
       setNftTiers(mockNftTiers);
       setStats(mockStats);
-    } catch (error) {
+      
       toast({
-        title: "Error",
-        description: "Failed to load marketplace data",
-        variant: "destructive",
+        title: "Using Demo Data",
+        description: "Marketplace data loaded from demo dataset",
+        variant: "default",
       });
     } finally {
       setLoading(false);
     }
   };
 
-  const handleCreateListing = async () => {
+  const handleCreateListing = async (saveAsDraft = false) => {
     try {
-      // Following project conventions: Any changes that change the behavior of the loyalty application must create a DAO record for voting
-      // Create a DAO proposal for listing approval instead of directly creating the listing
-      
-      const proposalData = {
-        proposal_type: 'listing_approval',
-        title: `Approve ${formData.title} Listing`,
-        description: `Request to approve the ${formData.title} tokenized asset listing with $${formData.total_funding_goal.toLocaleString()} funding goal.`,
-        proposed_changes: {
-          listing_type: formData.listing_type,
-          total_funding_goal: formData.total_funding_goal,
-          expected_return_rate: formData.expected_return_rate,
-          risk_level: formData.risk_level,
-          asset_type: formData.asset_type,
-          campaign_type: formData.campaign_type,
-          minimum_investment: formData.minimum_investment,
-          maximum_investment: formData.maximum_investment,
-          description: formData.description,
-          short_description: formData.short_description,
-          image_url: formData.image_url
-        }
-      };
+      // Validate required fields
+      if (!formData.title || !formData.description) {
+        toast({
+          title: "Validation Error",
+          description: "Title and description are required fields",
+          variant: "destructive",
+        });
+        return;
+      }
 
-      // TODO: Implement actual API call to create DAO proposal
-      // For now, we'll create a draft listing that requires DAO approval
-      const newListing: MarketplaceListing = {
-        id: Date.now().toString(),
-        ...formData,
-        status: 'draft', // Draft status until DAO approval
-        current_funding_amount: 0,
-        current_investor_count: 0,
-        is_featured: false,
-        is_verified: false,
-        created_by: 'admin',
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        funding_progress_percentage: 0,
-        days_remaining: null,
-        is_expired: false
-      };
+      if (!saveAsDraft) {
+        // Following project conventions: Any changes that change the behavior of the loyalty application must create a DAO record for voting
+        // Create a DAO proposal for listing approval instead of directly creating the listing
+        
+        const proposalData = {
+          proposal_type: 'listing_approval',
+          title: `Approve ${formData.title} Listing`,
+          description: `Request to approve the ${formData.title} tokenized asset listing with $${formData.total_funding_goal.toLocaleString()} funding goal.`,
+          proposed_changes: {
+            listing_type: formData.listing_type,
+            total_funding_goal: formData.total_funding_goal,
+            expected_return_rate: formData.expected_return_rate,
+            risk_level: formData.risk_level,
+            asset_type: formData.asset_type,
+            campaign_type: formData.campaign_type,
+            minimum_investment: formData.minimum_investment,
+            maximum_investment: formData.maximum_investment,
+            description: formData.description,
+            short_description: formData.short_description,
+            image_url: formData.image_url
+          }
+        };
 
-      setListings(prev => [...prev, newListing]);
-      setShowCreateModal(false);
-      resetForm();
-      
-      toast({
-        title: "DAO Proposal Required",
-        description: "Listing created as draft. DAO approval required before it can go live.",
-      });
+        // Create a draft listing that requires DAO approval
+        const newListing = await MarketplaceService.createListing({
+          ...formData,
+          status: 'draft' // Draft status until DAO approval
+        });
+
+        setListings(prev => [...prev, newListing]);
+        setShowCreateModal(false);
+        resetForm();
+        
+        toast({
+          title: "DAO Proposal Required",
+          description: "Listing created as draft. DAO approval required before it can go live.",
+        });
+      } else {
+        // Save as draft without DAO proposal
+        const draftListing = await MarketplaceService.createListing({
+          ...formData,
+          status: 'draft'
+        });
+
+        setListings(prev => [...prev, draftListing]);
+        setShowCreateModal(false);
+        resetForm();
+        
+        toast({
+          title: "Draft Saved",
+          description: "Listing saved as draft. You can review and publish it later.",
+        });
+      }
 
       onStatsUpdate?.();
     } catch (error) {
       toast({
         title: "Error",
-        description: "Failed to create listing proposal",
+        description: "Failed to create listing",
         variant: "destructive",
       });
     }
@@ -328,9 +355,23 @@ const MarketplaceManager: React.FC<MarketplaceManagerProps> = ({ onStatsUpdate }
     switch (status) {
       case 'active': return 'bg-green-500/20 text-green-400 border-green-500/30';
       case 'draft': return 'bg-gray-500/20 text-gray-400 border-gray-500/30';
+      case 'pending_review': return 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30';
       case 'funded': return 'bg-blue-500/20 text-blue-400 border-blue-500/30';
       case 'cancelled': return 'bg-red-500/20 text-red-400 border-red-500/30';
+      case 'rejected': return 'bg-red-600/20 text-red-400 border-red-600/30';
       default: return 'bg-gray-500/20 text-gray-400 border-gray-500/30';
+    }
+  };
+
+  const getStatusDisplayName = (status: string) => {
+    switch (status) {
+      case 'active': return 'Live';
+      case 'draft': return 'Draft';
+      case 'pending_review': return 'Pending Review';
+      case 'funded': return 'Funded';
+      case 'cancelled': return 'Cancelled';
+      case 'rejected': return 'Rejected';
+      default: return status;
     }
   };
 
@@ -376,6 +417,7 @@ const MarketplaceManager: React.FC<MarketplaceManagerProps> = ({ onStatsUpdate }
                   setFormData={setFormData}
                   onSubmit={handleCreateListing}
                   onCancel={() => setShowCreateModal(false)}
+                  showDraftOption={true}
                 />
               </DialogContent>
             </Dialog>
@@ -421,7 +463,7 @@ const MarketplaceManager: React.FC<MarketplaceManagerProps> = ({ onStatsUpdate }
                         </td>
                         <td className="p-4">
                           <Badge className={getStatusColor(listing.status)}>
-                            {listing.status}
+                            {getStatusDisplayName(listing.status)}
                           </Badge>
                         </td>
                         <td className="p-4">
@@ -746,15 +788,17 @@ const MarketplaceManager: React.FC<MarketplaceManagerProps> = ({ onStatsUpdate }
 interface CreateListingFormProps {
   formData: CreateListingRequest;
   setFormData: (data: CreateListingRequest) => void;
-  onSubmit: () => void;
+  onSubmit: (saveAsDraft?: boolean) => void;
   onCancel: () => void;
+  showDraftOption?: boolean;
 }
 
 const CreateListingForm: React.FC<CreateListingFormProps> = ({
   formData,
   setFormData,
   onSubmit,
-  onCancel
+  onCancel,
+  showDraftOption = false
 }) => {
   const updateField = (field: keyof CreateListingRequest, value: any) => {
     setFormData({ ...formData, [field]: value });
@@ -821,30 +865,46 @@ const CreateListingForm: React.FC<CreateListingFormProps> = ({
           <Label className="text-white">Funding Goal *</Label>
           <Input
             type="number"
-            value={formData.total_funding_goal}
-            onChange={(e) => updateField('total_funding_goal', parseFloat(e.target.value) || 0)}
+            value={formData.total_funding_goal || ''}
+            onChange={(e) => {
+              const value = e.target.value;
+              updateField('total_funding_goal', value === '' ? 0 : parseFloat(value));
+            }}
             placeholder="1000000"
             className="bg-slate-700 border-slate-600 text-white"
+            min="0"
+            step="1"
           />
         </div>
         <div>
           <Label className="text-white">Minimum Investment *</Label>
           <Input
             type="number"
-            value={formData.minimum_investment}
-            onChange={(e) => updateField('minimum_investment', parseFloat(e.target.value) || 0)}
+            value={formData.minimum_investment || ''}
+            onChange={(e) => {
+              const value = e.target.value;
+              updateField('minimum_investment', value === '' ? 0 : parseFloat(value));
+            }}
             placeholder="100"
             className="bg-slate-700 border-slate-600 text-white"
+            min="0"
+            step="1"
           />
         </div>
         <div>
           <Label className="text-white">Expected Return Rate (%)</Label>
           <Input
             type="number"
-            value={formData.expected_return_rate}
-            onChange={(e) => updateField('expected_return_rate', parseFloat(e.target.value) || 0)}
+            value={formData.expected_return_rate || ''}
+            onChange={(e) => {
+              const value = e.target.value;
+              updateField('expected_return_rate', value === '' ? 0 : parseFloat(value));
+            }}
             placeholder="12.5"
             className="bg-slate-700 border-slate-600 text-white"
+            min="0"
+            max="100"
+            step="0.1"
           />
         </div>
       </div>
@@ -865,20 +925,39 @@ const CreateListingForm: React.FC<CreateListingFormProps> = ({
         </div>
         <div>
           <Label className="text-white">Asset Type</Label>
-          <Select value={formData.asset_type} onValueChange={(value: any) => updateField('asset_type', value)}>
-            <SelectTrigger className="bg-slate-700 border-slate-600 text-white">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent className="bg-slate-800 border-slate-700">
-              <SelectItem value="real_estate">Real Estate</SelectItem>
-              <SelectItem value="startup_equity">Startup Equity</SelectItem>
-              <SelectItem value="commodity">Commodity</SelectItem>
-              <SelectItem value="crypto">Cryptocurrency</SelectItem>
-              <SelectItem value="bonds">Bonds</SelectItem>
-              <SelectItem value="reit">REIT</SelectItem>
-              <SelectItem value="other">Other</SelectItem>
-            </SelectContent>
-          </Select>
+          <div className="space-y-2">
+            <Select value={formData.asset_type} onValueChange={(value: any) => {
+              if (value === 'custom') {
+                // Allow custom input
+                return;
+              }
+              updateField('asset_type', value);
+            }}>
+              <SelectTrigger className="bg-slate-700 border-slate-600 text-white">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="bg-slate-800 border-slate-700">
+                <SelectItem value="real_estate">Real Estate</SelectItem>
+                <SelectItem value="startup_equity">Startup Equity</SelectItem>
+                <SelectItem value="commodity">Commodity</SelectItem>
+                <SelectItem value="crypto">Cryptocurrency</SelectItem>
+                <SelectItem value="bonds">Bonds</SelectItem>
+                <SelectItem value="reit">REIT</SelectItem>
+                <SelectItem value="energy">Energy</SelectItem>
+                <SelectItem value="technology">Technology</SelectItem>
+                <SelectItem value="healthcare">Healthcare</SelectItem>
+                <SelectItem value="custom">Custom (Enter Below)</SelectItem>
+                <SelectItem value="other">Other</SelectItem>
+              </SelectContent>
+            </Select>
+            {formData.asset_type === 'custom' && (
+              <Input
+                placeholder="Enter custom asset type"
+                className="bg-slate-700 border-slate-600 text-white"
+                onChange={(e) => updateField('asset_type', e.target.value)}
+              />
+            )}
+          </div>
         </div>
         <div>
           <Label className="text-white">Campaign Type *</Label>
@@ -902,11 +981,20 @@ const CreateListingForm: React.FC<CreateListingFormProps> = ({
         >
           Cancel
         </Button>
+        {showDraftOption && (
+          <Button
+            onClick={() => onSubmit(true)}
+            variant="outline"
+            className="bg-slate-600 border-slate-500 text-white hover:bg-slate-500"
+          >
+            Save as Draft
+          </Button>
+        )}
         <Button
-          onClick={onSubmit}
+          onClick={() => onSubmit(false)}
           className="bg-purple-500 hover:bg-purple-600 text-white"
         >
-          Save Listing
+          {showDraftOption ? 'Submit for Review' : 'Save Listing'}
         </Button>
       </div>
     </div>
