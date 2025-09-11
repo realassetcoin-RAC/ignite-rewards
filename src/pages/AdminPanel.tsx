@@ -492,7 +492,7 @@ const AdminPanel = () => {
 
         {/* Main Admin Tabs */}
         <div className="space-y-6">
-          <div className="w-full max-w-full bg-background/60 backdrop-blur-md border border-primary/20 rounded-lg p-1 overflow-hidden">
+          <div className="w-full max-w-full bg-background/60 backdrop-blur-md border border-primary/20 rounded-lg p-1 overflow-hidden tab-container">
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-9 gap-1 w-full max-w-full">
               <button
                 onClick={() => setActiveTab('cards')}

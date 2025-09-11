@@ -684,7 +684,7 @@ const UserDAODashboard = () => {
         <div className={`mb-8 ${
           isLoaded ? 'animate-fade-in-up animation-delay-600' : 'opacity-0'
         }`}>
-          <div className="w-full max-w-full bg-background/60 backdrop-blur-md border border-primary/20 rounded-lg p-1 overflow-hidden">
+          <div className="w-full max-w-full bg-background/60 backdrop-blur-md border border-primary/20 rounded-lg p-1 overflow-hidden tab-container">
             <div className="grid grid-cols-3 gap-1 w-full max-w-full">
               <button
                 onClick={() => setActiveTab('proposals')}
