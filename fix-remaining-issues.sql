@@ -25,7 +25,12 @@ CREATE TABLE IF NOT EXISTS public.virtual_cards (
 -- Enable RLS for virtual_cards
 ALTER TABLE public.virtual_cards ENABLE ROW LEVEL SECURITY;
 
--- Create basic RLS policies for virtual_cards
+-- Create basic RLS policies for virtual_cards (with conflict handling)
+DROP POLICY IF EXISTS "users_can_view_own_cards" ON public.virtual_cards;
+DROP POLICY IF EXISTS "users_can_insert_own_cards" ON public.virtual_cards;
+DROP POLICY IF EXISTS "users_can_update_own_cards" ON public.virtual_cards;
+DROP POLICY IF EXISTS "users_can_delete_own_cards" ON public.virtual_cards;
+
 CREATE POLICY "users_can_view_own_cards" ON public.virtual_cards
     FOR SELECT USING (auth.uid() = user_id);
 

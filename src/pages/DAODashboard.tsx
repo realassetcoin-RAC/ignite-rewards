@@ -140,7 +140,7 @@ const DAODashboard = () => {
   const loadConfigProposals = async (): Promise<DAOProposal[]> => {
     try {
       const { data, error } = await supabase
-        .from('config_proposals')
+        .from('config_proposals' as any)
         .select('*')
         .order('created_at', { ascending: false });
 
@@ -269,7 +269,7 @@ const DAODashboard = () => {
         voting_type: newProposal.voting_type,
         status: 'draft'
       } as any;
-      const { error } = await supabase.from('dao_proposals').insert([payload]);
+      const { error } = await supabase.from('dao_proposals' as any).insert([payload]);
       if (error) {
         toast({ title: 'Error', description: 'Failed to create proposal', variant: 'destructive' });
         return;
@@ -399,6 +399,8 @@ const DAODashboard = () => {
         return;
       }
 
+      // All proposals from database should be votable
+
       await DAOService.castVote(proposalId, currentUser.id, choice, userMembership.voting_power, reason);
 
       toast({
@@ -410,9 +412,10 @@ const DAODashboard = () => {
       await loadDAOData();
     } catch (error) {
       console.error('Error casting vote:', error);
+      const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred while voting.';
       toast({
-        title: "Error",
-        description: "An unexpected error occurred while voting.",
+        title: "Voting Error",
+        description: errorMessage,
         variant: "destructive",
       });
     }
@@ -430,7 +433,7 @@ const DAODashboard = () => {
       }
 
       const { error } = await supabase
-        .from('dao_proposals')
+        .from('dao_proposals' as any)
         .update({ 
           status: 'active',
           start_time: new Date().toISOString(),
@@ -477,7 +480,7 @@ const DAODashboard = () => {
       }
 
       const { error } = await supabase
-        .from('dao_proposals')
+        .from('dao_proposals' as any)
         .update({ 
           status: 'executed',
           execution_time: new Date().toISOString()
@@ -515,8 +518,8 @@ const DAODashboard = () => {
       if (!currentUser) return null;
 
       const { data, error } = await supabase
-        .from('dao_votes')
-        .select('choice, reason, created_at')
+        .from('dao_votes' as any)
+        .select('vote_choice, reason, created_at')
         .eq('proposal_id', proposalId)
         .eq('voter_id', currentUser.id)
         .single();

@@ -83,7 +83,7 @@ const MarketplaceDAOIntegration: React.FC<MarketplaceDAOIntegrationProps> = ({
   const createListingApprovalProposal = async (listingId: string, listingData: any) => {
     try {
       const proposal: DAOMarketplaceProposal = {
-        id: `proposal_${Date.now()}`,
+        id: crypto.randomUUID(),
         proposal_type: 'listing_approval',
         listing_id: listingId,
         title: `Approve ${listingData.title} Listing`,
@@ -122,7 +122,7 @@ const MarketplaceDAOIntegration: React.FC<MarketplaceDAOIntegrationProps> = ({
   const createConfigChangeProposal = async (configChanges: any) => {
     try {
       const proposal: DAOMarketplaceProposal = {
-        id: `proposal_${Date.now()}`,
+        id: crypto.randomUUID(),
         proposal_type: 'marketplace_config_change',
         title: 'Update Marketplace Configuration',
         description: 'Proposal to update marketplace configuration settings.',

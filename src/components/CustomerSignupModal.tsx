@@ -184,6 +184,16 @@ const CustomerSignupModal: React.FC<CustomerSignupModalProps> = ({ isOpen, onClo
       return;
     }
 
+    // Validate terms and privacy acceptance before proceeding
+    if (!acceptedTerms || !acceptedPrivacy) {
+      toast({
+        title: "Terms and Privacy Required",
+        description: "Please accept the Terms of Service and Privacy Policy to continue.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     setLoading(true);
     const selectedCardData = virtualCards[selectedCard];
     
@@ -431,7 +441,7 @@ const CustomerSignupModal: React.FC<CustomerSignupModalProps> = ({ isOpen, onClo
                 </Button>
                 <Button 
                   type="submit"
-                  disabled={loading}
+                  disabled={loading || !acceptedTerms || !acceptedPrivacy}
                   className="flex-1"
                   variant="hero"
                 >

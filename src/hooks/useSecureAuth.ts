@@ -65,32 +65,52 @@ export const useSecureAuth = () => {
       // Fallback: Try multiple methods to check admin access for maximum compatibility
       let isAdmin = false;
       
-      // Method 1: Try is_admin RPC function
+      // Method 1: Try is_admin RPC function with timeout
       try {
-        const { data, error } = await supabase.rpc('is_admin');
-        console.log('is_admin RPC response:', { data, error });
+        console.log('🔄 Attempting admin RPC call: is_admin');
+        
+        // Add a timeout to the RPC call to prevent hanging
+        const rpcPromise = supabase.rpc('is_admin');
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('is_admin RPC call timeout after 5 seconds')), 5000)
+        );
+        
+        const { data, error } = await Promise.race([rpcPromise, timeoutPromise]) as any;
+        console.log('📊 Admin RPC response received');
         
         if (!error && data === true) {
           isAdmin = true;
-          console.log('Admin access confirmed via is_admin RPC');
+          console.log('✅ Admin access confirmed via is_admin RPC');
           return true;
+        } else {
+          console.log('⚠️ is_admin RPC returned no data or error, trying alternative methods...');
         }
       } catch (rpcError) {
-        console.warn('is_admin RPC failed, trying alternative methods:', rpcError);
+        console.log('⚠️ is_admin RPC timeout, trying alternative methods');
       }
       
-      // Method 2: Try check_admin_access RPC function
+      // Method 2: Try check_admin_access RPC function with timeout
       try {
-        const { data, error } = await supabase.rpc('check_admin_access');
-        console.log('check_admin_access RPC response:', { data, error });
+        console.log('🔄 Attempting admin RPC call: check_admin_access');
+        
+        // Add a timeout to the RPC call to prevent hanging
+        const rpcPromise = supabase.rpc('check_admin_access');
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Admin RPC call timeout after 5 seconds')), 5000)
+        );
+        
+        const { data, error } = await Promise.race([rpcPromise, timeoutPromise]) as any;
+        console.log('📊 check_admin_access RPC response:', { data, error });
         
         if (!error && data === true) {
           isAdmin = true;
-          console.log('Admin access confirmed via check_admin_access RPC');
+          console.log('✅ Admin access confirmed via check_admin_access RPC');
           return true;
+        } else {
+          console.log('⚠️ Admin RPC returned no data or error, trying direct profile check...');
         }
       } catch (rpcError) {
-        console.warn('check_admin_access RPC failed, trying direct profile check:', rpcError);
+        console.log('⚠️ check_admin_access RPC timeout, trying direct profile check');
       }
       
       // Method 3: Direct profile table query as fallback
@@ -99,12 +119,12 @@ export const useSecureAuth = () => {
         if (user) {
           // Check profiles table
           const { data: profile, error: profileError } = await supabase
-            .from('profiles')
+            .from('profiles' as any)
             .select('role')
             .eq('id', user.id)
             .single();
           
-          if (!profileError && profile?.role === 'admin') {
+          if (!profileError && (profile as any)?.role === 'admin') {
             isAdmin = true;
             console.log('Admin access confirmed via direct profile query');
             return true;
@@ -118,48 +138,75 @@ export const useSecureAuth = () => {
           }
         }
       } catch (directError) {
-        console.warn('Direct profile query failed:', directError);
+        console.log('⚠️ Direct admin profile query failed');
       }
       
       console.log('Final admin check result:', isAdmin);
       return isAdmin;
     } catch (error) {
-      console.error('Admin access check completely failed:', error);
+      console.log('⚠️ Admin access check failed, using fallback (false)');
       return false;
     }
   };
 
-  const getCurrentUserProfile = async (): Promise<UserProfile | null> => {
+  const getCurrentUserProfile = async (user?: any): Promise<UserProfile | null> => {
+    let currentUser: any = null;
+    
     try {
-      console.log('Fetching user profile...');
+      console.log('🔄 Fetching user profile...');
       
-      // Method 1: Try get_current_user_profile RPC function
+      // Method 1: Try get_current_user_profile RPC function with timeout
       try {
-        const { data, error } = await supabase.rpc('get_current_user_profile');
-        console.log('get_current_user_profile RPC response:', { data, error });
+        console.log('🔄 Attempting RPC call: get_current_user_profile');
+        
+        // Add a timeout to the RPC call to prevent hanging
+        const rpcPromise = supabase.rpc('get_current_user_profile');
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('RPC call timeout after 5 seconds')), 5000)
+        );
+        
+        const { data, error } = await Promise.race([rpcPromise, timeoutPromise]) as any;
+        console.log('📊 RPC response received');
         
         if (!error && data && data.length > 0) {
           const profile = data[0];
-          console.log('Profile fetched via RPC:', profile);
+          console.log('✅ Profile fetched via RPC:', profile);
           return profile;
+        } else {
+          console.log('⚠️ RPC returned no data or error, trying direct query...');
         }
       } catch (rpcError) {
-        console.warn('get_current_user_profile RPC failed, trying direct query:', rpcError);
+        // RPC timeout is expected, don't log as error
+        console.log('⚠️ RPC timeout, using direct query fallback');
       }
       
       // Method 2: Direct profile table query as fallback
       try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) {
-          console.log('No authenticated user found');
+        console.log('🔄 Attempting direct profile query...');
+        
+        // Use the passed user data or get it from auth
+        currentUser = user;
+        if (!currentUser) {
+          console.log('🔄 No user passed, getting from auth...');
+          const getUserPromise = supabase.auth.getUser();
+          const getUserTimeoutPromise = new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('getUser timeout after 5 seconds')), 5000)
+          );
+          
+          const { data: { user: authUser } } = await Promise.race([getUserPromise, getUserTimeoutPromise]) as any;
+          currentUser = authUser;
+        }
+        
+        if (!currentUser) {
+          console.log('❌ No authenticated user found');
           return null;
         }
         
-        console.log('Attempting direct profile query for user:', user.id);
+        console.log('🔄 Attempting direct profile query for user:', currentUser.id);
         
-        // Try to get profile from profiles table
-        const { data: profile, error: profileError } = await supabase
-          .from('profiles')
+        // Try to get profile from profiles table with timeout
+        const profilePromise = supabase
+          .from('profiles' as any)
           .select(`
             id,
             email,
@@ -172,11 +219,18 @@ export const useSecureAuth = () => {
             backup_codes,
             mfa_setup_completed_at
           `)
-          .eq('id', user.id)
+          .eq('id', currentUser.id)
           .single();
         
+        const profileTimeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Direct profile query timeout after 5 seconds')), 5000)
+        );
+        
+        const { data: profile, error: profileError } = await Promise.race([profilePromise, profileTimeoutPromise]) as any;
+        console.log('📊 Direct query completed');
+        
         if (!profileError && profile) {
-          console.log('Profile fetched via direct query:', profile);
+          console.log('✅ Profile fetched via direct query:', profile);
           return {
             id: profile.id,
             email: profile.email,
@@ -191,41 +245,70 @@ export const useSecureAuth = () => {
           };
         }
         
-        console.warn('Direct profile query failed:', profileError);
+        console.log('⚠️ Direct profile query timeout, using fallback profile');
         
         // Method 3: Create a minimal profile from auth user if none exists
-        console.log('Creating fallback profile from auth user data');
-        return {
-          id: user.id,
-          email: user.email || '',
-          full_name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'User',
-          role: user.user_metadata?.role || 'user',
-          created_at: user.created_at,
-          updated_at: user.updated_at || user.created_at,
+        console.log('🔄 Creating fallback profile from auth user data');
+        const fallbackProfile = {
+          id: currentUser.id,
+          email: currentUser.email || '',
+          full_name: currentUser.user_metadata?.full_name || currentUser.email?.split('@')[0] || 'User',
+          role: currentUser.user_metadata?.role || 'user',
+          created_at: currentUser.created_at,
+          updated_at: currentUser.updated_at || currentUser.created_at,
           totp_secret: null,
           mfa_enabled: false,
           backup_codes: [],
           mfa_setup_completed_at: null
         };
+        console.log('✅ Created fallback profile:', fallbackProfile);
+        return fallbackProfile;
       } catch (directError) {
-        console.error('Direct profile query failed:', directError);
+        console.log('⚠️ Direct query failed, creating emergency fallback profile');
+        // Create a minimal profile as last resort using the passed user data
+        if (currentUser) {
+          const fallbackProfile = {
+            id: currentUser.id,
+            email: currentUser.email || '',
+            full_name: currentUser.user_metadata?.full_name || currentUser.email?.split('@')[0] || 'User',
+            role: currentUser.user_metadata?.role || 'user',
+            created_at: currentUser.created_at,
+            updated_at: currentUser.updated_at || currentUser.created_at,
+            totp_secret: null,
+            mfa_enabled: false,
+            backup_codes: [],
+            mfa_setup_completed_at: null
+          };
+          console.log('✅ Created emergency fallback profile:', fallbackProfile);
+          return fallbackProfile;
+        }
         return null;
       }
     } catch (error) {
-      console.error('Profile fetch completely failed:', error);
+      console.log('⚠️ Profile fetch failed, returning null');
       return null;
     }
   };
 
   const checkUserType = async (userId: string): Promise<{ canUseMFA: boolean; isWalletUser: boolean }> => {
     try {
-      const canUse = await canUserUseMFA(userId);
+      console.log('🔄 Checking user type for:', userId);
+      
+      // Add timeout to canUserUseMFA call
+      const canUsePromise = canUserUseMFA(userId);
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('User type check timeout after 5 seconds')), 5000)
+      );
+      
+      const canUse = await Promise.race([canUsePromise, timeoutPromise]) as boolean;
+      console.log('✅ User type check completed:', { canUseMFA: canUse, isWalletUser: !canUse });
+      
       return {
         canUseMFA: canUse,
         isWalletUser: !canUse
       };
     } catch (error) {
-      console.error('Error checking user type:', error);
+      console.log('⚠️ User type check timeout, using fallback values');
       return {
         canUseMFA: false,
         isWalletUser: true
@@ -274,31 +357,70 @@ export const useSecureAuth = () => {
 
       console.log('🔐 Updating auth state for user:', session.user.email);
 
-      // Fetch user profile, admin status, and user type in parallel
-      const [profile, isAdmin, userType] = await Promise.all([
-        getCurrentUserProfile(),
+      // Fetch user profile, admin status, and user type in parallel with timeout
+      console.log('🔄 Starting parallel fetch of profile, admin status, and user type...');
+      
+      const parallelFetchPromise = Promise.all([
+        getCurrentUserProfile(session.user),
         robustAdminCheck(), // Use the robust admin check instead
         checkUserType(session.user.id),
       ]);
+      
+      const parallelTimeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Parallel fetch timeout after 10 seconds')), 10000)
+      );
+      
+      try {
+        const [profile, isAdmin, userType] = await Promise.race([parallelFetchPromise, parallelTimeoutPromise]) as any;
 
-      console.log('🔍 Auth state results:', {
-        profile: profile?.email,
-        isAdmin,
-        userType,
-        role: profile?.role
-      });
+        console.log('✅ All parallel fetches completed!');
+        console.log('🔍 Auth state results:', {
+          profile: profile?.email,
+          isAdmin,
+          userType,
+          role: profile?.role
+        });
 
-      setAuthState({
-        user: session.user,
-        session,
-        profile,
-        isAdmin,
-        loading: false,
-        error: null,
-        canUseMFA: userType.canUseMFA,
-        mfaEnabled: profile?.mfa_enabled || false,
-        isWalletUser: userType.isWalletUser,
-      });
+        setAuthState({
+          user: session.user,
+          session,
+          profile,
+          isAdmin,
+          loading: false,
+          error: null,
+          canUseMFA: userType.canUseMFA,
+          mfaEnabled: profile?.mfa_enabled || false,
+          isWalletUser: userType.isWalletUser,
+        });
+      } catch (parallelError) {
+        console.log('⚠️ Parallel fetch timeout, using fallback auth state');
+        
+        // Use fallback values if parallel fetch fails
+        const fallbackProfile = {
+          id: session.user.id,
+          email: session.user.email || '',
+          full_name: session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || 'User',
+          role: session.user.user_metadata?.role || 'user',
+          created_at: session.user.created_at,
+          updated_at: session.user.updated_at || session.user.created_at,
+          totp_secret: null,
+          mfa_enabled: false,
+          backup_codes: [],
+          mfa_setup_completed_at: null
+        };
+        
+        setAuthState({
+          user: session.user,
+          session,
+          profile: fallbackProfile,
+          isAdmin: false, // Safe fallback
+          loading: false,
+          error: null,
+          canUseMFA: false, // Safe fallback
+          mfaEnabled: false,
+          isWalletUser: true, // Safe fallback
+        });
+      }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Authentication error';
       setAuthState(prev => ({
@@ -332,6 +454,13 @@ export const useSecureAuth = () => {
             // Only force update for significant events, not token refreshes
             const forceUpdate = ['SIGNED_IN', 'SIGNED_OUT'].includes(event);
             updateAuthState(session, forceUpdate);
+            
+            // Handle signout event - redirect to home page
+            if (event === 'SIGNED_OUT') {
+              // Use React Router navigation instead of window.location.href to prevent page reload
+              // The RoleBasedDashboard component will handle the redirect to home page
+              console.log('🔄 User signed out, auth state will trigger redirect');
+            }
           }, 0);
         }
       }
@@ -351,6 +480,19 @@ export const useSecureAuth = () => {
     try {
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
+      
+      // Clear any cached auth state
+      setAuthState({
+        user: null,
+        session: null,
+        profile: null,
+        isAdmin: false,
+        loading: false,
+        error: null,
+        isWalletUser: false,
+        canUseMFA: false,
+        mfaEnabled: false,
+      });
     } catch (error) {
       console.error('Sign out error:', error);
       throw error;

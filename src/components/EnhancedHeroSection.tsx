@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -36,7 +37,6 @@ import {
   Building2
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { useNavigate } from "react-router-dom";
 import { getDashboardUrl } from "@/lib/dashboard-routing";
 
 const EnhancedHeroSection = () => {
@@ -68,6 +68,10 @@ const EnhancedHeroSection = () => {
         title: "Signed out",
         description: "You have been successfully signed out.",
       });
+      // Use React Router navigation to prevent page reload
+      setTimeout(() => {
+        navigate('/', { replace: true });
+      }, 1000);
     } catch (error) {
       console.error("Sign out error:", error);
       toast({
@@ -75,6 +79,10 @@ const EnhancedHeroSection = () => {
         description: "Failed to sign out. Please try again.",
         variant: "destructive",
       });
+      // Still redirect even if there's an error, but use React Router
+      setTimeout(() => {
+        navigate('/', { replace: true });
+      }, 1000);
     }
   };
 

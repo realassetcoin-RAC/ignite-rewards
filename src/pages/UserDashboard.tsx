@@ -158,7 +158,7 @@ const UserDashboard = () => {
       if (proposalsData.length === 0) {
         const sampleProposals: DAOProposal[] = [
           {
-            id: 'prop-1',
+            id: crypto.randomUUID(),
             dao_id: daoId,
             title: 'Increase RAC token rewards for loyalty program',
             description: 'Proposal to increase RAC token rewards from 10% to 15% for all loyalty program participants.',

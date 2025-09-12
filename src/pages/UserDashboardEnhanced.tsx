@@ -51,6 +51,10 @@ const UserDashboardEnhanced = () => {
         title: "Signed Out",
         description: "You have been successfully signed out.",
       });
+      // Force redirect to home page after signout
+      setTimeout(() => {
+        window.location.href = '/';
+      }, 1000);
     } catch (error) {
       console.error('Error signing out:', error);
       toast({
@@ -58,6 +62,10 @@ const UserDashboardEnhanced = () => {
         description: "Failed to sign out. Please try again.",
         variant: "destructive",
       });
+      // Still redirect even if there's an error
+      setTimeout(() => {
+        window.location.href = '/';
+      }, 1000);
     }
   };
 

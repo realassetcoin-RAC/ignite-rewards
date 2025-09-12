@@ -28,10 +28,10 @@ const RoleBasedDashboard = memo(() => {
     );
   }
 
-  // Redirect to auth if not logged in
+  // Redirect to home page if not logged in (instead of auth page)
   if (!user) {
-    console.log('RoleBasedDashboard: No user found, redirecting to auth');
-    return <Navigate to="/auth" replace />;
+    console.log('RoleBasedDashboard: No user found, redirecting to home');
+    return <Navigate to="/" replace />;
   }
 
   // Priority 1: Check if user has admin privileges

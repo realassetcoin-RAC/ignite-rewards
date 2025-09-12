@@ -36,7 +36,7 @@ interface AuthModalProps {
  */
 const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
   // Debug: Log when component mounts
-  console.log('🔍 AuthModal component rendered', { isOpen });
+  console.log('🔍 AuthModal component rendered', { isOpen, timestamp: Date.now() });
   
   // Form state management
   const [email, setEmail] = useState("");
@@ -105,6 +105,17 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
    */
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validate terms and privacy acceptance before proceeding
+    if (!acceptedTerms || !acceptedPrivacy) {
+      toast({
+        title: "Terms and Privacy Required",
+        description: "Please accept the Terms of Service and Privacy Policy to continue.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     setLoading(true);
 
     // Set redirect URL for email confirmation
@@ -227,8 +238,18 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
    */
   const handleGoogleSignIn = async () => {
     console.log('🚀 Starting Google OAuth sign in...');
+    
+    // Validate terms and privacy acceptance only for sign-up
+    if (activeTab === 'signup' && (!acceptedTerms || !acceptedPrivacy)) {
+      toast({
+        title: "Terms and Privacy Required",
+        description: "Please accept the Terms of Service and Privacy Policy to continue.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     console.log('🔍 Button clicked - function called');
-    alert('Google button clicked!'); // Simple test to verify button works
     setGoogleLoading(true);
     
     try {
@@ -338,6 +359,16 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
   };
 
   const handleWalletConnect = () => {
+    // Validate terms and privacy acceptance only for sign-up
+    if (activeTab === 'signup' && (!acceptedTerms || !acceptedPrivacy)) {
+      toast({
+        title: "Terms and Privacy Required",
+        description: "Please accept the Terms of Service and Privacy Policy to continue.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     setShowWalletSelector(true);
   };
 
@@ -416,11 +447,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
               type="button"
               variant="outline"
               className="w-full h-11 sm:h-12 border-primary/40 text-primary bg-primary/10 hover:bg-primary/20 backdrop-blur-sm transition-smooth"
-              onClick={() => {
-                console.log('Button clicked directly!');
-                alert('Direct button click test!');
-                handleGoogleSignIn();
-              }}
+              onClick={handleGoogleSignIn}
               disabled={googleLoading || loading}
             >
               {googleLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
@@ -497,50 +524,11 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                 />
               </div>
               
-              {/* Terms and Privacy Checkboxes - Only show if user hasn't accepted them */}
-              {needsAcceptance && (
-                <div className="space-y-3">
-                  <div className="flex items-start space-x-2">
-                    <Checkbox 
-                      id="terms-signin" 
-                      checked={acceptedTerms}
-                      onCheckedChange={(checked) => setAcceptedTerms(checked as boolean)}
-                      required
-                    />
-                    <label 
-                      htmlFor="terms-signin" 
-                      className="text-xs text-muted-foreground leading-relaxed cursor-pointer"
-                    >
-                      I agree to the{' '}
-                      <a href="/terms" target="_blank" className="text-primary hover:underline">
-                        Terms of Service
-                      </a>
-                    </label>
-                  </div>
-                  <div className="flex items-start space-x-2">
-                    <Checkbox 
-                      id="privacy-signin" 
-                      checked={acceptedPrivacy}
-                      onCheckedChange={(checked) => setAcceptedPrivacy(checked as boolean)}
-                      required
-                    />
-                    <label 
-                      htmlFor="privacy-signin" 
-                      className="text-xs text-muted-foreground leading-relaxed cursor-pointer"
-                    >
-                      I agree to the{' '}
-                      <a href="/privacy" target="_blank" className="text-primary hover:underline">
-                        Privacy Policy
-                      </a>
-                    </label>
-                  </div>
-                </div>
-              )}
               
               <Button 
                 type="submit" 
                 className="w-full h-11 sm:h-12 bg-primary hover:bg-primary/90 text-primary-foreground glow-shadow transition-smooth text-sm sm:text-base" 
-                disabled={loading || googleLoading || (needsAcceptance && (!acceptedTerms || !acceptedPrivacy))}
+                disabled={loading || googleLoading}
               >
                 {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Sign In
@@ -637,48 +625,50 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                 />
               </div>
               
-              {/* Terms and Privacy Checkboxes - Always show for sign-up */}
-              <div className="space-y-3">
-                <div className="flex items-start space-x-2">
-                  <Checkbox 
-                    id="terms-signup" 
-                    checked={acceptedTerms}
-                    onCheckedChange={(checked) => setAcceptedTerms(checked as boolean)}
-                    required
-                  />
-                  <label 
-                    htmlFor="terms-signup" 
-                    className="text-xs text-muted-foreground leading-relaxed cursor-pointer"
-                  >
-                    I agree to the{' '}
-                    <a href="/terms" target="_blank" className="text-primary hover:underline">
-                      Terms of Service
-                    </a>
-                  </label>
+              {/* Terms and Privacy Checkboxes - Only show when user starts entering email */}
+              {email && (
+                <div className="space-y-3">
+                  <div className="flex items-start space-x-2">
+                    <Checkbox 
+                      id="terms-signup" 
+                      checked={acceptedTerms}
+                      onCheckedChange={(checked) => setAcceptedTerms(checked as boolean)}
+                      required
+                    />
+                    <label 
+                      htmlFor="terms-signup" 
+                      className="text-xs text-muted-foreground leading-relaxed cursor-pointer"
+                    >
+                      I agree to the{' '}
+                      <a href="/terms" target="_blank" className="text-primary hover:underline">
+                        Terms of Service
+                      </a>
+                    </label>
+                  </div>
+                  <div className="flex items-start space-x-2">
+                    <Checkbox 
+                      id="privacy-signup" 
+                      checked={acceptedPrivacy}
+                      onCheckedChange={(checked) => setAcceptedPrivacy(checked as boolean)}
+                      required
+                    />
+                    <label 
+                      htmlFor="privacy-signup" 
+                      className="text-xs text-muted-foreground leading-relaxed cursor-pointer"
+                    >
+                      I agree to the{' '}
+                      <a href="/privacy" target="_blank" className="text-primary hover:underline">
+                        Privacy Policy
+                      </a>
+                    </label>
+                  </div>
                 </div>
-                <div className="flex items-start space-x-2">
-                  <Checkbox 
-                    id="privacy-signup" 
-                    checked={acceptedPrivacy}
-                    onCheckedChange={(checked) => setAcceptedPrivacy(checked as boolean)}
-                    required
-                  />
-                  <label 
-                    htmlFor="privacy-signup" 
-                    className="text-xs text-muted-foreground leading-relaxed cursor-pointer"
-                  >
-                    I agree to the{' '}
-                    <a href="/privacy" target="_blank" className="text-primary hover:underline">
-                      Privacy Policy
-                    </a>
-                  </label>
-                </div>
-              </div>
+              )}
               
               <Button 
                 type="submit" 
                 className="w-full h-11 sm:h-12 bg-primary hover:bg-primary/90 text-primary-foreground glow-shadow transition-smooth text-sm sm:text-base" 
-                disabled={loading || googleLoading || !acceptedTerms || !acceptedPrivacy}
+                disabled={loading || googleLoading || (email && (!acceptedTerms || !acceptedPrivacy))}
               >
                 {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Sign Up

@@ -305,13 +305,16 @@ const AdminPanel = () => {
   const handleSignOut = async () => {
     try {
       await signOut();
-      navigate('/');
+      // Use React Router navigation to prevent page reload
+      navigate('/', { replace: true });
     } catch (error) {
       toast({
         title: "Sign Out Error",
         description: sanitizeErrorMessage(error),
         variant: "destructive"
       });
+      // Still redirect even if there's an error, but use React Router
+      navigate('/', { replace: true });
     }
   };
 

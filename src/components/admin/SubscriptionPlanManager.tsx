@@ -17,10 +17,16 @@ interface Plan {
   name: string;
   description?: string | null;
   price_monthly: number;
+  price_yearly?: number;
+  monthly_points?: number;
+  monthly_transactions?: number;
   features?: any;
   trial_days?: number | null;
   is_active: boolean;
   popular?: boolean;
+  plan_number?: number;
+  valid_from?: string;
+  valid_until?: string;
   created_at: string;
 }
 
@@ -36,10 +42,16 @@ const SubscriptionPlanManager = () => {
       name: "",
       description: "",
       price_monthly: 0,
+      price_yearly: 0,
+      monthly_points: 0,
+      monthly_transactions: 0,
       features: "[]",
       trial_days: 0,
       is_active: true,
       popular: false,
+      plan_number: 0,
+      valid_from: "",
+      valid_until: "",
     },
   });
 
@@ -112,7 +124,21 @@ const SubscriptionPlanManager = () => {
 
   const openCreate = () => {
     setEditing(null);
-    form.reset({ name: "", description: "", price_monthly: 0, features: "[]", trial_days: 0, is_active: true });
+    form.reset({ 
+      name: "", 
+      description: "", 
+      price_monthly: 0, 
+      price_yearly: 0,
+      monthly_points: 0,
+      monthly_transactions: 0,
+      features: "[]", 
+      trial_days: 0, 
+      is_active: true,
+      popular: false,
+      plan_number: 0,
+      valid_from: "",
+      valid_until: ""
+    });
     setDialogOpen(true);
   };
 
@@ -122,9 +148,16 @@ const SubscriptionPlanManager = () => {
       name: plan.name,
       description: plan.description || "",
       price_monthly: Number(plan.price_monthly) || 0,
+      price_yearly: Number(plan.price_yearly) || 0,
+      monthly_points: Number(plan.monthly_points) || 0,
+      monthly_transactions: Number(plan.monthly_transactions) || 0,
       features: plan.features ? JSON.stringify(plan.features) : "[]",
       trial_days: plan.trial_days || 0,
       is_active: !!plan.is_active,
+      popular: !!plan.popular,
+      plan_number: Number(plan.plan_number) || 0,
+      valid_from: plan.valid_from ? new Date(plan.valid_from).toISOString().slice(0, 16) : "",
+      valid_until: plan.valid_until ? new Date(plan.valid_until).toISOString().slice(0, 16) : "",
     });
     setDialogOpen(true);
   };
@@ -150,9 +183,16 @@ const SubscriptionPlanManager = () => {
         name: values.name.trim(),
         description: values.description?.trim() || null,
         price_monthly: Number(values.price_monthly) || 0,
+        price_yearly: Number(values.price_yearly) || 0,
+        monthly_points: Number(values.monthly_points) || 0,
+        monthly_transactions: Number(values.monthly_transactions) || 0,
         features: features,
         trial_days: Number(values.trial_days) || 0,
         is_active: !!values.is_active,
+        popular: !!values.popular,
+        plan_number: Number(values.plan_number) || 0,
+        valid_from: values.valid_from ? new Date(values.valid_from).toISOString() : null,
+        valid_until: values.valid_until ? new Date(values.valid_until).toISOString() : null,
       };
 
       if (editing) {
@@ -254,7 +294,7 @@ const SubscriptionPlanManager = () => {
                     </FormItem>
                   )}
                 />
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <FormField
                     control={form.control}
                     name="price_monthly"
@@ -280,6 +320,75 @@ const SubscriptionPlanManager = () => {
                   />
                   <FormField
                     control={form.control}
+                    name="price_yearly"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Yearly Price</FormLabel>
+                        <FormControl>
+                          <div className="relative">
+                            <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground">$</span>
+                            <Input 
+                              type="number" 
+                              min={0} 
+                              step={0.01} 
+                              placeholder="0.00"
+                              className="pl-8"
+                              {...field} 
+                            />
+                          </div>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="monthly_points"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Monthly Points</FormLabel>
+                        <FormControl>
+                          <Input type="number" min={0} step={1} placeholder="0" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="monthly_transactions"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Monthly Transactions</FormLabel>
+                        <FormControl>
+                          <Input type="number" min={0} step={1} placeholder="0" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="plan_number"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Plan Number</FormLabel>
+                        <FormControl>
+                          <Input type="number" min={1} step={1} placeholder="1" {...field} />
+                        </FormControl>
+                        <p className="text-sm text-muted-foreground">Display order (1-5)</p>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <FormField
+                    control={form.control}
                     name="trial_days"
                     render={({ field }) => (
                       <FormItem>
@@ -291,6 +400,37 @@ const SubscriptionPlanManager = () => {
                       </FormItem>
                     )}
                   />
+                  <FormField
+                    control={form.control}
+                    name="valid_from"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Valid From</FormLabel>
+                        <FormControl>
+                          <Input type="datetime-local" {...field} />
+                        </FormControl>
+                        <p className="text-sm text-muted-foreground">Leave empty for immediate availability</p>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="valid_until"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Valid Until</FormLabel>
+                        <FormControl>
+                          <Input type="datetime-local" {...field} />
+                        </FormControl>
+                        <p className="text-sm text-muted-foreground">Leave empty for no expiration</p>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <FormField
                     control={form.control}
                     name="is_active"
@@ -307,30 +447,29 @@ const SubscriptionPlanManager = () => {
                       </FormItem>
                     )}
                   />
+                  <div className="flex items-center space-x-2 pt-6">
+                    <FormField
+                      control={form.control}
+                      name="popular"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-row items-center space-x-3 space-y-0">
+                          <FormControl>
+                            <Checkbox
+                              checked={field.value}
+                              onCheckedChange={field.onChange}
+                              className="h-4 w-4 rounded border border-input"
+                            />
+                          </FormControl>
+                          <div className="space-y-1 leading-none">
+                            <FormLabel className="text-sm font-normal">
+                              Mark as Popular Plan
+                            </FormLabel>
+                          </div>
+                        </FormItem>
+                      )}
+                    />
+                  </div>
                 </div>
-                <FormField
-                  control={form.control}
-                  name="popular"
-                  render={({ field }) => (
-                    <FormItem className="flex flex-row items-center space-x-3 space-y-0">
-                      <FormControl>
-                        <Checkbox
-                          checked={field.value}
-                          onCheckedChange={field.onChange}
-                          className="h-4 w-4 rounded border border-input"
-                        />
-                      </FormControl>
-                      <div className="space-y-1 leading-none">
-                        <FormLabel className="text-sm font-normal">
-                          Mark as Popular Plan
-                        </FormLabel>
-                        <p className="text-xs text-muted-foreground">
-                          This plan will be highlighted with a "Popular" badge in the merchant signup modal
-                        </p>
-                      </div>
-                    </FormItem>
-                  )}
-                />
                 <div className="flex gap-3 pt-4">
                   <Button type="submit" className="flex-1 bg-gradient-to-r from-primary to-purple-500 hover:from-primary/90 hover:to-purple-500/90 transform hover:scale-105 transition-all duration-300">
                     <CheckCircle2 className="w-4 h-4 mr-2" />
@@ -362,9 +501,9 @@ const SubscriptionPlanManager = () => {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Name</TableHead>
-                    <TableHead>Price</TableHead>
-                    <TableHead>Features</TableHead>
-                    <TableHead>Trial</TableHead>
+                    <TableHead>Pricing</TableHead>
+                    <TableHead>Points/Txns</TableHead>
+                    <TableHead>Validity</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Popular</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
@@ -378,30 +517,32 @@ const SubscriptionPlanManager = () => {
                         <div className="text-sm text-muted-foreground">{p.description}</div>
                       </TableCell>
                       <TableCell>
-                        <span className="font-medium">${Number(p.price_monthly).toFixed(2)}</span>
-                        <div className="text-xs text-muted-foreground">per month</div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="text-sm">
-                          {p.features && Array.isArray(p.features) ? (
-                            <div className="space-y-1">
-                              {p.features.slice(0, 2).map((feature, index) => (
-                                <div key={index} className="text-xs bg-secondary/50 px-2 py-1 rounded">
-                                  {feature}
-                                </div>
-                              ))}
-                              {p.features.length > 2 && (
-                                <div className="text-xs text-muted-foreground">
-                                  +{p.features.length - 2} more
-                                </div>
-                              )}
-                            </div>
-                          ) : (
-                            <span className="text-muted-foreground">No features</span>
+                        <div className="space-y-1">
+                          <div className="font-medium">${Number(p.price_monthly).toFixed(2)}/mo</div>
+                          {p.price_yearly && p.price_yearly > 0 && (
+                            <div className="text-xs text-muted-foreground">${Number(p.price_yearly).toFixed(2)}/yr</div>
                           )}
                         </div>
                       </TableCell>
-                      <TableCell>{p.trial_days || 0} days</TableCell>
+                      <TableCell>
+                        <div className="text-sm space-y-1">
+                          <div>{p.monthly_points || 0} points</div>
+                          <div>{p.monthly_transactions || 0} txns</div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="text-sm space-y-1">
+                          {p.valid_from && (
+                            <div className="text-xs">From: {new Date(p.valid_from).toLocaleDateString()}</div>
+                          )}
+                          {p.valid_until && (
+                            <div className="text-xs">Until: {new Date(p.valid_until).toLocaleDateString()}</div>
+                          )}
+                          {!p.valid_from && !p.valid_until && (
+                            <div className="text-xs text-muted-foreground">Always valid</div>
+                          )}
+                        </div>
+                      </TableCell>
                       <TableCell>
                         <Badge variant={p.is_active ? 'default' : 'secondary'}>
                           {p.is_active ? 'Active' : 'Inactive'}

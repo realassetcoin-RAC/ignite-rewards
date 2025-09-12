@@ -121,11 +121,16 @@ const DAOManager: React.FC = () => {
       ]);
     } catch (error) {
       console.error('Error loading DAO data:', error);
-      toast({
-        title: "Error",
-        description: "Failed to load DAO data.",
-        variant: "destructive",
-      });
+      // Don't show error toast for empty DAO data - this is normal for new installations
+      if (error instanceof Error && !error.message.includes('relation') && !error.message.includes('does not exist')) {
+        toast({
+          title: "Error",
+          description: "Failed to load DAO data.",
+          variant: "destructive",
+        });
+      } else {
+        console.log('DAO tables may not exist yet or are empty - this is normal for new installations');
+      }
     } finally {
       setLoading(false);
     }

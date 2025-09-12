@@ -45,6 +45,10 @@ import {
 } from '@/types/dao';
 import { useSmartDataRefresh } from '@/hooks/useSmartDataRefresh';
 import { DAOService } from '@/lib/daoService';
+import { SetupDAOTestData } from '@/lib/setupDAOTestData';
+import { ComprehensiveTestDataService } from '@/lib/comprehensiveTestDataService';
+import { DirectTestDataService } from '@/lib/directTestDataService';
+import { SimpleTestDataService } from '@/lib/simpleTestDataService';
 
 const UserDAODashboard = () => {
   const [activeTab, setActiveTab] = useState('proposals');
@@ -61,6 +65,10 @@ const UserDAODashboard = () => {
   const [selectedProposal, setSelectedProposal] = useState<DAOProposal | null>(null);
   const [showProposalDetails, setShowProposalDetails] = useState(false);
   const [authLoading, setAuthLoading] = useState(true);
+  const [isSettingUpTestData, setIsSettingUpTestData] = useState(false);
+  const [testDataExists, setTestDataExists] = useState(false);
+  const [votingInProgress, setVotingInProgress] = useState<Set<string>>(new Set());
+  const [userVotes, setUserVotes] = useState<Map<string, string>>(new Map());
   
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -69,14 +77,22 @@ const UserDAODashboard = () => {
   useEffect(() => {
     loadDAOData();
     checkUserMembership();
+    checkTestDataExists();
     setIsLoaded(true);
   }, []);
+
+  useEffect(() => {
+    if (currentUser) {
+      loadUserVotes();
+    }
+  }, [currentUser]);
 
   // Smart data refresh for DAO data
   const refreshDAOData = async () => {
     console.log('🔄 Refreshing DAO data...');
     await loadDAOData();
     await checkUserMembership();
+    await loadUserVotes();
   };
 
   useSmartDataRefresh(refreshDAOData, {
@@ -129,6 +145,35 @@ const UserDAODashboard = () => {
     }
   };
 
+  const loadUserVotes = async () => {
+    try {
+      if (!currentUser) {
+        setUserVotes(new Map());
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from('dao_votes' as any)
+        .select('proposal_id, vote_choice')
+        .eq('voter_id', currentUser.id);
+
+      if (error) {
+        console.error('Error loading user votes:', error);
+        return;
+      }
+
+      const votesMap = new Map<string, string>();
+      if (data && Array.isArray(data)) {
+        data.forEach((vote: any) => {
+          votesMap.set(vote.proposal_id, vote.vote_choice);
+        });
+      }
+      setUserVotes(votesMap);
+    } catch (error) {
+      console.error('Error loading user votes:', error);
+    }
+  };
+
   const loadDAOData = async () => {
     try {
       setLoading(true);
@@ -161,182 +206,10 @@ const UserDAODashboard = () => {
         DAOService.getDAOStats(daoId)
       ]);
 
+      // Use database data (no fallback to sample data)
       setProposals(proposalsData);
       setMembers(membersData);
       setDaoStats(statsData);
-
-      // Fallback to sample data if database is empty
-      if (proposalsData.length === 0) {
-      const sampleProposals: DAOProposal[] = [
-        {
-          id: 'prop-1',
-          dao_id: 'sample-dao-1',
-          proposer_id: 'user-1',
-          title: 'Increase loyalty point rewards by 20%',
-          description: 'Proposal to increase the loyalty point multiplier from 1x to 1.2x for all merchants',
-          full_description: 'This proposal aims to increase customer engagement by boosting the loyalty point rewards. The change would affect all merchants on the platform and require updates to the reward calculation system.',
-          category: 'governance',
-          voting_type: 'simple_majority',
-          status: 'active',
-          start_time: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-          end_time: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString(),
-          total_votes: 45,
-          yes_votes: 28,
-          no_votes: 12,
-          abstain_votes: 5,
-          participation_rate: 75.0,
-          treasury_impact_amount: 0,
-          treasury_impact_currency: 'SOL',
-          tags: ['rewards', 'engagement', 'merchants'],
-          created_at: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
-          updated_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-          dao_name: 'RAC Rewards DAO',
-          proposer_email: 'admin@rac.com',
-          proposer_tokens: 5000,
-          voting_status: 'active',
-          can_vote: true,
-          can_execute: false
-        },
-        {
-          id: 'prop-2',
-          dao_id: 'sample-dao-1',
-          proposer_id: 'user-2',
-          title: 'Add Solana USDC as payment option',
-          description: 'Enable USDC payments on Solana blockchain for loyalty transactions',
-          full_description: 'This proposal would integrate Solana USDC as a payment method, allowing users to pay for loyalty transactions using USDC. This would require integration with Solana wallet providers and USDC token handling.',
-          category: 'technical',
-          voting_type: 'super_majority',
-          status: 'passed',
-          start_time: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(),
-          end_time: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
-          execution_time: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-          total_votes: 52,
-          yes_votes: 38,
-          no_votes: 8,
-          abstain_votes: 6,
-          participation_rate: 86.7,
-          treasury_impact_amount: 5000,
-          treasury_impact_currency: 'USDC',
-          tags: ['solana', 'usdc', 'payments', 'blockchain'],
-          created_at: new Date(Date.now() - 12 * 24 * 60 * 60 * 1000).toISOString(),
-          updated_at: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
-          executed_at: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
-          dao_name: 'RAC Rewards DAO',
-          proposer_email: 'dev@rac.com',
-          proposer_tokens: 3000,
-          voting_status: 'ended',
-          can_vote: false,
-          can_execute: false
-        },
-        {
-          id: 'prop-3',
-          dao_id: 'sample-dao-1',
-          proposer_id: 'user-3',
-          title: 'Implement quadratic voting for governance',
-          description: 'Change voting mechanism from simple majority to quadratic voting',
-          full_description: 'This proposal would implement quadratic voting to reduce the influence of large token holders and promote more democratic decision-making. The voting power would be calculated as the square root of token holdings.',
-          category: 'governance',
-          voting_type: 'super_majority',
-          status: 'draft',
-          treasury_impact_amount: 0,
-          treasury_impact_currency: 'SOL',
-          tags: ['voting', 'governance', 'democracy'],
-          created_at: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
-          updated_at: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
-          total_votes: 0,
-          yes_votes: 0,
-          no_votes: 0,
-          abstain_votes: 0,
-          participation_rate: 0,
-          dao_name: 'RAC Rewards DAO',
-          proposer_email: 'governance@rac.com',
-          proposer_tokens: 2000,
-          voting_status: 'upcoming',
-          can_vote: false,
-          can_execute: false
-        }
-      ];
-
-      // Sample members
-      const sampleMembers: DAOMember[] = [
-        {
-          id: 'member-1',
-          dao_id: 'sample-dao-1',
-          user_id: 'user-1',
-          wallet_address: 'ABC123...',
-          role: 'admin',
-          governance_tokens: 5000,
-          voting_power: 15.2,
-          joined_at: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
-          last_active_at: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString(),
-          is_active: true,
-          user_email: 'admin@rac.com',
-          user_full_name: 'Admin User'
-        },
-        {
-          id: 'member-2',
-          dao_id: 'sample-dao-1',
-          user_id: 'user-2',
-          wallet_address: 'DEF456...',
-          role: 'moderator',
-          governance_tokens: 3000,
-          voting_power: 9.1,
-          joined_at: new Date(Date.now() - 25 * 24 * 60 * 60 * 1000).toISOString(),
-          last_active_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-          is_active: true,
-          user_email: 'dev@rac.com',
-          user_full_name: 'Developer User'
-        },
-        {
-          id: 'member-3',
-          dao_id: 'sample-dao-1',
-          user_id: 'user-3',
-          wallet_address: 'GHI789...',
-          role: 'member',
-          governance_tokens: 2000,
-          voting_power: 6.1,
-          joined_at: new Date(Date.now() - 20 * 24 * 60 * 60 * 1000).toISOString(),
-          last_active_at: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
-          is_active: true,
-          user_email: 'governance@rac.com',
-          user_full_name: 'Governance User'
-        }
-      ];
-
-      // Add current user as a member if they're not already in the list
-      if (currentUser && !sampleMembers.find(m => m.user_id === currentUser.id)) {
-        sampleMembers.push({
-          id: `member-${currentUser.id}`,
-          dao_id: 'sample-dao-1',
-          user_id: currentUser.id,
-          wallet_address: 'Mock123...',
-          role: 'member',
-          governance_tokens: 1000,
-          voting_power: 3.0,
-          joined_at: new Date().toISOString(),
-          last_active_at: new Date().toISOString(),
-          is_active: true,
-          user_email: currentUser.email,
-          user_full_name: currentUser.user_metadata?.full_name || 'DAO Member'
-        });
-      }
-
-      // Sample stats
-      const sampleStats: DAOStats = {
-        total_members: 127,
-        active_members: 89,
-        total_proposals: 23,
-        active_proposals: 1,
-        total_treasury_value: 125000,
-        treasury_currency: 'SOL',
-        participation_rate: 78.5,
-        average_voting_power: 8.3
-      };
-
-      setProposals(sampleProposals);
-      setMembers(sampleMembers);
-      setDaoStats(sampleStats);
-      }
 
     } catch (error) {
       console.error('Error loading DAO data:', error);
@@ -412,7 +285,65 @@ const UserDAODashboard = () => {
     return (proposal.yes_votes / proposal.total_votes) * 100;
   };
 
+  const checkTestDataExists = async () => {
+    try {
+      const exists = await SetupDAOTestData.checkTestDataExists();
+      setTestDataExists(exists);
+    } catch (error) {
+      console.error('Error checking test data:', error);
+    }
+  };
+
+  const setupTestData = async () => {
+    setIsSettingUpTestData(true);
+    try {
+      // Use the simple service that works with existing tables
+      const result = await SimpleTestDataService.createComprehensiveTestData();
+      
+      if (result.success) {
+        toast({
+          title: "Success",
+          description: result.message,
+        });
+        setTestDataExists(true);
+        // Reload DAO data to show the new test data
+        await loadDAOData();
+      } else {
+        toast({
+          title: "Error",
+          description: result.message,
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error('Error setting up test data:', error);
+      toast({
+        title: "Error",
+        description: "Failed to set up test data. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSettingUpTestData(false);
+    }
+  };
+
   const handleVote = async (proposalId: string, choice: 'yes' | 'no' | 'abstain', reason?: string) => {
+    // Prevent multiple simultaneous votes on the same proposal
+    if (votingInProgress.has(proposalId)) {
+      console.log('Vote already in progress for proposal:', proposalId);
+      return;
+    }
+
+    // Check if user has already voted on this proposal
+    if (userVotes.has(proposalId)) {
+      toast({
+        title: "Already Voted",
+        description: "You have already voted on this proposal.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
       if (!currentUser) {
         toast({
@@ -432,7 +363,14 @@ const UserDAODashboard = () => {
         return;
       }
 
+      // Set voting in progress
+      setVotingInProgress(prev => new Set(prev).add(proposalId));
+
+      // All proposals from database should be votable
       await DAOService.castVote(proposalId, currentUser.id, choice, userMembership.voting_power, reason);
+
+      // Update user votes state
+      setUserVotes(prev => new Map(prev).set(proposalId, choice));
 
       toast({
         title: "Vote Cast Successfully",
@@ -443,10 +381,18 @@ const UserDAODashboard = () => {
       await loadDAOData();
     } catch (error) {
       console.error('Error casting vote:', error);
+      const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred while voting.';
       toast({
-        title: "Error",
-        description: "An unexpected error occurred while voting.",
+        title: "Voting Error",
+        description: errorMessage,
         variant: "destructive",
+      });
+    } finally {
+      // Remove voting in progress
+      setVotingInProgress(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(proposalId);
+        return newSet;
       });
     }
   };
@@ -454,6 +400,10 @@ const UserDAODashboard = () => {
   const handleViewDetails = (proposal: DAOProposal) => {
     setSelectedProposal(proposal);
     setShowProposalDetails(true);
+  };
+
+  const getUserVoteForProposal = (proposalId: string): string | null => {
+    return userVotes.get(proposalId) || null;
   };
 
   // Show loading state while checking authentication
@@ -619,6 +569,31 @@ const UserDAODashboard = () => {
                 <span className="hidden sm:inline">Back to Home</span>
                 <span className="sm:hidden">Back</span>
               </Button>
+              
+              {/* Setup Test Data Button */}
+              {!testDataExists && (
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={setupTestData}
+                  disabled={isSettingUpTestData}
+                  className="bg-gradient-to-r from-green-500/20 to-emerald-500/20 backdrop-blur-md hover:from-green-500/30 hover:to-emerald-500/30 border-green-500/30 hover:border-green-500/50 flex-shrink-0"
+                >
+                  {isSettingUpTestData ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-green-500 mr-2"></div>
+                      <span className="hidden sm:inline">Setting up...</span>
+                      <span className="sm:hidden">Setup...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="mr-1 sm:mr-2 h-4 w-4" />
+                      <span className="hidden sm:inline">Setup Test Data</span>
+                      <span className="sm:hidden">Setup</span>
+                    </>
+                  )}
+                </Button>
+              )}
             </div>
           </div>
           
@@ -812,18 +787,41 @@ const UserDAODashboard = () => {
                       <Vote className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
                       <h3 className="text-lg font-semibold mb-2">No Proposals Found</h3>
                       <p className="text-muted-foreground mb-4">
-                        No proposals match your current filters.
+                        {!testDataExists 
+                          ? "No DAO test data has been set up yet. Click the button below to create test data for testing the DAO functionality."
+                          : "No proposals match your current filters."
+                        }
                       </p>
-                      <Button 
-                        onClick={() => {
-                          setSearchTerm('');
-                          setStatusFilter('all');
-                          setCategoryFilter('all');
-                        }}
-                        variant="outline"
-                      >
-                        Clear Filters
-                      </Button>
+                      {!testDataExists ? (
+                        <Button 
+                          onClick={setupTestData}
+                          disabled={isSettingUpTestData}
+                          className="bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600"
+                        >
+                          {isSettingUpTestData ? (
+                            <>
+                              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                              Setting up test data...
+                            </>
+                          ) : (
+                            <>
+                              <Sparkles className="mr-2 h-4 w-4" />
+                              Setup DAO Test Data
+                            </>
+                          )}
+                        </Button>
+                      ) : (
+                        <Button 
+                          onClick={() => {
+                            setSearchTerm('');
+                            setStatusFilter('all');
+                            setCategoryFilter('all');
+                          }}
+                          variant="outline"
+                        >
+                          Clear Filters
+                        </Button>
+                      )}
                     </CardContent>
                   </Card>
                 ) : (
@@ -917,16 +915,18 @@ const UserDAODashboard = () => {
                                     className="!bg-green-500 !hover:bg-green-600 !text-white !border-green-500 w-full"
                                     style={{ backgroundColor: '#10b981', borderColor: '#10b981' }}
                                     onClick={() => handleVote(proposal.id, 'yes')}
+                                    disabled={votingInProgress.has(proposal.id) || userVotes.has(proposal.id)}
                                   >
-                                    Approve
+                                    {votingInProgress.has(proposal.id) ? 'Voting...' : 'Approve'}
                                   </Button>
                                   <Button 
                                     size="sm" 
                                     className="!bg-red-500 !hover:bg-red-600 !text-white !border-red-500 w-full"
                                     style={{ backgroundColor: '#ef4444', borderColor: '#ef4444' }}
                                     onClick={() => handleVote(proposal.id, 'no')}
+                                    disabled={votingInProgress.has(proposal.id) || userVotes.has(proposal.id)}
                                   >
-                                    Reject
+                                    {votingInProgress.has(proposal.id) ? 'Voting...' : 'Reject'}
                                   </Button>
                                   <Button 
                                     size="sm" 
@@ -934,10 +934,18 @@ const UserDAODashboard = () => {
                                     className="!bg-white !border-gray-300 !text-gray-700 !hover:bg-gray-50 w-full"
                                     style={{ backgroundColor: '#ffffff', borderColor: '#d1d5db', color: '#374151' }}
                                     onClick={() => handleVote(proposal.id, 'abstain')}
+                                    disabled={votingInProgress.has(proposal.id) || userVotes.has(proposal.id)}
                                   >
-                                    Abstain
+                                    {votingInProgress.has(proposal.id) ? 'Voting...' : 'Abstain'}
                                   </Button>
                                 </div>
+                                {getUserVoteForProposal(proposal.id) && (
+                                  <div className="text-xs text-center mt-2">
+                                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                      ✓ You voted: {getUserVoteForProposal(proposal.id)}
+                                    </span>
+                                  </div>
+                                )}
                               </div>
                             )}
                             {userMembership && (
@@ -1201,8 +1209,9 @@ const UserDAODashboard = () => {
                         handleVote(selectedProposal.id, 'yes');
                         setShowProposalDetails(false);
                       }}
+                      disabled={votingInProgress.has(selectedProposal.id) || userVotes.has(selectedProposal.id)}
                     >
-                      Approve
+                      {votingInProgress.has(selectedProposal.id) ? 'Voting...' : 'Approve'}
                     </Button>
                     <Button 
                       size="sm" 
@@ -1212,8 +1221,9 @@ const UserDAODashboard = () => {
                         handleVote(selectedProposal.id, 'no');
                         setShowProposalDetails(false);
                       }}
+                      disabled={votingInProgress.has(selectedProposal.id) || userVotes.has(selectedProposal.id)}
                     >
-                      Reject
+                      {votingInProgress.has(selectedProposal.id) ? 'Voting...' : 'Reject'}
                     </Button>
                     <Button 
                       size="sm" 
@@ -1224,9 +1234,17 @@ const UserDAODashboard = () => {
                         handleVote(selectedProposal.id, 'abstain');
                         setShowProposalDetails(false);
                       }}
+                      disabled={votingInProgress.has(selectedProposal.id) || userVotes.has(selectedProposal.id)}
                     >
-                      Abstain
+                      {votingInProgress.has(selectedProposal.id) ? 'Voting...' : 'Abstain'}
                     </Button>
+                  </div>
+                )}
+                {getUserVoteForProposal(selectedProposal.id) && (
+                  <div className="text-center pt-2">
+                    <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
+                      ✓ You voted: {getUserVoteForProposal(selectedProposal.id)}
+                    </span>
                   </div>
                 )}
                 <Button 

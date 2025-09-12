@@ -61,5 +61,15 @@
   html {
     scroll-behavior: smooth;
   }
+  
+  /* Hide scrollbar while keeping scroll functionality */
+  body {
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* Internet Explorer 10+ */
+  }
+  
+  body::-webkit-scrollbar {
+    display: none; /* WebKit browsers (Chrome, Safari, Edge) */
+  }
 }
 

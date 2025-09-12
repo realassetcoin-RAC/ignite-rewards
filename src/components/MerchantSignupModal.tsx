@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { Check, ChevronLeft, ChevronRight, Loader2, Building2, Star, ArrowRight } from "lucide-react";
 import {
@@ -24,9 +25,15 @@ interface MerchantPlan {
   id: string;
   name: string;
   price: number;
+  priceYearly: number;
   period: string;
   popular?: boolean;
   features: string[];
+  monthlyPoints: number;
+  monthlyTransactions: number;
+  planNumber: number;
+  validFrom?: string;
+  validUntil?: string;
 }
 
 /**
@@ -37,10 +44,16 @@ interface DatabasePlan {
   name: string;
   description: string;
   price_monthly: number;
+  price_yearly: number;
+  monthly_points: number;
+  monthly_transactions: number;
   features: string[];
   trial_days: number;
   is_active: boolean;
   popular?: boolean;
+  plan_number: number;
+  valid_from?: string;
+  valid_until?: string;
   created_at: string;
 }
 
@@ -77,6 +90,7 @@ interface MerchantForm {
 const MerchantSignupModal: React.FC<MerchantSignupModalProps> = ({ isOpen, onClose }) => {
   // State management for form and UI
   const [selectedPlan, setSelectedPlan] = useState(0); // Default to first plan
+  const [billingPeriod, setBillingPeriod] = useState<'monthly' | 'yearly'>('monthly');
   const [loading, setLoading] = useState(false);
   const [plansLoading, setPlansLoading] = useState(false);
   const [step, setStep] = useState<'select' | 'details'>('select');
@@ -94,49 +108,87 @@ const MerchantSignupModal: React.FC<MerchantSignupModalProps> = ({ isOpen, onClo
     address: ""
   });
   
+  // Terms acceptance state
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const [acceptedPrivacy, setAcceptedPrivacy] = useState(false);
+  
   const { toast } = useToast();
   const navigate = useNavigate();
 
   /**
-   * Load subscription plans from database
+   * Load subscription plans from database using the validity-aware function
    */
   const loadPlans = async () => {
     try {
       setPlansLoading(true);
-      console.log('🔍 Loading subscription plans from database...');
+      console.log('🔍 Loading valid subscription plans from database...');
       
+      // Use the new function that filters by validity dates
       const { data, error } = await supabase
-        .from('merchant_subscription_plans')
-        .select('*')
-        .order('price_monthly', { ascending: true });
+        .rpc('get_valid_subscription_plans');
       
       if (error) {
         console.error('Failed to load plans:', error);
-        toast({
-          title: "Error",
-          description: "Could not load subscription plans. Please try again later or contact support.",
-          variant: "destructive"
-        });
-        setMerchantPlans([]);
+        // Fallback to direct table query if function doesn't exist yet
+        const { data: fallbackData, error: fallbackError } = await supabase
+          .from('merchant_subscription_plans')
+          .select('*')
+          .eq('is_active', true)
+          .order('plan_number', { ascending: true });
+        
+        if (fallbackError) {
+          toast({
+            title: "Error",
+            description: "Could not load subscription plans. Please try again later or contact support.",
+            variant: "destructive"
+          });
+          setMerchantPlans([]);
+          return;
+        }
+        
+        if (fallbackData && fallbackData.length > 0) {
+          const convertedPlans: MerchantPlan[] = fallbackData.map((plan: any) => ({
+            id: plan.id,
+            name: plan.name,
+            price: plan.price_monthly || 0,
+            priceYearly: plan.price_yearly || 0,
+            period: "month",
+            popular: plan.popular || false,
+            features: Array.isArray(plan.features) ? plan.features : [],
+            monthlyPoints: plan.monthly_points || 0,
+            monthlyTransactions: plan.monthly_transactions || 0,
+            planNumber: plan.plan_number || 0,
+            validFrom: plan.valid_from,
+            validUntil: plan.valid_until
+          }));
+          
+          setMerchantPlans(convertedPlans);
+          console.log('✅ Loaded', convertedPlans.length, 'subscription plans (fallback)');
+        }
         return;
       }
 
       if (data && data.length > 0) {
-        // Filter for active plans and convert to MerchantPlan format
-        const activePlans = data.filter((plan: any) => plan.is_active === true);
-        const convertedPlans: MerchantPlan[] = activePlans.map((plan: any) => ({
+        // Convert to MerchantPlan format
+        const convertedPlans: MerchantPlan[] = data.map((plan: any) => ({
           id: plan.id,
           name: plan.name,
-          price: plan.price_monthly,
+          price: plan.price_monthly || 0,
+          priceYearly: plan.price_yearly || 0,
           period: "month",
-          popular: plan.popular || false, // Use database popular field
-          features: Array.isArray(plan.features) ? plan.features : []
+          popular: plan.popular || false,
+          features: Array.isArray(plan.features) ? plan.features : [],
+          monthlyPoints: plan.monthly_points || 0,
+          monthlyTransactions: plan.monthly_transactions || 0,
+          planNumber: plan.plan_number || 0,
+          validFrom: plan.valid_from,
+          validUntil: plan.valid_until
         }));
         
         setMerchantPlans(convertedPlans);
-        console.log('✅ Loaded', convertedPlans.length, 'subscription plans from database');
+        console.log('✅ Loaded', convertedPlans.length, 'valid subscription plans from database');
       } else {
-        console.log('⚠️ No active plans found in database');
+        console.log('⚠️ No valid plans found in database');
         setMerchantPlans([]);
         toast({
           title: "No Plans Available",
@@ -173,6 +225,7 @@ const MerchantSignupModal: React.FC<MerchantSignupModalProps> = ({ isOpen, onClo
     if (!isOpen) {
       setStep('select');
       setSelectedPlan(0);
+      setBillingPeriod('monthly');
       setMerchantForm({
         businessName: "",
         contactName: "",
@@ -183,6 +236,8 @@ const MerchantSignupModal: React.FC<MerchantSignupModalProps> = ({ isOpen, onClo
         industry: "",
         address: ""
       });
+      setAcceptedTerms(false);
+      setAcceptedPrivacy(false);
       setLoading(false);
     }
   }, [isOpen]);
@@ -235,6 +290,16 @@ const MerchantSignupModal: React.FC<MerchantSignupModalProps> = ({ isOpen, onClo
       return;
     }
 
+    // Validate terms and privacy acceptance before proceeding
+    if (!acceptedTerms || !acceptedPrivacy) {
+      toast({
+        title: "Terms and Privacy Required",
+        description: "Please accept the Terms of Service and Privacy Policy to continue.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     setLoading(true);
     const plan = merchantPlans[selectedPlan];
     
@@ -247,6 +312,10 @@ const MerchantSignupModal: React.FC<MerchantSignupModalProps> = ({ isOpen, onClo
       setLoading(false);
       return;
     }
+    
+    // Get the correct price based on billing period
+    const selectedPrice = billingPeriod === 'yearly' ? plan.priceYearly : plan.price;
+    const billingPeriodText = billingPeriod === 'yearly' ? 'year' : 'month';
     
     try {
       // Create merchant account with Supabase Auth
@@ -264,7 +333,10 @@ const MerchantSignupModal: React.FC<MerchantSignupModalProps> = ({ isOpen, onClo
             industry: merchantForm.industry,
             address: merchantForm.address,
             selected_plan: plan.id,
-            plan_price: plan.price
+            plan_price: selectedPrice,
+            billing_period: billingPeriod,
+            monthly_points: plan.monthlyPoints,
+            monthly_transactions: plan.monthlyTransactions
           },
           emailRedirectTo: `${window.location.origin}/merchant`
         }
@@ -316,6 +388,37 @@ const MerchantSignupModal: React.FC<MerchantSignupModalProps> = ({ isOpen, onClo
             <div className="text-center px-2">
               <h3 className="text-lg sm:text-xl font-semibold mb-2">Choose Your Subscription Plan</h3>
               <p className="text-sm sm:text-base text-muted-foreground">Select the plan that best fits your business needs</p>
+              
+              {/* Billing Period Toggle */}
+              <div className="flex items-center justify-center mt-4">
+                <div className="bg-muted/50 rounded-lg p-1 flex">
+                  <button
+                    type="button"
+                    onClick={() => setBillingPeriod('monthly')}
+                    className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
+                      billingPeriod === 'monthly'
+                        ? 'bg-primary text-primary-foreground shadow-sm'
+                        : 'text-muted-foreground hover:text-foreground'
+                    }`}
+                  >
+                    Monthly
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setBillingPeriod('yearly')}
+                    className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
+                      billingPeriod === 'yearly'
+                        ? 'bg-primary text-primary-foreground shadow-sm'
+                        : 'text-muted-foreground hover:text-foreground'
+                    }`}
+                  >
+                    Yearly
+                    <Badge variant="secondary" className="ml-2 text-xs">
+                      Save 25%
+                    </Badge>
+                  </button>
+                </div>
+              </div>
             </div>
 
             {plansLoading ? (
@@ -353,9 +456,21 @@ const MerchantSignupModal: React.FC<MerchantSignupModalProps> = ({ isOpen, onClo
                                 
                                 <h4 className="text-2xl font-bold mb-4">{plan.name}</h4>
                                 
-                                <div className="text-3xl font-bold text-primary mb-6">
-                                  ${plan.price}
-                                  <span className="text-lg text-muted-foreground">/{plan.period}</span>
+                                <div className="text-3xl font-bold text-primary mb-2">
+                                  ${billingPeriod === 'yearly' ? plan.priceYearly : plan.price}
+                                  <span className="text-lg text-muted-foreground">/{billingPeriod === 'yearly' ? 'year' : 'month'}</span>
+                                </div>
+                                
+                                {billingPeriod === 'yearly' && plan.priceYearly > 0 && (
+                                  <div className="text-sm text-muted-foreground mb-4">
+                                    ${Math.round(plan.priceYearly / 12)}/month billed yearly
+                                  </div>
+                                )}
+                                
+                                {/* Show monthly points and transactions */}
+                                <div className="text-sm text-muted-foreground mb-4 space-y-1">
+                                  <div>{plan.monthlyPoints} points/month</div>
+                                  <div>{plan.monthlyTransactions} transactions/month</div>
                                 </div>
                                 
                                 <div className="space-y-3 flex-grow">
@@ -413,14 +528,16 @@ const MerchantSignupModal: React.FC<MerchantSignupModalProps> = ({ isOpen, onClo
           <div className="space-y-6">
             <div className="text-center">
               <Badge variant="outline" className="mb-2">
-                Selected: {merchantPlans[selectedPlan]?.name} - ${merchantPlans[selectedPlan]?.price}/month
+                Selected: {merchantPlans[selectedPlan]?.name} - ${billingPeriod === 'yearly' ? merchantPlans[selectedPlan]?.priceYearly : merchantPlans[selectedPlan]?.price}/{billingPeriod === 'yearly' ? 'year' : 'month'}
               </Badge>
               <h3 className="text-xl font-semibold mb-2">Business Information</h3>
               <p className="text-muted-foreground">Fill in your business details to get started</p>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-4 max-w-md mx-auto text-left">
-              <div className="space-y-2">
+            <form onSubmit={handleSubmit} className="space-y-4 max-w-4xl mx-auto text-left">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-4">
+                  <div className="space-y-2">
                 <Label htmlFor="businessName">Business Name *</Label>
                 <Input
                   id="businessName"
@@ -473,10 +590,12 @@ const MerchantSignupModal: React.FC<MerchantSignupModalProps> = ({ isOpen, onClo
                   minLength={6}
                   disabled={loading}
                 />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="phone">Phone Number</Label>
+                  </div>
+                </div>
+                
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="phone">Phone Number</Label>
                 <Input
                   id="phone"
                   name="phone"
@@ -523,6 +642,46 @@ const MerchantSignupModal: React.FC<MerchantSignupModalProps> = ({ isOpen, onClo
                   placeholder="Enter business address"
                   disabled={loading}
                 />
+                  </div>
+                </div>
+              </div>
+              
+              {/* Terms and Privacy Checkboxes */}
+              <div className="space-y-3 pt-4">
+                <div className="flex items-start space-x-2">
+                  <Checkbox 
+                    id="terms-merchant" 
+                    checked={acceptedTerms}
+                    onCheckedChange={(checked) => setAcceptedTerms(checked as boolean)}
+                    required
+                  />
+                  <label 
+                    htmlFor="terms-merchant" 
+                    className="text-xs text-muted-foreground leading-relaxed cursor-pointer"
+                  >
+                    I agree to the{' '}
+                    <a href="/terms" target="_blank" className="text-primary hover:underline">
+                      Terms of Service
+                    </a>
+                  </label>
+                </div>
+                <div className="flex items-start space-x-2">
+                  <Checkbox 
+                    id="privacy-merchant" 
+                    checked={acceptedPrivacy}
+                    onCheckedChange={(checked) => setAcceptedPrivacy(checked as boolean)}
+                    required
+                  />
+                  <label 
+                    htmlFor="privacy-merchant" 
+                    className="text-xs text-muted-foreground leading-relaxed cursor-pointer"
+                  >
+                    I agree to the{' '}
+                    <a href="/privacy" target="_blank" className="text-primary hover:underline">
+                      Privacy Policy
+                    </a>
+                  </label>
+                </div>
               </div>
               
               <div className="flex gap-3 pt-4">
@@ -537,12 +696,12 @@ const MerchantSignupModal: React.FC<MerchantSignupModalProps> = ({ isOpen, onClo
                 </Button>
                 <Button 
                   type="submit"
-                  disabled={loading}
+                  disabled={loading || !acceptedTerms || !acceptedPrivacy}
                   className="flex-1"
                   variant="hero"
                 >
                   {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  Start Subscription - ${merchantPlans[selectedPlan]?.price}/month
+                  Start Subscription - ${billingPeriod === 'yearly' ? merchantPlans[selectedPlan]?.priceYearly : merchantPlans[selectedPlan]?.price}/{billingPeriod === 'yearly' ? 'year' : 'month'}
                 </Button>
               </div>
             </form>

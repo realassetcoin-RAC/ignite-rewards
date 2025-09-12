@@ -12,8 +12,19 @@ interface TestUser {
 interface TestMerchant {
   id: string;
   user_id: string;
-  name: string;
-  description: string;
+  business_name: string;
+  business_type?: string;
+  contact_email?: string;
+  phone?: string;
+  address?: string;
+  city?: string;
+  country?: string;
+  subscription_plan?: string;
+  status?: string;
+  subscription_start_date?: string;
+  subscription_end_date?: string;
+  monthly_fee?: number;
+  annual_fee?: number;
   created_at: string;
   updated_at: string;
 }
@@ -64,10 +75,15 @@ interface TestMarketplaceListing {
   id: string;
   title: string;
   description: string;
-  image_url: string;
+  image_url?: string;
   funding_goal: number;
-  current_funding: number;
-  status: 'active' | 'draft' | 'completed' | 'cancelled';
+  min_investment?: number;
+  max_investment?: number;
+  start_time?: string;
+  end_time?: string;
+  token_ticker?: string;
+  token_supply?: number;
+  status: string;
   created_at: string;
 }
 
@@ -122,6 +138,11 @@ class TestDataGenerator {
         full_name: `${firstName} ${lastName}`,
         phone: `+1-${this.randomInt(200, 999)}-${this.randomInt(100, 999)}-${this.randomInt(1000, 9999)}`,
         role: this.randomChoice(['customer', 'admin']),
+        // Add DAO-specific fields
+        governance_tokens: this.randomInt(100, 10000),
+        voting_power: this.randomInt(100, 10000),
+        wallet_address: `0x${this.generateId().replace(/-/g, '').substring(0, 40)}`,
+        avatar_url: `https://images.unsplash.com/photo-${1500000000000 + i}?w=100`,
         created_at: this.randomDate(new Date(2023, 0, 1), new Date())
       });
     }
@@ -134,13 +155,15 @@ class TestDataGenerator {
     const businessTypes = ['Restaurant', 'Retail Store', 'Service Provider', 'Online Store', 'Gym', 'Salon', 'Gas Station', 'Grocery Store', 'Pharmacy', 'Electronics Store'];
     const cities = ['New York', 'Los Angeles', 'Chicago', 'Houston', 'Phoenix', 'Philadelphia', 'San Antonio', 'San Diego', 'Dallas', 'San Jose'];
     const countries = ['United States', 'Canada', 'United Kingdom', 'Australia', 'Germany', 'France', 'Japan', 'Brazil', 'India', 'Mexico'];
-    const subscriptionPlans = ['basic', 'premium', 'enterprise'];
+    const subscriptionPlans = ['basic', 'standard', 'premium', 'enterprise'];
+    const statuses = ['pending', 'active', 'inactive', 'suspended'];
 
     for (let i = 0; i < count; i++) {
       const businessType = this.randomChoice(businessTypes);
       const city = this.randomChoice(cities);
       const country = this.randomChoice(countries);
       const plan = this.randomChoice(subscriptionPlans);
+      const status = this.randomChoice(statuses);
       
       const startDate = this.randomDate(new Date(2023, 0, 1), new Date());
       const endDate = new Date(startDate);
@@ -149,8 +172,19 @@ class TestDataGenerator {
       this.merchants.push({
         id: this.generateId(),
         user_id: this.generateId(), // This should reference a real user_id
-        name: `${businessType} ${i + 1}`,
-        description: `A ${businessType.toLowerCase()} located in ${city}, ${country}. This is merchant number ${i + 1}.`,
+        business_name: `${businessType} ${i + 1}`,
+        business_type: businessType,
+        contact_email: `contact@${businessType.toLowerCase().replace(/\s+/g, '')}${i + 1}.com`,
+        phone: `+1-${this.randomInt(200, 999)}-${this.randomInt(100, 999)}-${this.randomInt(1000, 9999)}`,
+        address: `${this.randomInt(100, 9999)} ${businessType} Street`,
+        city: city,
+        country: country,
+        subscription_plan: plan,
+        status: status,
+        subscription_start_date: startDate,
+        subscription_end_date: endDate,
+        monthly_fee: this.randomFloat(29.99, 299.99),
+        annual_fee: this.randomFloat(299.99, 2999.99),
         created_at: startDate,
         updated_at: startDate
       });
@@ -176,13 +210,24 @@ class TestDataGenerator {
         id: this.generateId(),
         name: daoNames[i] || `DAO ${i + 1}`,
         description: descriptions[i] || `Description for DAO ${i + 1}`,
+        logo_url: `https://images.unsplash.com/photo-${1500000000000 + i}?w=200`,
+        website_url: `https://dao${i + 1}.example.com`,
+        discord_url: `https://discord.gg/dao${i + 1}`,
+        twitter_url: `https://twitter.com/dao${i + 1}`,
+        github_url: `https://github.com/dao${i + 1}`,
+        governance_token_address: `0x${this.generateId().replace(/-/g, '')}`,
         governance_token_symbol: tokens[i] || 'TOKEN',
         governance_token_decimals: 9,
-        min_proposal_threshold: this.randomInt(1, 10),
+        min_proposal_threshold: this.randomInt(100, 1000),
         voting_period_days: this.randomInt(3, 14),
+        execution_delay_hours: this.randomInt(24, 72),
         quorum_percentage: this.randomFloat(10, 30),
-        is_active: Math.random() > 0.2,
-        created_at: this.randomDate(new Date(2023, 0, 1), new Date())
+        super_majority_threshold: this.randomFloat(60, 80),
+        treasury_address: `0x${this.generateId().replace(/-/g, '')}`,
+        created_by: this.generateId(),
+        created_at: this.randomDate(new Date(2023, 0, 1), new Date()),
+        updated_at: this.randomDate(new Date(2023, 0, 1), new Date()),
+        is_active: Math.random() > 0.2
       });
     }
 
@@ -215,17 +260,40 @@ class TestDataGenerator {
       'Add integration with popular social media platforms.',
       'Develop a dedicated mobile application for merchants.'
     ];
-    const categories = ['governance', 'treasury', 'technical', 'community'];
-    const votingTypes = ['simple_majority', 'super_majority', 'unanimous'];
+    const categories = ['governance', 'treasury', 'technical', 'community', 'partnership', 'marketing', 'general'];
+    const votingTypes = ['simple_majority', 'super_majority', 'unanimous', 'weighted', 'quadratic'];
 
     for (let i = 0; i < count; i++) {
       const dao = this.randomChoice(this.daos);
       const user = this.randomChoice(this.users);
-      const createdDate = this.randomDate(new Date(2023, 0, 1), new Date());
-      const votingStart = new Date(createdDate);
+      const createdDate = new Date(2023, 0, 1).getTime() + Math.random() * (new Date().getTime() - new Date(2023, 0, 1).getTime());
+      const createdDateObj = new Date(createdDate);
+      const votingStart = new Date(createdDateObj);
       votingStart.setDate(votingStart.getDate() + 1);
       const votingEnd = new Date(votingStart);
       votingEnd.setDate(votingEnd.getDate() + 7);
+
+      const totalVotes = this.randomInt(10, 150);
+      const yesVotes = this.randomInt(0, Math.floor(totalVotes * 0.8));
+      const noVotes = this.randomInt(0, Math.floor(totalVotes * 0.3));
+      const abstainVotes = totalVotes - yesVotes - noVotes;
+      
+      const status = this.randomChoice(['draft', 'active', 'passed', 'rejected', 'executed', 'cancelled']);
+      const isActive = status === 'active';
+      const isEnded = ['passed', 'rejected', 'executed'].includes(status);
+      
+      // Calculate execution time for passed proposals
+      const executionTime = status === 'passed' ? new Date(votingEnd.getTime() + 24 * 60 * 60 * 1000) : null;
+      
+      // Determine voting status
+      let votingStatus: 'upcoming' | 'active' | 'ended';
+      if (isActive) {
+        votingStatus = 'active';
+      } else if (isEnded) {
+        votingStatus = 'ended';
+      } else {
+        votingStatus = 'upcoming';
+      }
 
       this.proposals.push({
         id: this.generateId(),
@@ -233,20 +301,92 @@ class TestDataGenerator {
         proposer_id: user.id,
         title: this.randomChoice(titles),
         description: this.randomChoice(descriptions),
+        full_description: this.randomChoice(descriptions) + ' This is a more detailed description of the proposal that provides additional context and implementation details.',
         category: this.randomChoice(categories),
         voting_type: this.randomChoice(votingTypes),
-        status: this.randomChoice(['draft', 'active', 'passed', 'rejected', 'executed', 'cancelled']),
-        total_votes: this.randomInt(10, 150),
-        yes_votes: this.randomInt(0, 100),
-        no_votes: this.randomInt(0, 50),
-        abstain_votes: this.randomInt(0, 20),
-        created_at: createdDate,
+        status: status,
+        
+        // Voting parameters
         start_time: votingStart.toISOString(),
-        end_time: votingEnd.toISOString()
+        end_time: votingEnd.toISOString(),
+        execution_time: executionTime ? executionTime.toISOString() : undefined,
+        
+        // Voting results
+        total_votes: totalVotes,
+        yes_votes: yesVotes,
+        no_votes: noVotes,
+        abstain_votes: Math.max(0, abstainVotes),
+        participation_rate: this.randomFloat(20, 95),
+        
+        // Treasury impact
+        treasury_impact_amount: this.randomFloat(0, 10000),
+        treasury_impact_currency: this.randomChoice(['SOL', 'USDC', 'USDT']),
+        
+        // Metadata - fix tags to be flat array
+        tags: this.randomChoice([
+          ['governance', 'voting'],
+          ['technical', 'development'],
+          ['treasury', 'funding'],
+          ['community', 'engagement'],
+          ['partnership', 'collaboration'],
+          ['marketing', 'growth']
+        ]),
+        
+        // Timestamps
+        created_at: createdDateObj.toISOString(),
+        updated_at: createdDateObj.toISOString(),
+        executed_at: status === 'executed' ? executionTime?.toISOString() : undefined,
+        
+        // Extended fields for UI functionality
+        dao_name: dao.name,
+        proposer_email: user.email,
+        proposer_tokens: user.governance_tokens || 0,
+        voting_status: votingStatus,
+        user_vote: undefined, // Will be set by the UI based on user's actual vote
+        user_voting_power: user.voting_power || 0,
+        can_vote: isActive && user.voting_power > 0,
+        can_execute: status === 'passed' && user.role === 'admin'
       });
     }
 
     return this.proposals;
+  }
+
+  // Generate test DAO votes
+  generateDAOVotes(count: number = 100): any[] {
+    const votes: any[] = [];
+    
+    for (let i = 0; i < count; i++) {
+      const proposal = this.randomChoice(this.proposals);
+      const user = this.randomChoice(this.users);
+      const voteChoice = this.randomChoice(['yes', 'no', 'abstain']);
+      const votingPower = this.randomInt(1, 1000);
+      
+      votes.push({
+        id: this.generateId(),
+        proposal_id: proposal.id,
+        voter_id: user.id,
+        vote_choice: voteChoice,
+        voting_power: votingPower,
+        voting_weight: votingPower,
+        reason: this.randomChoice([
+          'I support this proposal because it aligns with our community values.',
+          'This proposal needs more discussion before implementation.',
+          'I have concerns about the treasury impact.',
+          'This is a great step forward for our DAO.',
+          'I need more information about the technical implementation.',
+          'This proposal will benefit our community significantly.',
+          'I disagree with the proposed changes.',
+          'I abstain from voting on this matter.'
+        ]),
+        transaction_hash: `0x${this.generateId().replace(/-/g, '').substring(0, 64)}`,
+        created_at: this.randomDate(new Date(2023, 0, 1), new Date()),
+        voter_email: user.email,
+        voter_avatar_url: user.avatar_url
+      });
+    }
+    
+    return votes;
   }
 
   // Generate test transactions
@@ -298,9 +438,8 @@ class TestDataGenerator {
       'Smart city technology solutions for urban development and sustainability.',
       'Biotechnology research fund supporting breakthrough medical discoveries.'
     ];
-    const assetTypes = ['real_estate', 'startup', 'fund', 'infrastructure', 'technology'];
-    const riskLevels = ['low', 'medium', 'high'];
-    const tags = ['real-estate', 'technology', 'sustainability', 'healthcare', 'education', 'energy', 'infrastructure'];
+    const statuses = ['active', 'draft', 'completed', 'cancelled'];
+    const tokenTickers = ['RAC', 'GREEN', 'TECH', 'REAL', 'BIO', 'EDU', 'ENERGY', 'SMART'];
 
     for (let i = 0; i < count; i++) {
       const title = this.randomChoice(titles);
@@ -308,15 +447,21 @@ class TestDataGenerator {
       const createdDate = this.randomDate(new Date(2023, 0, 1), new Date());
       const endDate = new Date(createdDate);
       endDate.setDate(endDate.getDate() + this.randomInt(30, 365));
+      const fundingGoal = this.randomInt(100000, 10000000);
 
       this.marketplaceListings.push({
         id: this.generateId(),
         title: `${title} ${i + 1}`,
         description: `${description} This is listing number ${i + 1}.`,
         image_url: `https://images.unsplash.com/photo-${1500000000000 + i}?w=500`,
-        funding_goal: this.randomInt(100000, 10000000),
-        current_funding: this.randomInt(0, 5000000),
-        status: this.randomChoice(['active', 'draft', 'completed', 'cancelled']),
+        funding_goal: fundingGoal,
+        min_investment: this.randomInt(100, 1000),
+        max_investment: this.randomInt(10000, 100000),
+        start_time: createdDate,
+        end_time: endDate.toISOString(),
+        token_ticker: this.randomChoice(tokenTickers),
+        token_supply: this.randomInt(1000000, 10000000),
+        status: this.randomChoice(statuses),
         created_at: createdDate
       });
     }
@@ -334,6 +479,7 @@ class TestDataGenerator {
       this.generateMerchants(20);
       this.generateDAOs(5);
       this.generateProposals(30);
+      const daoVotes = this.generateDAOVotes(100);
       this.generateTransactions(200);
       this.generateMarketplaceListings(15);
 
@@ -342,6 +488,7 @@ class TestDataGenerator {
       console.log(`- Merchants: ${this.merchants.length}`);
       console.log(`- DAOs: ${this.daos.length}`);
       console.log(`- Proposals: ${this.proposals.length}`);
+      console.log(`- DAO Votes: ${daoVotes.length}`);
       console.log(`- Transactions: ${this.transactions.length}`);
       console.log(`- Marketplace Listings: ${this.marketplaceListings.length}`);
 
@@ -362,64 +509,239 @@ class TestDataGenerator {
 
       console.log('✅ User profile insertion skipped (schema limitation)');
 
-      // Insert merchants
+      // Insert merchants (skip if table doesn't exist)
       console.log('🏪 Inserting merchants...');
-      const { error: merchantsError } = await supabase
-        .from('merchants')
-        .upsert(this.merchants);
+      try {
+        // Use the absolute minimal merchant schema
+        const minimalMerchants = this.merchants.map(merchant => ({
+          id: merchant.id,
+          name: merchant.business_name,
+          description: `${merchant.business_type} business`,
+          created_at: merchant.created_at,
+          updated_at: merchant.updated_at
+        }));
 
-      if (merchantsError) {
-        console.error('Error inserting merchants:', merchantsError);
-      } else {
-        console.log('✅ Merchants inserted successfully');
+        console.log(`📊 Inserting ${minimalMerchants.length} merchants with IDs:`, minimalMerchants.map(m => m.id));
+        
+        // Use direct SQL since merchants table is not in TypeScript types
+        const { error: merchantsError } = await supabase
+          .from('merchants' as any)
+          .upsert(minimalMerchants);
+
+        if (merchantsError) {
+          console.error('❌ Error inserting merchants:', merchantsError.message);
+          console.warn('⚠️ Merchants table may not exist or have schema issues, skipping...');
+        } else {
+          console.log('✅ Merchants inserted successfully');
+        }
+      } catch (error) {
+        console.error('❌ Error inserting merchants:', error);
+        console.warn('⚠️ Merchants table may not exist, skipping...');
       }
 
       // Insert DAOs
       console.log('🗳️ Inserting DAOs...');
-      const { error: daosError } = await supabase
-        .from('dao_organizations')
-        .upsert(this.daos);
+      try {
+        const { error: daosError } = await supabase
+          .from('dao_organizations' as any)
+          .upsert(this.daos);
 
-      if (daosError) {
-        console.error('Error inserting DAOs:', daosError);
-      } else {
-        console.log('✅ DAOs inserted successfully');
+        if (daosError) {
+          console.error('❌ Error inserting DAOs:', daosError.message);
+        } else {
+          console.log('✅ DAOs inserted successfully');
+        }
+      } catch (error) {
+        console.error('❌ Error inserting DAOs:', error);
       }
 
-      // Insert proposals
+      // Insert proposals (handle schema mismatches)
       console.log('📋 Inserting proposals...');
-      const { error: proposalsError } = await supabase
-        .from('dao_proposals')
-        .upsert(this.proposals);
+      try {
+        // Filter out fields that might not exist in the database schema
+        const filteredProposals = this.proposals.map(proposal => ({
+          id: proposal.id,
+          dao_id: proposal.dao_id,
+          proposer_id: proposal.proposer_id,
+          title: proposal.title,
+          description: proposal.description,
+          full_description: proposal.full_description,
+          category: proposal.category,
+          voting_type: proposal.voting_type,
+          status: proposal.status,
+          start_time: proposal.start_time,
+          end_time: proposal.end_time,
+          execution_time: proposal.execution_time,
+          total_votes: proposal.total_votes,
+          yes_votes: proposal.yes_votes,
+          no_votes: proposal.no_votes,
+          abstain_votes: proposal.abstain_votes,
+          participation_rate: proposal.participation_rate,
+          treasury_impact_amount: proposal.treasury_impact_amount,
+          treasury_impact_currency: proposal.treasury_impact_currency,
+          tags: proposal.tags,
+          created_at: proposal.created_at,
+          updated_at: proposal.updated_at,
+          executed_at: proposal.executed_at
+        }));
 
-      if (proposalsError) {
-        console.error('Error inserting proposals:', proposalsError);
-      } else {
-        console.log('✅ Proposals inserted successfully');
+        const { error: proposalsError } = await supabase
+          .from('dao_proposals' as any)
+          .upsert(filteredProposals);
+
+        if (proposalsError) {
+          console.error('❌ Error inserting proposals:', proposalsError.message);
+        } else {
+          console.log('✅ Proposals inserted successfully');
+        }
+      } catch (error) {
+        console.error('❌ Error inserting proposals:', error);
       }
 
-      // Insert transactions
+      // Insert DAO votes (handle schema mismatches)
+      console.log('🗳️ Inserting DAO votes...');
+      try {
+        // Filter out fields that might not exist in the database schema
+        const filteredVotes = daoVotes.map(vote => ({
+          id: vote.id,
+          proposal_id: vote.proposal_id,
+          voter_id: vote.voter_id,
+          vote_choice: vote.vote_choice,
+          voting_power: vote.voting_power,
+          voting_weight: vote.voting_weight,
+          reason: vote.reason,
+          transaction_hash: vote.transaction_hash,
+          created_at: vote.created_at,
+          voter_email: vote.voter_email,
+          voter_avatar_url: vote.voter_avatar_url
+        }));
+
+        const { error: votesError } = await supabase
+          .from('dao_votes' as any)
+          .upsert(filteredVotes);
+
+        if (votesError) {
+          console.error('❌ Error inserting DAO votes:', votesError.message);
+        } else {
+          console.log('✅ DAO votes inserted successfully');
+        }
+      } catch (error) {
+        console.error('❌ Error inserting DAO votes:', error);
+      }
+
+      // Insert transactions (work with actual schema)
       console.log('💳 Inserting transactions...');
-      const { error: transactionsError } = await supabase
-        .from('loyalty_transactions')
-        .upsert(this.transactions);
+      try {
+        // Get current user for RLS policy compliance
+        const { data: { user } } = await supabase.auth.getUser();
+        
+        if (!user) {
+          console.warn('⚠️ No authenticated user found, skipping transaction insertion due to RLS policies');
+          return;
+        }
 
-      if (transactionsError) {
-        console.error('Error inserting transactions:', transactionsError);
-      } else {
-        console.log('✅ Transactions inserted successfully');
+        // First, try to get existing merchants to use their IDs
+        // Add a small delay to ensure merchants are committed to the database
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
+        const { data: existingMerchants, error: merchantsQueryError } = await supabase
+          .from('merchants' as any)
+          .select('id, name')
+          .limit(10);
+
+        if (merchantsQueryError) {
+          console.error('❌ Error querying merchants:', merchantsQueryError.message);
+          console.warn('⚠️ Cannot query merchants, skipping transaction insertion due to foreign key constraints');
+          return;
+        }
+
+        if (!existingMerchants || existingMerchants.length === 0) {
+          console.warn('⚠️ No existing merchants found, skipping transaction insertion due to foreign key constraints');
+          return;
+        }
+
+        console.log(`📊 Found ${existingMerchants.length} existing merchants for transaction insertion`);
+        console.log(`📊 Merchant IDs:`, existingMerchants.map(m => m.id));
+        console.log(`📊 Merchant names:`, existingMerchants.map(m => m.name));
+
+        // Convert transactions to match the actual loyalty_transactions schema - try just one first
+        const loyaltyTransactions = this.transactions.slice(0, 1).map((transaction, index) => {
+          const merchantId = existingMerchants[index % existingMerchants.length].id;
+          console.log(`📊 Using merchant ID ${merchantId} for transaction ${transaction.id}`);
+          
+          const transactionData = {
+            id: transaction.id,
+            user_id: user.id, // Use real user ID for RLS compliance
+            merchant_id: merchantId, // Use existing merchant ID
+            loyalty_number: `LOY${transaction.id.substring(0, 8).toUpperCase()}`,
+            transaction_amount: transaction.transaction_amount,
+            points_earned: transaction.points_earned,
+            transaction_date: transaction.created_at,
+            transaction_reference: transaction.transaction_reference || `TXN${transaction.id.substring(0, 8).toUpperCase()}`,
+            created_at: transaction.created_at
+          };
+          
+          console.log(`📊 Transaction data:`, transactionData);
+          return transactionData;
+        });
+
+        console.log(`📊 About to insert ${loyaltyTransactions.length} transactions`);
+        console.log(`📊 First transaction merchant_id: ${loyaltyTransactions[0]?.merchant_id}`);
+        
+        // Verify that the merchant ID actually exists in the database
+        const { data: verifyMerchant, error: verifyError } = await supabase
+          .from('merchants' as any)
+          .select('id')
+          .eq('id', loyaltyTransactions[0]?.merchant_id)
+          .single();
+          
+        if (verifyError || !verifyMerchant) {
+          console.error('❌ Merchant ID verification failed:', verifyError?.message || 'Merchant not found');
+          console.warn('⚠️ Skipping transaction insertion due to merchant verification failure');
+          return;
+        }
+        
+        console.log('✅ Merchant ID verified successfully');
+        
+        const { error: transactionsError } = await supabase
+          .from('loyalty_transactions')
+          .upsert(loyaltyTransactions);
+
+        if (transactionsError) {
+          console.error('❌ Error inserting transactions:', transactionsError.message);
+        } else {
+          console.log('✅ Transactions inserted successfully');
+        }
+      } catch (error) {
+        console.error('❌ Error inserting transactions:', error);
       }
 
-      // Insert marketplace listings
+      // Insert marketplace listings (skip if table doesn't exist)
       console.log('🏪 Inserting marketplace listings...');
-      const { error: listingsError } = await supabase
-        .from('marketplace_listings')
-        .upsert(this.marketplaceListings);
+      try {
+        // Use the absolute minimal marketplace_listings schema - only the most basic fields
+        const minimalMarketplaceListings = this.marketplaceListings.map(listing => ({
+          id: listing.id,
+          title: listing.title,
+          description: listing.description,
+          listing_type: 'asset', // Add required listing_type field with valid enum value
+          total_funding_goal: listing.funding_goal || 10000, // Add required total_funding_goal field
+          created_at: listing.created_at
+        }));
 
-      if (listingsError) {
-        console.error('Error inserting marketplace listings:', listingsError);
-      } else {
-        console.log('✅ Marketplace listings inserted successfully');
+        const { error: listingsError } = await supabase
+          .from('marketplace_listings' as any)
+          .upsert(minimalMarketplaceListings);
+
+        if (listingsError) {
+          console.error('❌ Error inserting marketplace listings:', listingsError.message);
+          console.warn('⚠️ Marketplace listings table may not exist or have schema issues, skipping...');
+        } else {
+          console.log('✅ Marketplace listings inserted successfully');
+        }
+      } catch (error) {
+        console.error('❌ Error inserting marketplace listings:', error);
+        console.warn('⚠️ Marketplace listings table may not exist, skipping...');
       }
 
       console.log('🎉 Test data generation completed successfully!');
@@ -445,15 +767,19 @@ class TestDataGenerator {
       ];
 
       for (const table of tables) {
+        try {
         const { error } = await supabase
-          .from(table)
+          .from(table as any)
           .delete()
           .neq('id', '00000000-0000-0000-0000-000000000000'); // Delete all records
 
-        if (error) {
-          console.error(`Error clearing ${table}:`, error);
-        } else {
-          console.log(`✅ Cleared ${table}`);
+          if (error) {
+            console.error(`Error clearing ${table}:`, error.message);
+          } else {
+            console.log(`✅ Cleared ${table}`);
+          }
+        } catch (tableError) {
+          console.error(`Error clearing ${table}:`, tableError);
         }
       }
 

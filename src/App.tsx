@@ -31,7 +31,7 @@ import DAODashboard from "./pages/DAODashboard";
 import UserDAODashboard from "./pages/UserDAODashboard";
 import TestPage from "./pages/TestPage";
 import Marketplace from "./pages/Marketplace";
-import { useSmartRefresh } from "./hooks/useSmartRefresh";
+import { useRefreshPrevention } from "./hooks/useRefreshPrevention";
 import { useSessionPersistence } from "./hooks/useSessionPersistence";
 import ContactChatbot from "@/components/ContactChatbot";
 
@@ -64,37 +64,14 @@ const queryClient = new QueryClient({
 const App = () => {
   const isDev = import.meta.env.DEV;
   const [isInitialized, setIsInitialized] = useState(false);
-  
-  // Initialize smart refresh system (prevents page refresh, allows component updates)
-  useSmartRefresh();
-  
+
   // Initialize session persistence to maintain auth state
   useSessionPersistence();
 
-  // Dev-only debugging utilities
+  // Initialize immediately to prevent loading issues
   useEffect(() => {
-    if (isDev) {
-      import('@/utils/testAdminAccess');
-      import('@/utils/fixAdminUser');
-    }
-  }, [isDev]);
-
-  // Add initialization delay to prevent 404 flash
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsInitialized(true);
-    }, 100);
-    return () => clearTimeout(timer);
+    setIsInitialized(true);
   }, []);
-
-  // Show loading state during initialization
-  if (!isInitialized) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
-      </div>
-    );
-  }
 
   return (
     <QueryClientProvider client={queryClient}>

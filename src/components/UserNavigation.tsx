@@ -34,9 +34,12 @@ const UserNavigation: React.FC<UserNavigationProps> = ({ className = '' }) => {
   const handleSignOut = async () => {
     try {
       await signOut();
-      navigate('/');
+      // Use React Router navigation to prevent page reload
+      navigate('/', { replace: true });
     } catch (error) {
       console.error('Sign out error:', error);
+      // Still redirect even if there's an error, but use React Router
+      navigate('/', { replace: true });
     }
   };
 

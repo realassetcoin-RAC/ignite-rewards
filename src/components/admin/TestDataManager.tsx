@@ -21,11 +21,17 @@ import {
   Store
 } from 'lucide-react';
 import TestDataGenerator from '@/utils/testDataGenerator';
+import { ComprehensiveTestDataService } from '@/lib/comprehensiveTestDataService';
+import { DirectTestDataService } from '@/lib/directTestDataService';
+import { SimpleTestDataService } from '@/lib/simpleTestDataService';
+import { RobustTestDataService } from '@/lib/robustTestDataService';
 
 const TestDataManager: React.FC = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [isClearing, setIsClearing] = useState(false);
   const [lastGenerated, setLastGenerated] = useState<Date | null>(null);
+  const [isComprehensiveSetup, setIsComprehensiveSetup] = useState(false);
+  const [testDataSummary, setTestDataSummary] = useState<any>(null);
   const { toast } = useToast();
 
   const generator = new TestDataGenerator();
@@ -105,6 +111,63 @@ const TestDataManager: React.FC = () => {
     });
   };
 
+  const handleComprehensiveSetup = async () => {
+    try {
+      setIsComprehensiveSetup(true);
+      
+      toast({
+        title: "Comprehensive Setup",
+        description: "Creating test data for all application subsystems...",
+      });
+
+      // Use robust service that checks tables and provides better error messages
+      const result = await RobustTestDataService.createComprehensiveTestData();
+      
+      if (result.success) {
+        toast({
+          title: "Success",
+          description: "Comprehensive test data setup completed successfully!",
+        });
+        setLastGenerated(new Date());
+        setTestDataSummary(result.data);
+      } else {
+        throw new Error(result.error || 'Failed to create comprehensive test data');
+      }
+    } catch (error) {
+      console.error('Error in comprehensive setup:', error);
+      toast({
+        title: "Error",
+        description: "Failed to create comprehensive test data. Please check the console for details.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsComprehensiveSetup(false);
+    }
+  };
+
+  const handleGetSummary = async () => {
+    try {
+      const result = await RobustTestDataService.getTestDataSummary();
+      
+      if (result.success) {
+        setTestDataSummary(result.data);
+        toast({
+          title: "Summary Retrieved",
+          description: "Test data summary updated successfully.",
+        });
+      } else {
+        throw new Error(result.error || 'Failed to get test data summary');
+      }
+    } catch (error) {
+      console.error('Error getting summary:', error);
+      toast({
+        title: "Error",
+        description: "Failed to get test data summary.",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div>
@@ -182,6 +245,67 @@ const TestDataManager: React.FC = () => {
               <div className="text-xs text-muted-foreground">Listings</div>
             </div>
           </div>
+        </CardContent>
+      </Card>
+
+      {/* Comprehensive Setup */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Database className="w-5 h-5" />
+            Comprehensive Test Data Setup
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <p className="text-sm text-muted-foreground">
+            Create comprehensive test data for all application subsystems including DAO, merchants, transactions, and marketplace listings.
+          </p>
+          <Alert>
+            <AlertTriangle className="h-4 w-4" />
+            <AlertDescription>
+              This will create test data for all subsystems and is the recommended approach for full application testing.
+            </AlertDescription>
+          </Alert>
+          <div className="flex gap-2">
+            <Button 
+              onClick={handleComprehensiveSetup}
+              disabled={isComprehensiveSetup}
+              className="flex-1"
+            >
+              {isComprehensiveSetup ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Setting up...
+                </>
+              ) : (
+                <>
+                  <Database className="w-4 h-4 mr-2" />
+                  Comprehensive Setup
+                </>
+              )}
+            </Button>
+            <Button 
+              onClick={handleGetSummary}
+              variant="outline"
+            >
+              <BarChart3 className="w-4 h-4 mr-2" />
+              Get Summary
+            </Button>
+          </div>
+          {testDataSummary && (
+            <div className="mt-4 p-4 bg-muted/50 rounded-lg">
+              <h4 className="font-semibold mb-2">Current Test Data Summary:</h4>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-sm">
+                <div>DAO Orgs: {testDataSummary.dao?.organizations || 0}</div>
+                <div>DAO Members: {testDataSummary.dao?.members || 0}</div>
+                <div>DAO Proposals: {testDataSummary.dao?.proposals || 0}</div>
+                <div>DAO Votes: {testDataSummary.dao?.votes || 0}</div>
+                <div>Merchants: {testDataSummary.merchants || 0}</div>
+                <div>Transactions: {testDataSummary.transactions || 0}</div>
+                <div>Listings: {testDataSummary.listings || 0}</div>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
 
