@@ -33,12 +33,23 @@ interface Merchant {
   } | null;
 }
 
+interface SubscriptionPlan {
+  id: string;
+  name: string;
+  price_monthly: number;
+  price_yearly: number;
+  monthly_points: number;
+  monthly_transactions: number;
+  is_active: boolean;
+}
+
 interface MerchantManagerProps {
   onStatsUpdate: () => void;
 }
 
 const MerchantManager = ({ onStatsUpdate }: MerchantManagerProps) => {
   const [merchants, setMerchants] = useState<Merchant[]>([]);
+  const [subscriptionPlans, setSubscriptionPlans] = useState<SubscriptionPlan[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedMerchant, setSelectedMerchant] = useState<Merchant | null>(null);
@@ -63,7 +74,27 @@ const MerchantManager = ({ onStatsUpdate }: MerchantManagerProps) => {
 
   useEffect(() => {
     loadMerchants();
+    loadSubscriptionPlans();
   }, []);
+
+  const loadSubscriptionPlans = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('merchant_subscription_plans')
+        .select('*')
+        .eq('is_active', true)
+        .order('plan_number', { ascending: true });
+      
+      if (error) {
+        console.error('Failed to load subscription plans:', error);
+        return;
+      }
+      
+      setSubscriptionPlans(data || []);
+    } catch (error) {
+      console.error('Error loading subscription plans:', error);
+    }
+  };
 
   const loadMerchants = async () => {
     try {
@@ -504,7 +535,7 @@ const MerchantManager = ({ onStatsUpdate }: MerchantManagerProps) => {
                     {/* Business Information Section */}
                     <div className="space-y-4">
                       <h4 className="text-md font-medium">Business Information</h4>
-                      <div className="grid grid-cols-2 gap-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <FormField
                           control={form.control}
                           name="business_name"
@@ -554,7 +585,7 @@ const MerchantManager = ({ onStatsUpdate }: MerchantManagerProps) => {
                         />
                       </div>
 
-                      <div className="grid grid-cols-2 gap-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <FormField
                           control={form.control}
                           name="contact_email"
@@ -604,7 +635,7 @@ const MerchantManager = ({ onStatsUpdate }: MerchantManagerProps) => {
                         />
                       </div>
 
-                      <div className="grid grid-cols-2 gap-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <FormField
                           control={form.control}
                           name="city"
@@ -658,7 +689,7 @@ const MerchantManager = ({ onStatsUpdate }: MerchantManagerProps) => {
                     {/* Subscription Section */}
                     <div className="space-y-4">
                       <h4 className="text-md font-medium">Subscription Details</h4>
-                      <div className="grid grid-cols-2 gap-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <FormField
                           control={form.control}
                           name="status"
@@ -712,14 +743,17 @@ const MerchantManager = ({ onStatsUpdate }: MerchantManagerProps) => {
                               <Select onValueChange={field.onChange} defaultValue={field.value}>
                                 <FormControl>
                                   <SelectTrigger>
-                                    <SelectValue />
+                                    <SelectValue placeholder="Select a plan" />
                                   </SelectTrigger>
                                 </FormControl>
                                 <SelectContent>
                                   <SelectItem value="">No Plan</SelectItem>
-                                  <SelectItem value="basic">Basic (Free)</SelectItem>
-                                  <SelectItem value="premium">Premium - $99/month</SelectItem>
-                                  <SelectItem value="enterprise">Enterprise - $299/month</SelectItem>
+                                  {subscriptionPlans.map((plan) => (
+                                    <SelectItem key={plan.id} value={plan.name}>
+                                      {plan.name} - ${plan.price_monthly}/month
+                                      {plan.monthly_points > 0 && ` (${plan.monthly_points} points, ${plan.monthly_transactions} transactions)`}
+                                    </SelectItem>
+                                  ))}
                                 </SelectContent>
                               </Select>
                               <FormMessage />
@@ -728,7 +762,7 @@ const MerchantManager = ({ onStatsUpdate }: MerchantManagerProps) => {
                         />
                       </div>
 
-                      <div className="grid grid-cols-3 gap-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <FormField
                           control={form.control}
                           name="subscription_start_date"

@@ -1,5 +1,5 @@
--- Apply subscription plans migration and insert data
--- This script adds validity dates and yearly pricing to merchant subscription plans
+-- Apply subscription plans migration with unique constraint
+-- This version adds a unique constraint on the name column first
 
 -- Add new columns to merchant_subscription_plans table
 ALTER TABLE public.merchant_subscription_plans 
@@ -10,6 +10,18 @@ ADD COLUMN IF NOT EXISTS valid_from TIMESTAMP WITH TIME ZONE DEFAULT now(),
 ADD COLUMN IF NOT EXISTS valid_until TIMESTAMP WITH TIME ZONE,
 ADD COLUMN IF NOT EXISTS popular BOOLEAN DEFAULT false,
 ADD COLUMN IF NOT EXISTS plan_number INTEGER;
+
+-- Create unique constraint on name column (if it doesn't exist)
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint 
+        WHERE conname = 'merchant_subscription_plans_name_unique'
+    ) THEN
+        ALTER TABLE public.merchant_subscription_plans 
+        ADD CONSTRAINT merchant_subscription_plans_name_unique UNIQUE (name);
+    END IF;
+END $$;
 
 -- Create index for efficient querying by validity dates
 CREATE INDEX IF NOT EXISTS idx_merchant_subscription_plans_validity 
@@ -113,7 +125,7 @@ GRANT EXECUTE ON FUNCTION public.is_plan_valid(UUID) TO authenticated, anon;
 -- Clear existing plans first (remove all plans to ensure clean state)
 DELETE FROM public.merchant_subscription_plans;
 
--- Insert the 5 subscription plans
+-- Insert the 5 subscription plans with ON CONFLICT (now that we have the unique constraint)
 INSERT INTO public.merchant_subscription_plans (
   plan_number,
   name,
@@ -138,7 +150,18 @@ INSERT INTO public.merchant_subscription_plans (
 -- Plan 4: Cloud9 Plan
 (4, 'Cloud9 Plan', 'Enterprise-level solution for large businesses with complex needs', 250.00, 2500.00, 1800, 1800, '["Enterprise loyalty program features", "Up to 1800 monthly points", "1800 transactions per month", "Dedicated account manager", "Enterprise analytics", "White-label solution", "Full API & webhook access", "Unlimited locations", "Advanced reporting & insights", "Custom integrations", "24/7 priority support"]'::jsonb, 30, true, false, now(), null),
 -- Plan 5: Super Plan
-(5, 'Super Plan', 'Ultimate solution for enterprise businesses with unlimited needs', 500.00, 5000.00, 4000, 4000, '["Unlimited loyalty program features", "Up to 4000 monthly points", "4000 transactions per month", "Dedicated success team", "Enterprise-grade analytics", "Complete white-label solution", "Unlimited API access", "Global multi-location support", "Advanced AI insights", "Custom development", "Unlimited integrations", "24/7 dedicated support", "SLA guarantee"]'::jsonb, 30, true, false, now(), null);
+(5, 'Super Plan', 'Ultimate solution for enterprise businesses with unlimited needs', 500.00, 5000.00, 4000, 4000, '["Unlimited loyalty program features", "Up to 4000 monthly points", "4000 transactions per month", "Dedicated success team", "Enterprise-grade analytics", "Complete white-label solution", "Unlimited API access", "Global multi-location support", "Advanced AI insights", "Custom development", "Unlimited integrations", "24/7 dedicated support", "SLA guarantee"]'::jsonb, 30, true, false, now(), null)
+ON CONFLICT (name) DO UPDATE SET
+  price_monthly = EXCLUDED.price_monthly,
+  price_yearly = EXCLUDED.price_yearly,
+  monthly_points = EXCLUDED.monthly_points,
+  monthly_transactions = EXCLUDED.monthly_transactions,
+  features = EXCLUDED.features,
+  popular = EXCLUDED.popular,
+  plan_number = EXCLUDED.plan_number,
+  valid_from = EXCLUDED.valid_from,
+  valid_until = EXCLUDED.valid_until,
+  updated_at = now();
 
 -- Verify the inserted plans
 SELECT 

@@ -327,14 +327,14 @@ const DAOManager: React.FC = () => {
 
   const getStatusBadge = (status: string) => {
     const statusConfig = {
-      active: { color: 'bg-green-100 text-green-800', icon: CheckCircle },
+      Active: { color: 'bg-green-100 text-green-800', icon: CheckCircle },
       inactive: { color: 'bg-gray-100 text-gray-800', icon: Clock },
       suspended: { color: 'bg-red-100 text-red-800', icon: XCircle },
-      draft: { color: 'bg-yellow-100 text-yellow-800', icon: Edit },
-      passed: { color: 'bg-green-100 text-green-800', icon: CheckCircle },
-      rejected: { color: 'bg-red-100 text-red-800', icon: XCircle },
-      executed: { color: 'bg-blue-100 text-blue-800', icon: CheckCircle },
-      cancelled: { color: 'bg-gray-100 text-gray-800', icon: XCircle }
+      Draft: { color: 'bg-yellow-100 text-yellow-800', icon: Edit },
+      Passed: { color: 'bg-green-100 text-green-800', icon: CheckCircle },
+      Rejected: { color: 'bg-red-100 text-red-800', icon: XCircle },
+      Executed: { color: 'bg-blue-100 text-blue-800', icon: CheckCircle },
+      Cancelled: { color: 'bg-gray-100 text-gray-800', icon: XCircle }
     };
 
     const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.inactive;

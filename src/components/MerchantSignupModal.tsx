@@ -3,20 +3,23 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
-import { Check, ChevronLeft, ChevronRight, Loader2, Building2, Star, ArrowRight } from "lucide-react";
+import { Check, Loader2, Building2, Star, ArrowRight, ChevronLeft, ChevronRight } from "lucide-react";
 import {
   Carousel,
   CarouselContent,
   CarouselItem,
   CarouselNext,
   CarouselPrevious,
+  type CarouselApi,
 } from "@/components/ui/carousel";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
+import { cn } from "@/lib/utils";
+import { Progress } from "@/components/ui/progress";
 
 /**
  * Merchant subscription plan interface
@@ -95,6 +98,9 @@ const MerchantSignupModal: React.FC<MerchantSignupModalProps> = ({ isOpen, onClo
   const [plansLoading, setPlansLoading] = useState(false);
   const [step, setStep] = useState<'select' | 'details'>('select');
   const [merchantPlans, setMerchantPlans] = useState<MerchantPlan[]>([]);
+  const [api, setApi] = useState<CarouselApi>();
+  const [current, setCurrent] = useState(0);
+  const [count, setCount] = useState(0);
   
   // Merchant form state
   const [merchantForm, setMerchantForm] = useState<MerchantForm>({
@@ -214,9 +220,26 @@ const MerchantSignupModal: React.FC<MerchantSignupModalProps> = ({ isOpen, onClo
    */
   useEffect(() => {
     if (isOpen) {
+      console.log("MerchantSignupModal opened, loading plans...");
       loadPlans();
     }
   }, [isOpen]);
+
+  /**
+   * Carousel API effect for slide tracking
+   */
+  useEffect(() => {
+    if (!api) {
+      return;
+    }
+
+    setCount(api.scrollSnapList().length);
+    setCurrent(api.selectedScrollSnap() + 1);
+
+    api.on("select", () => {
+      setCurrent(api.selectedScrollSnap() + 1);
+    });
+  }, [api]);
 
   /**
    * Reset modal state when it opens/closes
@@ -346,19 +369,39 @@ const MerchantSignupModal: React.FC<MerchantSignupModalProps> = ({ isOpen, onClo
         throw error;
       }
 
+      // Redirect to payment gateway
+      const paymentData = {
+        planId: plan.id,
+        planName: plan.name,
+        price: selectedPrice,
+        billingPeriod: billingPeriod,
+        billingPeriodText: billingPeriodText,
+        monthlyPoints: plan.monthlyPoints,
+        monthlyTransactions: plan.monthlyTransactions,
+        merchantData: {
+          businessName: merchantForm.businessName,
+          contactName: merchantForm.contactName,
+          email: merchantForm.email,
+          phone: merchantForm.phone,
+          website: merchantForm.website,
+          industry: merchantForm.industry,
+          address: merchantForm.address,
+          userId: data.user?.id
+        }
+      };
+
+      // Store payment data in sessionStorage for payment gateway
+      sessionStorage.setItem('merchantPaymentData', JSON.stringify(paymentData));
+
       toast({
-        title: "Account Created Successfully!",
-        description: "Please check your email to verify your account. Once verified, you can set up your subscription.",
+        title: "Redirecting to Payment Gateway",
+        description: "Please complete your payment to activate your subscription.",
       });
-      
-      // Here you would integrate with Stripe for subscription billing after email verification
-      console.log('Merchant signup successful:', {
-        plan: plan,
-        merchant: merchantForm,
-        userId: data.user?.id
-      });
-      
-      onClose();
+
+      // Redirect to payment gateway (you can replace this URL with your actual payment gateway)
+      setTimeout(() => {
+        window.location.href = `/payment?plan=${plan.id}&price=${selectedPrice}&period=${billingPeriod}`;
+      }, 1500);
     } catch (error: any) {
       console.error('Merchant signup error:', error);
       toast({
@@ -374,10 +417,10 @@ const MerchantSignupModal: React.FC<MerchantSignupModalProps> = ({ isOpen, onClo
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="w-[calc(100vw-2rem)] sm:w-full sm:max-w-4xl bg-transparent border-0 shadow-none p-0">
-        <div className="rounded-lg p-[1px] bg-gradient-to-r from-primary via-purple-500 to-blue-500 animate-gradient-x">
-          <div className="bg-card/95 backdrop-blur-sm border border-border/50 card-shadow rounded-lg max-h-[calc(100vh-2rem)] overflow-y-auto p-4 sm:p-6">
+        <div className="rounded-lg p-[1px] bg-gradient-to-r from-primary via-purple-500 to-blue-500">
+          <div className="bg-card/95 backdrop-blur-sm border border-border/50 card-shadow rounded-lg max-h-[calc(100vh-2rem)] overflow-y-auto p-3 sm:p-4">
             <DialogHeader className="space-y-3">
-              <DialogTitle className="text-center text-xl sm:text-2xl font-bold bg-gradient-to-r from-primary via-purple-500 to-blue-500 bg-clip-text text-transparent animate-gradient-x">
+              <DialogTitle className="text-center text-xl sm:text-2xl font-bold bg-gradient-to-r from-primary via-purple-500 to-blue-500 bg-clip-text text-transparent">
                 <Building2 className="inline-block mr-2 h-5 w-5 sm:h-6 sm:w-6 text-primary" />
                 Merchant Signup
               </DialogTitle>
@@ -395,7 +438,7 @@ const MerchantSignupModal: React.FC<MerchantSignupModalProps> = ({ isOpen, onClo
                   <button
                     type="button"
                     onClick={() => setBillingPeriod('monthly')}
-                    className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
+                    className={`px-4 py-2 rounded-md text-sm font-medium ${
                       billingPeriod === 'monthly'
                         ? 'bg-primary text-primary-foreground shadow-sm'
                         : 'text-muted-foreground hover:text-foreground'
@@ -406,7 +449,7 @@ const MerchantSignupModal: React.FC<MerchantSignupModalProps> = ({ isOpen, onClo
                   <button
                     type="button"
                     onClick={() => setBillingPeriod('yearly')}
-                    className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
+                    className={`px-4 py-2 rounded-md text-sm font-medium ${
                       billingPeriod === 'yearly'
                         ? 'bg-primary text-primary-foreground shadow-sm'
                         : 'text-muted-foreground hover:text-foreground'
@@ -422,103 +465,102 @@ const MerchantSignupModal: React.FC<MerchantSignupModalProps> = ({ isOpen, onClo
             </div>
 
             {plansLoading ? (
-              <div className="flex justify-center items-center min-h-[400px]">
+              <div className="flex justify-center items-center min-h-[300px]">
                 <div className="text-center space-y-4">
                   <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" />
                   <p className="text-muted-foreground">Loading subscription plans...</p>
                 </div>
               </div>
             ) : (
-              <div className="w-full max-w-2xl mx-auto">
-                <Carousel
-                  className="w-full"
-                  opts={{
-                    align: "center",
-                    loop: true,
-                    skipSnaps: false,
-                    dragFree: false,
-                  }}
-                  onSelect={(index) => setSelectedPlan(index || 0)}
-                >
-                  <CarouselContent className="-ml-2 md:-ml-4">
-                    {merchantPlans.length > 0 ? (
-                      merchantPlans.map((plan, index) => (
-                        <CarouselItem key={plan.id} className="pl-2 md:pl-4 basis-full">
-                          <div className="p-1">
-                            <Card className="group cursor-pointer border-2 hover:border-primary/50 transition-all duration-300 hover:shadow-lg overflow-hidden h-full max-w-sm mx-auto card-gradient card-shadow border-0">
-                              <div className="p-6 text-center min-h-[400px] flex flex-col justify-center">
-                                {plan.popular && (
-                                  <Badge className="bg-primary text-primary-foreground mb-4 w-fit mx-auto">
-                                    <Star className="w-3 h-3 mr-1" />
-                                    Popular
-                                  </Badge>
-                                )}
-                                
-                                <h4 className="text-2xl font-bold mb-4">{plan.name}</h4>
-                                
-                                <div className="text-3xl font-bold text-primary mb-2">
-                                  ${billingPeriod === 'yearly' ? plan.priceYearly : plan.price}
-                                  <span className="text-lg text-muted-foreground">/{billingPeriod === 'yearly' ? 'year' : 'month'}</span>
-                                </div>
-                                
-                                {billingPeriod === 'yearly' && plan.priceYearly > 0 && (
-                                  <div className="text-sm text-muted-foreground mb-4">
-                                    ${Math.round(plan.priceYearly / 12)}/month billed yearly
-                                  </div>
-                                )}
-                                
-                                {/* Show monthly points and transactions */}
-                                <div className="text-sm text-muted-foreground mb-4 space-y-1">
-                                  <div>{plan.monthlyPoints} points/month</div>
-                                  <div>{plan.monthlyTransactions} transactions/month</div>
-                                </div>
-                                
-                                <div className="space-y-3 flex-grow">
-                                  {plan.features?.map((feature, featureIndex) => (
-                                    <div key={featureIndex} className="flex items-center justify-center">
-                                      <Check className="w-4 h-4 text-primary mr-3 flex-shrink-0" />
-                                      <span className="text-muted-foreground text-left">{feature}</span>
+              <div className="w-full">
+                {merchantPlans.length > 0 ? (
+                  <div className="w-full max-w-5xl mx-auto px-6">
+                    {/* Carousel with Progress */}
+                    <div className="mx-auto max-w-2xl py-4">
+                      <Carousel setApi={setApi} className="w-full">
+                        <CarouselContent>
+                          {merchantPlans.map((plan, index) => (
+                            <CarouselItem key={plan.id} className="basis-full">
+                              <Card className="relative h-full bg-gradient-to-br from-gray-800 to-gray-900 border-gray-700">
+                                <CardContent className="p-8 h-full flex flex-col">
+                                  {/* Popular Badge */}
+                                  {plan.popular && (
+                                    <div className="absolute top-4 right-4 z-10">
+                                      <Badge className="bg-gradient-to-r from-primary to-purple-500 text-white">
+                                        <Star className="w-3 h-3 mr-1 fill-current" />
+                                        Popular
+                                      </Badge>
                                     </div>
-                                  ))}
-                                </div>
-                                
-                                <Button 
-                                  className="w-full mt-6 bg-gradient-to-r from-primary to-purple-500 hover:opacity-90 transition-all duration-300 transform hover:scale-105"
-                                  onClick={() => setStep('details')}
-                                >
-                                  Select This Plan
-                                  <ArrowRight className="w-4 h-4 ml-2" />
-                                </Button>
-                              </div>
-                            </Card>
-                          </div>
-                        </CarouselItem>
-                      ))
-                    ) : (
-                      <CarouselItem className="pl-2 md:pl-4 basis-full">
-                        <div className="p-1">
-                          <Card className="max-w-sm mx-auto">
-                            <div className="p-6 text-center space-y-4">
-                              <div className="text-6xl">📋</div>
-                              <div>
-                                <h4 className="text-xl font-semibold text-muted-foreground mb-2">No Plans Available</h4>
-                                <p className="text-muted-foreground">
-                                  No subscription plans are currently available. Please contact our support team for assistance.
-                                </p>
-                              </div>
-                            </div>
-                          </Card>
-                        </div>
-                      </CarouselItem>
-                    )}
-                  </CarouselContent>
-                  {merchantPlans.length > 1 && (
-                    <>
-                      <CarouselPrevious className="hidden md:flex -left-12" />
-                      <CarouselNext className="hidden md:flex -right-12" />
-                    </>
-                  )}
-                </Carousel>
+                                  )}
+                                  
+                                  {/* Plan Header */}
+                                  <div className="text-center mb-8">
+                                    <h3 className="text-3xl font-bold text-white mb-4">{plan.name}</h3>
+                                    <div className="text-5xl font-bold text-white mb-3">
+                                      ${billingPeriod === 'yearly' ? plan.priceYearly : plan.price}
+                                    </div>
+                                    {billingPeriod === 'yearly' && plan.priceYearly && plan.priceYearly > 0 && (
+                                      <div className="text-xl text-white/80 mb-3">
+                                        ${Math.round(plan.priceYearly / 12)} per month
+                                      </div>
+                                    )}
+                                    <div className="text-base text-white/70 bg-white/20 px-4 py-2 rounded-full inline-block">
+                                      {billingPeriod === 'yearly' ? 'Billed annually' : 'Billed monthly'}
+                                    </div>
+                                  </div>
+                                  
+                                  {/* Features List */}
+                                  <div className="flex-1 mb-8">
+                                    <div className="space-y-4">
+                                      {plan.features?.slice(0, 6).map((feature, featureIndex) => (
+                                        <div key={featureIndex} className="flex items-start gap-4">
+                                          <div className="flex-shrink-0 w-6 h-6 bg-white/20 rounded-full flex items-center justify-center mt-0.5">
+                                            <Check className="w-4 h-4 text-white font-bold" />
+                                          </div>
+                                          <span className="text-base text-white leading-relaxed">{feature}</span>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                  
+                                  {/* Action Button */}
+                                  <div className="mt-auto flex justify-center items-end pb-2">
+                                    <Button
+                                      className="w-1/2 h-10 text-base font-medium transition-all duration-300 transform hover:scale-105 bg-gradient-to-r from-primary to-purple-500 hover:from-primary/90 hover:to-purple-500/90 text-white shadow-lg hover:shadow-xl border-0"
+                                      style={{ padding: '8px 16px', minHeight: '40px' }}
+                                      onClick={() => {
+                                        setSelectedPlan(index);
+                                        setStep('details');
+                                      }}
+                                    >
+                                      <Check className="w-3 h-3 mr-1" />
+                                      Select Plan
+                                    </Button>
+                                  </div>
+                                </CardContent>
+                              </Card>
+                            </CarouselItem>
+                          ))}
+                        </CarouselContent>
+                        <CarouselPrevious className="top-[calc(100%+0.5rem)] translate-y-0 left-0" />
+                        <CarouselNext className="top-[calc(100%+0.5rem)] translate-y-0 left-2 translate-x-full" />
+                      </Carousel>
+                      <Progress value={(current * 100) / count} className="mt-4 w-24 ml-auto" />
+                    </div>
+                  </div>
+                ) : (
+                  <Card className="w-full" style={{ borderRadius: '0px' }}>
+                    <div className="p-6 text-center space-y-4">
+                      <div className="text-4xl">📋</div>
+                      <div>
+                        <h4 className="text-lg font-semibold text-muted-foreground mb-2">No Plans Available</h4>
+                        <p className="text-sm text-muted-foreground">
+                          No subscription plans are currently available. Please contact our support team for assistance.
+                        </p>
+                      </div>
+                    </div>
+                  </Card>
+                )}
               </div>
             )}
           </div>
@@ -528,13 +570,13 @@ const MerchantSignupModal: React.FC<MerchantSignupModalProps> = ({ isOpen, onClo
           <div className="space-y-6">
             <div className="text-center">
               <Badge variant="outline" className="mb-2">
-                Selected: {merchantPlans[selectedPlan]?.name} - ${billingPeriod === 'yearly' ? merchantPlans[selectedPlan]?.priceYearly : merchantPlans[selectedPlan]?.price}/{billingPeriod === 'yearly' ? 'year' : 'month'}
+                Selected: {merchantPlans[selectedPlan]?.name} - ${billingPeriod === 'yearly' ? merchantPlans[selectedPlan]?.priceYearly : merchantPlans[selectedPlan]?.price}
               </Badge>
               <h3 className="text-xl font-semibold mb-2">Business Information</h3>
               <p className="text-muted-foreground">Fill in your business details to get started</p>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-4 max-w-4xl mx-auto text-left">
+            <form onSubmit={handleSubmit} className="space-y-4 max-w-2xl mx-auto text-left">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-4">
                   <div className="space-y-2">
@@ -684,24 +726,41 @@ const MerchantSignupModal: React.FC<MerchantSignupModalProps> = ({ isOpen, onClo
                 </div>
               </div>
               
+              {/* Selected Plan Summary */}
+              <div className="bg-primary/5 border border-primary/20 rounded-lg p-2 mb-3">
+                <div className="text-center">
+                  <h4 className="font-semibold text-base mb-0">{merchantPlans[selectedPlan]?.name} Plan</h4>
+                  <div className="text-xl font-bold text-primary mb-0">
+                    ${billingPeriod === 'yearly' ? merchantPlans[selectedPlan]?.priceYearly : merchantPlans[selectedPlan]?.price}
+                  </div>
+                  {billingPeriod === 'yearly' && merchantPlans[selectedPlan]?.priceYearly && merchantPlans[selectedPlan]?.priceYearly > 0 && (
+                    <div className="text-xs text-muted-foreground">
+                      ${Math.round(merchantPlans[selectedPlan]?.priceYearly / 12)} billed yearly
+                    </div>
+                  )}
+                </div>
+              </div>
+              
               <div className="flex gap-3 pt-4">
                 <Button 
                   type="button"
                   variant="outline"
                   onClick={() => setStep('select')}
                   disabled={loading}
-                  className="flex-1 border-primary/40 text-primary bg-primary/10 hover:bg-primary/20 backdrop-blur-sm transition-smooth"
+                  className="flex-1 border-primary/40 text-primary bg-primary/10 hover:bg-primary/20 backdrop-blur-sm rounded-none"
+                  style={{ borderRadius: '0px' }}
                 >
                   Back
                 </Button>
                 <Button 
                   type="submit"
                   disabled={loading || !acceptedTerms || !acceptedPrivacy}
-                  className="flex-1"
-                  variant="hero"
+                  className="flex-1 border-primary/40 text-primary bg-primary/10 hover:bg-primary/20 backdrop-blur-sm rounded-none"
+                  variant="outline"
+                  style={{ borderRadius: '0px' }}
                 >
                   {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  Start Subscription - ${billingPeriod === 'yearly' ? merchantPlans[selectedPlan]?.priceYearly : merchantPlans[selectedPlan]?.price}/{billingPeriod === 'yearly' ? 'year' : 'month'}
+                  {loading ? 'Processing...' : 'Proceed to Payment'}
                 </Button>
               </div>
             </form>

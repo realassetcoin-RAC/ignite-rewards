@@ -523,7 +523,7 @@ const VirtualCardManager = ({ onStatsUpdate }: VirtualCardManagerProps) => {
               Add New Loyalty Card
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogContent className="max-w-7xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>
                 {editingCard ? "Edit Loyalty Card" : "Create New Loyalty Card"}
@@ -535,10 +535,10 @@ const VirtualCardManager = ({ onStatsUpdate }: VirtualCardManagerProps) => {
             
             <Form {...form}>
               <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
-                {/* Basic Information */}
+                {/* Basic Information - Four Column */}
                 <div className="space-y-4">
                   <h4 className="text-md font-medium">Basic Information</h4>
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                     <FormField
                       control={form.control}
                       name="card_name"
@@ -596,97 +596,7 @@ const VirtualCardManager = ({ onStatsUpdate }: VirtualCardManagerProps) => {
                         </FormItem>
                       )}
                     />
-                  </div>
 
-                  {form.watch("card_type") === "custom" && (
-                    <FormField
-                      control={form.control}
-                      name="custom_card_type"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="flex items-center gap-2">
-                            New Card Type Name
-                            <Tooltip>
-                              <TooltipTrigger>
-                                <HelpCircle className="w-3 h-3" />
-                              </TooltipTrigger>
-                              <TooltipContent>
-                                <p>Create any new card type you need (e.g., "VIP", "Corporate", "Student", "Platinum", "Black Card", etc.)</p>
-                              </TooltipContent>
-                            </Tooltip>
-                          </FormLabel>
-                          <FormControl>
-                            <Input 
-                              placeholder="e.g., VIP, Corporate, Platinum, Black Card" 
-                              {...field}
-                              className="capitalize"
-                            />
-                          </FormControl>
-                          <FormMessage />
-                          <p className="text-xs text-muted-foreground">
-                            💡 Once created, this type will be permanently available in the dropdown for future cards
-                          </p>
-                        </FormItem>
-                      )}
-                    />
-                  )}
-                </div>
-
-                {/* Description and Image */}
-                <div className="space-y-4">
-                  <FormField
-                    control={form.control}
-                    name="description"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="flex items-center gap-2">
-                          Description
-                          <Tooltip>
-                            <TooltipTrigger>
-                              <HelpCircle className="w-3 h-3" />
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              <p>Detailed description of card benefits and features</p>
-                            </TooltipContent>
-                          </Tooltip>
-                        </FormLabel>
-                        <FormControl>
-                          <Textarea placeholder="Card description and benefits..." {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="image_url"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="flex items-center gap-2">
-                          Image URL
-                          <Tooltip>
-                            <TooltipTrigger>
-                              <HelpCircle className="w-3 h-3" />
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              <p>URL to the card's visual design image</p>
-                            </TooltipContent>
-                          </Tooltip>
-                        </FormLabel>
-                        <FormControl>
-                          <Input placeholder="https://example.com/card-image.jpg" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-
-                {/* Subscription & Pricing */}
-                <div className="space-y-4">
-                  <h4 className="text-md font-medium">Subscription & Pricing</h4>
-                  <div className="grid grid-cols-2 gap-4">
                     <FormField
                       control={form.control}
                       name="subscription_plan"
@@ -758,6 +668,102 @@ const VirtualCardManager = ({ onStatsUpdate }: VirtualCardManagerProps) => {
                     />
                   </div>
 
+                  {form.watch("card_type") === "custom" && (
+                    <FormField
+                      control={form.control}
+                      name="custom_card_type"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="flex items-center gap-2">
+                            New Card Type Name
+                            <Tooltip>
+                              <TooltipTrigger>
+                                <HelpCircle className="w-3 h-3" />
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>Create any new card type you need (e.g., "VIP", "Corporate", "Student", "Platinum", "Black Card", etc.)</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </FormLabel>
+                          <FormControl>
+                            <Input 
+                              placeholder="e.g., VIP, Corporate, Platinum, Black Card" 
+                              {...field}
+                              className="capitalize"
+                            />
+                          </FormControl>
+                          <FormMessage />
+                          <p className="text-xs text-muted-foreground">
+                            💡 Once created, this type will be permanently available in the dropdown for future cards
+                          </p>
+                        </FormItem>
+                      )}
+                    />
+                  )}
+                </div>
+
+                {/* Description and Image - Four Column */}
+                <div className="space-y-4">
+                  <h4 className="text-md font-medium">Content & Media</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div className="md:col-span-2 lg:col-span-2">
+                      <FormField
+                        control={form.control}
+                        name="description"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="flex items-center gap-2">
+                              Description
+                              <Tooltip>
+                                <TooltipTrigger>
+                                  <HelpCircle className="w-3 h-3" />
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>Detailed description of card benefits and features</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </FormLabel>
+                            <FormControl>
+                              <Textarea placeholder="Card description and benefits..." {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+
+                    <div className="md:col-span-2 lg:col-span-2">
+                      <FormField
+                        control={form.control}
+                        name="image_url"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="flex items-center gap-2">
+                              Image URL
+                              <Tooltip>
+                                <TooltipTrigger>
+                                  <HelpCircle className="w-3 h-3" />
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>URL to the card's visual design image</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </FormLabel>
+                            <FormControl>
+                              <Input placeholder="https://example.com/card-image.jpg" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Pricing - Four Column */}
+                <div className="space-y-4">
+                  <h4 className="text-md font-medium">Pricing</h4>
+
                   {form.watch("subscription_plan") === "custom" && (
                     <FormField
                       control={form.control}
@@ -775,7 +781,7 @@ const VirtualCardManager = ({ onStatsUpdate }: VirtualCardManagerProps) => {
                   )}
 
                   {/* Fee Fields - conditionally disabled based on pricing type */}
-                  <div className="grid grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                     {/* One Time Fee - Only show when pricing type is "one_time" */}
                     {(watchPricingType === "one_time" || watchPricingType === "free") && (
                       <FormField
@@ -893,66 +899,72 @@ const VirtualCardManager = ({ onStatsUpdate }: VirtualCardManagerProps) => {
                   )}
                 </div>
 
-                {/* Features and Settings */}
+                {/* Features and Settings - Four Column */}
                 <div className="space-y-4">
                   <h4 className="text-md font-medium">Features & Settings</h4>
-                  <FormField
-                    control={form.control}
-                    name="features"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="flex items-center gap-2">
-                          Features (JSON)
-                          <Tooltip>
-                            <TooltipTrigger>
-                              <HelpCircle className="w-3 h-3" />
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              <p>List of card features in JSON format, e.g., ["2% cashback", "No annual fee"]</p>
-                            </TooltipContent>
-                          </Tooltip>
-                        </FormLabel>
-                        <FormControl>
-                          <Textarea 
-                            placeholder='["Feature 1", "Feature 2", "Feature 3"]'
-                            {...field} 
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div className="md:col-span-2 lg:col-span-3">
+                      <FormField
+                        control={form.control}
+                        name="features"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="flex items-center gap-2">
+                              Features (JSON)
+                              <Tooltip>
+                                <TooltipTrigger>
+                                  <HelpCircle className="w-3 h-3" />
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>List of card features in JSON format, e.g., ["2% cashback", "No annual fee"]</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </FormLabel>
+                            <FormControl>
+                              <Textarea 
+                                placeholder='["Feature 1", "Feature 2", "Feature 3"]'
+                                {...field} 
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
 
-                  <FormField
-                    control={form.control}
-                    name="is_active"
-                    render={({ field }) => (
-                      <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                        <div className="space-y-0.5">
-                          <FormLabel className="text-base flex items-center gap-2">
-                            Active
-                            <Tooltip>
-                              <TooltipTrigger>
-                                <HelpCircle className="w-3 h-3" />
-                              </TooltipTrigger>
-                              <TooltipContent>
-                                <p>Whether this card is available for customers to apply for</p>
-                              </TooltipContent>
-                            </Tooltip>
-                          </FormLabel>
-                          <div className="text-sm text-muted-foreground">
-                            Make this card available for customers
-                          </div>
-                        </div>
-                        <FormControl>
-                          <Switch
-                            checked={field.value}
-                            onCheckedChange={field.onChange}
-                          />
-                        </FormControl>
-                      </FormItem>
-                    )}
-                  />
+                    <div className="md:col-span-2 lg:col-span-1">
+                      <FormField
+                        control={form.control}
+                        name="is_active"
+                        render={({ field }) => (
+                          <FormItem className="flex flex-col items-center justify-center rounded-lg border p-4 h-full">
+                            <div className="space-y-2 text-center">
+                              <FormLabel className="text-base flex items-center justify-center gap-2">
+                                Active
+                                <Tooltip>
+                                  <TooltipTrigger>
+                                    <HelpCircle className="w-3 h-3" />
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p>Whether this card is available for customers to apply for</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </FormLabel>
+                              <div className="text-sm text-muted-foreground">
+                                Make this card available for customers
+                              </div>
+                            </div>
+                            <FormControl className="mt-4">
+                              <Switch
+                                checked={field.value}
+                                onCheckedChange={field.onChange}
+                              />
+                            </FormControl>
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                  </div>
                 </div>
 
                 <div className="flex gap-2 pt-4">

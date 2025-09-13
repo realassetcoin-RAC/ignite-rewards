@@ -243,25 +243,73 @@ const SubscriptionPlanManager = () => {
               New Plan
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-2xl">
+          <DialogContent className="max-w-6xl">
             <DialogHeader>
               <DialogTitle>{editing ? 'Edit Plan' : 'Create Plan'}</DialogTitle>
             </DialogHeader>
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                <FormField
-                  control={form.control}
-                  name="name"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Plan Name</FormLabel>
-                      <FormControl>
-                        <Input placeholder="e.g., Basic" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                {/* Basic Information - Four Column */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="name"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Plan Name</FormLabel>
+                        <FormControl>
+                          <Input placeholder="e.g., StartUp" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="plan_number"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Plan Number</FormLabel>
+                        <FormControl>
+                          <Input type="number" min={1} step={1} placeholder="1" {...field} />
+                        </FormControl>
+                        <p className="text-sm text-muted-foreground">Display order (1-5)</p>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="trial_days"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Trial Days</FormLabel>
+                        <FormControl>
+                          <Input type="number" min={0} step={1} placeholder="0" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="is_active"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Status</FormLabel>
+                        <FormControl>
+                          <select className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" value={field.value ? 'true' : 'false'} onChange={(e) => field.onChange(e.target.value === 'true')}>
+                            <option value="true">Active</option>
+                            <option value="false">Inactive</option>
+                          </select>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                {/* Description - Full Width */}
                 <FormField
                   control={form.control}
                   name="description"
@@ -275,6 +323,8 @@ const SubscriptionPlanManager = () => {
                     </FormItem>
                   )}
                 />
+
+                {/* Features - Full Width */}
                 <FormField
                   control={form.control}
                   name="features"
@@ -294,7 +344,8 @@ const SubscriptionPlanManager = () => {
                     </FormItem>
                   )}
                 />
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Pricing - Four Column */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                   <FormField
                     control={form.control}
                     name="price_monthly"
@@ -341,9 +392,6 @@ const SubscriptionPlanManager = () => {
                       </FormItem>
                     )}
                   />
-                </div>
-                
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <FormField
                     control={form.control}
                     name="monthly_points"
@@ -370,36 +418,10 @@ const SubscriptionPlanManager = () => {
                       </FormItem>
                     )}
                   />
-                  <FormField
-                    control={form.control}
-                    name="plan_number"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Plan Number</FormLabel>
-                        <FormControl>
-                          <Input type="number" min={1} step={1} placeholder="1" {...field} />
-                        </FormControl>
-                        <p className="text-sm text-muted-foreground">Display order (1-5)</p>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
                 </div>
                 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="trial_days"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Trial Days</FormLabel>
-                        <FormControl>
-                          <Input type="number" min={0} step={1} placeholder="0" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                {/* Validity Dates - Four Column */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                   <FormField
                     control={form.control}
                     name="valid_from"
@@ -428,48 +450,34 @@ const SubscriptionPlanManager = () => {
                       </FormItem>
                     )}
                   />
+                  <div></div>
+                  <div></div>
                 </div>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="is_active"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Status</FormLabel>
-                        <FormControl>
-                          <select className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" value={field.value ? 'true' : 'false'} onChange={(e) => field.onChange(e.target.value === 'true')}>
-                            <option value="true">Active</option>
-                            <option value="false">Inactive</option>
-                          </select>
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <div className="flex items-center space-x-2 pt-6">
-                    <FormField
-                      control={form.control}
-                      name="popular"
-                      render={({ field }) => (
-                        <FormItem className="flex flex-row items-center space-x-3 space-y-0">
-                          <FormControl>
-                            <Checkbox
-                              checked={field.value}
-                              onCheckedChange={field.onChange}
-                              className="h-4 w-4 rounded border border-input"
-                            />
-                          </FormControl>
-                          <div className="space-y-1 leading-none">
-                            <FormLabel className="text-sm font-normal">
-                              Mark as Popular Plan
-                            </FormLabel>
-                          </div>
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-                </div>
+
+                {/* Popular Plan Checkbox - Full Width */}
+                <FormField
+                  control={form.control}
+                  name="popular"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-center space-x-3 space-y-0">
+                      <FormControl>
+                        <Checkbox
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                          className="h-4 w-4 rounded border border-input"
+                        />
+                      </FormControl>
+                      <div className="space-y-1 leading-none">
+                        <FormLabel className="text-sm font-normal">
+                          Mark as Popular Plan
+                        </FormLabel>
+                        <p className="text-xs text-muted-foreground">
+                          This plan will be highlighted with a "Popular" badge in the merchant signup modal
+                        </p>
+                      </div>
+                    </FormItem>
+                  )}
+                />
                 <div className="flex gap-3 pt-4">
                   <Button type="submit" className="flex-1 bg-gradient-to-r from-primary to-purple-500 hover:from-primary/90 hover:to-purple-500/90 transform hover:scale-105 transition-all duration-300">
                     <CheckCircle2 className="w-4 h-4 mr-2" />

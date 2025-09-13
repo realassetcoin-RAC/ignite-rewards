@@ -13,12 +13,12 @@ CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
 -- Proposal status
 CREATE TYPE proposal_status AS ENUM (
-    'draft',
-    'active',
-    'passed',
-    'rejected',
-    'executed',
-    'cancelled'
+    'Draft',
+    'Active',
+    'Passed',
+    'Rejected',
+    'Executed',
+    'Cancelled'
 );
 
 -- Voting types

@@ -4,14 +4,12 @@
 // =====================================================
 
 export type ProposalStatus = 
-  | 'draft'
-  | 'active'
-  | 'passed'
-  | 'rejected'
-  | 'executed'
-  | 'approved'
-  | 'implemented'
-  | 'cancelled';
+  | 'Draft'
+  | 'Active'
+  | 'Passed'
+  | 'Rejected'
+  | 'Executed'
+  | 'Cancelled';
 
 export type VotingType = 
   | 'simple_majority'

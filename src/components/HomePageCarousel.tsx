@@ -79,7 +79,7 @@ const HomePageCarousel: React.FC<HomePageCarouselProps> = ({
         'Advanced analytics dashboard',
         'Marketing support & tools'
       ],
-      ctaText: 'Become a Partner',
+      ctaText: 'Signup as Merchant',
       ctaAction: onJoinMerchant,
       badge: 'For Businesses'
     },

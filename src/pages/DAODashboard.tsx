@@ -296,13 +296,13 @@ const DAODashboard = () => {
     // Special handling for config proposals
     if (proposal?.dao_id === 'config-dao') {
       switch (status) {
-        case 'draft':
+        case 'Draft':
           return <Clock className="h-4 w-4 text-yellow-500" />; // Pending DAO Approval
-        case 'approved':
+        case 'Passed':
           return <CheckCircle className="h-4 w-4 text-green-500" />;
-        case 'rejected':
+        case 'Rejected':
           return <XCircle className="h-4 w-4 text-red-500" />;
-        case 'implemented':
+        case 'Executed':
           return <CheckCircle className="h-4 w-4 text-green-600" />;
         default:
           return <Clock className="h-4 w-4 text-yellow-500" />;
@@ -311,16 +311,18 @@ const DAODashboard = () => {
     
     // Regular DAO proposals
     switch (status) {
-      case 'active':
+      case 'Active':
         return <Clock className="h-4 w-4 text-blue-500" />;
-      case 'passed':
+      case 'Passed':
         return <CheckCircle className="h-4 w-4 text-green-500" />;
-      case 'rejected':
+      case 'Rejected':
         return <XCircle className="h-4 w-4 text-red-500" />;
-      case 'executed':
+      case 'Executed':
         return <CheckCircle className="h-4 w-4 text-green-600" />;
-      case 'draft':
+      case 'Draft':
         return <AlertCircle className="h-4 w-4 text-yellow-500" />;
+      case 'Cancelled':
+        return <XCircle className="h-4 w-4 text-gray-500" />;
       default:
         return <AlertCircle className="h-4 w-4 text-gray-500" />;
     }
@@ -330,13 +332,13 @@ const DAODashboard = () => {
     // Special handling for config proposals
     if (proposal?.dao_id === 'config-dao') {
       switch (status) {
-        case 'draft':
+        case 'Draft':
           return 'bg-yellow-100 text-yellow-800'; // Pending DAO Approval
-        case 'approved':
+        case 'Passed':
           return 'bg-green-100 text-green-800';
-        case 'rejected':
+        case 'Rejected':
           return 'bg-red-100 text-red-800';
-        case 'implemented':
+        case 'Executed':
           return 'bg-green-100 text-green-800';
         default:
           return 'bg-yellow-100 text-yellow-800';
@@ -345,16 +347,18 @@ const DAODashboard = () => {
     
     // Regular DAO proposals
     switch (status) {
-      case 'active':
+      case 'Active':
         return 'bg-blue-100 text-blue-800';
-      case 'passed':
+      case 'Passed':
         return 'bg-green-100 text-green-800';
-      case 'rejected':
+      case 'Rejected':
         return 'bg-red-100 text-red-800';
-      case 'executed':
+      case 'Executed':
         return 'bg-green-100 text-green-800';
-      case 'draft':
+      case 'Draft':
         return 'bg-yellow-100 text-yellow-800';
+      case 'Cancelled':
+        return 'bg-gray-100 text-gray-800';
       default:
         return 'bg-gray-100 text-gray-800';
     }
