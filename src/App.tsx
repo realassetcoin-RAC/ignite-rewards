@@ -4,8 +4,8 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { log } from "@/lib/logger";
 import Index from "./pages/Index";
-import Dashboard from "./pages/Dashboard";
 import Privacy from "./pages/Privacy";
 import Partners from "./pages/Partners";
 import FAQs from "./pages/FAQs";
@@ -28,12 +28,69 @@ import { ThemeProvider } from "./contexts/ThemeContext";
 import AdminTestPanel from "./components/AdminTestPanel";
 import AdminDebug from "./pages/AdminDebug";
 import DAODashboard from "./pages/DAODashboard";
+import SubscriptionPlansPage from "./pages/SubscriptionPlansPage";
+import ExclusiveBenefitsPage from "./pages/ExclusiveBenefitsPage";
 import UserDAODashboard from "./pages/UserDAODashboard";
 import TestPage from "./pages/TestPage";
 import Marketplace from "./pages/Marketplace";
-import { useRefreshPrevention } from "./hooks/useRefreshPrevention";
 import { useSessionPersistence } from "./hooks/useSessionPersistence";
+import { useInactivityLogout } from "./hooks/useInactivityLogout";
+import { BackgroundJobService } from "./lib/backgroundJobs";
 import ContactChatbot from "@/components/ContactChatbot";
+
+// Error Boundary Component
+interface ErrorBoundaryState {
+  hasError: boolean;
+  error: Error | null;
+}
+
+interface ErrorBoundaryProps {
+  children: React.ReactNode;
+}
+
+class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
+  constructor(props: ErrorBoundaryProps) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error: Error): ErrorBoundaryState {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    log.error('App Error Boundary caught an error', error, errorInfo, 'ErrorBoundary');
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="min-h-screen bg-background flex items-center justify-center">
+          <div className="text-center max-w-md mx-auto p-6">
+            <h1 className="text-2xl font-bold text-foreground mb-4">Something went wrong</h1>
+            <p className="text-muted-foreground mb-4">
+              The application encountered an error. Please refresh the page.
+            </p>
+            <button 
+              onClick={() => window.location.reload()}
+              className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
+            >
+              Refresh Page
+            </button>
+            <details className="mt-4 text-left">
+              <summary className="cursor-pointer text-sm text-muted-foreground">Error Details</summary>
+              <pre className="mt-2 text-xs bg-muted p-2 rounded overflow-auto">
+                {this.state.error?.toString()}
+              </pre>
+            </details>
+          </div>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
+}
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -50,11 +107,11 @@ const queryClient = new QueryClient({
         const isStale = now - lastFetch > 30000; // 30 seconds
         
         if (isStale) {
-          console.log('🔄 Smart refetching query:', query.queryKey);
+          log.debug('Smart refetching query', { queryKey: query.queryKey }, 'QueryClient');
           return true;
         }
         
-        console.log('🔄 Skipping refetch, data is fresh:', query.queryKey);
+        log.debug('Skipping refetch, data is fresh', { queryKey: query.queryKey }, 'QueryClient');
         return false;
       },
     },
@@ -68,19 +125,59 @@ const App = () => {
   // Initialize session persistence to maintain auth state
   useSessionPersistence();
 
-  // Initialize immediately to prevent loading issues
+  // Initialize inactivity logout (5-minute timeout)
+  useInactivityLogout({
+    timeoutMinutes: 5,
+    warningMinutes: 4,
+    onLogout: () => {
+      log.info('User logged out due to inactivity', undefined, 'App');
+    }
+  });
+
+  // Initialize background jobs
   useEffect(() => {
-    setIsInitialized(true);
+    BackgroundJobService.initialize();
+    
+    // Cleanup on unmount
+    return () => {
+      BackgroundJobService.stopAllJobs();
+    };
   }, []);
 
+  // Initialize with timeout to prevent infinite loading
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      log.warn('App initialization timeout - forcing initialization', undefined, 'App');
+      setIsInitialized(true);
+    }, 3000); // 3 second timeout
+
+    // Also set immediately for fast initialization
+    setIsInitialized(true);
+
+    return () => clearTimeout(timer);
+  }, []);
+
+  // Show loading state if not initialized
+  if (!isInitialized) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading application...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <QueryClientProvider client={queryClient}>
-      <ThemeProvider>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
-          <Routes>
+    <ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <ThemeProvider>
+          <TooltipProvider>
+            <Toaster />
+            <Sonner />
+            <BrowserRouter>
+            <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/auth/callback" element={<AuthCallback />} />
@@ -104,6 +201,8 @@ const App = () => {
             {isDev && <Route path="/admin-test" element={<AdminTestPanel />} />}
             {isDev && <Route path="/admin-debug" element={<AdminDebug />} />}
             <Route path="/merchant" element={<MerchantDashboard />} />
+            <Route path="/subscription-plans" element={<SubscriptionPlansPage />} />
+            <Route path="/exclusive-benefits" element={<ExclusiveBenefitsPage />} />
             <Route path="/dao-voting" element={<UserDAODashboard />} />
             <Route path="/dao-admin" element={<DAODashboard />} />
             <Route path="/dao-vote" element={<UserDAODashboard />} />
@@ -119,6 +218,7 @@ const App = () => {
         </TooltipProvider>
       </ThemeProvider>
     </QueryClientProvider>
+    </ErrorBoundary>
   );
 };
 

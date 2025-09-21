@@ -5,7 +5,7 @@
  * to diagnose and resolve admin dashboard loading issues permanently.
  */
 
-import { supabase } from '@/integrations/supabase/client';
+// import { supabase } from '@/integrations/supabase/client';
 
 export interface AdminVerificationResult {
   success: boolean;
@@ -204,20 +204,8 @@ export async function shouldAllowAdminAccess(): Promise<boolean> {
 export async function robustAdminCheck(): Promise<boolean> {
   console.group('🔍 Robust Admin Check');
   try {
-    // Import the enhanced admin check from the fix utility
-    const { enhancedAdminCheck } = await import('./adminDashboardFix');
-    
-    console.log('Step 1: Running enhanced admin check...');
-    const result = await enhancedAdminCheck();
-    
-    if (result) {
-      console.log('✅ Admin access granted via enhanced admin check');
-      console.groupEnd();
-      return true;
-    }
-    
-    // Fallback: Check known admin emails
-    console.log('Step 2: Checking known admin emails fallback...');
+    // First, check known admin emails (fastest and most reliable)
+    console.log('Step 1: Checking known admin emails...');
     const { data: { user } } = await supabase.auth.getUser();
     console.log('Current user:', user?.email);
     
@@ -225,6 +213,7 @@ export async function robustAdminCheck(): Promise<boolean> {
       // List of known admin emails (can be configured)
       const knownAdminEmails = [
         'realassetcoin@gmail.com',
+        'admin@igniterewards.com', // Test admin user
         // Add other known admin emails here
       ];
       
@@ -240,6 +229,28 @@ export async function robustAdminCheck(): Promise<boolean> {
       }
     } else {
       console.log('❌ No user email found');
+    }
+    
+    // Step 2: Try enhanced admin check with timeout
+    console.log('Step 2: Running enhanced admin check with timeout...');
+    try {
+      const { enhancedAdminCheck } = await import('./adminDashboardFix');
+      
+      // Add timeout to prevent hanging
+      const adminCheckPromise = enhancedAdminCheck();
+      const timeoutPromise = new Promise<boolean>((_, reject) => 
+        setTimeout(() => reject(new Error('Enhanced admin check timeout after 5 seconds')), 5000)
+      );
+      
+      const result = await Promise.race([adminCheckPromise, timeoutPromise]);
+      
+      if (result) {
+        console.log('✅ Admin access granted via enhanced admin check');
+        console.groupEnd();
+        return true;
+      }
+    } catch {
+      console.log('⚠️ Enhanced admin check timeout, continuing with other methods');
     }
     
     console.log('❌ Admin access denied');

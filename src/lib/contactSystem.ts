@@ -79,7 +79,7 @@ export async function createConversation(
   userEmail?: string
 ): Promise<{ success: boolean; conversationId?: string; error?: string }> {
   try {
-    const { data, error } = await supabase
+    const { error } = await supabase
       .from('chatbot_conversations')
       .insert({
         session_id: sessionId,
@@ -150,14 +150,36 @@ export async function getIssueCategories(): Promise<{
       .order('category_name');
 
     if (error) {
-      console.error('Error fetching categories:', error);
-      return { success: false, error: 'Failed to fetch categories' };
+      // Don't log database connection errors in browser environment as they're expected
+      if (error.message !== 'Database not connected') {
+        console.error('Error fetching categories:', error);
+      }
+      // Return fallback categories when database is not available
+      const fallbackCategories = [
+        { id: 1, category_name: 'General Inquiry', is_active: true },
+        { id: 2, category_name: 'Technical Support', is_active: true },
+        { id: 3, category_name: 'Billing Question', is_active: true },
+        { id: 4, category_name: 'Feature Request', is_active: true },
+        { id: 5, category_name: 'Bug Report', is_active: true }
+      ];
+      return { success: true, data: fallbackCategories };
     }
 
     return { success: true, data: data || [] };
   } catch (error) {
-    console.error('Error fetching categories:', error);
-    return { success: false, error: 'Failed to fetch categories' };
+    // Don't log database connection errors in browser environment as they're expected
+    if (error instanceof Error && error.message !== 'Database not connected') {
+      console.error('Error fetching categories:', error);
+    }
+    // Return fallback categories when database is not available
+    const fallbackCategories = [
+      { id: 1, category_name: 'General Inquiry', is_active: true },
+      { id: 2, category_name: 'Technical Support', is_active: true },
+      { id: 3, category_name: 'Billing Question', is_active: true },
+      { id: 4, category_name: 'Feature Request', is_active: true },
+      { id: 5, category_name: 'Bug Report', is_active: true }
+    ];
+    return { success: true, data: fallbackCategories };
   }
 }
 
@@ -208,7 +230,7 @@ export async function uploadAttachment(
     const filePath = `contact-attachments/${fileName}`;
 
     // Upload to Supabase Storage
-    const { data: uploadData, error: uploadError } = await supabase.storage
+    const { /* data: _uploadData, */ error: uploadError } = await supabase.storage
       .from('contact-attachments')
       .upload(filePath, file);
 

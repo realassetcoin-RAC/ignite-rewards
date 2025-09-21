@@ -17,16 +17,12 @@ import MerchantSignupModal from "./MerchantSignupModal";
 import HomePageCarousel from "./HomePageCarousel";
 import { 
   Star, 
-  TrendingUp, 
   Users, 
-  Wallet, 
   LogOut, 
   User, 
   Settings, 
   Sparkles, 
-  Zap, 
   Shield, 
-  Globe, 
   ArrowRight,
   Play,
   CheckCircle,
@@ -46,6 +42,7 @@ const EnhancedHeroSection = () => {
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [privacySignupModalOpen, setPrivacySignupModalOpen] = useState(false);
   const [merchantModalOpen, setMerchantModalOpen] = useState(false);
+  
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [isLoaded, setIsLoaded] = useState(false);
 
@@ -59,6 +56,17 @@ const EnhancedHeroSection = () => {
     setIsLoaded(true);
 
     return () => window.removeEventListener('mousemove', handleMouseMove);
+  }, []);
+
+  // Check for signup parameter in URL to auto-open signup modal
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('signup') === 'true') {
+      setAuthModalOpen(true);
+      // Clean up the URL parameter
+      const newUrl = window.location.pathname;
+      window.history.replaceState({}, '', newUrl);
+    }
   }, []);
 
   const handleSignOut = async () => {
@@ -191,7 +199,7 @@ const EnhancedHeroSection = () => {
                         <Building2 className="mr-2 h-4 w-4" />
                         Marketplace
                       </DropdownMenuItem>
-                      {isAdmin && (
+                      {(isAdmin || user?.email === 'realassetcoin@gmail.com') && (
                         <>
                           <DropdownMenuItem 
                             className="cursor-pointer"
@@ -295,6 +303,7 @@ const EnhancedHeroSection = () => {
             <HomePageCarousel
               onStartEarning={() => setAuthModalOpen(true)}
               onJoinMerchant={() => setMerchantModalOpen(true)}
+              onLearnMoreBenefits={() => navigate('/exclusive-benefits')}
             />
           </div>
 

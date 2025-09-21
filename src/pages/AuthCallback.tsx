@@ -6,16 +6,17 @@ import { getDashboardUrl } from "@/lib/dashboard-routing";
 import { robustAdminCheck } from "@/utils/adminVerification";
 import { TermsPrivacyService } from "@/lib/termsPrivacyService";
 import TermsAcceptanceModal from "@/components/TermsAcceptanceModal";
+import { createModuleLogger } from "@/utils/consoleReplacer";
 
 /**
  * Auth callback page that handles role-based redirects after OAuth authentication
  * @returns {JSX.Element} The auth callback page component
  */
 const AuthCallback = () => {
+  const logger = createModuleLogger('AuthCallback');
   const navigate = useNavigate();
   const [isLoaded, setIsLoaded] = useState(false);
   const [showTermsModal, setShowTermsModal] = useState(false);
-  const [pendingUser, setPendingUser] = useState<any>(null);
   const [pendingProfile, setPendingProfile] = useState<any>(null);
   const [pendingIsAdmin, setPendingIsAdmin] = useState(false);
 
@@ -24,13 +25,13 @@ const AuthCallback = () => {
   }, []);
 
   const handleTermsAccept = () => {
-    console.log('✅ AuthCallback: Terms accepted, proceeding to dashboard');
+    logger.info('Terms accepted, proceeding to dashboard');
     setShowTermsModal(false);
     
     // Use the same routing logic as the rest of the app
     const dashboardUrl = getDashboardUrl(pendingIsAdmin, pendingProfile);
     
-    console.log('🎯 AuthCallback: Routing decision after terms acceptance:', {
+    logger.info('Routing decision after terms acceptance:', {
       isAdmin: pendingIsAdmin,
       profile: pendingProfile,
       role: pendingProfile?.role,
@@ -41,7 +42,7 @@ const AuthCallback = () => {
   };
 
   const handleTermsModalClose = () => {
-    console.log('❌ AuthCallback: Terms modal closed, signing out user');
+    logger.info('Terms modal closed, signing out user');
     setShowTermsModal(false);
     // The modal will handle sign out
   };
@@ -52,12 +53,12 @@ const AuthCallback = () => {
 
     const processUserSession = async (user: any) => {
       try {
-        console.log('✅ AuthCallback: Processing authentication for user:', user.email);
-        console.log('✅ AuthCallback: User ID:', user.id);
-        console.log('✅ AuthCallback: User metadata:', user.user_metadata);
+        logger.info('Processing authentication for user:', user.email);
+        logger.info('User ID:', user.id);
+        logger.info('User metadata:', user.user_metadata);
         
         // First, try to get the user profile with timeout
-        console.log('🔄 AuthCallback: Attempting to fetch user profile...');
+        logger.info('Attempting to fetch user profile');
         let profileResult;
         try {
           const profilePromise = supabase
@@ -71,9 +72,9 @@ const AuthCallback = () => {
           );
           
           profileResult = await Promise.race([profilePromise, profileTimeoutPromise]) as any;
-          console.log('📊 AuthCallback: Profile fetch result:', profileResult);
+          logger.info('Profile fetch result:', profileResult);
         } catch (profileError) {
-          console.log('⚠️ AuthCallback: Profile fetch timeout, using fallback');
+          logger.warn('Profile fetch timeout, using fallback');
           profileResult = { data: null, error: profileError };
         }
         
@@ -81,7 +82,7 @@ const AuthCallback = () => {
         
         // If profile doesn't exist, create it (fallback for OAuth users)
         if (!profile && (profileResult.error?.code === 'PGRST116' || profileResult.error)) {
-          console.log('⚠️ AuthCallback: Profile not found, creating one for OAuth user...');
+          logger.warn('Profile not found, creating one for OAuth user');
           
           try {
             const createPromise = supabase
@@ -102,7 +103,7 @@ const AuthCallback = () => {
             const { data: newProfile, error: createError } = await Promise.race([createPromise, createTimeoutPromise]) as any;
             
             if (createError) {
-              console.log('⚠️ AuthCallback: Profile creation timeout, using fallback');
+              logger.warn('Profile creation timeout, using fallback');
               // Create a fallback profile object
               profile = {
                 id: user.id,
@@ -112,13 +113,13 @@ const AuthCallback = () => {
                 created_at: user.created_at,
                 updated_at: user.updated_at || user.created_at
               };
-              console.log('✅ AuthCallback: Using fallback profile');
+              logger.info('Using fallback profile');
             } else {
-              console.log('✅ AuthCallback: Profile created successfully');
+              logger.info('Profile created successfully');
               profile = newProfile;
             }
-          } catch (createError) {
-            console.log('⚠️ AuthCallback: Profile creation failed, using fallback');
+          } catch {
+            logger.warn('Profile creation failed, using fallback');
             // Create a fallback profile object
             profile = {
               id: user.id,
@@ -128,12 +129,12 @@ const AuthCallback = () => {
               created_at: user.created_at,
               updated_at: user.updated_at || user.created_at
             };
-            console.log('✅ AuthCallback: Using fallback profile');
+            logger.info('Using fallback profile');
           }
         }
         
         // Get admin status and terms acceptance with timeouts
-        console.log('🔄 AuthCallback: Getting admin status and terms acceptance...');
+        logger.info('Getting admin status and terms acceptance');
         let isAdmin = false;
         let termsAcceptance = null;
         
@@ -155,9 +156,9 @@ const AuthCallback = () => {
           
           isAdmin = adminResult as boolean;
           termsAcceptance = termsResult as any;
-          console.log('✅ AuthCallback: Admin and terms checks completed:', { isAdmin, termsAcceptance });
-        } catch (error) {
-          console.log('⚠️ AuthCallback: Admin/terms checks timeout, using fallbacks');
+          logger.info('Admin and terms checks completed:', { isAdmin, termsAcceptance });
+        } catch {
+          logger.warn('Admin/terms checks timeout, using fallbacks');
           isAdmin = false; // Safe fallback
           // Don't set termsAcceptance to null on timeout - assume user has accepted terms
           // Only show terms modal if we explicitly know they haven't accepted
@@ -170,20 +171,19 @@ const AuthCallback = () => {
           (!termsAcceptance.terms_accepted || !termsAcceptance.privacy_accepted);
         
         if (needsTermsAcceptance) {
-          console.log('⚠️ AuthCallback: User needs to accept terms and privacy, showing modal');
-          setPendingUser(user);
+          logger.warn('User needs to accept terms and privacy, showing modal');
           setPendingProfile(profile);
           setPendingIsAdmin(isAdmin);
           setShowTermsModal(true);
           return;
         }
         
-        console.log('✅ AuthCallback: User has already accepted terms, proceeding to dashboard');
+        logger.info('User has already accepted terms, proceeding to dashboard');
         
         // Use the same routing logic as the rest of the app
         const dashboardUrl = getDashboardUrl(isAdmin, profile);
         
-        console.log('🎯 AuthCallback: Routing decision:', {
+        logger.info('Routing decision:', {
           isAdmin,
           profile: profile,
           role: profile?.role,
@@ -194,44 +194,44 @@ const AuthCallback = () => {
         
         navigate(dashboardUrl);
       } catch (error) {
-        console.error('💥 AuthCallback: Error processing user session:', error);
+        logger.error('Error processing user session', error);
         navigate('/');
       }
     };
 
     const handleAuthCallback = async () => {
       try {
-        console.log('🔄 AuthCallback: Starting OAuth callback handling...');
+        logger.info('Starting OAuth callback handling');
         
         // Listen for auth state changes (this is more reliable for OAuth callbacks)
         authStateSubscription = supabase.auth.onAuthStateChange(async (event, session) => {
-          console.log('🔔 AuthCallback: Auth state change event:', event);
-          console.log('🔔 AuthCallback: Session details:', session);
-          console.log('🔔 AuthCallback: User details:', session?.user);
+          logger.info('Auth state change event:', event);
+          logger.info('Session details:', session);
+          logger.info('User details:', session?.user);
           
           if (event === 'SIGNED_IN' && session?.user) {
-            console.log('✅ AuthCallback: User signed in via OAuth, processing session...');
+            logger.info('User signed in via OAuth, processing session');
             try {
               await processUserSession(session.user);
             } catch (error) {
-              console.error('❌ AuthCallback: Error processing user session:', error);
+              logger.error('Error processing user session', error);
               navigate('/');
             }
           } else if (event === 'SIGNED_OUT') {
-            console.log('❌ AuthCallback: User signed out, redirecting to home');
+            logger.info('User signed out, redirecting to home');
             navigate('/');
           } else if (event === 'TOKEN_REFRESHED') {
-            console.log('🔄 AuthCallback: Token refreshed, checking session...');
+            logger.info('Token refreshed, checking session');
             if (session?.user) {
               try {
                 await processUserSession(session.user);
               } catch (error) {
-                console.error('❌ AuthCallback: Error processing refreshed session:', error);
+                logger.error('Error processing refreshed session', error);
                 navigate('/');
               }
             }
           } else {
-            console.log('⚠️ AuthCallback: Unhandled auth event:', event, 'Session:', !!session);
+            logger.warn('Unhandled auth event:', event, 'Session:', !!session);
           }
         });
 
@@ -239,24 +239,24 @@ const AuthCallback = () => {
         const { data: authData, error: authError } = await supabase.auth.getSession();
         
         if (authError) {
-          console.error('❌ AuthCallback: Error getting session:', authError);
+          logger.error('Error getting session', authError);
           navigate('/');
           return;
         }
         
         if (authData?.session?.user) {
-          console.log('✅ AuthCallback: Found existing session, processing...');
+          logger.info('Found existing session, processing');
           await processUserSession(authData.session.user);
         } else {
-          console.log('⏳ AuthCallback: No session found, waiting for OAuth callback...');
+          logger.info('No session found, waiting for OAuth callback');
           
           // Set up a more aggressive session check
           const checkSessionInterval = setInterval(async () => {
-            console.log('🔄 AuthCallback: Checking for session...');
+            logger.info('Checking for session');
             const { data: checkData, error: checkError } = await supabase.auth.getSession();
             
             if (!checkError && checkData?.session?.user) {
-              console.log('✅ AuthCallback: Found session during interval check, processing...');
+              logger.info('Found session during interval check, processing');
               clearInterval(checkSessionInterval);
               if (timeoutId) {
                 clearTimeout(timeoutId);
@@ -268,14 +268,14 @@ const AuthCallback = () => {
           
           // Set a timeout to redirect if no auth state change occurs
           timeoutId = setTimeout(() => {
-            console.log('⏰ AuthCallback: Timeout waiting for OAuth callback, redirecting to home');
+            logger.info('Timeout waiting for OAuth callback, redirecting to home');
             clearInterval(checkSessionInterval);
             navigate('/');
           }, 15000); // Increased to 15 second timeout
         }
         
       } catch (error) {
-        console.error('💥 AuthCallback: Error during callback handling:', error);
+        logger.error('Error during callback handling', error);
         navigate('/');
       }
     };
@@ -309,7 +309,7 @@ const AuthCallback = () => {
         <p className={`text-muted-foreground ${
           isLoaded ? 'animate-fade-in-up' : 'opacity-0'
         }`}>
-          Kindly Wait while we Sign you In
+          Just a moment, we're building the internet from scratch.
         </p>
       </div>
 

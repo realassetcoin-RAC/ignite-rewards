@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -11,17 +11,11 @@ import {
 } from '@/components/ui/carousel';
 import {
   Wallet,
-  TrendingUp,
-  Globe,
   ArrowRight,
   CheckCircle,
   Star,
   Users,
-  Shield,
-  Zap,
   Building2,
-  Coins,
-  Gift
 } from 'lucide-react';
 
 interface CarouselSlide {
@@ -40,13 +34,21 @@ interface CarouselSlide {
 interface HomePageCarouselProps {
   onStartEarning: () => void;
   onJoinMerchant: () => void;
+  onLearnMoreBenefits?: () => void;
 }
 
 const HomePageCarousel: React.FC<HomePageCarouselProps> = ({
   onStartEarning,
-  onJoinMerchant
+  onJoinMerchant,
+  onLearnMoreBenefits
 }) => {
   const [currentSlide, setCurrentSlide] = useState(0);
+  const [isHovered, setIsHovered] = useState(false);
+  const [api, setApi] = useState<any>(null);
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  
+  // Auto-play configuration
+  const AUTO_PLAY_INTERVAL = 4000; // 4 seconds
 
   const slides: CarouselSlide[] = [
     {
@@ -57,14 +59,14 @@ const HomePageCarousel: React.FC<HomePageCarouselProps> = ({
       icon: Wallet,
       color: 'from-blue-500 to-purple-500',
       features: [
+        'Your Privacy is Protected',
         'Earn points on every purchase',
         'Exclusive member discounts',
-        'Priority customer support',
         'Early access to new features'
       ],
       ctaText: 'Free Signup',
       ctaAction: onStartEarning,
-      badge: 'For Customers'
+      badge: 'Customer Signup'
     },
     {
       id: 'merchant',
@@ -81,7 +83,7 @@ const HomePageCarousel: React.FC<HomePageCarouselProps> = ({
       ],
       ctaText: 'Signup as Merchant',
       ctaAction: onJoinMerchant,
-      badge: 'For Businesses'
+      badge: 'Business Signup'
     },
     {
       id: 'benefits',
@@ -97,7 +99,7 @@ const HomePageCarousel: React.FC<HomePageCarouselProps> = ({
         'Special event invitations'
       ],
       ctaText: 'Learn More',
-      ctaAction: onStartEarning
+      ctaAction: onLearnMoreBenefits || onStartEarning
     },
     {
       id: 'community',
@@ -117,56 +119,126 @@ const HomePageCarousel: React.FC<HomePageCarouselProps> = ({
     }
   ];
 
+  // Auto-play functionality
+  const startAutoPlay = () => {
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+    }
+    
+    intervalRef.current = setInterval(() => {
+      if (!isHovered && api) {
+        api.scrollNext();
+      }
+    }, AUTO_PLAY_INTERVAL);
+  };
+
+  const stopAutoPlay = () => {
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+  };
+
+  // Listen to carousel API changes to update current slide
+  useEffect(() => {
+    if (!api) {
+      return;
+    }
+
+    const onSelect = () => {
+      setCurrentSlide(api.selectedScrollSnap());
+    };
+
+    api.on('select', onSelect);
+    onSelect(); // Set initial state
+
+    return () => {
+      api.off('select', onSelect);
+    };
+  }, [api]);
+
+  // Start auto-play on mount and when dependencies change
+  useEffect(() => {
+    if (api) {
+      startAutoPlay();
+    }
+    return () => stopAutoPlay();
+  }, [api, isHovered]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => stopAutoPlay();
+  }, []);
+
   return (
-    <div className="w-full max-w-4xl mx-auto">
+    <div className="w-full max-w-6xl mx-auto">
       <Carousel
         className="w-full"
+        setApi={setApi}
         opts={{
           align: "center",
           loop: true,
           skipSnaps: false,
           dragFree: false,
+          slidesToScroll: 1,
         }}
-        onSelect={(index) => setCurrentSlide(index || 0)}
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
       >
         <CarouselContent className="-ml-2 md:-ml-4">
-          {slides.map((slide, index) => (
-            <CarouselItem key={slide.id} className="pl-2 md:pl-4 basis-full">
-              <div className="p-1">
-                <Card className="group cursor-pointer border-2 hover:border-primary/50 transition-all duration-300 hover:shadow-lg overflow-hidden h-full max-w-sm mx-auto">
-                  <CardContent className="p-6 h-full flex flex-col">
-                    {/* Header */}
-                    <div className="text-center space-y-4 mb-6">
-                      {slide.badge && (
-                        <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/20">
-                          {slide.badge}
-                        </Badge>
-                      )}
-                      
-                      <div className={`w-16 h-16 rounded-full bg-gradient-to-r ${slide.color} flex items-center justify-center shadow-lg mx-auto group-hover:scale-110 transition-transform`}>
-                        <slide.icon className="w-8 h-8 text-white" />
-                      </div>
-                      
-                      <div>
-                        <h3 className="text-xl font-bold mb-1">{slide.title}</h3>
-                        <p className="text-sm text-muted-foreground mb-3">{slide.subtitle}</p>
-                        <p className="text-sm text-muted-foreground">{slide.description}</p>
-                      </div>
-                    </div>
-
-                    {/* Features */}
-                    <div className="space-y-2 flex-grow">
-                      {slide.features.map((feature, featureIndex) => (
-                        <div key={featureIndex} className="flex items-center text-sm">
-                          <CheckCircle className="w-4 h-4 text-green-500 mr-2 flex-shrink-0" />
-                          <span>{feature}</span>
+          {slides.map((slide, index) => {
+            // For 3-card display, center is the middle card
+            const isCenter = index === currentSlide;
+            return (
+              <CarouselItem key={slide.id} className="pl-2 md:pl-4 basis-full md:basis-1/2 lg:basis-1/3">
+                <div className="p-1">
+                  <Card className={`group cursor-pointer border-2 hover:border-primary/50 transition-all duration-300 hover:shadow-lg overflow-hidden w-full h-[28rem] ${
+                    isCenter 
+                      ? 'shadow-xl border-primary/30 bg-gradient-to-br from-background to-primary/5' 
+                      : ''
+                  }`}>
+                  <CardContent className="p-6 h-full flex flex-col justify-between relative">
+                    {/* Badge - Top Right Corner */}
+                    {slide.badge && (
+                      <Badge variant="secondary" className="absolute top-4 right-4 bg-primary/10 text-primary border-primary/20 text-xs">
+                        {slide.badge}
+                      </Badge>
+                    )}
+                    
+                    <div className="flex flex-col pt-2">
+                      {/* Header */}
+                      <div className="text-center space-y-4 mb-6">
+                        {/* Icon - Consistent positioning */}
+                        <div className={`w-16 h-16 rounded-full bg-gradient-to-r ${slide.color} flex items-center justify-center shadow-lg mx-auto group-hover:scale-110 transition-transform ${
+                          isCenter ? 'scale-110' : ''
+                        }`}>
+                          <slide.icon className="w-8 h-8 text-white" />
                         </div>
-                      ))}
+                        
+                        {/* Title and Description */}
+                        <div>
+                          <h3 className={`text-xl font-bold mb-1 ${isCenter ? 'text-primary' : ''}`}>{slide.title}</h3>
+                          <p className="text-sm text-muted-foreground mb-3">{slide.subtitle}</p>
+                          <p className="text-sm text-muted-foreground">{slide.description}</p>
+                        </div>
+                      </div>
+
+                      {/* Features */}
+                      <div className="space-y-2">
+                        {slide.features.map((feature, featureIndex) => (
+                          <div key={featureIndex} className="flex items-center text-sm">
+                            <CheckCircle className="w-4 h-4 text-green-500 mr-2 flex-shrink-0" />
+                            <span>{feature}</span>
+                          </div>
+                        ))}
+                      </div>
                     </div>
 
                     {/* CTA Button */}
                     <Button 
-                      className={`w-full mt-6 bg-gradient-to-r ${slide.color} hover:opacity-90 transition-all duration-300 transform hover:scale-105`}
+                      className={`w-full bg-gradient-to-r ${slide.color} hover:opacity-90 transition-all duration-300 transform hover:scale-105 ${
+                        isCenter ? 'ring-2 ring-primary/20' : ''
+                      }`}
                       onClick={slide.ctaAction}
                     >
                       {slide.ctaText}
@@ -176,7 +248,8 @@ const HomePageCarousel: React.FC<HomePageCarouselProps> = ({
                 </Card>
               </div>
             </CarouselItem>
-          ))}
+            );
+          })}
         </CarouselContent>
         <CarouselPrevious className="hidden md:flex -left-12" />
         <CarouselNext className="hidden md:flex -right-12" />
@@ -192,7 +265,11 @@ const HomePageCarousel: React.FC<HomePageCarouselProps> = ({
                 ? 'bg-primary w-8' 
                 : 'bg-muted-foreground/30 hover:bg-muted-foreground/50'
             }`}
-            onClick={() => setCurrentSlide(index)}
+            onClick={() => {
+              if (api) {
+                api.scrollTo(index);
+              }
+            }}
           />
         ))}
       </div>

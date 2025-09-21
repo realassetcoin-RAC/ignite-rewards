@@ -3,13 +3,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { Check, ChevronLeft, ChevronRight, Loader2, CreditCard } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { useNavigate } from "react-router-dom";
-import { Checkbox } from "@/components/ui/checkbox";
 
 /**
  * Virtual card configuration interface
@@ -86,11 +84,10 @@ const CustomerSignupModal: React.FC<CustomerSignupModalProps> = ({ isOpen, onClo
   const [showCityDropdown, setShowCityDropdown] = useState(false);
   
   // Terms acceptance state
-  const [acceptedTerms, setAcceptedTerms] = useState(false);
-  const [acceptedPrivacy, setAcceptedPrivacy] = useState(false);
+  const [acceptedTerms] = useState(false);
+  const [acceptedPrivacy] = useState(false);
   
   const { toast } = useToast();
-  const navigate = useNavigate();
 
   /**
    * Reset modal state when it opens/closes
@@ -199,7 +196,7 @@ const CustomerSignupModal: React.FC<CustomerSignupModalProps> = ({ isOpen, onClo
     
     try {
       // Create customer account with Supabase Auth
-      const { data, error } = await supabase.auth.signUp({
+      const { error } = await supabase.auth.signUp({
         email: customerForm.email,
         password: customerForm.password,
         options: {
@@ -223,7 +220,7 @@ const CustomerSignupModal: React.FC<CustomerSignupModalProps> = ({ isOpen, onClo
         // Free card - complete signup
         toast({
           title: "Account Created Successfully!",
-          description: `Please check your email to verify your account. Your ${selectedCardData.name} will be activated once verified.`,
+          description: `Your account has been created and verified automatically for testing. Your ${selectedCardData.name} is now active.`,
         });
         // Add a small delay to ensure user sees the success message
         setTimeout(() => {

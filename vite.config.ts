@@ -4,7 +4,7 @@ import path from "path";
 // import { componentTagger } from "lovable-tagger";
 
 // https://vitejs.dev/config/
-export default defineConfig(({ mode }) => ({
+export default defineConfig(() => ({
   server: {
     host: "::",
     port: 8084,
@@ -16,6 +16,18 @@ export default defineConfig(({ mode }) => ({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
+    },
+  },
+  define: {
+    global: 'globalThis',
+    'process.env': {},
+  },
+  optimizeDeps: {
+    exclude: ['pg'],
+  },
+  build: {
+    rollupOptions: {
+      external: ['pg'],
     },
   },
 }));
