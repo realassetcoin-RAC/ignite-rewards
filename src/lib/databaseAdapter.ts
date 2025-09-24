@@ -964,6 +964,13 @@ class DatabaseAdapter {
       // Initialize fallback client
       this.supabaseClient = this.createMockSupabaseClient();
     }
+    
+    // ✅ FIX: For NFT types, always return mock data even when using cloud database
+    if (table === 'nft_types') {
+      console.log('🎯 NFT Types: Using mock data even with cloud database');
+      return this.createMockSupabaseClient().from(table);
+    }
+    
     return this.supabaseClient.from(table);
   }
 
