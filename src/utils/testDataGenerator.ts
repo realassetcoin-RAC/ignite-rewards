@@ -1,4 +1,4 @@
-import { supabase } from '@/integrations/supabase/client';
+// import { supabase } from '@/integrations/supabase/client';
 
 interface TestUser {
   id: string;
@@ -6,6 +6,16 @@ interface TestUser {
   full_name: string;
   phone?: string;
   role: 'customer' | 'admin';
+  created_at: string;
+}
+
+interface DAOVote {
+  id: string;
+  proposal_id: string;
+  user_id: string;
+  vote_choice: 'yes' | 'no' | 'abstain';
+  voting_power: number;
+  reason?: string;
   created_at: string;
 }
 
@@ -353,8 +363,8 @@ class TestDataGenerator {
   }
 
   // Generate test DAO votes
-  generateDAOVotes(count: number = 100): any[] {
-    const votes: any[] = [];
+  generateDAOVotes(count: number = 100): DAOVote[] {
+    const votes: DAOVote[] = [];
     
     for (let i = 0; i < count; i++) {
       const proposal = this.randomChoice(this.proposals);
@@ -494,14 +504,14 @@ class TestDataGenerator {
 
       // Insert users (profiles table)
       console.log('👥 Inserting users...');
-      const userProfiles = this.users.map(user => ({
-        id: user.id,
-        email: user.email,
-        full_name: user.full_name,
-        phone: user.phone,
-        role: user.role,
-        created_at: user.created_at
-      }));
+      // const _userProfiles = this.users.map(user => ({
+      //   id: user.id,
+      //   email: user.email,
+      //   full_name: user.full_name,
+      //   phone: user.phone,
+      //   role: user.role,
+      //   created_at: user.created_at
+      // }));
 
       // Note: Cannot directly insert into profiles table as it's in api schema
       // This would need to be handled through RPC functions or proper schema setup
@@ -551,8 +561,8 @@ class TestDataGenerator {
         } else {
           console.log('✅ DAOs inserted successfully');
         }
-      } catch (error) {
-        console.error('❌ Error inserting DAOs:', error);
+      } catch (_error) {
+        console.error('❌ Error inserting DAOs:', _error);
       }
 
       // Insert proposals (handle schema mismatches)
@@ -594,8 +604,8 @@ class TestDataGenerator {
         } else {
           console.log('✅ Proposals inserted successfully');
         }
-      } catch (error) {
-        console.error('❌ Error inserting proposals:', error);
+      } catch (_error) {
+        console.error('❌ Error inserting proposals:', _error);
       }
 
       // Insert DAO votes (handle schema mismatches)
@@ -644,7 +654,7 @@ class TestDataGenerator {
         // Add a small delay to ensure merchants are committed to the database
         await new Promise(resolve => setTimeout(resolve, 100));
         
-        const { data: existingMerchants, error: merchantsQueryError } = await supabase
+        const { data: _existingMerchants, error: merchantsQueryError } = await supabase
           .from('merchants' as any)
           .select('id, name')
           .limit(10);
@@ -655,18 +665,18 @@ class TestDataGenerator {
           return;
         }
 
-        if (!existingMerchants || existingMerchants.length === 0) {
+        if (!_existingMerchants || _existingMerchants.length === 0) {
           console.warn('⚠️ No existing merchants found, skipping transaction insertion due to foreign key constraints');
           return;
         }
 
-        console.log(`📊 Found ${existingMerchants.length} existing merchants for transaction insertion`);
-        console.log(`📊 Merchant IDs:`, existingMerchants.map(m => m.id));
-        console.log(`📊 Merchant names:`, existingMerchants.map(m => m.name));
+        console.log(`📊 Found ${_existingMerchants.length} existing merchants for transaction insertion`);
+        console.log(`📊 Merchant IDs:`, _existingMerchants.map(m => m.id));
+        console.log(`📊 Merchant names:`, _existingMerchants.map(m => m.name));
 
         // Convert transactions to match the actual loyalty_transactions schema - try just one first
         const loyaltyTransactions = this.transactions.slice(0, 1).map((transaction, index) => {
-          const merchantId = existingMerchants[index % existingMerchants.length].id;
+          const merchantId = _existingMerchants[index % _existingMerchants.length].id;
           console.log(`📊 Using merchant ID ${merchantId} for transaction ${transaction.id}`);
           
           const transactionData = {
@@ -689,13 +699,13 @@ class TestDataGenerator {
         console.log(`📊 First transaction merchant_id: ${loyaltyTransactions[0]?.merchant_id}`);
         
         // Verify that the merchant ID actually exists in the database
-        const { data: verifyMerchant, error: verifyError } = await supabase
+        const { data: _verifyMerchant, error: verifyError } = await supabase
           .from('merchants' as any)
           .select('id')
           .eq('id', loyaltyTransactions[0]?.merchant_id)
           .single();
           
-        if (verifyError || !verifyMerchant) {
+        if (verifyError || !_verifyMerchant) {
           console.error('❌ Merchant ID verification failed:', verifyError?.message || 'Merchant not found');
           console.warn('⚠️ Skipping transaction insertion due to merchant verification failure');
           return;
@@ -739,16 +749,16 @@ class TestDataGenerator {
         } else {
           console.log('✅ Marketplace listings inserted successfully');
         }
-      } catch (error) {
-        console.error('❌ Error inserting marketplace listings:', error);
+      } catch (_error) {
+        console.error('❌ Error inserting marketplace listings:', _error);
         console.warn('⚠️ Marketplace listings table may not exist, skipping...');
       }
 
       console.log('🎉 Test data generation completed successfully!');
 
-    } catch (error) {
-      console.error('❌ Error generating test data:', error);
-      throw error;
+    } catch (_error) {
+      console.error('❌ Error generating test data:', _error);
+      throw _error;
     }
   }
 
@@ -768,25 +778,25 @@ class TestDataGenerator {
 
       for (const table of tables) {
         try {
-        const { error } = await supabase
+        const { error: _error } = await supabase
           .from(table as any)
           .delete()
           .neq('id', '00000000-0000-0000-0000-000000000000'); // Delete all records
 
-          if (error) {
-            console.error(`Error clearing ${table}:`, error.message);
+          if (_error) {
+            console.error(`Error clearing ${table}:`, _error.message);
           } else {
             console.log(`✅ Cleared ${table}`);
           }
-        } catch (tableError) {
-          console.error(`Error clearing ${table}:`, tableError);
+        } catch (_tableError) {
+          console.error(`Error clearing ${table}:`, _tableError);
         }
       }
 
       console.log('🎉 Test data cleared successfully!');
-    } catch (error) {
-      console.error('❌ Error clearing test data:', error);
-      throw error;
+    } catch (_error) {
+      console.error('❌ Error clearing test data:', _error);
+      throw _error;
     }
   }
 

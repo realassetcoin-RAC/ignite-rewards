@@ -13,7 +13,7 @@ import { supabase } from '@/integrations/supabase/client';
 export interface AdminFixResult {
   success: boolean;
   message: string;
-  data?: any;
+  data?: unknown;
   errors?: string[];
 }
 
@@ -70,13 +70,13 @@ export async function enhancedAdminCheck(): Promise<boolean> {
     // Method 5: Direct profile query in api schema (if exists)
     try {
       const { data: apiProfile, error: apiProfileError } = await supabase
-        .from('api.profiles')
+        .from('profiles')
         .select('role')
         .eq('id', user.id)
         .single();
 
       if (!apiProfileError && apiProfile?.role === 'admin') {
-        console.log('✅ Admin access confirmed via api.profiles');
+        console.log('✅ Admin access confirmed via profiles');
         return true;
       }
     } catch (apiProfileError) {
@@ -130,19 +130,19 @@ export async function loadVirtualCardsWithFallback(): Promise<AdminFixResult> {
       console.warn('Failed to load from public.virtual_cards:', error);
     }
 
-    // Method 2: Try api.virtual_cards
+    // Method 2: Try virtual_cards
     try {
       const { data, error } = await supabase
-        .from('api.virtual_cards')
+        .from('virtual_cards')
         .select('*')
         .order('created_at', { ascending: false });
 
       if (!error && data) {
-        console.log('✅ Virtual cards loaded from api.virtual_cards');
+        console.log('✅ Virtual cards loaded from virtual_cards');
         return { success: true, message: 'Virtual cards loaded successfully', data };
       }
     } catch (error) {
-      console.warn('Failed to load from api.virtual_cards:', error);
+      console.warn('Failed to load from virtual_cards:', error);
     }
 
     // Method 3: Return empty array as fallback
@@ -185,19 +185,19 @@ export async function loadMerchantsWithFallback(): Promise<AdminFixResult> {
       console.warn('Failed to load from public.merchants:', error);
     }
 
-    // Method 2: Try api.merchants
+    // Method 2: Try merchants
     try {
       const { data, error } = await supabase
-        .from('api.merchants')
+        .from('merchants')
         .select('*')
         .order('created_at', { ascending: false });
 
       if (!error && data) {
-        console.log('✅ Merchants loaded from api.merchants');
+        console.log('✅ Merchants loaded from merchants');
         return { success: true, message: 'Merchants loaded successfully', data };
       }
     } catch (error) {
-      console.warn('Failed to load from api.merchants:', error);
+      console.warn('Failed to load from merchants:', error);
     }
 
     // Method 3: Return empty array as fallback
@@ -240,19 +240,19 @@ export async function loadReferralCampaignsWithFallback(): Promise<AdminFixResul
       console.warn('Failed to load from public.referral_campaigns:', error);
     }
 
-    // Method 2: Try api.referral_campaigns
+    // Method 2: Try referral_campaigns
     try {
       const { data, error } = await supabase
-        .from('api.referral_campaigns')
+        .from('referral_campaigns')
         .select('*')
         .order('created_at', { ascending: false });
 
       if (!error && data) {
-        console.log('✅ Referral campaigns loaded from api.referral_campaigns');
+        console.log('✅ Referral campaigns loaded from referral_campaigns');
         return { success: true, message: 'Referral campaigns loaded successfully', data };
       }
     } catch (error) {
-      console.warn('Failed to load from api.referral_campaigns:', error);
+      console.warn('Failed to load from referral_campaigns:', error);
     }
 
     // Method 3: Return empty array as fallback

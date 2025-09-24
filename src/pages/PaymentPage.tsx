@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { useSearchParams, useNavigate } from 'react-router-dom';
+import { /* useSearchParams, */ useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Check, ArrowLeft, CreditCard, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { createModuleLogger } from '@/utils/consoleReplacer';
 
 interface PaymentData {
   planId: string;
@@ -27,7 +27,8 @@ interface PaymentData {
 }
 
 const PaymentPage: React.FC = () => {
-  const [searchParams] = useSearchParams();
+  const logger = createModuleLogger('PaymentPage');
+  // const [_searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [paymentData, setPaymentData] = useState<PaymentData | null>(null);
@@ -79,7 +80,7 @@ const PaymentPage: React.FC = () => {
       }, 2000);
 
     } catch (error) {
-      console.error('Payment error:', error);
+      logger.error('Payment error', error);
       toast({
         title: "Payment Failed",
         description: "There was an error processing your payment. Please try again.",

@@ -4,8 +4,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useToast } from "@/hooks/use-toast";
+// import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { createModuleLogger } from "@/utils/consoleReplacer";
 import { Building2, Search, MapPin, Star, Users, Filter, Sparkles, ArrowLeft } from "lucide-react";
 import { Link } from "react-router-dom";
 
@@ -21,7 +22,8 @@ interface Merchant {
 }
 
 const Partners = () => {
-  const { toast } = useToast();
+  const logger = createModuleLogger('Partners');
+  // const { toast: _toast } = useToast();
   const [merchants, setMerchants] = useState<Merchant[]>([]);
   const [filteredMerchants, setFilteredMerchants] = useState<Merchant[]>([]);
   const [loading, setLoading] = useState(true);
@@ -54,7 +56,7 @@ const Partners = () => {
       if (error) throw error;
       if (data) setMerchants(data);
     } catch (error) {
-      console.error('Error loading merchants:', error);
+      logger.error('Error loading merchants', error);
       setSampleMerchants();
     } finally {
       setLoading(false);

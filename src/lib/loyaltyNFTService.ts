@@ -2,6 +2,7 @@
 // This service integrates with the updated database schema
 
 import { supabase } from '@/integrations/supabase/client';
+import { solanaNFTService, CreateNFTParams, UpdateNFTParams } from './solanaNFTService';
 
 // Core NFT Types
 export enum CustodyType {
@@ -19,8 +20,12 @@ export enum NFTRarity {
 // Database interfaces
 export interface NFTType {
   id: string;
+  collection_id?: string;
   nft_name: string;
   display_name: string;
+  description?: string;
+  image_url?: string;           // PNG/JPG for regular loyalty cards
+  evolution_image_url?: string; // Animated GIF for evolved NFTs
   buy_price_usdt: number;
   rarity: NFTRarity;
   mint_quantity: number;
@@ -36,6 +41,12 @@ export interface NFTType {
   is_active: boolean;
   created_at: string;
   updated_at: string;
+  // NEW: Subscription and Pricing fields
+  subscription_plan?: string;
+  pricing_type?: string;
+  one_time_fee?: number;
+  monthly_fee?: number;
+  annual_fee?: number;
 }
 
 export interface UserLoyaltyCard {
@@ -521,5 +532,244 @@ export class LoyaltyNFTService {
 
     if (error) throw error;
     return data;
+  }
+
+  // Database CRUD Methods
+
+  /**
+   * Create a new NFT type in the database
+   */
+  static async createNFTType(nftData: Partial<NFTType>): Promise<NFTType> {
+    const { data, error } = await supabase
+      .from('nft_types')
+      .insert({
+        collection_id: nftData.collection_id,
+        nft_name: nftData.nft_name,
+        display_name: nftData.display_name,
+        description: nftData.description,
+        image_url: nftData.image_url,
+        evolution_image_url: nftData.evolution_image_url,
+        buy_price_usdt: nftData.buy_price_usdt || 0,
+        rarity: nftData.rarity || NFTRarity.Common,
+        mint_quantity: nftData.mint_quantity || 1000,
+        is_upgradeable: nftData.is_upgradeable || false,
+        is_evolvable: nftData.is_evolvable || true,
+        is_fractional_eligible: nftData.is_fractional_eligible || true,
+        auto_staking_duration: nftData.auto_staking_duration || 'Forever',
+        earn_on_spend_ratio: nftData.earn_on_spend_ratio || 0.01,
+        upgrade_bonus_ratio: nftData.upgrade_bonus_ratio || 0,
+        evolution_min_investment: nftData.evolution_min_investment || 0,
+        evolution_earnings_ratio: nftData.evolution_earnings_ratio || 0,
+        is_custodial: nftData.is_custodial !== undefined ? nftData.is_custodial : true,
+        is_active: nftData.is_active !== undefined ? nftData.is_active : true,
+        // NEW: Subscription and Pricing fields
+        subscription_plan: nftData.subscription_plan || 'basic',
+        pricing_type: nftData.pricing_type || 'free',
+        one_time_fee: nftData.one_time_fee || 0.00,
+        monthly_fee: nftData.monthly_fee || 0.00,
+        annual_fee: nftData.annual_fee || 0.00,
+      })
+      .select('*')
+      .single();
+
+    if (error) throw error;
+    return data;
+  }
+
+  /**
+   * Update an existing NFT type in the database
+   */
+  static async updateNFTType(nftId: string, updates: Partial<NFTType>): Promise<NFTType> {
+    const { data, error } = await supabase
+      .from('nft_types')
+      .update({
+        ...updates,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', nftId)
+      .select('*')
+      .single();
+
+    if (error) throw error;
+    return data;
+  }
+
+  /**
+   * Delete an NFT type from the database
+   */
+  static async deleteNFTType(nftId: string): Promise<boolean> {
+    const { error } = await supabase
+      .from('nft_types')
+      .delete()
+      .eq('id', nftId);
+
+    if (error) throw error;
+    return true;
+  }
+
+  // Solana Integration Methods
+
+  /**
+   * Create NFT on both database and Solana
+   */
+  static async createNFTWithSolanaSync(nftData: Partial<NFTType>): Promise<NFTType> {
+    try {
+      // First create in database
+      const dbNFT = await this.createNFTType(nftData);
+      
+      // Then try to create on Solana (if dependencies are available)
+      try {
+        const solanaParams: CreateNFTParams = solanaNFTService.convertDatabaseToSolana(dbNFT);
+        
+        // Note: You'll need to implement wallet connection for this to work
+        // const transaction = await solanaNFTService.createNFT(solanaParams, wallet);
+        
+        console.log('NFT created in database:', dbNFT.id);
+        console.log('Solana transaction would be created with params:', solanaParams);
+      } catch (solanaError) {
+        console.warn('Solana sync failed, but database creation succeeded:', solanaError);
+        // Continue with database-only creation
+      }
+      
+      return dbNFT;
+    } catch (error) {
+      console.error('Error creating NFT with Solana sync:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Update NFT on both database and Solana
+   */
+  static async updateNFTWithSolanaSync(nftId: string, updates: Partial<NFTType>): Promise<NFTType> {
+    try {
+      // First update in database
+      const dbNFT = await this.updateNFTType(nftId, updates);
+      
+      // Then try to update on Solana (if dependencies are available)
+      try {
+        const solanaParams: UpdateNFTParams = solanaNFTService.convertDatabaseToSolana(dbNFT);
+        
+        // Note: You'll need to implement wallet connection for this to work
+        // const transaction = await solanaNFTService.updateNFT(solanaParams, wallet);
+        
+        console.log('NFT updated in database:', dbNFT.id);
+        console.log('Solana transaction would be created with params:', solanaParams);
+      } catch (solanaError) {
+        console.warn('Solana sync failed, but database update succeeded:', solanaError);
+        // Continue with database-only update
+      }
+      
+      return dbNFT;
+    } catch (error) {
+      console.error('Error updating NFT with Solana sync:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Sync NFT data from Solana to database
+   */
+  static async syncNFTFromSolana(nftName: string, symbol: string): Promise<boolean> {
+    try {
+      const success = await solanaNFTService.syncNFTToDatabase(nftName, symbol);
+      return success;
+    } catch (error) {
+      console.error('Error syncing NFT from Solana:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Sync all NFTs from Solana to database
+   */
+  static async syncAllNFTsFromSolana(): Promise<{ success: number; failed: number }> {
+    try {
+      const result = await solanaNFTService.syncAllNFTsToDatabase();
+      return result;
+    } catch (error) {
+      console.error('Error syncing all NFTs from Solana:', error);
+      return { success: 0, failed: 0 };
+    }
+  }
+
+  /**
+   * Get NFT data from Solana
+   */
+  static async getNFTFromSolana(nftName: string, symbol: string) {
+    try {
+      const solanaNFT = await solanaNFTService.getNFT(nftName, symbol);
+      return solanaNFT;
+    } catch (error) {
+      console.error('Error getting NFT from Solana:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Compare database NFT with Solana NFT
+   */
+  static async compareNFTData(nftId: string): Promise<{
+    database: NFTType | null;
+    solana: any;
+    differences: string[];
+  }> {
+    try {
+      const dbNFT = await this.getNFTTypeById(nftId);
+      if (!dbNFT) {
+        return { database: null, solana: null, differences: ['NFT not found in database'] };
+      }
+
+      const solanaNFT = await solanaNFTService.getNFT(dbNFT.nft_name, dbNFT.symbol || 'NFT');
+      if (!solanaNFT) {
+        return { database: dbNFT, solana: null, differences: ['NFT not found on Solana'] };
+      }
+
+      const differences: string[] = [];
+      
+      // Compare key fields
+      if (dbNFT.buy_price_usdt !== (solanaNFT.buy_price_usdt / 1000000)) {
+        differences.push('Buy price mismatch');
+      }
+      if (dbNFT.rarity !== solanaNFT.rarity) {
+        differences.push('Rarity mismatch');
+      }
+      if (dbNFT.mint_quantity !== solanaNFT.mint_quantity) {
+        differences.push('Mint quantity mismatch');
+      }
+      if (dbNFT.is_upgradeable !== solanaNFT.is_upgradeable) {
+        differences.push('Upgradeable flag mismatch');
+      }
+      if (dbNFT.is_evolvable !== solanaNFT.is_evolvable) {
+        differences.push('Evolvable flag mismatch');
+      }
+      if (dbNFT.is_fractional_eligible !== solanaNFT.is_fractional_eligible) {
+        differences.push('Fractional eligible flag mismatch');
+      }
+      if (dbNFT.auto_staking_duration !== solanaNFT.auto_staking_duration) {
+        differences.push('Auto staking duration mismatch');
+      }
+      if (Math.abs(dbNFT.earn_on_spend_ratio - (solanaNFT.earn_on_spend_ratio / 10000)) > 0.0001) {
+        differences.push('Earn on spend ratio mismatch');
+      }
+      if (Math.abs(dbNFT.upgrade_bonus_ratio - (solanaNFT.upgrade_bonus_ratio / 10000)) > 0.0001) {
+        differences.push('Upgrade bonus ratio mismatch');
+      }
+      if (Math.abs(dbNFT.evolution_min_investment - (solanaNFT.evolution_min_investment / 1000000)) > 0.01) {
+        differences.push('Evolution min investment mismatch');
+      }
+      if (Math.abs(dbNFT.evolution_earnings_ratio - (solanaNFT.evolution_earnings_ratio / 10000)) > 0.0001) {
+        differences.push('Evolution earnings ratio mismatch');
+      }
+
+      return {
+        database: dbNFT,
+        solana: solanaNFT,
+        differences
+      };
+    } catch (error) {
+      console.error('Error comparing NFT data:', error);
+      return { database: null, solana: null, differences: ['Error comparing data'] };
+    }
   }
 }

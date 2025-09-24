@@ -19,6 +19,7 @@ pub enum ProposalType {
     ConfigUpdate,      // 1 - Rewards configuration updates
     Treasury,          // 2 - Treasury management
     Governance,        // 3 - Governance changes
+    LoyaltyChange,     // 4 - Loyalty application behavior changes
 }
 
 /// Configuration proposal status
@@ -82,30 +83,75 @@ pub mod solana_dao_nft_contract {
         Ok(())
     }
 
-    /// Initializes a new NFT within the system.
+    /// Initializes a new NFT within the system with all the new fields.
     pub fn create_nft(
         ctx: Context<CreateNft>, 
-        name: String, 
+        collection_name: String,
+        nft_name: String,
+        display_name: String,
         symbol: String, 
         uri: String,
         is_custodial: bool,
+        buy_price_usdt: u64,
+        rarity: String,
+        mint_quantity: u64,
+        is_upgradeable: bool,
+        is_evolvable: bool,
+        is_fractional_eligible: bool,
+        auto_staking_duration: String,
+        earn_on_spend_ratio: u64,
+        upgrade_bonus_ratio: u64,
+        evolution_min_investment: u64,
+        evolution_earnings_ratio: u64,
         passive_income_rate: u64,
         custodial_income_rate: Option<u64>,
         fractional_supply: Option<u64>,
     ) -> Result<()> {
         let nft_account = &mut ctx.accounts.nft;
+        let current_timestamp = Clock::get()?.unix_timestamp;
 
+        // Basic Information
         nft_account.admin = ctx.accounts.admin.key();
-        nft_account.name = name.clone();
+        nft_account.collection_name = collection_name;
+        nft_account.nft_name = nft_name.clone();
+        nft_account.display_name = display_name;
         nft_account.symbol = symbol.clone();
         nft_account.uri = uri;
+        
+        // Pricing & Minting
+        nft_account.buy_price_usdt = buy_price_usdt;
+        nft_account.rarity = rarity;
+        nft_account.mint_quantity = mint_quantity;
+        
+        // Features & Capabilities
+        nft_account.is_upgradeable = is_upgradeable;
+        nft_account.is_evolvable = is_evolvable;
+        nft_account.is_fractional_eligible = is_fractional_eligible;
+        
+        // Auto Staking
+        nft_account.auto_staking_duration = auto_staking_duration;
+        
+        // Earning Ratios
+        nft_account.earn_on_spend_ratio = earn_on_spend_ratio;
+        nft_account.upgrade_bonus_ratio = upgrade_bonus_ratio;
+        
+        // Evolution Settings
+        nft_account.evolution_min_investment = evolution_min_investment;
+        nft_account.evolution_earnings_ratio = evolution_earnings_ratio;
+        
+        // Legacy fields for backward compatibility
         nft_account.passive_income_rate = passive_income_rate;
-        nft_account.last_distribution_timestamp = Clock::get()?.unix_timestamp;
+        nft_account.last_distribution_timestamp = current_timestamp;
+        
+        // Metadata
+        nft_account.is_active = true;
+        nft_account.created_at = current_timestamp;
+        nft_account.updated_at = current_timestamp;
 
         if is_custodial {
             nft_account.custody_type = CustodyType::Custodial;
             nft_account.custodial_income_rate = custodial_income_rate;
-            msg!("Custodial NFT created with name: {}", nft_account.name);
+            msg!("Custodial NFT created with name: {}", nft_account.nft_name);
         } else {
             // FIX: Safely handle optional accounts for non-custodial NFTs
             let supply = fractional_supply.ok_or(CustomError::MissingFractionalSupply)?;
@@ -129,12 +175,62 @@ pub mod solana_dao_nft_contract {
                 let cpi_ctx = CpiContext::new(cpi_program, cpi_accounts);
                 token::mint_to(cpi_ctx, supply)?;
                 
-                msg!("Non-Custodial NFT created with name: {}", nft_account.name);
+                msg!("Non-Custodial NFT created with name: {}", nft_account.nft_name);
             } else {
                 return err!(CustomError::MissingRequiredAccountsForNonCustodial);
             }
         }
 
+        Ok(())
+    }
+
+    /// Updates an existing NFT with new properties.
+    pub fn update_nft(
+        ctx: Context<UpdateNft>,
+        collection_name: String,
+        nft_name: String,
+        display_name: String,
+        symbol: String,
+        uri: String,
+        buy_price_usdt: u64,
+        rarity: String,
+        mint_quantity: u64,
+        is_upgradeable: bool,
+        is_evolvable: bool,
+        is_fractional_eligible: bool,
+        auto_staking_duration: String,
+        earn_on_spend_ratio: u64,
+        upgrade_bonus_ratio: u64,
+        evolution_min_investment: u64,
+        evolution_earnings_ratio: u64,
+        passive_income_rate: u64,
+        custodial_income_rate: Option<u64>,
+    ) -> Result<()> {
+        let nft_account = &mut ctx.accounts.nft;
+        let current_timestamp = Clock::get()?.unix_timestamp;
+
+        // Update all fields
+        nft_account.collection_name = collection_name;
+        nft_account.nft_name = nft_name;
+        nft_account.display_name = display_name;
+        nft_account.symbol = symbol;
+        nft_account.uri = uri;
+        nft_account.buy_price_usdt = buy_price_usdt;
+        nft_account.rarity = rarity;
+        nft_account.mint_quantity = mint_quantity;
+        nft_account.is_upgradeable = is_upgradeable;
+        nft_account.is_evolvable = is_evolvable;
+        nft_account.is_fractional_eligible = is_fractional_eligible;
+        nft_account.auto_staking_duration = auto_staking_duration;
+        nft_account.earn_on_spend_ratio = earn_on_spend_ratio;
+        nft_account.upgrade_bonus_ratio = upgrade_bonus_ratio;
+        nft_account.evolution_min_investment = evolution_min_investment;
+        nft_account.evolution_earnings_ratio = evolution_earnings_ratio;
+        nft_account.passive_income_rate = passive_income_rate;
+        nft_account.custodial_income_rate = custodial_income_rate;
+        nft_account.updated_at = current_timestamp;
+
+        msg!("NFT updated: {}", nft_account.nft_name);
         Ok(())
     }
 
@@ -254,6 +350,51 @@ pub mod solana_dao_nft_contract {
              proposed_distribution_interval, proposed_max_rewards_per_user);
         Ok(())
     }
+
+    /// CRITICAL: Create a DAO proposal for loyalty behavior changes
+    /// This function enforces the rule requirement for loyalty changes
+    pub fn create_loyalty_change_proposal(
+        ctx: Context<CreateLoyaltyChangeProposal>,
+        change_type: u8,
+        parameter_name: String,
+        old_value: String,
+        new_value: String,
+        reason: String,
+    ) -> Result<()> {
+        let dao_config = &mut ctx.accounts.dao_config;
+        let proposal_account = &mut ctx.accounts.proposal;
+        let loyalty_proposal = &mut ctx.accounts.loyalty_proposal;
+
+        // Validate change type
+        require!(change_type < 12, CustomError::InvalidChangeType);
+
+        dao_config.proposal_count += 1;
+        proposal_account.proposal_id = dao_config.proposal_count;
+        proposal_account.proposer = ctx.accounts.proposer.key();
+        proposal_account.proposal_type = ProposalType::LoyaltyChange as u8;
+        proposal_account.description = format!(
+            "Loyalty Change: {} - {}: {} -> {}",
+            get_change_type_name(change_type),
+            parameter_name,
+            old_value,
+            new_value
+        );
+        proposal_account.votes_for = 0;
+        proposal_account.votes_against = 0;
+
+        loyalty_proposal.proposal_id = dao_config.proposal_count;
+        loyalty_proposal.change_type = change_type;
+        loyalty_proposal.parameter_name = parameter_name;
+        loyalty_proposal.old_value = old_value;
+        loyalty_proposal.new_value = new_value;
+        loyalty_proposal.reason = reason;
+        loyalty_proposal.status = ConfigProposalStatus::Pending;
+        loyalty_proposal.created_at = Clock::get()?.unix_timestamp;
+        
+        msg!("New loyalty change proposal created: {} - {}: {} -> {}", 
+             get_change_type_name(change_type), parameter_name, old_value, new_value);
+        Ok(())
+    }
     
     /// Allows a user to vote on a proposal using their token balance as weight.
     pub fn vote(ctx: Context<Vote>, proposal_id: u64, vote_type: u8) -> Result<()> {
@@ -304,6 +445,25 @@ pub mod solana_dao_nft_contract {
 
         msg!("Configuration proposal {} executed successfully", proposal_id);
         Ok(())
+    }
+}
+
+// Helper function to get change type name
+fn get_change_type_name(change_type: u8) -> &'static str {
+    match change_type {
+        0 => "Point Release Delay",
+        1 => "Referral Parameters",
+        2 => "NFT Earning Ratios",
+        3 => "Loyalty Network Settings",
+        4 => "Merchant Limits",
+        5 => "Inactivity Timeout",
+        6 => "SMS OTP Settings",
+        7 => "Subscription Plans",
+        8 => "Asset Initiative Selection",
+        9 => "Wallet Management",
+        10 => "Payment Gateway",
+        11 => "Email Notifications",
+        _ => "Unknown Change Type",
     }
 }
 
@@ -364,13 +524,13 @@ pub struct InitializeRewardsConfig<'info> {
 
 /// The account context for the `create_nft` instruction.
 #[derive(Accounts)]
-#[instruction(name: String, symbol: String, is_custodial: bool)]
+#[instruction(collection_name: String, nft_name: String, display_name: String, symbol: String, is_custodial: bool)]
 pub struct CreateNft<'info> {
     #[account(
         init,
         payer = admin,
         space = NftAccount::LEN,
-        seeds = [b"nft", name.as_bytes(), symbol.as_bytes()],
+        seeds = [b"nft", nft_name.as_bytes(), symbol.as_bytes()],
         bump
     )]
     pub nft: Account<'info, NftAccount>,
@@ -405,6 +565,21 @@ pub struct CreateNft<'info> {
     pub associated_token_program: Program<'info, AssociatedToken>,
     pub system_program: Program<'info, System>,
     pub rent: Sysvar<'info, Rent>,
+}
+
+/// The account context for the `update_nft` instruction.
+#[derive(Accounts)]
+#[instruction(collection_name: String, nft_name: String, display_name: String, symbol: String)]
+pub struct UpdateNft<'info> {
+    #[account(
+        mut,
+        seeds = [b"nft", nft_name.as_bytes(), symbol.as_bytes()],
+        bump,
+        constraint = nft.admin == admin.key() @ CustomError::Unauthorized
+    )]
+    pub nft: Account<'info, NftAccount>,
+    #[account(mut)]
+    pub admin: Signer<'info>,
 }
 
 /// The account context for a user investing in a custodial NFT.
@@ -529,6 +704,32 @@ pub struct CreateConfigProposal<'info> {
     pub system_program: Program<'info, System>,
 }
 
+/// The account context for creating loyalty change proposals.
+#[derive(Accounts)]
+pub struct CreateLoyaltyChangeProposal<'info> {
+    #[account(
+        init,
+        payer = proposer,
+        space = Proposal::LEN,
+        seeds = [b"proposal", dao_config.proposal_count.to_le_bytes().as_ref()],
+        bump
+    )]
+    pub proposal: Account<'info, Proposal>,
+    #[account(
+        init,
+        payer = proposer,
+        space = LoyaltyProposal::LEN,
+        seeds = [b"loyalty_proposal", dao_config.proposal_count.to_le_bytes().as_ref()],
+        bump
+    )]
+    pub loyalty_proposal: Account<'info, LoyaltyProposal>,
+    #[account(mut)]
+    pub dao_config: Account<'info, DaoConfig>,
+    #[account(mut)]
+    pub proposer: Signer<'info>,
+    pub system_program: Program<'info, System>,
+}
+
 /// The account context for the `vote` instruction.
 #[derive(Accounts)]
 #[instruction(proposal_id: u64)]
@@ -569,13 +770,43 @@ pub struct ExecuteConfigProposal<'info> {
 #[account]
 pub struct NftAccount {
     pub admin: Pubkey,
-    pub name: String,
+    pub collection_name: String,           // Collection Name (dropdown list)
+    pub nft_name: String,                  // NFT Name (e.g., Pearl White, Lava Orange)
+    pub display_name: String,              // Display Name
     pub symbol: String,
     pub uri: String,
     pub custody_type: CustodyType,
+    
+    // Pricing & Minting
+    pub buy_price_usdt: u64,               // Buy Price in USDT (in smallest unit)
+    pub rarity: String,                    // Common, Less Common, Rare, Very Rare
+    pub mint_quantity: u64,                // Total number that can be minted
+    
+    // Features & Capabilities
+    pub is_upgradeable: bool,              // Upgrade (Yes/No)
+    pub is_evolvable: bool,                // Evolve (Yes/No)
+    pub is_fractional_eligible: bool,      // Fractional (Yes/No)
+    
+    // Auto Staking
+    pub auto_staking_duration: String,     // Forever, 1 Year, 2 Years, 5 Years
+    
+    // Earning Ratios
+    pub earn_on_spend_ratio: u64,          // Earn on Spend % (in basis points, e.g., 100 = 1.00%)
+    pub upgrade_bonus_ratio: u64,          // Upgrade Bonus Tokenization % (in basis points)
+    
+    // Evolution Settings
+    pub evolution_min_investment: u64,     // Evolution Min Invest in USDT (in smallest unit)
+    pub evolution_earnings_ratio: u64,     // Evolution Earnings % (in basis points)
+    
+    // Legacy fields for backward compatibility
     pub passive_income_rate: u64,
     pub custodial_income_rate: Option<u64>,
     pub last_distribution_timestamp: i64,
+    
+    // Metadata
+    pub is_active: bool,
+    pub created_at: i64,
+    pub updated_at: i64,
 }
 
 #[account]
@@ -649,6 +880,21 @@ pub struct ConfigProposal {
     pub implemented_at: Option<i64>,
 }
 
+/// A proposal for loyalty application behavior changes.
+#[account]
+pub struct LoyaltyProposal {
+    pub proposal_id: u64,
+    pub change_type: u8,
+    pub parameter_name: String,
+    pub old_value: String,
+    pub new_value: String,
+    pub reason: String,
+    pub status: ConfigProposalStatus,
+    pub created_at: i64,
+    pub approved_at: Option<i64>,
+    pub implemented_at: Option<i64>,
+}
+
 // Account length implementations
 impl NftAccount {
     pub const LEN: usize = 8 + 32 + (4 + 50) + (4 + 10) + (4 + 200) + 1 + 8 + (1 + 8) + 8;
@@ -677,6 +923,9 @@ impl RewardsConfig {
 impl ConfigProposal {
     pub const LEN: usize = 8 + 8 + 8 + 8 + 1 + 8 + (1 + 8) + (1 + 8);
 }
+impl LoyaltyProposal {
+    pub const LEN: usize = 8 + 8 + 1 + (4 + 100) + (4 + 500) + (4 + 500) + (4 + 1000) + 1 + 8 + (1 + 8) + (1 + 8);
+}
 
 #[error_code]
 pub enum CustomError {
@@ -696,6 +945,8 @@ pub enum CustomError {
     MissingRequiredAccountsForNonCustodial,
     #[msg("You are not authorized to perform this action.")]
     UnauthorizedAdmin,
+    #[msg("You are not authorized to perform this action.")]
+    Unauthorized,
     #[msg("Investment amount must be greater than zero.")]
     ZeroInvestmentAmount,
     #[msg("Invalid proposal ID.")]
@@ -708,4 +959,6 @@ pub enum CustomError {
     NoVotesCast,
     #[msg("Proposal did not pass.")]
     ProposalNotPassed,
+    #[msg("Invalid change type.")]
+    InvalidChangeType,
 }

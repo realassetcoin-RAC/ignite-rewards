@@ -197,11 +197,12 @@ export const sortListings = (
         aValue = a.expected_return_rate || 0;
         bValue = b.expected_return_rate || 0;
         break;
-      case 'risk_level':
+      case 'risk_level': {
         const riskOrder = { low: 1, medium: 2, high: 3 };
         aValue = riskOrder[a.risk_level as keyof typeof riskOrder] || 0;
         bValue = riskOrder[b.risk_level as keyof typeof riskOrder] || 0;
         break;
+      }
       case 'end_date':
         aValue = a.end_date ? new Date(a.end_date).getTime() : 0;
         bValue = b.end_date ? new Date(b.end_date).getTime() : 0;

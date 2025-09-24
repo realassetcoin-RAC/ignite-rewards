@@ -25,26 +25,25 @@ import {
 } from 'lucide-react';
 
 const AdminTestPanel: React.FC = () => {
-  const { user, profile, isAdmin, loading, error, refreshAuth, isWalletUser, mfaEnabled } = useSecureAuth();
-  const [testResults, setTestResults] = useState<any>(null);
+  const { user, profile, isAdmin, loading, refreshAuth, isWalletUser, mfaEnabled } = useSecureAuth();
+  // const [testResults] = useState<unknown>(null);
   const [isTestingRunning, setIsTestingRunning] = useState(false);
-  const [verificationResult, setVerificationResult] = useState<any>(null);
+  const [verificationResult, setVerificationResult] = useState<unknown>(null);
 
   const runTests = async () => {
     setIsTestingRunning(true);
     try {
-      console.log('🚀 Running comprehensive admin tests...');
+      // Running comprehensive admin tests...
       
       // Run the comprehensive test suite
-      const results = await runComprehensiveAdminTest();
-      setTestResults(results);
+      await runComprehensiveAdminTest();
       
       // Run verification
       const verification = await verifyAdminAccess();
       setVerificationResult(verification);
       
     } catch (error) {
-      console.error('Test failed:', error);
+      // Test failed:
       setTestResults({ error: error.toString() });
     } finally {
       setIsTestingRunning(false);
@@ -54,8 +53,8 @@ const AdminTestPanel: React.FC = () => {
   const quickAdminTest = async () => {
     setIsTestingRunning(true);
     try {
-      const result = await testCurrentUserAdminAccess();
-      console.log('Quick admin test result:', result);
+      await testCurrentUserAdminAccess();
+      // console.log('Quick admin test result:', result);
     } finally {
       setIsTestingRunning(false);
     }

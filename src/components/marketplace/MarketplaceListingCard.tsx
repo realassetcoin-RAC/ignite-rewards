@@ -4,9 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { 
-  TrendingUp, 
   Clock, 
-  Users, 
   DollarSign, 
   Shield, 
   Star,
@@ -15,7 +13,7 @@ import {
   Target
 } from 'lucide-react';
 import { MarketplaceListing } from '@/types/marketplace';
-import { formatCurrency, formatNumber, calculateDaysRemaining } from '@/lib/marketplaceUtils';
+import { formatCurrency, formatNumber } from '@/lib/marketplaceUtils';
 
 interface MarketplaceListingCardProps {
   listing: MarketplaceListing;

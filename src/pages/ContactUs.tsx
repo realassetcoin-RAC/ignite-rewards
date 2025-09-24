@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { useToast } from "@/hooks/use-toast";
+// import { useToast } from "@/hooks/use-toast";
 import { useSecureAuth } from "@/hooks/useSecureAuth";
 import { 
   Mail, 
@@ -15,11 +15,10 @@ import {
   Sparkles
 } from "lucide-react";
 import { Link } from "react-router-dom";
-import ContactChatbot from "@/components/ContactChatbot";
 
 const ContactUs = () => {
   const { user } = useSecureAuth();
-  const { toast } = useToast();
+  // const { toast: _toast } = useToast();
   const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {

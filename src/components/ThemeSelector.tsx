@@ -8,7 +8,6 @@ import {
   Check, 
   Sparkles, 
   Zap, 
-  Eye, 
   Sun, 
   Rainbow,
   Monitor

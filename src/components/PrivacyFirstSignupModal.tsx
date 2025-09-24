@@ -14,8 +14,6 @@ import { useToast } from "@/hooks/use-toast";
 import { 
   Shield, 
   Eye, 
-  EyeOff, 
-  Lock, 
   Globe, 
   Clock, 
   Coins, 
@@ -25,8 +23,6 @@ import {
   QrCode,
   Smartphone,
   Wallet,
-  ExternalLink,
-  Loader2
 } from "lucide-react";
 
 interface PrivacyFirstSignupModalProps {
@@ -39,7 +35,7 @@ const PrivacyFirstSignupModal: React.FC<PrivacyFirstSignupModalProps> = ({
   onClose,
 }) => {
   const [currentStep, setCurrentStep] = useState(1);
-  const [selectedType, setSelectedType] = useState<'custodial' | 'non-custodial' | null>(null);
+  const [, setSelectedType] = useState<'custodial' | 'non-custodial' | null>(null);
   const { toast } = useToast();
 
   const steps = [
@@ -137,7 +133,7 @@ const PrivacyFirstSignupModal: React.FC<PrivacyFirstSignupModalProps> = ({
           }}
         >
           <CarouselContent className="-ml-2 md:-ml-4">
-            {userTypes.map((userType, index) => (
+            {userTypes.map((userType) => (
               <CarouselItem key={userType.type} className="pl-2 md:pl-4 basis-full">
                 <div className="p-1">
                   <Card 

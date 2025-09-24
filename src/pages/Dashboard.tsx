@@ -1,11 +1,9 @@
 import { useState, useEffect } from "react";
 import { useSecureAuth } from "@/hooks/useSecureAuth";
 // Removed Tabs import - using custom navigation
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Navigate, Link } from "react-router-dom";
-import { CreditCard, Activity, TrendingUp, User, Share2, Wallet, Sparkles, ArrowLeft } from "lucide-react";
+import { Navigate } from "react-router-dom";
+import { CreditCard, Activity, TrendingUp, User, Share2, Sparkles } from "lucide-react";
 import LoyaltyCardTab from "@/components/dashboard/LoyaltyCardTab";
 import TransactionsTab from "@/components/dashboard/TransactionsTab";
 import PointsGraphTab from "@/components/dashboard/PointsGraphTab";

@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import CustomerSignupModal from "./CustomerSignupModal";
 import MerchantSignupModal from "./MerchantSignupModal";
-import { Users, Store, CreditCard, Building2 } from "lucide-react";
+import { CreditCard, Building2 } from "lucide-react";
 import { useSecureAuth } from "@/hooks/useSecureAuth";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
@@ -93,6 +94,13 @@ const SignupSection = () => {
     }
   };
 
+  /**
+   * Handle merchant more info button click - navigate to subscription plans page
+   */
+  const handleMerchantMoreInfoClick = () => {
+    navigate('/subscription-plans');
+  };
+
   return (
     <section id="signup" className="relative py-20 px-6 mb-16 overflow-hidden">
       {/* Enhanced Dynamic Background matching hero */}
@@ -173,7 +181,19 @@ const SignupSection = () => {
               </div>
               
               <div>
-                <h3 className="text-2xl font-bold mb-3 text-foreground group-hover:bg-gradient-to-r group-hover:from-blue-500 group-hover:to-primary group-hover:bg-clip-text group-hover:text-transparent transition-all duration-300">Partner with Us</h3>
+                <div className="flex items-center justify-center gap-2 mb-3">
+                  <h3 className="text-2xl font-bold text-foreground group-hover:bg-gradient-to-r group-hover:from-blue-500 group-hover:to-primary group-hover:bg-clip-text group-hover:text-transparent transition-all duration-300">Partner with Us</h3>
+                  <Badge 
+                    variant="secondary" 
+                    className="cursor-pointer hover:bg-blue-100 hover:text-blue-700 transition-colors duration-200"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleMerchantMoreInfoClick();
+                    }}
+                  >
+                    More Info
+                  </Badge>
+                </div>
                 <p className="text-muted-foreground mb-6 leading-relaxed">
                   Join our merchant network, attract loyal customers, and grow your business 
                   with our innovative rewards platform.

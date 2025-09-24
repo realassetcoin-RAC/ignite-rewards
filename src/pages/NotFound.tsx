@@ -1,14 +1,16 @@
 import { useLocation, Link } from "react-router-dom";
 import { useEffect, useState } from "react";
-import { Sparkles, Home, AlertTriangle } from "lucide-react";
+import { Home, AlertTriangle } from "lucide-react";
+import { createModuleLogger } from "@/utils/consoleReplacer";
 
 const NotFound = () => {
+  const logger = createModuleLogger('NotFound');
   const location = useLocation();
   const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
-    console.error(
-      "404 Error: User attempted to access non-existent route:",
+    logger.error(
+      "404 Error: User attempted to access non-existent route",
       location.pathname
     );
     setIsLoaded(true);

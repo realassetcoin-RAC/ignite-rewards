@@ -1,6 +1,7 @@
-import { useEffect, memo } from 'react';
+import { memo } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useSecureAuth } from '@/hooks/useSecureAuth';
+import EmailVerificationGuard from './EmailVerificationGuard';
 
 /**
  * RoleBasedDashboard component that redirects users to the appropriate dashboard
@@ -34,44 +35,56 @@ const RoleBasedDashboard = memo(() => {
     return <Navigate to="/" replace />;
   }
 
-  // Priority 1: Check if user has admin privileges
-  // This takes precedence over the role field in the profile
-  if (isAdmin === true) {
-    console.log('🎯 RoleBasedDashboard: Redirecting to admin panel (isAdmin flag is true)');
-    return <Navigate to="/admin-panel" replace />;
-  }
+  // Get user role for email verification guard
+  const userRole = profile?.role?.toLowerCase() || 'user';
 
-  // Priority 2: Check the role from profile
-  const userRole = profile?.role?.toLowerCase();
-  console.log('🔍 RoleBasedDashboard: Checking role-based routing');
-  console.log('User role (lowercase):', userRole);
-  
-  // Also check for admin/administrator role variations in profile
-  if (userRole === 'admin' || userRole === 'administrator') {
-    console.log('🎯 RoleBasedDashboard: Redirecting to admin panel (role is admin/administrator)');
-    return <Navigate to="/admin-panel" replace />;
-  }
-  
-  // Handle other role variations
-  switch (userRole) {
-    case 'merchant':
-      console.log('🎯 RoleBasedDashboard: Redirecting to merchant dashboard');
-      return <Navigate to="/merchant" replace />;
-    case 'customer':
-    case 'user':
-      console.log('🎯 RoleBasedDashboard: Redirecting to user dashboard');
-      return <Navigate to="/user" replace />;
-    default:
-      // Default to user dashboard for any unknown roles
-      console.log('⚠️ RoleBasedDashboard: Unknown role, redirecting to user dashboard (default)');
-      console.log('Available data:', { 
-        isAdmin, 
-        userRole, 
-        originalRole: profile?.role,
-        userEmail: user?.email 
-      });
-      return <Navigate to="/user" replace />;
-  }
+  // Wrap the navigation logic with email verification guard
+  const renderNavigation = () => {
+    // Priority 1: Check if user has admin privileges
+    // This takes precedence over the role field in the profile
+    if (isAdmin === true) {
+      console.log('🎯 RoleBasedDashboard: Redirecting to admin panel (isAdmin flag is true)');
+      return <Navigate to="/admin-panel" replace />;
+    }
+
+    // Priority 2: Check the role from profile
+    console.log('🔍 RoleBasedDashboard: Checking role-based routing');
+    console.log('User role (lowercase):', userRole);
+    
+    // Also check for admin/administrator role variations in profile
+    if (userRole === 'admin' || userRole === 'administrator') {
+      console.log('🎯 RoleBasedDashboard: Redirecting to admin panel (role is admin/administrator)');
+      return <Navigate to="/admin-panel" replace />;
+    }
+    
+    // Handle other role variations
+    switch (userRole) {
+      case 'merchant':
+        console.log('🎯 RoleBasedDashboard: Redirecting to merchant dashboard');
+        return <Navigate to="/merchant" replace />;
+      case 'customer':
+      case 'user':
+        console.log('🎯 RoleBasedDashboard: Redirecting to user dashboard');
+        return <Navigate to="/user" replace />;
+      default:
+        // Default to user dashboard for any unknown roles
+        console.log('⚠️ RoleBasedDashboard: Unknown role, redirecting to user dashboard (default)');
+        console.log('Available data:', { 
+          isAdmin, 
+          userRole, 
+          originalRole: profile?.role,
+          userEmail: user?.email 
+        });
+        return <Navigate to="/user" replace />;
+    }
+  };
+
+  // Wrap with email verification guard
+  return (
+    <EmailVerificationGuard userRole={userRole}>
+      {renderNavigation()}
+    </EmailVerificationGuard>
+  );
 });
 
 RoleBasedDashboard.displayName = 'RoleBasedDashboard';

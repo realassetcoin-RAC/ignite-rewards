@@ -9,7 +9,7 @@ import CustomerSignupModal from "@/components/CustomerSignupModal";
 import MerchantSignupModal from "@/components/MerchantSignupModal";
 import { useSecureAuth } from "@/hooks/useSecureAuth";
 import { LogOut, User, Settings, Shield } from "lucide-react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { getDashboardUrl } from "@/lib/dashboard-routing";
 
 /**

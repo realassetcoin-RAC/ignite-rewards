@@ -11,19 +11,17 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 // Removed Tabs import - using custom navigation
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { AlertCircle, Download, Trash2, RefreshCw, Eye, TrendingUp, Activity, Database, Wifi, Shield } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { logger, log, LogLevel } from "@/utils/logger";
+import { logger, log } from "@/utils/logger";
 import { virtualCardErrorTracker, getVirtualCardErrors, getVirtualCardErrorStats } from "@/utils/virtualCardErrorTracker";
 
 const ErrorDashboard = () => {
   const [errors, setErrors] = useState(getVirtualCardErrors());
   const [stats, setStats] = useState(getVirtualCardErrorStats());
   const [logSummary, setLogSummary] = useState(logger.getLogSummary());
-  const [selectedError, setSelectedError] = useState<any>(null);
   const [autoRefresh, setAutoRefresh] = useState(false);
   const [activeTab, setActiveTab] = useState('errors');
   const { toast } = useToast();
@@ -85,8 +83,8 @@ const ErrorDashboard = () => {
       });
       
       log.admin('export_logs', { type: 'error_logs', count: logSummary.total });
-    } catch (error) {
-      log.error('ERROR_DASHBOARD', 'Failed to export logs', { error });
+    } catch {
+      log.error('ERROR_DASHBOARD', 'Failed to export logs');
       toast({
         title: "Export Failed",
         description: "Unable to export logs. Please try again.",

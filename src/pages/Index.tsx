@@ -5,10 +5,12 @@ import PrivacySection from "@/components/PrivacySection";
 import SignupSection from "@/components/SignupSection";
 import Footer from "@/components/Footer";
 import AdminAccess from "@/components/AdminAccess";
+import FloatingMenubar from "@/components/FloatingMenubar";
 
 const Index = () => {
   return (
     <div className="min-h-screen">
+      <FloatingMenubar />
       <header>
         <EnhancedHeroSection />
       </header>

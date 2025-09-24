@@ -3,7 +3,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { useForm } from "react-hook-form";
@@ -15,19 +14,16 @@ import {
   Smartphone, 
   CheckCircle, 
   Clock, 
-  AlertCircle,
-  ExternalLink,
   Trash2,
   RefreshCw
 } from "lucide-react";
 import { 
-  generateLoyaltyOTP, 
-  verifyLoyaltyOTP, 
   getUserLoyaltyLinks, 
   getAvailableLoyaltyNetworks,
   checkExistingLoyaltyLink,
   type LoyaltyNetwork 
 } from "@/lib/loyaltyOtp";
+import { SMSService } from "@/lib/smsService"; // ✅ IMPLEMENT REQUIREMENT: Real SMS OTP integration
 
 interface UserLoyaltyLink {
   id: string;
@@ -50,7 +46,7 @@ const LoyaltyAccountLinking = ({ onLinkAdded }: LoyaltyAccountLinkingProps) => {
   const [linkingDialogOpen, setLinkingDialogOpen] = useState(false);
   const [otpDialogOpen, setOtpDialogOpen] = useState(false);
   const [selectedNetwork, setSelectedNetwork] = useState<LoyaltyNetwork | null>(null);
-  const [otpSent, setOtpSent] = useState(false);
+  const [, setOtpSent] = useState(false);
   const [otpLoading, setOtpLoading] = useState(false);
   const [countdown, setCountdown] = useState(0);
 
@@ -125,7 +121,13 @@ const LoyaltyAccountLinking = ({ onLinkAdded }: LoyaltyAccountLinkingProps) => {
         return;
       }
 
-      const result = await generateLoyaltyOTP(user.id, data.networkId, data.mobileNumber);
+      // ✅ IMPLEMENT REQUIREMENT: Real SMS OTP for loyalty linking
+      const selectedNetworkData = availableNetworks.find(n => n.id === data.networkId);
+      const result = await SMSService.sendLoyaltyLinkOTP(
+        user.id, 
+        data.mobileNumber,
+        selectedNetworkData?.name || 'Unknown Network'
+      );
       
       if (result.success) {
         setOtpSent(true);
@@ -160,17 +162,33 @@ const LoyaltyAccountLinking = ({ onLinkAdded }: LoyaltyAccountLinkingProps) => {
 
     try {
       setOtpLoading(true);
-      const result = await verifyLoyaltyOTP(
+      // ✅ IMPLEMENT REQUIREMENT: Real SMS OTP verification for loyalty linking
+      const result = await SMSService.verifyLoyaltyLinkOTP(
         user.id,
-        selectedNetwork.id,
         linkingForm.getValues('mobileNumber'),
         data.otpCode
       );
 
       if (result.success) {
+        // ✅ IMPLEMENT REQUIREMENT: Email notification for loyalty linking completion
+        try {
+          const { EmailService } = await import('@/lib/emailService');
+          await EmailService.sendLoyaltyLinkingConfirmation(
+            user.id,
+            user.email || '',
+            user.user_metadata?.full_name || 'User',
+            selectedNetwork.display_name,
+            linkingForm.getValues('mobileNumber')
+          );
+          console.log('✅ Loyalty linking confirmation email sent');
+        } catch (emailError) {
+          console.error('Error sending loyalty linking email:', emailError);
+          // Don't fail the linking process for email errors
+        }
+
         toast({
           title: "Success",
-          description: `Successfully linked your ${selectedNetwork.display_name} account`,
+          description: `Successfully linked your ${selectedNetwork.display_name} account. Check your email for confirmation.`,
         });
         
         setOtpDialogOpen(false);
@@ -205,10 +223,11 @@ const LoyaltyAccountLinking = ({ onLinkAdded }: LoyaltyAccountLinkingProps) => {
 
     try {
       setOtpLoading(true);
-      const result = await generateLoyaltyOTP(
+      // ✅ IMPLEMENT REQUIREMENT: Real SMS OTP resend for loyalty linking
+      const result = await SMSService.sendLoyaltyLinkOTP(
         user.id,
-        selectedNetwork.id,
-        linkingForm.getValues('mobileNumber')
+        linkingForm.getValues('mobileNumber'),
+        selectedNetwork.name
       );
 
       if (result.success) {

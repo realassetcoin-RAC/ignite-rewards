@@ -22,7 +22,13 @@ export const useSessionPersistence = () => {
       lastSessionCheck.current = now;
       
       try {
-        const { data: { session }, error } = await supabase.auth.getSession();
+        // Add timeout to prevent hanging
+        const sessionPromise = supabase.auth.getSession();
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Session check timeout')), 5000)
+        );
+        
+        const { data: { session }, error } = await Promise.race([sessionPromise, timeoutPromise]);
         
         if (error) {
           console.warn('Session check error:', error);
@@ -37,16 +43,21 @@ export const useSessionPersistence = () => {
           // If session expires in less than 5 minutes, refresh it
           if (expiresAt - now < 300) {
             console.log('Session expiring soon, refreshing...');
-            await supabase.auth.refreshSession();
+            try {
+              await supabase.auth.refreshSession();
+            } catch (refreshError) {
+              console.warn('Session refresh failed:', refreshError);
+            }
           }
         }
       } catch (error) {
         console.warn('Session persistence check failed:', error);
+        // Don't let session errors break the app
       }
     };
 
     // Set up periodic session check
-    sessionCheckInterval.current = setInterval(checkSession, 60000); // Check every minute
+    sessionCheckInterval.current = setInterval(checkSession, 30000); // Check every 30 seconds
 
     // Note: Window focus handling is now managed by useRefreshPrevention hook
     // to avoid conflicts and ensure proper refresh prevention

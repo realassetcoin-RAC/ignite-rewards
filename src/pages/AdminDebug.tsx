@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useSecureAuth } from '@/hooks/useSecureAuth';
 import { verifyAdminAccess, robustAdminCheck } from '@/utils/adminVerification';
-import { supabase } from '@/integrations/supabase/client';
+// import { supabase } from '@/integrations/supabase/client';
 
 const AdminDebug = () => {
   const { user, profile, isAdmin, loading, error } = useSecureAuth();

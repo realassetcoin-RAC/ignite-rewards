@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useSecureAuth } from "@/hooks/useSecureAuth";
 import { useSmartDataRefresh } from "@/hooks/useSmartDataRefresh";
-import { useTheme } from "@/contexts/ThemeContext";
+// import { useTheme } from "@/contexts/ThemeContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -19,13 +19,10 @@ import {
   LogOut,
   Star,
   Zap,
-  Crown,
   Gift,
-  Users,
-  Award,
-  Target
+  Users
 } from "lucide-react";
-import LoyaltyCardTab from "@/components/dashboard/LoyaltyCardTab";
+// import LoyaltyCardTab from "@/components/dashboard/LoyaltyCardTab";
 import ReferralsTab from "@/components/dashboard/ReferralsTab";
 import RewardsTracker from "@/components/solana/RewardsTracker";
 import ThemeSelector from "@/components/ThemeSelector";
@@ -33,14 +30,14 @@ import BackgroundSelector, { BackgroundType } from "@/components/backgrounds/Bac
 import BackgroundRenderer from "@/components/backgrounds/BackgroundRenderer";
 
 const UserDashboardWithBackgrounds = () => {
-  const { user, isAdmin, loading } = useSecureAuth();
+  const { user, loading } = useSecureAuth();
   const { toast } = useToast();
-  const { currentTheme, themes } = useTheme();
+  // const { themes } = useTheme();
   const [activeSection, setActiveSection] = useState<'overview' | 'loyalty' | 'referrals' | 'rewards'>('overview');
-  const [isLoaded, setIsLoaded] = useState(false);
+  // const [isLoaded, setIsLoaded] = useState(false);
   const [currentBackground, setCurrentBackground] = useState<BackgroundType>('cosmic');
 
-  const theme = themes[currentTheme];
+  // const theme = themes[currentTheme];
 
   const handleSignOut = async () => {
     try {

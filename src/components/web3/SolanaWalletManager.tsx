@@ -1,19 +1,16 @@
 import { useState, useEffect } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useSecureAuth } from "@/hooks/useSecureAuth";
-import { Wallet, Copy, Download, Upload, Key, Shield, ExternalLink } from "lucide-react";
+import { Copy, Download, Upload, Key, Shield, ExternalLink } from "lucide-react";
 import { Keypair, Connection, clusterApiUrl, PublicKey } from "@solana/web3.js";
 import { useWallet } from "@solana/wallet-adapter-react";
 import * as bip39 from "bip39";
-import bs58 from "bs58";
 
 interface UserWallet {
   id: string;

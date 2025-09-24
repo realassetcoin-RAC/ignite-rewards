@@ -1,4 +1,4 @@
-import { supabase } from '@/integrations/supabase/client';
+// import { supabase } from '@/integrations/supabase/client';
 
 export interface TestDataResult {
   success: boolean;
@@ -103,8 +103,8 @@ export class SimpleTestDataService {
         } else {
           console.log('✅ Cleared dao_members');
         }
-      } catch (error) {
-        console.log('⚠️ Error clearing dao_members:', error);
+      } catch {
+        console.log('⚠️ Error clearing dao_members');
       }
 
       try {

@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
-import { supabase } from "@/integrations/supabase/client";
+// import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -11,7 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Edit2, Building2, Settings, Zap, Star, Upload, Image as ImageIcon } from "lucide-react";
+import { Plus, Edit2, Building2, Settings, Zap, Star } from "lucide-react";
 
 interface LoyaltyProvider {
   id: string;
@@ -31,7 +31,7 @@ interface LoyaltyProvider {
 
 const LoyaltyProvidersManager = () => {
   const { toast } = useToast();
-  const [providers, setProviders] = useState<LoyaltyProvider[]>([]);
+  // const [providers, setProviders] = useState<LoyaltyProvider[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [dialogOpen, setDialogOpen] = useState<boolean>(false);
   const [editing, setEditing] = useState<LoyaltyProvider | null>(null);
@@ -108,15 +108,18 @@ const LoyaltyProvidersManager = () => {
     try {
       setLoading(true);
       
-      // TODO: Replace with actual API call to load from database
-      // const { data, error } = await supabase
-      //   .from('loyalty_providers')
-      //   .select('*')
-      //   .order('created_at', { ascending: false });
+      // Load from real database
+      const { data, error } = await supabase
+        .from('loyalty_providers')
+        .select('*')
+        .order('created_at', { ascending: false });
       
-      // For now, use mock data
-      await new Promise(resolve => setTimeout(resolve, 500));
-      setProviders(mockProviders);
+      if (error) {
+        console.error('Error loading loyalty providers:', error);
+        setProviders([]);
+      } else {
+        setProviders(data || []);
+      }
       
       console.log('✅ Loyalty providers loaded successfully');
     } catch (error) {
@@ -467,7 +470,7 @@ const LoyaltyProvidersManager = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {providers.map((provider) => (
+                  {mockProviders.map((provider) => (
                     <TableRow key={provider.id}>
                       <TableCell>
                         <div className="flex items-center gap-3">

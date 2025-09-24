@@ -5,7 +5,7 @@
  * with comprehensive error handling and fallback methods.
  */
 
-import { supabase } from '@/integrations/supabase/client';
+// import { supabase } from '@/integrations/supabase/client';
 
 export interface LoadingResult<T = any> {
   success: boolean;
@@ -55,20 +55,20 @@ export async function verifyAdminAccess(): Promise<LoadingResult<boolean>> {
       console.warn('public.is_admin failed:', error);
     }
 
-    // Method 3: Try api.is_admin RPC
+    // Method 3: Try is_admin RPC (public schema)
     try {
-      const { data: isAdminApi, error: rpcError } = await supabase.rpc('api.is_admin');
+      const { data: isAdminApi, error: rpcError } = await supabase.rpc('is_admin');
       if (!rpcError && isAdminApi === true) {
-        console.log('✅ Admin access verified via api.is_admin');
+        console.log('✅ Admin access verified via is_admin');
         return {
           success: true,
           data: true,
           message: 'Admin access verified',
-          source: 'api.is_admin'
+          source: 'is_admin'
         };
       }
     } catch (error) {
-      console.warn('api.is_admin failed:', error);
+      console.warn('is_admin failed:', error);
     }
 
     // Method 4: Check profile role directly
@@ -146,24 +146,24 @@ export async function loadVirtualCards(): Promise<LoadingResult<any[]>> {
       console.warn('Failed to load from public.virtual_cards:', error);
     }
 
-    // Method 2: Try api.virtual_cards
+    // Method 2: Try virtual_cards
     try {
       const { data, error } = await supabase
-        .from('api.virtual_cards')
+        .from('virtual_cards')
         .select('*')
         .order('created_at', { ascending: false });
 
       if (!error && data !== null) {
-        console.log('✅ Virtual cards loaded from api.virtual_cards');
+        console.log('✅ Virtual cards loaded from virtual_cards');
         return {
           success: true,
           data: data,
           message: 'Virtual cards loaded successfully',
-          source: 'api.virtual_cards'
+          source: 'virtual_cards'
         };
       }
     } catch (error) {
-      console.warn('Failed to load from api.virtual_cards:', error);
+      console.warn('Failed to load from virtual_cards:', error);
     }
 
     // Method 3: Return empty array as fallback
@@ -218,10 +218,10 @@ export async function loadMerchants(): Promise<LoadingResult<any[]>> {
       console.warn('Failed to load from public.merchants:', error);
     }
 
-    // Method 2: Try api.merchants
+    // Method 2: Try merchants
     try {
       const { data, error } = await supabase
-        .from('api.merchants')
+        .from('merchants')
         .select(`
           *,
           profiles:user_id (
@@ -232,16 +232,16 @@ export async function loadMerchants(): Promise<LoadingResult<any[]>> {
         .order('created_at', { ascending: false });
 
       if (!error && data !== null) {
-        console.log('✅ Merchants loaded from api.merchants');
+        console.log('✅ Merchants loaded from merchants');
         return {
           success: true,
           data: data,
           message: 'Merchants loaded successfully',
-          source: 'api.merchants'
+          source: 'merchants'
         };
       }
     } catch (error) {
-      console.warn('Failed to load from api.merchants:', error);
+      console.warn('Failed to load from merchants:', error);
     }
 
     // Method 3: Return empty array as fallback
@@ -290,24 +290,24 @@ export async function loadReferralCampaigns(): Promise<LoadingResult<any[]>> {
       console.warn('Failed to load from public.referral_campaigns:', error);
     }
 
-    // Method 2: Try api.referral_campaigns
+    // Method 2: Try referral_campaigns
     try {
       const { data, error } = await supabase
-        .from('api.referral_campaigns')
+        .from('referral_campaigns')
         .select('*')
         .order('created_at', { ascending: false });
 
       if (!error && data !== null) {
-        console.log('✅ Referral campaigns loaded from api.referral_campaigns');
+        console.log('✅ Referral campaigns loaded from referral_campaigns');
         return {
           success: true,
           data: data,
           message: 'Referral campaigns loaded successfully',
-          source: 'api.referral_campaigns'
+          source: 'referral_campaigns'
         };
       }
     } catch (error) {
-      console.warn('Failed to load from api.referral_campaigns:', error);
+      console.warn('Failed to load from referral_campaigns:', error);
     }
 
     // Method 3: Return empty array as fallback
@@ -366,10 +366,10 @@ export async function loadUserReferrals(): Promise<LoadingResult<any[]>> {
       console.warn('Failed to load from public.user_referrals:', error);
     }
 
-    // Method 2: Try api.user_referrals
+    // Method 2: Try user_referrals
     try {
       const { data, error } = await supabase
-        .from('api.user_referrals')
+        .from('user_referrals')
         .select(`
           *,
           referrer:referrer_id (
@@ -422,7 +422,7 @@ export async function loadAdminStats(): Promise<LoadingResult<AdminStats>> {
   try {
     console.log('🔄 Loading admin statistics...');
     
-    const [virtualCardsResult, merchantsResult, userReferralsResult] = await Promise.all([
+    const [virtualCardsResult, merchantsResult] = await Promise.all([
       loadVirtualCards(),
       loadMerchants(),
       loadUserReferrals()
@@ -430,7 +430,7 @@ export async function loadAdminStats(): Promise<LoadingResult<AdminStats>> {
 
     const stats: AdminStats = {
       totalCards: virtualCardsResult.data?.length || 0,
-      activeMerchants: merchantsResult.data?.filter((m: any) => m.status === 'active')?.length || 0,
+      activeMerchants: merchantsResult.data?.filter((m: { status: string }) => m.status === 'active')?.length || 0,
       totalUsers: 0, // This would need a separate users table query
       totalRevenue: 0 // This would need a separate revenue calculation
     };

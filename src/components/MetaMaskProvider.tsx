@@ -110,35 +110,35 @@ export const MetaMaskProvider: React.FC<MetaMaskProviderProps> = ({ children }) 
   }, []);
 
   // Check for existing connection
-  const checkConnection = useCallback(async () => {
-    const provider = detectMetaMask();
-    
-    if (!provider) {
-      console.log('MetaMask not detected');
-      return;
-    }
+  // const _checkConnection = useCallback(async () => {
+  //   const provider = detectMetaMask();
+  //   
+  //   if (!provider) {
+  //     console.log('MetaMask not detected');
+  //     return;
+  //   }
 
-    try {
-      // Check if already connected
-      const existingAccounts = await provider.request({
-        method: 'eth_accounts'
-      });
-      
-      if (existingAccounts && existingAccounts.length > 0) {
-        handleAccountsChanged(existingAccounts);
-        
-        // Get current chain ID
-        const currentChainId = await provider.request({
-          method: 'eth_chainId'
-        });
-        setChainId(currentChainId);
-        
-        console.log('MetaMask auto-connected:', existingAccounts[0]);
-      }
-    } catch (error) {
-      console.error('Error checking MetaMask connection:', error);
-    }
-  }, [detectMetaMask, handleAccountsChanged]);
+  //   try {
+  //     // Check if already connected
+  //     const existingAccounts = await provider.request({
+  //       method: 'eth_accounts'
+  //     });
+  //     
+  //     if (existingAccounts && existingAccounts.length > 0) {
+  //       handleAccountsChanged(existingAccounts);
+  //       
+  //       // Get current chain ID
+  //       const currentChainId = await provider.request({
+  //         method: 'eth_chainId'
+  //       });
+  //       setChainId(currentChainId);
+  //       
+  //       console.log('MetaMask auto-connected:', existingAccounts[0]);
+  //     }
+  //   } catch (error) {
+  //     console.error('Error checking MetaMask connection:', error);
+  //   }
+  // }, [detectMetaMask, handleAccountsChanged]);
 
   // Connect to MetaMask
   const connect = useCallback(async () => {

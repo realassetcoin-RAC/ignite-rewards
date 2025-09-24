@@ -15,11 +15,11 @@ import {
   EyeOff
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
+// import { supabase } from '@/integrations/supabase/client';
 
-interface MerchantTransactionProcessorProps {
-  merchantId: string;
-}
+// interface MerchantTransactionProcessorProps {
+//   _merchantId: string;
+// }
 
 interface AnonymousTransaction {
   id: string;
@@ -32,7 +32,7 @@ interface AnonymousTransaction {
   created_at: string;
 }
 
-const MerchantTransactionProcessor: React.FC<MerchantTransactionProcessorProps> = ({ merchantId }) => {
+const MerchantTransactionProcessor: React.FC<MerchantTransactionProcessorProps> = (/* _props */) => {
   const [transactions, setTransactions] = useState<AnonymousTransaction[]>([]);
   const [loading, setLoading] = useState(false);
   const [newTransaction, setNewTransaction] = useState({
@@ -98,8 +98,8 @@ const MerchantTransactionProcessor: React.FC<MerchantTransactionProcessorProps> 
       // Reset form
       setNewTransaction({ amount: '', rewardPercentage: '5' });
 
-    } catch (error) {
-      console.error('Error processing transaction:', error);
+    } catch {
+      console.error('Error processing transaction');
       toast({
         title: "Error",
         description: "Failed to process transaction. Please try again.",
@@ -132,8 +132,8 @@ const MerchantTransactionProcessor: React.FC<MerchantTransactionProcessorProps> 
         description: "Transaction has been cancelled and rewards will not vest.",
       });
 
-    } catch (error) {
-      console.error('Error cancelling transaction:', error);
+    } catch {
+      console.error('Error cancelling transaction');
       toast({
         title: "Error",
         description: "Failed to cancel transaction. Please try again.",

@@ -7,14 +7,13 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
 import { useSecureAuth } from "@/hooks/useSecureAuth";
 import { User, Mail, Calendar, Shield, Save, Smartphone, Key, Settings, AlertCircle } from "lucide-react";
 import MFASetup from "@/components/MFASetup";
 import { disableMFA, regenerateBackupCodes, getMFAStatus } from "@/lib/mfa";
 
 const ProfileTab = () => {
-  const { user, profile, isAdmin, refreshAuth, canUseMFA, mfaEnabled, isWalletUser } = useSecureAuth();
+  const { user, profile, isAdmin, refreshAuth, canUseMFA } = useSecureAuth();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [mfaLoading, setMfaLoading] = useState(false);

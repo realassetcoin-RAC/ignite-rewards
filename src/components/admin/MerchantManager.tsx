@@ -2,17 +2,16 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useForm } from "react-hook-form";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Eye, Edit2, CreditCard, Calendar, Plus, HelpCircle, Image as ImageIcon } from "lucide-react";
+import { Eye, Edit2, CreditCard, Calendar, Plus, Image as ImageIcon } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import CustomTooltip from "@/components/ui/custom-tooltip";
 
 interface Merchant {
   id: string;
@@ -65,8 +64,8 @@ const MerchantManager = ({ onStatsUpdate }: MerchantManagerProps) => {
       city: "",
       country: "",
       status: "pending",
-      subscription_plan: "",
-      subscription_start_date: "",
+      subscription_plan: "none",
+      subscription_start_date: new Date().toISOString().split('T')[0], // ✅ IMPLEMENT REQUIREMENT: Default to current date
       subscription_end_date: "",
       free_trial_months: "0"
     }
@@ -87,6 +86,21 @@ const MerchantManager = ({ onStatsUpdate }: MerchantManagerProps) => {
       
       if (error) {
         console.error('Failed to load subscription plans:', error);
+        
+        // Provide specific error message for PGRST002
+        if (error.code === 'PGRST002') {
+          toast({ 
+            title: 'Database Temporarily Unavailable', 
+            description: 'Supabase is experiencing schema cache issues. Please try again in a few minutes.', 
+            variant: 'destructive' 
+          });
+        } else {
+          toast({ 
+            title: 'Error', 
+            description: `Failed to load subscription plans: ${error.message}`, 
+            variant: 'destructive' 
+          });
+        }
         return;
       }
       
@@ -146,6 +160,7 @@ const MerchantManager = ({ onStatsUpdate }: MerchantManagerProps) => {
           user_id: crypto.randomUUID(), // In production, this should be selected from existing users
           subscription_start_date: startDate,
           subscription_end_date: endDate,
+          subscription_plan: data.subscription_plan === "none" ? null : data.subscription_plan,
         };
 
         const { error } = await supabase
@@ -173,7 +188,7 @@ const MerchantManager = ({ onStatsUpdate }: MerchantManagerProps) => {
           city: data.city,
           country: data.country,
           status: data.status,
-          subscription_plan: data.subscription_plan,
+          subscription_plan: data.subscription_plan === "none" ? null : data.subscription_plan,
           subscription_start_date: startDate,
           subscription_end_date: endDate
         };
@@ -246,7 +261,7 @@ const MerchantManager = ({ onStatsUpdate }: MerchantManagerProps) => {
       city: merchant.city,
       country: merchant.country,
       status: merchant.status,
-      subscription_plan: merchant.subscription_plan || "",
+      subscription_plan: merchant.subscription_plan || "none",
       subscription_start_date: merchant.subscription_start_date?.split('T')[0] || "",
       subscription_end_date: merchant.subscription_end_date?.split('T')[0] || "",
       free_trial_months: "0"
@@ -265,7 +280,7 @@ const MerchantManager = ({ onStatsUpdate }: MerchantManagerProps) => {
       city: "",
       country: "",
       status: "pending",
-      subscription_plan: "",
+      subscription_plan: "none",
       subscription_start_date: "",
       subscription_end_date: "",
       free_trial_months: "0"
@@ -293,8 +308,7 @@ const MerchantManager = ({ onStatsUpdate }: MerchantManagerProps) => {
   };
 
   return (
-    <TooltipProvider>
-      <div className="space-y-6">
+    <div className="space-y-6">
         <div className="flex justify-between items-center">
           <h3 className="text-lg font-medium">Merchants</h3>
           <Button onClick={handleCreateMerchant}>
@@ -423,7 +437,7 @@ const MerchantManager = ({ onStatsUpdate }: MerchantManagerProps) => {
             </DialogDescription>
           </DialogHeader>
 
-          {selectedMerchant && (
+          {(selectedMerchant || viewMode === "create") && (
             <div className="space-y-6">
               {viewMode === "view" ? (
                 <div className="grid grid-cols-2 gap-6">
@@ -543,14 +557,7 @@ const MerchantManager = ({ onStatsUpdate }: MerchantManagerProps) => {
                             <FormItem>
                               <FormLabel className="flex items-center gap-2">
                                 Business Name
-                                <Tooltip>
-                                  <TooltipTrigger>
-                                    <HelpCircle className="w-3 h-3" />
-                                  </TooltipTrigger>
-                                  <TooltipContent>
-                                    <p>The official registered name of the business</p>
-                                  </TooltipContent>
-                                </Tooltip>
+                                <CustomTooltip content="The official registered name of the business" />
                               </FormLabel>
                               <FormControl>
                                 <Input placeholder="Enter business name" {...field} />
@@ -567,14 +574,7 @@ const MerchantManager = ({ onStatsUpdate }: MerchantManagerProps) => {
                             <FormItem>
                               <FormLabel className="flex items-center gap-2">
                                 Business Type
-                                <Tooltip>
-                                  <TooltipTrigger>
-                                    <HelpCircle className="w-3 h-3" />
-                                  </TooltipTrigger>
-                                  <TooltipContent>
-                                    <p>Type of business (e.g., Retail, Restaurant, E-commerce)</p>
-                                  </TooltipContent>
-                                </Tooltip>
+                                <CustomTooltip content="Type of business (e.g., Retail, Restaurant, E-commerce)" />
                               </FormLabel>
                               <FormControl>
                                 <Input placeholder="Enter business type" {...field} />
@@ -593,14 +593,7 @@ const MerchantManager = ({ onStatsUpdate }: MerchantManagerProps) => {
                             <FormItem>
                               <FormLabel className="flex items-center gap-2">
                                 Contact Email
-                                <Tooltip>
-                                  <TooltipTrigger>
-                                    <HelpCircle className="w-3 h-3" />
-                                  </TooltipTrigger>
-                                  <TooltipContent>
-                                    <p>Primary business contact email address</p>
-                                  </TooltipContent>
-                                </Tooltip>
+                                <CustomTooltip content="Primary business contact email address" />
                               </FormLabel>
                               <FormControl>
                                 <Input type="email" placeholder="business@example.com" {...field} />
@@ -617,14 +610,7 @@ const MerchantManager = ({ onStatsUpdate }: MerchantManagerProps) => {
                             <FormItem>
                               <FormLabel className="flex items-center gap-2">
                                 Phone Number
-                                <Tooltip>
-                                  <TooltipTrigger>
-                                    <HelpCircle className="w-3 h-3" />
-                                  </TooltipTrigger>
-                                  <TooltipContent>
-                                    <p>Business contact phone number</p>
-                                  </TooltipContent>
-                                </Tooltip>
+                                <CustomTooltip content="Business contact phone number" />
                               </FormLabel>
                               <FormControl>
                                 <Input placeholder="+1 (555) 123-4567" {...field} />
@@ -643,14 +629,7 @@ const MerchantManager = ({ onStatsUpdate }: MerchantManagerProps) => {
                             <FormItem>
                               <FormLabel className="flex items-center gap-2">
                                 City
-                                <Tooltip>
-                                  <TooltipTrigger>
-                                    <HelpCircle className="w-3 h-3" />
-                                  </TooltipTrigger>
-                                  <TooltipContent>
-                                    <p>City where the business is located</p>
-                                  </TooltipContent>
-                                </Tooltip>
+                                <CustomTooltip content="City where the business is located" />
                               </FormLabel>
                               <FormControl>
                                 <Input placeholder="Enter city" {...field} />
@@ -667,14 +646,7 @@ const MerchantManager = ({ onStatsUpdate }: MerchantManagerProps) => {
                             <FormItem>
                               <FormLabel className="flex items-center gap-2">
                                 Country
-                                <Tooltip>
-                                  <TooltipTrigger>
-                                    <HelpCircle className="w-3 h-3" />
-                                  </TooltipTrigger>
-                                  <TooltipContent>
-                                    <p>Country where the business is registered</p>
-                                  </TooltipContent>
-                                </Tooltip>
+                                <CustomTooltip content="Country where the business is registered" />
                               </FormLabel>
                               <FormControl>
                                 <Input placeholder="Enter country" {...field} />
@@ -697,14 +669,7 @@ const MerchantManager = ({ onStatsUpdate }: MerchantManagerProps) => {
                             <FormItem>
                               <FormLabel className="flex items-center gap-2">
                                 Status
-                                <Tooltip>
-                                  <TooltipTrigger>
-                                    <HelpCircle className="w-3 h-3" />
-                                  </TooltipTrigger>
-                                  <TooltipContent>
-                                    <p>Current merchant account status</p>
-                                  </TooltipContent>
-                                </Tooltip>
+                                <CustomTooltip content="Current merchant account status" />
                               </FormLabel>
                               <Select onValueChange={field.onChange} defaultValue={field.value}>
                                 <FormControl>
@@ -731,14 +696,7 @@ const MerchantManager = ({ onStatsUpdate }: MerchantManagerProps) => {
                             <FormItem>
                               <FormLabel className="flex items-center gap-2">
                                 Subscription Plan
-                                <Tooltip>
-                                  <TooltipTrigger>
-                                    <HelpCircle className="w-3 h-3" />
-                                  </TooltipTrigger>
-                                  <TooltipContent>
-                                    <p>The subscription plan assigned to this merchant</p>
-                                  </TooltipContent>
-                                </Tooltip>
+                                <CustomTooltip content="The subscription plan assigned to this merchant" />
                               </FormLabel>
                               <Select onValueChange={field.onChange} defaultValue={field.value}>
                                 <FormControl>
@@ -747,10 +705,10 @@ const MerchantManager = ({ onStatsUpdate }: MerchantManagerProps) => {
                                   </SelectTrigger>
                                 </FormControl>
                                 <SelectContent>
-                                  <SelectItem value="">No Plan</SelectItem>
+                                  <SelectItem value="none">No Plan</SelectItem>
                                   {subscriptionPlans.map((plan) => (
                                     <SelectItem key={plan.id} value={plan.name}>
-                                      {plan.name} - ${plan.price_monthly}/month
+                                      {plan.name} - ${plan.price_monthly} /<span className="text-sm">mo</span>
                                       {plan.monthly_points > 0 && ` (${plan.monthly_points} points, ${plan.monthly_transactions} transactions)`}
                                     </SelectItem>
                                   ))}
@@ -770,22 +728,19 @@ const MerchantManager = ({ onStatsUpdate }: MerchantManagerProps) => {
                             <FormItem>
                               <FormLabel className="flex items-center gap-2">
                                 Subscription Start Date
-                                <Tooltip>
-                                  <TooltipTrigger>
-                                    <HelpCircle className="w-3 h-3" />
-                                  </TooltipTrigger>
-                                  <TooltipContent>
-                                    <p>When the subscription begins</p>
-                                  </TooltipContent>
-                                </Tooltip>
+                                <CustomTooltip content="When the subscription begins (cannot be in the past)" />
                               </FormLabel>
                               <FormControl>
                                 <input 
                                   type="date" 
+                                  min={new Date().toISOString().split('T')[0]} // ✅ IMPLEMENT REQUIREMENT: No past date selection
                                   className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                                   {...field}
                                 />
                               </FormControl>
+                              <div className="text-xs text-muted-foreground">
+                                Start date defaults to today. Past dates are not allowed.
+                              </div>
                               <FormMessage />
                             </FormItem>
                           )}
@@ -798,14 +753,7 @@ const MerchantManager = ({ onStatsUpdate }: MerchantManagerProps) => {
                             <FormItem>
                               <FormLabel className="flex items-center gap-2">
                                 Subscription End Date
-                                <Tooltip>
-                                  <TooltipTrigger>
-                                    <HelpCircle className="w-3 h-3" />
-                                  </TooltipTrigger>
-                                  <TooltipContent>
-                                    <p>When the subscription expires (optional)</p>
-                                  </TooltipContent>
-                                </Tooltip>
+                                <CustomTooltip content="When the subscription expires (optional)" />
                               </FormLabel>
                               <FormControl>
                                 <input 
@@ -826,14 +774,7 @@ const MerchantManager = ({ onStatsUpdate }: MerchantManagerProps) => {
                             <FormItem>
                               <FormLabel className="flex items-center gap-2">
                                 Free Trial
-                                <Tooltip>
-                                  <TooltipTrigger>
-                                    <HelpCircle className="w-3 h-3" />
-                                  </TooltipTrigger>
-                                  <TooltipContent>
-                                    <p>Assign a 1–3 month free trial</p>
-                                  </TooltipContent>
-                                </Tooltip>
+                                <CustomTooltip content="Assign a 1–3 month free trial" />
                               </FormLabel>
                               <Select onValueChange={field.onChange} defaultValue={field.value}>
                                 <FormControl>
@@ -875,7 +816,6 @@ const MerchantManager = ({ onStatsUpdate }: MerchantManagerProps) => {
         </DialogContent>
       </Dialog>
       </div>
-    </TooltipProvider>
   );
 };
 

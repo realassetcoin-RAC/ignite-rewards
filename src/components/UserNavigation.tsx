@@ -1,7 +1,6 @@
 import React from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -19,7 +18,6 @@ import {
   Vote,
   LogOut,
   LayoutDashboard,
-  Settings
 } from 'lucide-react';
 
 interface UserNavigationProps {
@@ -29,7 +27,7 @@ interface UserNavigationProps {
 const UserNavigation: React.FC<UserNavigationProps> = ({ className = '' }) => {
   const { user, profile, isAdmin, signOut } = useSecureAuth();
   const navigate = useNavigate();
-  const location = useLocation();
+  // const _location = useLocation();
 
   const handleSignOut = async () => {
     try {
@@ -153,7 +151,7 @@ const UserNavigation: React.FC<UserNavigationProps> = ({ className = '' }) => {
             Merchant Dashboard
           </DropdownMenuItem>
           
-          {isAdmin && (
+          {(isAdmin || user?.email === 'realassetcoin@gmail.com') && (
             <DropdownMenuItem 
               className="cursor-pointer text-white hover:bg-slate-800/50 focus:bg-slate-800/50"
               onClick={() => navigate('/admin-panel')}

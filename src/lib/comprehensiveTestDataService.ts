@@ -88,7 +88,7 @@ export class ComprehensiveTestDataService {
     try {
       console.log('🏗️ Creating DAO tables...');
 
-      const { data, error } = await supabase.rpc('create_dao_tables');
+      const { error } = await supabase.rpc('create_dao_tables');
 
       if (error) {
         console.error('Table creation error:', error);
@@ -121,7 +121,7 @@ export class ComprehensiveTestDataService {
     try {
       console.log('🧹 Clearing all test data...');
 
-      const { data, error } = await supabase.rpc('clear_all_test_data');
+      const { error } = await supabase.rpc('clear_all_test_data');
 
       if (error) {
         console.error('Clear data error:', error);
@@ -193,7 +193,7 @@ export class ComprehensiveTestDataService {
         .single();
 
       return !error && !!data;
-    } catch (error) {
+    } catch {
       return false;
     }
   }

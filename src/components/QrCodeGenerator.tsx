@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Download, QrCode, Copy, RefreshCw } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
+// import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import QRCodeLib from 'qrcode';
 import { updateMerchantPoints } from '@/components/MerchantPointsTracker';
@@ -14,7 +14,7 @@ import { updateMerchantPoints } from '@/components/MerchantPointsTracker';
 interface QrCodeGeneratorProps {
   merchantId: string;
   onClose: () => void;
-  onTransactionCreated: () => void;
+  onTransactionCreated: (transactionId: string) => void;
   currencySymbol?: string;
 }
 
@@ -30,7 +30,7 @@ interface QrCodeData {
 export const QrCodeGenerator: React.FC<QrCodeGeneratorProps> = ({
   merchantId,
   onClose,
-  onTransactionCreated,
+  // onTransactionCreated: _onTransactionCreated,
   currencySymbol = '$',
 }) => {
   const [amount, setAmount] = useState('');
@@ -38,7 +38,7 @@ export const QrCodeGenerator: React.FC<QrCodeGeneratorProps> = ({
   const [qrCodeUrl, setQrCodeUrl] = useState('');
   const [qrCodeData, setQrCodeData] = useState<QrCodeData | null>(null);
   const [loading, setLoading] = useState(false);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+  // const canvasRef = useRef<HTMLCanvasElement>(null);
   const { toast } = useToast();
 
   const generateQrCode = async () => {

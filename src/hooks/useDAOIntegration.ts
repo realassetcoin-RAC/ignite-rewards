@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { 
   DAOProposal, 
-  CreateProposalForm, 
+  // _CreateProposalForm, 
   ProposalStatus, 
   VotingType 
 } from '@/types/dao';
@@ -23,8 +23,8 @@ interface ChangeRequest {
   affectedComponents: string[];
   impactLevel: 'low' | 'medium' | 'high' | 'critical';
   requiresDAOApproval: boolean;
-  currentValue?: any;
-  proposedValue?: any;
+  currentValue?: unknown;
+  proposedValue?: unknown;
   createdBy: string;
   createdAt: string;
   status: 'pending' | 'approved' | 'rejected' | 'implemented';
@@ -175,8 +175,8 @@ export const useDAOIntegration = (options: DAOIntegrationOptions = {}) => {
     description: string,
     affectedComponents: string[],
     impactLevel: ChangeRequest['impactLevel'],
-    currentValue?: any,
-    proposedValue?: any
+    currentValue?: unknown,
+    proposedValue?: unknown
   ) => {
     const needsApproval = requiresDAOApproval(changeType, impactLevel);
 
@@ -292,7 +292,7 @@ export const useDAOIntegration = (options: DAOIntegrationOptions = {}) => {
     changeType: 'loyalty_network_addition' | 'loyalty_network_update' | 'loyalty_network_removal';
     priority: 'low' | 'medium' | 'high' | 'critical';
     requiresApproval?: boolean;
-    metadata?: any;
+    metadata?: Record<string, unknown>;
   }) => {
     const { title, description, changeType, priority, requiresApproval = true, metadata } = params;
     

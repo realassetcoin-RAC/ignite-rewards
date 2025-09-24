@@ -1,6 +1,6 @@
 import { ComprehensiveTestDataService } from './comprehensiveTestDataService';
 import { DAOService } from './daoService';
-import { supabase } from '@/integrations/supabase/client';
+// import { supabase } from '@/integrations/supabase/client';
 
 export interface TestResult {
   test: string;
@@ -57,7 +57,7 @@ export class TestDataRunner {
    */
   private static async testDatabaseConnection(): Promise<TestResult> {
     try {
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from('dao_organizations')
         .select('count')
         .limit(1);
@@ -92,7 +92,7 @@ export class TestDataRunner {
   private static async testRPCFunctions(): Promise<TestResult> {
     try {
       // Test if RPC functions exist by calling a simple one
-      const { data, error } = await supabase.rpc('create_dao_tables');
+      const { error } = await supabase.rpc('create_dao_tables');
       
       if (error) {
         return {

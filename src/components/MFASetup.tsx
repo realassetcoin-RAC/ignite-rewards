@@ -9,7 +9,6 @@ import { useToast } from '@/hooks/use-toast';
 import { useSecureAuth } from '@/hooks/useSecureAuth';
 import { 
   generateTOTPSecret, 
-  generateTOTPCode, 
   generateQRCodeURL, 
   enableMFA, 
   verifyTOTPCode,
@@ -164,7 +163,7 @@ const MFASetup: React.FC<MFASetupProps> = ({ onComplete, onCancel }) => {
         title: "Copied",
         description: "Secret key copied to clipboard"
       });
-    } catch (error) {
+    } catch {
       toast({
         title: "Error",
         description: "Failed to copy secret key",

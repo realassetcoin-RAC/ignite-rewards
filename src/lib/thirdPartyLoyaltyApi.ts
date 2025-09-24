@@ -1,4 +1,4 @@
-import { supabase } from "@/integrations/supabase/client";
+// import { supabase } from "@/integrations/supabase/client";
 
 export interface PointBalance {
   points: number;
@@ -195,9 +195,7 @@ export const convertPointsToTokens = async (
 /**
  * Get available conversion options for a user
  */
-export const getConversionOptions = async (
-  userId: string
-): Promise<ApiResponse<any[]>> => {
+export const getConversionOptions = async (): Promise<ApiResponse<any[]>> => {
   try {
     // TODO: Get user's linked accounts and their current balances
     // For now, return mock conversion opportunities

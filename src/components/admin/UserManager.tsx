@@ -1,10 +1,10 @@
 import { useState, useEffect } from "react";
 import { useSmartDataRefresh } from "@/hooks/useSmartDataRefresh";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Eye, Users, CreditCard, Calendar, Mail, User } from "lucide-react";
@@ -32,11 +32,11 @@ interface UserSubscription {
   } | null;
 }
 
-interface UserManagerProps {
-  onStatsUpdate: () => void;
-}
+// interface UserManagerProps {
+//   onStatsUpdate?: () => void;
+// }
 
-const UserManager = ({ onStatsUpdate }: UserManagerProps) => {
+const UserManager = () => {
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [subscribers, setSubscribers] = useState<UserSubscription[]>([]);
   const [loading, setLoading] = useState(true);

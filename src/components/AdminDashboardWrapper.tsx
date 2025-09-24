@@ -10,19 +10,16 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
 import { useSecureAuth } from '@/hooks/useSecureAuth';
 import { verifyAdminAccess, diagnoseAdminIssues, AdminVerificationResult } from '@/utils/adminVerification';
 import { 
-  Shield, 
   AlertTriangle, 
   RefreshCw, 
   CheckCircle, 
   XCircle,
   Info,
-  Settings,
-  User
+  Settings
 } from 'lucide-react';
 
 interface AdminDashboardWrapperProps {
@@ -30,7 +27,7 @@ interface AdminDashboardWrapperProps {
 }
 
 const AdminDashboardWrapper: React.FC<AdminDashboardWrapperProps> = ({ children }) => {
-  const { user, profile, isAdmin, loading, error, refreshAuth } = useSecureAuth();
+  const { user, isAdmin, loading, error, refreshAuth } = useSecureAuth();
   const [verificationResult, setVerificationResult] = useState<AdminVerificationResult | null>(null);
   const [isVerifying, setIsVerifying] = useState(false);
   const [showDiagnostics, setShowDiagnostics] = useState(false);
@@ -63,8 +60,8 @@ const AdminDashboardWrapper: React.FC<AdminDashboardWrapperProps> = ({ children 
         console.warn('Admin verification failed, running diagnostics...');
         await diagnoseAdminIssues();
       }
-    } catch (error) {
-      console.error('Verification failed:', error);
+    } catch {
+      console.error('Verification failed');
       toast({
         title: "Verification Error",
         description: "Failed to verify admin access. Please try again.",
@@ -83,7 +80,7 @@ const AdminDashboardWrapper: React.FC<AdminDashboardWrapperProps> = ({ children 
         title: "Refreshed",
         description: "Authentication state has been refreshed.",
       });
-    } catch (error) {
+    } catch {
       toast({
         title: "Refresh Failed",
         description: "Failed to refresh authentication. Please try signing in again.",
@@ -112,26 +109,38 @@ const AdminDashboardWrapper: React.FC<AdminDashboardWrapperProps> = ({ children 
   // Show error state for authentication failures
   if (error || !user) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-6">
-        <Card className="w-full max-w-md">
+      <div className="min-h-screen hero-gradient relative overflow-hidden flex items-center justify-center p-6">
+        {/* Animated Background Elements */}
+        <div className="absolute top-20 left-20 w-72 h-72 bg-gradient-to-r from-primary/20 to-purple-500/20 rounded-full mix-blend-multiply filter blur-xl animate-pulse pointer-events-none"></div>
+        <div className="absolute top-40 right-20 w-96 h-96 bg-gradient-to-r from-purple-500/20 to-blue-500/20 rounded-full mix-blend-multiply filter blur-xl animate-pulse animation-delay-2000 pointer-events-none"></div>
+        <div className="absolute bottom-20 left-1/3 w-64 h-64 bg-gradient-to-r from-blue-500/20 to-primary/20 rounded-full mix-blend-multiply filter blur-xl animate-pulse animation-delay-4000 pointer-events-none"></div>
+        
+        {/* Floating particles */}
+        <div className="absolute top-1/4 left-1/4 w-2 h-2 bg-primary/30 rounded-full animate-bounce animation-delay-1000"></div>
+        <div className="absolute top-1/3 right-1/3 w-1.5 h-1.5 bg-purple-500/40 rounded-full animate-bounce animation-delay-3000"></div>
+        <div className="absolute bottom-1/3 left-1/3 w-1.5 h-1.5 bg-blue-500/50 rounded-full animate-bounce animation-delay-5000"></div>
+
+        <Card className="relative z-10 w-full max-w-md card-gradient border-primary/20 backdrop-blur-md">
           <CardHeader className="text-center">
-            <XCircle className="h-16 w-16 text-destructive mx-auto mb-4" />
-            <CardTitle className="text-xl">Authentication Error</CardTitle>
-            <CardDescription>
+            <div className="w-16 h-16 bg-destructive/10 rounded-lg flex items-center justify-center mx-auto mb-4">
+              <XCircle className="h-8 w-8 text-destructive" />
+            </div>
+            <CardTitle className="text-xl text-foreground">Authentication Error</CardTitle>
+            <CardDescription className="text-muted-foreground">
               {error || 'You are not signed in. Please authenticate to continue.'}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <Button 
               onClick={() => navigate('/auth')} 
-              className="w-full"
+              className="w-full bg-gradient-to-r from-primary to-purple-500 hover:from-primary/90 hover:to-purple-500/90"
             >
               Sign In
             </Button>
             <Button 
               onClick={() => navigate('/')} 
               variant="outline" 
-              className="w-full"
+              className="w-full border-primary/20 hover:bg-primary/5"
             >
               Return Home
             </Button>

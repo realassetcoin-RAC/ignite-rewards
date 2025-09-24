@@ -59,7 +59,7 @@ const AdminUserCreator: React.FC = () => {
     try {
       // Create admin user with Supabase Auth Admin API
       // Note: This should ideally be done through a secure backend endpoint
-      const { data, error } = await supabase.auth.signUp({
+      const { error } = await supabase.auth.signUp({
         email: emailForm.email,
         password: emailForm.password,
         options: {
@@ -187,8 +187,8 @@ const AdminUserCreator: React.FC = () => {
             </div>
           </div>
 
-          <{/* Tab Content */}
-{activeTab ==="email" className="space-y-4">
+          {activeTab === "email" && (
+            <div className="space-y-4">
             <form onSubmit={handleEmailAdminCreation} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="email">Email Address *</Label>
@@ -238,10 +238,11 @@ const AdminUserCreator: React.FC = () => {
                 Create Admin Account
               </Button>
             </form>
+            </div>
           )}
 
-          <{/* Tab Content */}
-{activeTab ==="wallet" className="space-y-4">
+          {activeTab === "wallet" && (
+            <div className="space-y-4">
             <form onSubmit={handleWalletAdminCreation} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="walletEmail">Email Address *</Label>
@@ -290,6 +291,7 @@ const AdminUserCreator: React.FC = () => {
                 Create Wallet-Linked Admin
               </Button>
             </form>
+            </div>
           )}
         </div>
       </CardContent>

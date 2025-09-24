@@ -2,7 +2,7 @@
 // This module integrates with the existing loyalty platform's NFT system
 // to check which NFT cards users actually own and calculate investment multipliers
 
-import { supabase } from '@/integrations/supabase/client';
+// import { supabase } from '@/integrations/supabase/client';
 import { NFTCardTier } from '@/types/marketplace';
 
 export interface UserNFTCardStatus {

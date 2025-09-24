@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { ArrowLeft, Sparkles, FileText } from "lucide-react";
+import { ArrowLeft, FileText } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import Footer from "@/components/Footer";
@@ -31,17 +31,19 @@ const TermsOfService = () => {
 
       {/* Header */}
       <div className="relative z-10 container mx-auto px-4 py-6">
-        <Link to="/">
-          <Button 
-            variant="minimal" 
-            className={`gap-2 group transform hover:scale-105 transition-all duration-300 ${
-              isLoaded ? 'animate-fade-in-up' : 'opacity-0'
-            }`}
-          >
-            <ArrowLeft className="h-4 w-4 group-hover:-translate-x-1 transition-transform" />
-            Back to Home
-          </Button>
-        </Link>
+        <div className="flex justify-end">
+          <Link to="/">
+            <Button 
+              variant="minimal" 
+              className={`gap-2 group transform hover:scale-105 transition-all duration-300 ${
+                isLoaded ? 'animate-fade-in-up' : 'opacity-0'
+              }`}
+            >
+              <ArrowLeft className="h-4 w-4 group-hover:-translate-x-1 transition-transform" />
+              Back to Home
+            </Button>
+          </Link>
+        </div>
       </div>
 
       {/* Hero Section */}

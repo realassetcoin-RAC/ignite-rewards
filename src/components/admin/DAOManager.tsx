@@ -14,21 +14,13 @@ import { supabase } from '@/integrations/supabase/client';
 import { 
   Vote, 
   Plus, 
-  Users, 
   Settings, 
-  TrendingUp, 
   Clock, 
   CheckCircle, 
-  XCircle, 
-  AlertCircle,
+  XCircle,
   Edit,
   Trash2,
-  Eye,
-  Calendar,
-  DollarSign,
-  Target,
-  MessageSquare,
-  ExternalLink
+  Eye
 } from 'lucide-react';
 import { format } from 'date-fns';
 
@@ -85,7 +77,6 @@ const DAOManager: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [showCreateDAO, setShowCreateDAO] = useState(false);
   const [showCreateProposal, setShowCreateProposal] = useState(false);
-  const [selectedDAO, setSelectedDAO] = useState<string>('');
   
   // Form states
   const [newDAO, setNewDAO] = useState({

@@ -7,7 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
-import { Check, Loader2, Building2, Star, ArrowRight, ChevronLeft, ChevronRight } from "lucide-react";
+import { Check, Loader2, Building2, Star, ArrowRight, Zap, Rocket, Cloud } from "lucide-react";
 import {
   Carousel,
   CarouselContent,
@@ -16,10 +16,9 @@ import {
   CarouselPrevious,
   type CarouselApi,
 } from "@/components/ui/carousel";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/lib/supabaseClient";
 import { useNavigate } from "react-router-dom";
-import { cn } from "@/lib/utils";
-import { Progress } from "@/components/ui/progress";
+import { createModuleLogger } from "@/utils/consoleReplacer";
 
 /**
  * Merchant subscription plan interface
@@ -39,26 +38,15 @@ interface MerchantPlan {
   validUntil?: string;
 }
 
-/**
- * Database subscription plan interface
- */
-interface DatabasePlan {
-  id: string;
-  name: string;
-  description: string;
-  price_monthly: number;
-  price_yearly: number;
-  monthly_points: number;
-  monthly_transactions: number;
-  features: string[];
-  trial_days: number;
-  is_active: boolean;
-  popular?: boolean;
-  plan_number: number;
-  valid_from?: string;
-  valid_until?: string;
-  created_at: string;
-}
+// Plan icons with colors
+const planIcons = {
+  startup: <Zap className="h-8 w-8 text-blue-500" />,
+  momentum: <Star className="h-8 w-8 text-purple-500" />,
+  energizer: <Rocket className="h-8 w-8 text-orange-500" />,
+  cloud9: <Cloud className="h-8 w-8 text-green-500" />,
+  super: <Rocket className="h-8 w-8 text-red-500" />
+};
+
 
 /**
  * Merchant signup modal component props
@@ -91,6 +79,8 @@ interface MerchantForm {
  * @returns {JSX.Element} The merchant signup modal component
  */
 const MerchantSignupModal: React.FC<MerchantSignupModalProps> = ({ isOpen, onClose }) => {
+  const logger = createModuleLogger('MerchantSignupModal');
+  
   // State management for form and UI
   const [selectedPlan, setSelectedPlan] = useState(0); // Default to first plan
   const [billingPeriod, setBillingPeriod] = useState<'monthly' | 'yearly'>('monthly');
@@ -99,8 +89,10 @@ const MerchantSignupModal: React.FC<MerchantSignupModalProps> = ({ isOpen, onClo
   const [step, setStep] = useState<'select' | 'details'>('select');
   const [merchantPlans, setMerchantPlans] = useState<MerchantPlan[]>([]);
   const [api, setApi] = useState<CarouselApi>();
-  const [current, setCurrent] = useState(0);
-  const [count, setCount] = useState(0);
+  const [, setCurrent] = useState(0);
+  const [, setCount] = useState(0);
+  const [currentSlide, setCurrentSlide] = useState(0);
+  const [formKey, setFormKey] = useState(0); // Key to force form re-render
   
   // Merchant form state
   const [merchantForm, setMerchantForm] = useState<MerchantForm>({
@@ -127,14 +119,18 @@ const MerchantSignupModal: React.FC<MerchantSignupModalProps> = ({ isOpen, onClo
   const loadPlans = async () => {
     try {
       setPlansLoading(true);
-      console.log('🔍 Loading valid subscription plans from database...');
+      logger.debug('Starting to load subscription plans');
       
       // Use the new function that filters by validity dates
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .rpc('get_valid_subscription_plans');
       
+      logger.debug('RPC call result', { data, error });
+      
       if (error) {
-        console.error('Failed to load plans:', error);
+        logger.error('RPC function failed', error);
+        logger.debug('Trying fallback to direct table query');
+        
         // Fallback to direct table query if function doesn't exist yet
         const { data: fallbackData, error: fallbackError } = await supabase
           .from('merchant_subscription_plans')
@@ -142,7 +138,10 @@ const MerchantSignupModal: React.FC<MerchantSignupModalProps> = ({ isOpen, onClo
           .eq('is_active', true)
           .order('plan_number', { ascending: true });
         
+        logger.debug('Fallback query result', { fallbackData, fallbackError });
+        
         if (fallbackError) {
+          logger.error('Fallback query also failed', fallbackError);
           toast({
             title: "Error",
             description: "Could not load subscription plans. Please try again later or contact support.",
@@ -153,6 +152,7 @@ const MerchantSignupModal: React.FC<MerchantSignupModalProps> = ({ isOpen, onClo
         }
         
         if (fallbackData && fallbackData.length > 0) {
+          logger.info('Fallback data received', { count: fallbackData.length, plans: 'plans' });
           const convertedPlans: MerchantPlan[] = fallbackData.map((plan: any) => ({
             id: plan.id,
             name: plan.name,
@@ -168,33 +168,76 @@ const MerchantSignupModal: React.FC<MerchantSignupModalProps> = ({ isOpen, onClo
             validUntil: plan.valid_until
           }));
           
+          logger.debug('Converted plans', convertedPlans);
           setMerchantPlans(convertedPlans);
-          console.log('✅ Loaded', convertedPlans.length, 'subscription plans (fallback)');
+          logger.info('Loaded subscription plans (fallback)', { count: convertedPlans.length });
+        } else {
+          logger.warn('No fallback data received');
         }
         return;
       }
 
-      if (data && data.length > 0) {
-        // Convert to MerchantPlan format
-        const convertedPlans: MerchantPlan[] = data.map((plan: any) => ({
-          id: plan.id,
-          name: plan.name,
-          price: plan.price_monthly || 0,
-          priceYearly: plan.price_yearly || 0,
-          period: "month",
-          popular: plan.popular || false,
-          features: Array.isArray(plan.features) ? plan.features : [],
-          monthlyPoints: plan.monthly_points || 0,
-          monthlyTransactions: plan.monthly_transactions || 0,
-          planNumber: plan.plan_number || 0,
-          validFrom: plan.valid_from,
-          validUntil: plan.valid_until
-        }));
+      if (data && Array.isArray(data) && data.length > 0) {
+        logger.info('RPC data received', { count: data.length, plans: 'plans' });
+        logger.debug('RPC data', data);
         
+        // Convert to MerchantPlan format
+        const convertedPlans: MerchantPlan[] = data.map((plan: any) => {
+          // Convert features object to array of strings
+          let featuresArray: string[] = [];
+          if (plan.features && typeof plan.features === 'object') {
+            featuresArray = Object.entries(plan.features)
+              .filter(([, value]) => value === true)
+              .map(([key]) => key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()));
+          } else if (Array.isArray(plan.features)) {
+            featuresArray = plan.features;
+          }
+          
+          // Add default features based on plan
+          const defaultFeatures = [
+            'Loyalty Program Management',
+            'Customer Analytics',
+            'Email Marketing',
+            'QR Code Generation'
+          ];
+          
+          // Add plan-specific features
+          if (plan.plan_number >= 2) {
+            featuresArray.push('Custom Branding');
+          }
+          if (plan.plan_number >= 3) {
+            featuresArray.push('Priority Support');
+          }
+          if (plan.plan_number >= 4) {
+            featuresArray.push('API Access');
+          }
+          if (plan.plan_number >= 5) {
+            featuresArray.push('White Label Solution');
+          }
+          
+          // Combine with default features
+          featuresArray = [...new Set([...defaultFeatures, ...featuresArray])];
+          
+          return {
+            id: plan.id,
+            name: plan.name,
+            price: plan.price_monthly || 0,
+            priceYearly: plan.price_yearly || 0,
+            period: "month",
+            popular: plan.popular || false,
+            features: featuresArray,
+            monthlyPoints: plan.monthly_points || 0,
+            monthlyTransactions: plan.monthly_transactions || 0,
+            planNumber: plan.plan_number || 0,
+            validFrom: plan.valid_from,
+            validUntil: plan.valid_until
+          };
+        });
+        
+        logger.debug('Converted plans from RPC', convertedPlans);
         setMerchantPlans(convertedPlans);
-        console.log('✅ Loaded', convertedPlans.length, 'valid subscription plans from database');
+        logger.info('Set merchant plans state', { count: convertedPlans.length, plans: 'plans' });
       } else {
-        console.log('⚠️ No valid plans found in database');
         setMerchantPlans([]);
         toast({
           title: "No Plans Available",
@@ -220,10 +263,10 @@ const MerchantSignupModal: React.FC<MerchantSignupModalProps> = ({ isOpen, onClo
    */
   useEffect(() => {
     if (isOpen) {
-      console.log("MerchantSignupModal opened, loading plans...");
       loadPlans();
     }
   }, [isOpen]);
+
 
   /**
    * Carousel API effect for slide tracking
@@ -236,16 +279,25 @@ const MerchantSignupModal: React.FC<MerchantSignupModalProps> = ({ isOpen, onClo
     setCount(api.scrollSnapList().length);
     setCurrent(api.selectedScrollSnap() + 1);
 
-    api.on("select", () => {
+    const onSelect = () => {
       setCurrent(api.selectedScrollSnap() + 1);
-    });
+      setCurrentSlide(api.selectedScrollSnap());
+    };
+
+    api.on("select", onSelect);
+    onSelect(); // Set initial state
+
+    return () => {
+      api.off("select", onSelect);
+    };
   }, [api]);
 
   /**
    * Reset modal state when it opens/closes
    */
   React.useEffect(() => {
-    if (!isOpen) {
+    if (isOpen) {
+      // Reset form data when modal opens to prevent prefilling
       setStep('select');
       setSelectedPlan(0);
       setBillingPeriod('monthly');
@@ -262,22 +314,56 @@ const MerchantSignupModal: React.FC<MerchantSignupModalProps> = ({ isOpen, onClo
       setAcceptedTerms(false);
       setAcceptedPrivacy(false);
       setLoading(false);
+      
+      // Clear any stored data from sessionStorage and localStorage
+      sessionStorage.removeItem('merchantPaymentData');
+      sessionStorage.removeItem('merchantFormData');
+      localStorage.removeItem('merchantFormData');
+      
+      // Force form re-render by changing key
+      setFormKey(prev => prev + 1);
     }
   }, [isOpen]);
 
   /**
+   * Reset form data to prevent prefilling
+   */
+  const resetFormData = () => {
+    setMerchantForm({
+      businessName: "",
+      contactName: "",
+      email: "",
+      password: "",
+      phone: "",
+      website: "",
+      industry: "",
+      address: ""
+    });
+    setAcceptedTerms(false);
+    setAcceptedPrivacy(false);
+    
+    // Clear any stored payment data from sessionStorage
+    sessionStorage.removeItem('merchantPaymentData');
+    sessionStorage.removeItem('merchantFormData');
+    localStorage.removeItem('merchantFormData');
+    
+    // Force form re-render by changing key
+    setFormKey(prev => prev + 1);
+  };
+
+  /**
    * Navigate to next subscription plan
    */
-  const nextPlan = () => {
-    setSelectedPlan((prev) => (prev + 1) % merchantPlans.length);
-  };
+  // const nextPlan = () => {
+  //   // Function removed - was unused
+  // };
 
   /**
    * Navigate to previous subscription plan
    */
-  const prevPlan = () => {
-    setSelectedPlan((prev) => (prev - 1 + merchantPlans.length) % merchantPlans.length);
-  };
+  // const prevPlan = () => {
+  //   // Function removed - was unused
+  // };
 
   /**
    * Handle input changes for merchant form
@@ -344,25 +430,7 @@ const MerchantSignupModal: React.FC<MerchantSignupModalProps> = ({ isOpen, onClo
       // Create merchant account with Supabase Auth
       const { data, error } = await supabase.auth.signUp({
         email: merchantForm.email,
-        password: merchantForm.password,
-        options: {
-          data: {
-            signup_type: 'merchant',
-            full_name: merchantForm.contactName,
-            business_name: merchantForm.businessName,
-            contact_name: merchantForm.contactName,
-            phone: merchantForm.phone,
-            website: merchantForm.website,
-            industry: merchantForm.industry,
-            address: merchantForm.address,
-            selected_plan: plan.id,
-            plan_price: selectedPrice,
-            billing_period: billingPeriod,
-            monthly_points: plan.monthlyPoints,
-            monthly_transactions: plan.monthlyTransactions
-          },
-          emailRedirectTo: `${window.location.origin}/merchant`
-        }
+        password: merchantForm.password
       });
 
       if (error) {
@@ -417,46 +485,65 @@ const MerchantSignupModal: React.FC<MerchantSignupModalProps> = ({ isOpen, onClo
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="w-[calc(100vw-2rem)] sm:w-full sm:max-w-4xl bg-transparent border-0 shadow-none p-0">
-        <div className="rounded-lg p-[1px] bg-gradient-to-r from-primary via-purple-500 to-blue-500">
-          <div className="bg-card/95 backdrop-blur-sm border border-border/50 card-shadow rounded-lg max-h-[calc(100vh-2rem)] overflow-y-auto p-3 sm:p-4">
-            <DialogHeader className="space-y-3">
-              <DialogTitle className="text-center text-xl sm:text-2xl font-bold bg-gradient-to-r from-primary via-purple-500 to-blue-500 bg-clip-text text-transparent">
-                <Building2 className="inline-block mr-2 h-5 w-5 sm:h-6 sm:w-6 text-primary" />
-                Merchant Signup
-              </DialogTitle>
+        <div className="rounded-2xl p-[2px] bg-gradient-to-br from-primary via-purple-500 via-blue-500 to-emerald-500 shadow-2xl">
+          <div className="bg-gradient-to-br from-slate-900/95 via-slate-800/95 to-slate-900/95 backdrop-blur-xl border border-white/10 rounded-2xl max-h-[calc(100vh-2rem)] overflow-y-auto p-4 sm:p-6 shadow-inner">
+            <DialogHeader className="space-y-2 text-center">
+              <div className="flex items-center justify-center space-x-2">
+                <div className="p-2 rounded-full bg-gradient-to-r from-primary to-purple-500 shadow-lg">
+                  <Building2 className="h-5 w-5 text-white" />
+                </div>
+                <DialogTitle className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-white via-blue-100 to-purple-100 bg-clip-text text-transparent">
+                  Merchant Signup
+                </DialogTitle>
+              </div>
             </DialogHeader>
 
         {step === 'select' && (
-          <div className="space-y-6">
+          <div className="space-y-4">
             <div className="text-center px-2">
-              <h3 className="text-lg sm:text-xl font-semibold mb-2">Choose Your Subscription Plan</h3>
-              <p className="text-sm sm:text-base text-muted-foreground">Select the plan that best fits your business needs</p>
+              <div className="flex items-center justify-center gap-2 mb-1">
+                <h3 className="text-base sm:text-lg font-semibold">Choose Your Subscription Plan</h3>
+                <Badge 
+                  variant="secondary" 
+                  className="cursor-pointer hover:bg-blue-100 hover:text-blue-700 transition-colors duration-200 text-xs"
+                  onClick={() => navigate('/subscription-plans')}
+                >
+                  More Info
+                </Badge>
+              </div>
+              <p className="text-xs sm:text-sm text-muted-foreground">Select the plan that best fits your business needs</p>
               
               {/* Billing Period Toggle */}
               <div className="flex items-center justify-center mt-4">
-                <div className="bg-muted/50 rounded-lg p-1 flex">
+                <div className="bg-gradient-to-r from-white/10 to-white/5 rounded-xl p-1 flex border border-white/20 shadow-lg">
                   <button
                     type="button"
-                    onClick={() => setBillingPeriod('monthly')}
-                    className={`px-4 py-2 rounded-md text-sm font-medium ${
+                    onClick={() => {
+                      setBillingPeriod('monthly');
+                      resetFormData(); // Reset form when changing billing period
+                    }}
+                    className={`px-4 py-2 rounded-lg text-xs font-semibold transition-all duration-300 ${
                       billingPeriod === 'monthly'
-                        ? 'bg-primary text-primary-foreground shadow-sm'
-                        : 'text-muted-foreground hover:text-foreground'
+                        ? 'bg-gradient-to-r from-primary to-purple-500 text-white shadow-lg'
+                        : 'text-slate-300 hover:text-white hover:bg-white/10'
                     }`}
                   >
                     Monthly
                   </button>
                   <button
                     type="button"
-                    onClick={() => setBillingPeriod('yearly')}
-                    className={`px-4 py-2 rounded-md text-sm font-medium ${
+                    onClick={() => {
+                      setBillingPeriod('yearly');
+                      resetFormData(); // Reset form when changing billing period
+                    }}
+                    className={`px-4 py-2 rounded-lg text-xs font-semibold transition-all duration-300 ${
                       billingPeriod === 'yearly'
-                        ? 'bg-primary text-primary-foreground shadow-sm'
-                        : 'text-muted-foreground hover:text-foreground'
+                        ? 'bg-gradient-to-r from-primary to-purple-500 text-white shadow-lg'
+                        : 'text-slate-300 hover:text-white hover:bg-white/10'
                     }`}
                   >
                     Yearly
-                    <Badge variant="secondary" className="ml-2 text-xs">
+                    <Badge className="ml-2 text-xs bg-gradient-to-r from-emerald-500 to-green-500 text-white">
                       Save 25%
                     </Badge>
                   </button>
@@ -466,75 +553,96 @@ const MerchantSignupModal: React.FC<MerchantSignupModalProps> = ({ isOpen, onClo
 
             {plansLoading ? (
               <div className="flex justify-center items-center min-h-[300px]">
-                <div className="text-center space-y-4">
-                  <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" />
-                  <p className="text-muted-foreground">Loading subscription plans...</p>
+                <div className="text-center space-y-6">
+                  <div className="relative">
+                    <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto" />
+                    <div className="absolute inset-0 h-12 w-12 mx-auto rounded-full border-2 border-primary/20"></div>
+                  </div>
+                  <p className="text-slate-300 text-lg font-medium">Loading subscription plans...</p>
+                  <p className="text-slate-400 text-sm">Please wait while we fetch the best plans for you</p>
                 </div>
               </div>
             ) : (
               <div className="w-full">
                 {merchantPlans.length > 0 ? (
                   <div className="w-full max-w-5xl mx-auto px-6">
+                    
                     {/* Carousel with Progress */}
                     <div className="mx-auto max-w-2xl py-4">
-                      <Carousel setApi={setApi} className="w-full">
+                      <Carousel 
+                        setApi={setApi} 
+                        className="w-full"
+                        opts={{
+                          align: "center",
+                          loop: true,
+                          skipSnaps: false,
+                          dragFree: false,
+                          slidesToScroll: 1,
+                        }}
+                      >
                         <CarouselContent>
                           {merchantPlans.map((plan, index) => (
                             <CarouselItem key={plan.id} className="basis-full">
-                              <Card className="relative h-full bg-gradient-to-br from-gray-800 to-gray-900 border-gray-700">
-                                <CardContent className="p-8 h-full flex flex-col">
+                              <Card className="relative h-[28rem] bg-gradient-to-br from-slate-800/90 via-slate-700/90 to-slate-800/90 border border-white/20 shadow-2xl hover:shadow-3xl transition-all duration-300 hover:scale-[1.02] backdrop-blur-sm">
+                                <CardContent className="p-6 h-full flex flex-col">
                                   {/* Popular Badge */}
                                   {plan.popular && (
                                     <div className="absolute top-4 right-4 z-10">
-                                      <Badge className="bg-gradient-to-r from-primary to-purple-500 text-white">
+                                      <Badge className="bg-gradient-to-r from-yellow-400 via-orange-500 to-red-500 text-white shadow-lg animate-pulse">
                                         <Star className="w-3 h-3 mr-1 fill-current" />
-                                        Popular
+                                        Most Popular
                                       </Badge>
                                     </div>
                                   )}
                                   
                                   {/* Plan Header */}
-                                  <div className="text-center mb-8">
-                                    <h3 className="text-3xl font-bold text-white mb-4">{plan.name}</h3>
-                                    <div className="text-5xl font-bold text-white mb-3">
-                                      ${billingPeriod === 'yearly' ? plan.priceYearly : plan.price}
+                                  <div className="text-center mb-6 min-h-[100px] flex flex-col justify-center">
+                                    {/* Plan Icon */}
+                                    <div className="flex justify-center mb-3">
+                                      {planIcons[plan.id as keyof typeof planIcons]}
+                                    </div>
+                                    <h3 className="text-2xl font-bold bg-gradient-to-r from-white to-blue-100 bg-clip-text text-transparent mb-1.5">{plan.name}</h3>
+                                    <div className="flex items-center justify-center gap-3 mb-2">
+                                      <div className="text-4xl font-bold bg-gradient-to-r from-primary via-purple-400 to-blue-400 bg-clip-text text-transparent">
+                                        ${billingPeriod === 'yearly' ? plan.priceYearly : plan.price}
+                                      </div>
+                                      <div className="text-xs text-slate-300 bg-gradient-to-r from-white/10 to-white/5 px-3 py-1 rounded-full border border-white/20">
+                                        {billingPeriod === 'yearly' ? 'annually' : 'monthly'}
+                                      </div>
                                     </div>
                                     {billingPeriod === 'yearly' && plan.priceYearly && plan.priceYearly > 0 && (
-                                      <div className="text-xl text-white/80 mb-3">
+                                      <div className="text-lg text-slate-300">
                                         ${Math.round(plan.priceYearly / 12)} per month
                                       </div>
                                     )}
-                                    <div className="text-base text-white/70 bg-white/20 px-4 py-2 rounded-full inline-block">
-                                      {billingPeriod === 'yearly' ? 'Billed annually' : 'Billed monthly'}
-                                    </div>
                                   </div>
                                   
                                   {/* Features List */}
-                                  <div className="flex-1 mb-8">
-                                    <div className="space-y-4">
-                                      {plan.features?.slice(0, 6).map((feature, featureIndex) => (
-                                        <div key={featureIndex} className="flex items-start gap-4">
-                                          <div className="flex-shrink-0 w-6 h-6 bg-white/20 rounded-full flex items-center justify-center mt-0.5">
-                                            <Check className="w-4 h-4 text-white font-bold" />
-                                          </div>
-                                          <span className="text-base text-white leading-relaxed">{feature}</span>
+                                  <div className="flex-1 mb-6 flex justify-center">
+                                    <div className="space-y-2 w-full max-w-xs">
+                                      {plan.features?.slice(0, 7).map((feature, featureIndex) => (
+                                        <div key={featureIndex} className="flex items-center text-xs text-slate-200 bg-white/5 rounded-md px-2 py-1 border border-white/10">
+                                          <Check className="w-3 h-3 text-emerald-400 mr-2 flex-shrink-0" />
+                                          <span className="font-medium">{feature}</span>
                                         </div>
                                       ))}
                                     </div>
                                   </div>
                                   
                                   {/* Action Button */}
-                                  <div className="mt-auto flex justify-center items-end pb-2">
+                                  <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 w-full px-6 flex justify-center">
                                     <Button
-                                      className="w-1/2 h-10 text-base font-medium transition-all duration-300 transform hover:scale-105 bg-gradient-to-r from-primary to-purple-500 hover:from-primary/90 hover:to-purple-500/90 text-white shadow-lg hover:shadow-xl border-0"
-                                      style={{ padding: '8px 16px', minHeight: '40px' }}
+                                      className="w-1/2 h-8 text-xs font-semibold transition-all duration-300 transform hover:scale-105 bg-gradient-to-r from-primary via-purple-500 to-blue-500 hover:from-primary/90 hover:via-purple-500/90 hover:to-blue-500/90 text-white shadow-xl hover:shadow-2xl border-0 rounded-lg"
                                       onClick={() => {
                                         setSelectedPlan(index);
+                                        resetFormData(); // Reset form when selecting a plan
                                         setStep('details');
                                       }}
                                     >
-                                      <Check className="w-3 h-3 mr-1" />
-                                      Select Plan
+                                      <span className="flex items-center space-x-2">
+                                        <span>Select Plan</span>
+                                        <ArrowRight className="w-4 h-4" />
+                                      </span>
                                     </Button>
                                   </div>
                                 </CardContent>
@@ -542,10 +650,28 @@ const MerchantSignupModal: React.FC<MerchantSignupModalProps> = ({ isOpen, onClo
                             </CarouselItem>
                           ))}
                         </CarouselContent>
-                        <CarouselPrevious className="top-[calc(100%+0.5rem)] translate-y-0 left-0" />
-                        <CarouselNext className="top-[calc(100%+0.5rem)] translate-y-0 left-2 translate-x-full" />
+                        <CarouselPrevious className="top-[calc(100%+0.5rem)] translate-y-0 left-0 bg-gradient-to-r from-slate-700 to-slate-600 hover:from-slate-600 hover:to-slate-500 border-white/20 text-white shadow-lg hover:shadow-xl" />
+                        <CarouselNext className="top-[calc(100%+0.5rem)] translate-y-0 left-2 translate-x-full bg-gradient-to-r from-slate-700 to-slate-600 hover:from-slate-600 hover:to-slate-500 border-white/20 text-white shadow-lg hover:shadow-xl" />
                       </Carousel>
-                      <Progress value={(current * 100) / count} className="mt-4 w-24 ml-auto" />
+
+                      {/* Slide Indicators */}
+                      <div className="flex justify-center space-x-2 mt-4">
+                        {merchantPlans.map((_, index) => (
+                          <button
+                            key={index}
+                            className={`h-2 rounded-full transition-all duration-300 ${
+                              index === currentSlide 
+                                ? 'bg-gradient-to-r from-primary to-purple-500 w-12 shadow-lg' 
+                                : 'bg-white/30 hover:bg-white/50 w-3'
+                            }`}
+                            onClick={() => {
+                              if (api) {
+                                api.scrollTo(index);
+                              }
+                            }}
+                          />
+                        ))}
+                      </div>
                     </div>
                   </div>
                 ) : (
@@ -576,7 +702,7 @@ const MerchantSignupModal: React.FC<MerchantSignupModalProps> = ({ isOpen, onClo
               <p className="text-muted-foreground">Fill in your business details to get started</p>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-4 max-w-2xl mx-auto text-left">
+            <form key={formKey} onSubmit={handleSubmit} className="space-y-4 max-w-2xl mx-auto text-left" autoComplete="off">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-4">
                   <div className="space-y-2">
@@ -589,6 +715,7 @@ const MerchantSignupModal: React.FC<MerchantSignupModalProps> = ({ isOpen, onClo
                   placeholder="Enter your business name"
                   required
                   disabled={loading}
+                  autoComplete="off"
                 />
               </div>
               
@@ -616,6 +743,7 @@ const MerchantSignupModal: React.FC<MerchantSignupModalProps> = ({ isOpen, onClo
                   placeholder="Enter business email"
                   required
                   disabled={loading}
+                  autoComplete="off"
                 />
               </div>
               
@@ -631,6 +759,7 @@ const MerchantSignupModal: React.FC<MerchantSignupModalProps> = ({ isOpen, onClo
                   required
                   minLength={6}
                   disabled={loading}
+                  autoComplete="new-password"
                 />
                   </div>
                 </div>

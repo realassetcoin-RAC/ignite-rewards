@@ -160,7 +160,7 @@ export async function canUserUseMFA(userId: string): Promise<boolean> {
  */
 export async function enableMFA(userId: string, totpSecret: string): Promise<{ success: boolean; backupCodes?: string[]; error?: string }> {
   try {
-    const { data, error } = await supabase.rpc('enable_mfa', {
+    const { error } = await supabase.rpc('enable_mfa', {
       user_id: userId,
       totp_secret: totpSecret
     });

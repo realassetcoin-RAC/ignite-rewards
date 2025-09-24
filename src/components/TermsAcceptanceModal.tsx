@@ -5,7 +5,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { TermsPrivacyService } from "@/lib/termsPrivacyService";
 import { useSecureAuth } from "@/hooks/useSecureAuth";
-import { useNavigate } from "react-router-dom";
+// import { useNavigate } from "react-router-dom";
 
 interface TermsAcceptanceModalProps {
   isOpen: boolean;
@@ -23,7 +23,7 @@ const TermsAcceptanceModal: React.FC<TermsAcceptanceModalProps> = ({
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
   const { user, signOut } = useSecureAuth();
-  const navigate = useNavigate();
+  // const _navigate = useNavigate();
 
   const handleAccept = async () => {
     if (!acceptedTerms || !acceptedPrivacy) {

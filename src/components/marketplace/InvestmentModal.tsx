@@ -9,15 +9,13 @@ import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
 import { 
   DollarSign, 
-  TrendingUp, 
-  Shield, 
   Calculator,
   Info,
   Zap,
   Crown,
   AlertTriangle
 } from 'lucide-react';
-import { MarketplaceListing, MarketplaceInvestment, NFTCardTier } from '@/types/marketplace';
+import { MarketplaceListing, MarketplaceInvestment } from '@/types/marketplace';
 import { 
   formatCurrency, 
   validateInvestmentAmount, 
@@ -30,7 +28,7 @@ import {
   calculateTokensWithMultiplier,
   formatNFTMultiplier,
   getNFTTierColor,
-  getNFTTierBenefits
+  // _getNFTTierBenefits
 } from '@/lib/nftCardIntegration';
 
 interface InvestmentModalProps {
@@ -81,7 +79,7 @@ const InvestmentModal: React.FC<InvestmentModalProps> = ({
       if (result.success && result.status) {
         setNftStatus(result.status);
       }
-    } catch (error) {
+      } catch {
       console.error('Failed to load NFT status:', error);
     }
   };
@@ -154,7 +152,7 @@ const InvestmentModal: React.FC<InvestmentModalProps> = ({
 
       onSuccess?.(investment);
       onClose();
-    } catch (error) {
+      } catch {
       toast({
         title: "Investment Failed",
         description: "There was an error processing your investment. Please try again.",

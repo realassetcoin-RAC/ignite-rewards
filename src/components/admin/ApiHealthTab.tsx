@@ -1,10 +1,9 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSmartDataRefresh } from "@/hooks/useSmartDataRefresh";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Switch } from "@/components/ui/switch";
 import { supabase } from "@/integrations/supabase/client";
 import { useSecureAuth } from "@/hooks/useSecureAuth";
 import { Activity, CheckCircle, XCircle, RefreshCw, Clock, AlertTriangle } from "lucide-react";
@@ -64,7 +63,7 @@ const ApiHealthTab = () => {
   const { user } = useSecureAuth();
   const [results, setResults] = useState<Record<string, HealthResult>>({});
   const [isRunning, setIsRunning] = useState(false);
-  const [autoRefresh, setAutoRefresh] = useState(true);
+  const [autoRefresh] = useState(true);
   const [lastRunAt, setLastRunAt] = useState<number | null>(null);
   const [statusFilter, setStatusFilter] = useState<HealthStatus | 'all'>('all');
   const timerRef = useRef<number | null>(null);
@@ -157,7 +156,7 @@ const ApiHealthTab = () => {
         run: async () => {
           const start = performance.now();
           try {
-            const { data, error } = await supabase.rpc("is_admin");
+            const { error } = await supabase.rpc("is_admin");
             const latencyMs = performance.now() - start;
             if (error) {
               const status: HealthStatus = isMissingRpcError(error) ? "warn" : "error";
@@ -178,7 +177,7 @@ const ApiHealthTab = () => {
         run: async () => {
           const start = performance.now();
           try {
-            const { data, error } = await supabase.rpc("check_admin_access");
+            const { error } = await supabase.rpc("check_admin_access");
             let latencyMs = performance.now() - start;
             if (error) {
               if (isMissingRpcError(error)) {
@@ -209,7 +208,7 @@ const ApiHealthTab = () => {
           const start = performance.now();
           try {
             const userId = user?.id || "00000000-0000-0000-0000-000000000000";
-            const { data, error } = await supabase.rpc("can_use_mfa", { user_id: userId });
+            const { error } = await supabase.rpc("can_use_mfa", { user_id: userId });
             const latencyMs = performance.now() - start;
             if (error) {
               const status: HealthStatus = isMissingRpcError(error) ? "warn" : "error";
@@ -231,7 +230,7 @@ const ApiHealthTab = () => {
         run: async () => {
           const start = performance.now();
           try {
-            const { data, error } = await supabase.rpc("get_current_user_profile");
+            const { error } = await supabase.rpc("get_current_user_profile");
             let latencyMs = performance.now() - start;
             if (error) {
               if (isMissingRpcError(error)) {
@@ -270,7 +269,7 @@ const ApiHealthTab = () => {
         run: async () => {
           const start = performance.now();
           try {
-            const { data, error } = await supabase.rpc("generate_loyalty_number");
+            const { error } = await supabase.rpc("generate_loyalty_number");
             const latencyMs = performance.now() - start;
             if (error) {
               const status: HealthStatus = isMissingRpcError(error) ? "warn" : "error";
@@ -292,7 +291,7 @@ const ApiHealthTab = () => {
         run: async () => {
           const start = performance.now();
           try {
-            const { data, error } = await supabase.rpc("generate_referral_code");
+            const { error } = await supabase.rpc("generate_referral_code");
             const latencyMs = performance.now() - start;
             if (error) {
               const status: HealthStatus = isMissingRpcError(error) ? "warn" : "error";
@@ -319,7 +318,7 @@ const ApiHealthTab = () => {
           const start = performance.now();
           try {
             // Check if DAO tables exist and are accessible
-            const { data, error } = await supabase
+            const { error } = await supabase
               .from('dao_organizations')
               .select('id')
               .limit(1);
@@ -342,7 +341,7 @@ const ApiHealthTab = () => {
           const start = performance.now();
           try {
             // Check if rewards-related tables are accessible
-            const { data, error } = await supabase
+            const { error } = await supabase
               .from('loyalty_transactions')
               .select('id')
               .limit(1);
@@ -365,7 +364,7 @@ const ApiHealthTab = () => {
           const start = performance.now();
           try {
             // Check if user can access DAO proposals
-            const { data, error } = await supabase
+            const { error } = await supabase
               .from('dao_proposals')
               .select('id')
               .limit(1);
@@ -388,7 +387,7 @@ const ApiHealthTab = () => {
           const start = performance.now();
           try {
             // Check if loyalty_transactions table supports manual entries
-            const { data, error } = await supabase
+            const { error } = await supabase
               .from('loyalty_transactions')
               .select('transaction_type')
               .eq('transaction_type', 'manual_entry')
@@ -415,7 +414,7 @@ const ApiHealthTab = () => {
         run: async () => {
           const start = performance.now();
           try {
-            const { data, error } = await supabase.storage.from("public-assets").list("", { limit: 1 });
+            const { error } = await supabase.storage.from("public-assets").list("", { limit: 1 });
             const latencyMs = performance.now() - start;
             if (error) {
               // Treat missing bucket as a warning rather than hard error for health UI
@@ -445,14 +444,14 @@ const ApiHealthTab = () => {
         })
       );
       const next: Record<string, HealthResult> = {};
-      let anyError = false;
+      // const _anyError = false;
       for (const s of settled) {
         if (s.status === "fulfilled") {
           const [id, res] = s.value;
           next[id] = res;
-          if (res.status === "error") anyError = true;
+          if (res.status === "error") { /* _anyError = true; */ }
         } else {
-          anyError = true;
+          // _anyError = true;
         }
       }
       setResults(next);

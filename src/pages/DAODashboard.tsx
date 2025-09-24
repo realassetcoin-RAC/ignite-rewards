@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -12,7 +11,6 @@ import {
   Vote, 
   Plus, 
   Search, 
-  Filter, 
   TrendingUp, 
   Users, 
   Coins, 
@@ -21,15 +19,11 @@ import {
   XCircle, 
   AlertCircle,
   ArrowLeft,
-  Sparkles,
   BarChart3,
   Play,
-  Settings,
-  Wallet,
   Calendar,
   Hash,
   DollarSign,
-  Target,
   MessageSquare,
   ExternalLink
 } from 'lucide-react';
@@ -37,34 +31,33 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { 
-  DAOOrganization, 
   DAOProposal, 
   DAOMember, 
   DAOStats, 
   ProposalStatus, 
-  VotingType,
   PROPOSAL_CATEGORIES,
-  VOTING_TYPES,
   MEMBER_ROLES
 } from '@/types/dao';
 import { useSmartDataRefresh } from '@/hooks/useSmartDataRefresh';
 import { DAOService } from '@/lib/daoService';
+import { createModuleLogger } from '@/utils/consoleReplacer';
 
 const DAODashboard = () => {
+  const logger = createModuleLogger('DAODashboard');
   const [activeTab, setActiveTab] = useState('proposals');
   const [proposals, setProposals] = useState<DAOProposal[]>([]);
   const [members, setMembers] = useState<DAOMember[]>([]);
   const [daoStats, setDaoStats] = useState<DAOStats | null>(null);
-  const [selectedOrgId, setSelectedOrgId] = useState<string | null>(null);
+  // const [selectedOrgId, setSelectedOrgId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<ProposalStatus | 'all'>('all');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [isLoaded, setIsLoaded] = useState(false);
   const [showCreateProposal, setShowCreateProposal] = useState(false);
-  const [newProposal, setNewProposal] = useState<{ title: string; description: string; category: string; voting_type: VotingType }>(
-    { title: '', description: '', category: 'governance', voting_type: 'simple_majority' }
-  );
+  // const [newProposal, setNewProposal] = useState<{ title: string; description: string; category: string; voting_type: VotingType }>(
+  //   { title: '', description: '', category: 'governance', voting_type: 'simple_majority' }
+  // );
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [userMembership, setUserMembership] = useState<DAOMember | null>(null);
   const [selectedProposal, setSelectedProposal] = useState<DAOProposal | null>(null);
@@ -82,7 +75,7 @@ const DAODashboard = () => {
 
   // Smart data refresh for DAO data
   const refreshDAOData = async () => {
-    console.log('🔄 Refreshing DAO data...');
+    logger.info('Refreshing DAO data');
     await loadDAOData();
     await checkUserMembership();
   };
@@ -110,7 +103,7 @@ const DAODashboard = () => {
         
         if (membership) {
           setUserMembership(membership);
-          console.log('DAO: User membership loaded:', membership);
+          logger.debug('User membership loaded', membership);
         } else {
           // User is not a member, create a default membership for display
           const defaultMembership: DAOMember = {
@@ -131,7 +124,7 @@ const DAODashboard = () => {
         }
       }
     } catch (error) {
-      console.error('Error checking user membership:', error);
+      logger.error('Error checking user membership', error);
     } finally {
       setAuthLoading(false);
     }
@@ -145,16 +138,16 @@ const DAODashboard = () => {
         .order('created_at', { ascending: false });
 
       if (error) {
-        console.error('Error loading config proposals:', error);
+        logger.error('Error loading config proposals', error);
         // If it's a permission error, show a helpful message
         if (error.message.includes('permission denied')) {
-          console.warn('Config proposals table has restrictive RLS policies. Please run the database migration to fix permissions.');
+          logger.warn('Config proposals table has restrictive RLS policies. Please run the database migration to fix permissions.');
         }
         return [];
       }
 
       // Convert config proposals to DAOProposal format
-      return (data || []).map((configProposal: any) => ({
+      return (data || []).map((configProposal: Record<string, unknown>) => ({
         id: configProposal.id,
         dao_id: 'config-dao', // Special ID for config proposals
         proposer_id: configProposal.proposer_id,
@@ -185,7 +178,7 @@ const DAODashboard = () => {
         can_execute: false
       }));
     } catch (error) {
-      console.error('Error loading config proposals:', error);
+      logger.error('Error loading config proposals', error);
       return [];
     }
   };
@@ -196,7 +189,7 @@ const DAODashboard = () => {
       // Load DAO organizations
       const organizations = await DAOService.getOrganizations();
       if (organizations.length === 0) {
-        console.warn('No DAO organizations found');
+        logger.warn('No DAO organizations found');
         setProposals([]);
         setMembers([]);
         return;
@@ -219,7 +212,7 @@ const DAODashboard = () => {
 
       // If no proposals found, set empty array
       if (allProposals.length === 0) {
-        console.log('No proposals found in database');
+        logger.info('No proposals found in database');
       }
 
       // Members are already loaded via DAOService above
@@ -246,7 +239,7 @@ const DAODashboard = () => {
       }
 
     } catch (error) {
-      console.error('Error loading DAO data:', error);
+      logger.error('Error loading DAO data', error);
       toast({
         title: "Error",
         description: "Failed to load DAO data.",
@@ -257,31 +250,31 @@ const DAODashboard = () => {
     }
   };
 
-  const handleCreateProposal = async () => {
-    try {
-      if (!currentUser || !selectedOrgId) return;
-      const payload = {
-        dao_id: selectedOrgId,
-        proposer_id: currentUser.id,
-        title: newProposal.title,
-        description: newProposal.description,
-        category: newProposal.category,
-        voting_type: newProposal.voting_type,
-        status: 'draft'
-      } as any;
-      const { error } = await supabase.from('dao_proposals' as any).insert([payload]);
-      if (error) {
-        toast({ title: 'Error', description: 'Failed to create proposal', variant: 'destructive' });
-        return;
-      }
-      setShowCreateProposal(false);
-      setNewProposal({ title: '', description: '', category: 'governance', voting_type: 'simple_majority' });
-      await loadDAOData();
-      toast({ title: 'Proposal Created', description: 'Proposal saved as draft.' });
-    } catch (e) {
-      toast({ title: 'Error', description: 'Failed to create proposal', variant: 'destructive' });
-    }
-  };
+  // const _handleCreateProposal = async () => {
+  //   try {
+  //     if (!currentUser || !selectedOrgId) return;
+  //     const payload = {
+  //       dao_id: selectedOrgId,
+  //       proposer_id: currentUser.id,
+  //       title: newProposal.title,
+  //       description: newProposal.description,
+  //       category: newProposal.category,
+  //       voting_type: newProposal.voting_type,
+  //       status: 'draft'
+  //     } as any;
+  //     const { error } = await supabase.from('dao_proposals' as any).insert([payload]);
+  //     if (error) {
+  //       toast({ title: 'Error', description: 'Failed to create proposal', variant: 'destructive' });
+  //       return;
+  //     }
+  //     setShowCreateProposal(false);
+  //     setNewProposal({ title: '', description: '', category: 'governance', voting_type: 'simple_majority' });
+  //     await loadDAOData();
+  //     toast({ title: 'Proposal Created', description: 'Proposal saved as draft.' });
+  //   } catch {
+  //     toast({ title: 'Error', description: 'Failed to create proposal', variant: 'destructive' });
+  //   }
+  // };
 
   const filteredProposals = proposals.filter(proposal => {
     const matchesSearch = proposal.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -415,7 +408,7 @@ const DAODashboard = () => {
       // Refresh the data to show updated vote counts
       await loadDAOData();
     } catch (error) {
-      console.error('Error casting vote:', error);
+      logger.error('Error casting vote', error);
       const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred while voting.';
       toast({
         title: "Voting Error",
@@ -447,7 +440,7 @@ const DAODashboard = () => {
         .eq('proposer_id', currentUser.id);
 
       if (error) {
-        console.error('Error starting proposal:', error);
+        logger.error('Error starting proposal', error);
         toast({
           title: "Failed to Start Proposal",
           description: error.message || "You can only start your own proposals.",
@@ -463,7 +456,7 @@ const DAODashboard = () => {
 
       await loadDAOData();
     } catch (error) {
-      console.error('Error starting proposal:', error);
+      logger.error('Error starting proposal', error);
       toast({
         title: "Error",
         description: "An unexpected error occurred.",
@@ -492,7 +485,7 @@ const DAODashboard = () => {
         .eq('id', proposalId);
 
       if (error) {
-        console.error('Error executing proposal:', error);
+        logger.error('Error executing proposal', error);
         toast({
           title: "Failed to Execute Proposal",
           description: error.message || "Failed to execute proposal.",
@@ -508,7 +501,7 @@ const DAODashboard = () => {
 
       await loadDAOData();
     } catch (error) {
-      console.error('Error executing proposal:', error);
+      logger.error('Error executing proposal', error);
       toast({
         title: "Error",
         description: "An unexpected error occurred.",
@@ -517,28 +510,28 @@ const DAODashboard = () => {
     }
   };
 
-  const getUserVote = async (proposalId: string) => {
-    try {
-      if (!currentUser) return null;
+  // const _getUserVote = async (proposalId: string) => {
+  //   try {
+  //     if (!currentUser) return null;
 
-      const { data, error } = await supabase
-        .from('dao_votes' as any)
-        .select('vote_choice, reason, created_at')
-        .eq('proposal_id', proposalId)
-        .eq('voter_id', currentUser.id)
-        .single();
+  //     const { data, error } = await supabase
+  //       .from('dao_votes' as any)
+  //       .select('vote_choice, reason, created_at')
+  //       .eq('proposal_id', proposalId)
+  //       .eq('voter_id', currentUser.id)
+  //       .single();
 
-      if (error && error.code !== 'PGRST116') { // PGRST116 = no rows returned
-        console.error('Error fetching user vote:', error);
-        return null;
-      }
+  //     if (error && error.code !== 'PGRST116') { // PGRST116 = no rows returned
+  //       logger.error('Error fetching user vote', error);
+  //       return null;
+  //     }
 
-      return data;
-    } catch (error) {
-      console.error('Error fetching user vote:', error);
-      return null;
-    }
-  };
+  //     return data;
+  //   } catch (error) {
+  //     logger.error('Error fetching user vote', error);
+  //     return null;
+  //   }
+  // };
 
   const handleViewDetails = (proposal: DAOProposal) => {
     setSelectedProposal(proposal);

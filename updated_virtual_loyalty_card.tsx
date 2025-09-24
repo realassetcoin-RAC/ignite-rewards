@@ -42,7 +42,7 @@ export const VirtualLoyaltyCard: React.FC = () => {
 
       console.log('Loading loyalty card for user:', user.id);
       
-      // Load from api.user_loyalty_cards (this should work after the fix)
+      // Load from user_loyalty_cards (public schema - this should work after the fix)
       const { data: loyaltyData, error } = await supabase
         .from('user_loyalty_cards')
         .select('*')
@@ -221,7 +221,7 @@ export const VirtualLoyaltyCard: React.FC = () => {
           
           <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
             <DialogTrigger asChild>
-              <Button className="w-full">
+              <Button className="w-1/4">
                 <Plus className="w-4 h-4 mr-2" />
                 Create Loyalty Card
               </Button>

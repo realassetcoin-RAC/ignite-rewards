@@ -242,9 +242,9 @@ const EnhancedHeroSection = () => {
               ) : (
                 <div className="flex items-center space-x-3">
                   <Button 
-                    variant="ghost" 
+                    variant="outline" 
                     onClick={() => navigate('/marketplace')}
-                    className="text-muted-foreground hover:text-foreground"
+                    className="text-white border-white/30 hover:bg-white/20 pointer-events-auto cursor-pointer"
                   >
                     <Building2 className="w-4 h-4 mr-2" />
                     Marketplace

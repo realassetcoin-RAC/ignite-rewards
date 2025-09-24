@@ -1,7 +1,7 @@
 // Admin Dashboard Error Fix Utilities
 // This module provides enhanced error handling and debugging for admin dashboard
 
-import { supabase } from "@/integrations/supabase/client";
+// import { supabase } from "@/integrations/supabase/client";
 
 // Enhanced error logging
 export const logError = (context: string, error: any) => {
@@ -161,7 +161,7 @@ export const debugTables = async () => {
   
   for (const table of tables) {
     try {
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from(table)
         .select('*')
         .limit(1);
@@ -171,8 +171,8 @@ export const debugTables = async () => {
       } else {
         console.log(`✅ ${table}: Accessible`);
       }
-    } catch (err) {
-      console.error(`❌ ${table}: Failed to query`, err);
+    } catch (_err) {
+      console.error(`❌ ${table}: Failed to query`, _err);
     }
   }
 };

@@ -5,7 +5,7 @@
  * to diagnose and resolve admin dashboard loading issues permanently.
  */
 
-// import { supabase } from '@/integrations/supabase/client';
+import { supabase } from '@/integrations/supabase/client';
 
 export interface AdminVerificationResult {
   success: boolean;

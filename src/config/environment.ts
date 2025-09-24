@@ -2,14 +2,9 @@
 // Handles different environments: development (local), UAT (Supabase), production
 
 export const environment = {
-  // Environment detection
-  isDevelopment: import.meta.env.VITE_APP_ENV === 'development' || 
-                 import.meta.env.VITE_DB_HOST === 'localhost' ||
-                 !import.meta.env.VITE_SUPABASE_URL?.includes('supabase'),
-  
-  isUAT: import.meta.env.VITE_APP_ENV === 'uat' || 
-         import.meta.env.VITE_SUPABASE_URL?.includes('supabase'),
-  
+  // Environment detection - Force cloud Supabase usage
+  isDevelopment: false, // Always use cloud database
+  isUAT: true, // Always use Supabase
   isProduction: import.meta.env.VITE_APP_ENV === 'production',
 
   // Database configuration
@@ -24,19 +19,19 @@ export const environment = {
       url: import.meta.env.VITE_DATABASE_URL || 'postgresql://postgres:your_password@localhost:5432/ignite_rewards'
     },
     
-    // Supabase (UAT/Production)
+    // Supabase (UAT/Production) - HARDCODED TO BYPASS VITE ENV LOADING ISSUE
     supabase: {
-      url: import.meta.env.VITE_SUPABASE_URL,
-      anonKey: import.meta.env.VITE_SUPABASE_ANON_KEY
+      url: import.meta.env.VITE_SUPABASE_URL || 'https://wndswqvqogeblksrujpg.supabase.co',
+      anonKey: import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InduZHN3cXZxb2dlYmxrc3J1anBnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYzMzEyMTAsImV4cCI6MjA3MTkwNzIxMH0.eOXJEo3XheuB2AK3NlRotSKqPMueqkgPUa896TM-hfA'
     }
   },
 
-  // Application settings
+  // Application settings - HARDCODED TO BYPASS VITE ENV LOADING ISSUE
   app: {
-    debug: import.meta.env.VITE_APP_DEBUG === 'true',
-    enableDebugPanel: import.meta.env.VITE_ENABLE_DEBUG_PANEL === 'true',
-    enableTestData: import.meta.env.VITE_ENABLE_TEST_DATA === 'true',
-    enableMockAuth: import.meta.env.VITE_ENABLE_MOCK_AUTH === 'true'
+    debug: import.meta.env.VITE_APP_DEBUG === 'true' || false,
+    enableDebugPanel: import.meta.env.VITE_ENABLE_DEBUG_PANEL === 'true' || false,
+    enableTestData: import.meta.env.VITE_ENABLE_TEST_DATA === 'true' || false,
+    enableMockAuth: import.meta.env.VITE_ENABLE_MOCK_AUTH === 'true' || false // FORCE FALSE
   },
 
   // Blockchain configuration
@@ -58,12 +53,26 @@ export const environment = {
   }
 };
 
+// DEBUG: Log raw import.meta.env to see what Vite is actually loading
+console.log('🔍 DEBUG - Raw import.meta.env:', import.meta.env);
+console.log('🔍 DEBUG - All import.meta.env keys:', Object.keys(import.meta.env));
+console.log('🔍 DEBUG - VITE_SUPABASE_URL value:', import.meta.env.VITE_SUPABASE_URL);
+console.log('🔍 DEBUG - VITE_ENABLE_MOCK_AUTH value:', import.meta.env.VITE_ENABLE_MOCK_AUTH);
+
 // Log current environment
 console.log('🌍 Environment Configuration:', {
-  mode: environment.isDevelopment ? 'Development (Local PostgreSQL)' : 
-        environment.isUAT ? 'UAT (Supabase)' : 'Production',
-  database: environment.isDevelopment ? 'Local PostgreSQL' : 'Supabase',
-  debug: environment.app.debug
+  mode: 'Cloud Supabase (Forced)',
+  database: 'Supabase Cloud',
+  debug: environment.app.debug,
+  enableMockAuth: environment.app.enableMockAuth,
+  supabaseUrl: environment.database.supabase.url,
+  hasAnonKey: !!environment.database.supabase.anonKey,
+  envVars: {
+    VITE_APP_ENV: import.meta.env.VITE_APP_ENV,
+    VITE_ENABLE_MOCK_AUTH: import.meta.env.VITE_ENABLE_MOCK_AUTH,
+    VITE_SUPABASE_URL: import.meta.env.VITE_SUPABASE_URL,
+    VITE_SUPABASE_ANON_KEY: import.meta.env.VITE_SUPABASE_ANON_KEY ? 'present' : 'missing'
+  }
 });
 
 export default environment;

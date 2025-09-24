@@ -5,7 +5,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { Loader2, Wallet } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
+// import { supabase } from "@/integrations/supabase/client";
 import { usePhantom } from "@/components/PhantomWalletProvider";
 import { useMetaMask } from "@/components/MetaMaskProvider";
 
@@ -47,9 +47,9 @@ const WalletSelector: React.FC<WalletSelectorProps> = ({
   const [connecting, setConnecting] = useState<string | null>(null);
   const [availableWallets, setAvailableWallets] = useState<WalletOption[]>([]);
   const { toast } = useToast();
-  const { connect, connected, disconnect, publicKey, wallets, select } = useWallet();
-  const { phantom, connect: phantomConnect, connected: phantomConnected, publicKey: phantomPublicKey } = usePhantom();
-  const { ethereum, connect: metaMaskConnect, connected: metaMaskConnected, currentAccount: metaMaskAccount } = useMetaMask();
+  const { connect, publicKey, wallets, select } = useWallet();
+  const { phantom, connect: phantomConnect, publicKey: phantomPublicKey } = usePhantom();
+  const { ethereum, connect: metaMaskConnect, currentAccount: metaMaskAccount } = useMetaMask();
   const navigate = useNavigate();
 
   // Wallet icon components

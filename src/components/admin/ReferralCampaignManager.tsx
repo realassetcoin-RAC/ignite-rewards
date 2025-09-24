@@ -9,7 +9,6 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
-import { Badge } from "@/components/ui/badge";
 import { Plus, Edit2, Calendar, Gift, CheckCircle2 } from "lucide-react";
 import { DatePicker } from "@/components/ui/date-picker";
 

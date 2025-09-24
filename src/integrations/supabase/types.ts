@@ -371,6 +371,27 @@ export type Database = {
         }
         Returns: undefined
       }
+      get_valid_subscription_plans: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          id: string
+          name: string
+          description: string
+          price_monthly: number
+          price_yearly: number
+          monthly_points: number
+          monthly_transactions: number
+          features: Json
+          trial_days: number
+          is_active: boolean
+          popular: boolean
+          plan_number: number
+          valid_from: string
+          valid_until: string
+          created_at: string
+          updated_at: string
+        }[]
+      }
     }
     Enums: {
       app_role: "admin" | "merchant" | "customer"

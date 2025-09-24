@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useSecureAuth } from "@/hooks/useSecureAuth";
-import { TrendingUp, Calendar, BarChart3 } from "lucide-react";
+import { TrendingUp, BarChart3 } from "lucide-react";
 import {
   LineChart,
   Line,
@@ -16,9 +16,6 @@ import {
   ResponsiveContainer,
   BarChart,
   Bar,
-  PieChart,
-  Pie,
-  Cell,
 } from "recharts";
 
 interface PointsData {
@@ -44,7 +41,7 @@ const PointsGraphTab = () => {
   const [timeRange, setTimeRange] = useState("30");
   const [chartType, setChartType] = useState("line");
 
-  const colors = ['#8884d8', '#82ca9d', '#ffc658', '#ff7300', '#8dd1e1', '#d084d0'];
+  // const _chartColors = ['#8884d8', '#82ca9d', '#ffc658', '#ff7300', '#8dd1e1', '#d084d0'];
 
   useEffect(() => {
     if (user) {
@@ -287,7 +284,7 @@ const PointsGraphTab = () => {
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
-                {merchantData.map((merchant, index) => (
+                {merchantData.map((merchant) => (
                   <div key={merchant.name} className="flex items-center justify-between p-3 border rounded-lg">
                     <div className="flex items-center gap-3">
                       <div className="flex items-center gap-2">

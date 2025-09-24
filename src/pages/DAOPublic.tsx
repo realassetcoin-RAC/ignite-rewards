@@ -2,76 +2,63 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
+// import { Input } from '@/components/ui/input';
 import { 
   Vote, 
-  Clock, 
   CheckCircle, 
   XCircle, 
   Users, 
-  TrendingUp,
   RefreshCw,
-  Eye,
   Calendar,
-  User,
-  Settings
+  User
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
 import { useSecureAuth } from '@/hooks/useSecureAuth';
+import { createModuleLogger } from '@/utils/consoleReplacer';
+import { daoService, DAOOrganization, Proposal } from '@/services/daoService';
 
-interface Proposal {
-  id: string;
-  config_id: string;
-  proposed_distribution_interval: number;
-  proposed_max_rewards_per_user: number;
-  status: 'pending' | 'approved' | 'rejected' | 'implemented';
-  proposer_id: string;
-  created_at: string;
-  approved_at?: string;
-  implemented_at?: string;
-  votes_for?: number;
-  votes_against?: number;
-}
+// Interfaces are now imported from daoService
 
 interface VotingStats {
   total_proposals: number;
-  pending_proposals: number;
-  approved_proposals: number;
-  rejected_proposals: number;
+  active_proposals: number;
+  passed_proposals: number;
+  failed_proposals: number;
   total_voters: number;
+  total_daos: number;
 }
 
 const DAOPublic = () => {
-  const { user, profile } = useSecureAuth();
+  const logger = createModuleLogger('DAOPublic');
+  const { profile } = useSecureAuth();
   const [proposals, setProposals] = useState<Proposal[]>([]);
+  const [daoOrganizations, setDaoOrganizations] = useState<DAOOrganization[]>([]);
   const [votingStats, setVotingStats] = useState<VotingStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [voting, setVoting] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [selectedDAO, setSelectedDAO] = useState<string>('all');
   const { toast } = useToast();
 
   const isDAOMember = profile?.role === 'admin' || profile?.role === 'dao_member';
 
+  const loadDAOOrganizations = async () => {
+    try {
+      const organizations = await daoService.getDAOOrganizations();
+      setDaoOrganizations(organizations);
+    } catch (error) {
+      logger.error('Error loading DAO organizations', error);
+    }
+  };
+
   const loadProposals = async () => {
     try {
       setLoading(true);
-      
-      // Load all proposals (public can see approved/implemented, DAO members can see pending)
-      const { data, error } = await supabase
-        .from('config_proposals')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (error) {
-        console.error('Error loading proposals:', error);
-        return;
-      }
-
-      setProposals((data as unknown as Proposal[]) || []);
+      const proposals = await daoService.getProposals();
+      setProposals(proposals);
     } catch (error) {
-      console.error('Error loading proposals:', error);
+      logger.error('Error loading proposals', error);
     } finally {
       setLoading(false);
     }
@@ -79,23 +66,15 @@ const DAOPublic = () => {
 
   const loadVotingStats = async () => {
     try {
-      // Calculate voting statistics
-      const stats = {
-        total_proposals: proposals.length,
-        pending_proposals: proposals.filter(p => p.status === 'pending').length,
-        approved_proposals: proposals.filter(p => p.status === 'approved').length,
-        rejected_proposals: proposals.filter(p => p.status === 'rejected').length,
-        total_voters: 1250 // Mock data - in real implementation, count from voting records
-      };
-      
+      const stats = await daoService.getVotingStats();
       setVotingStats(stats);
     } catch (error) {
-      console.error('Error loading voting stats:', error);
+      logger.error('Error loading voting stats', error);
     }
   };
 
-  const voteOnProposal = async (proposalId: string, voteType: 'for' | 'against') => {
-    if (!isDAOMember) {
+  const voteOnProposal = async (proposalId: string, voteType: 'yes' | 'no') => {
+    if (!isDAOMember || !profile?.id) {
       toast({
         title: "Access Denied",
         description: "Only DAO members can vote on proposals.",
@@ -107,18 +86,22 @@ const DAOPublic = () => {
     try {
       setVoting(proposalId);
       
-      // In a real implementation, this would interact with the Solana contract
-      // For now, we'll simulate the voting process
-      toast({
-        title: "Vote Submitted",
-        description: `Your ${voteType} vote has been recorded for this proposal.`,
-      });
+      const success = await daoService.submitVote(proposalId, voteType, profile.id);
+      
+      if (success) {
+        toast({
+          title: "Vote Submitted",
+          description: `Your ${voteType} vote has been recorded for this proposal.`,
+        });
 
-      // Reload proposals to show updated vote counts
-      await loadProposals();
+        // Reload proposals to show updated vote counts
+        await loadProposals();
+      } else {
+        throw new Error('Failed to submit vote');
+      }
       
     } catch (error) {
-      console.error('Error voting on proposal:', error);
+      logger.error('Error voting on proposal', error);
       toast({
         title: "Voting Error",
         description: "Failed to submit your vote. Please try again.",
@@ -130,32 +113,37 @@ const DAOPublic = () => {
   };
 
   useEffect(() => {
+    loadDAOOrganizations();
     loadProposals();
   }, []);
 
   useEffect(() => {
-    if (proposals.length > 0) {
+    if (proposals.length > 0 || daoOrganizations.length > 0) {
       loadVotingStats();
     }
-  }, [proposals]);
+  }, [proposals, daoOrganizations]);
 
   const filteredProposals = proposals.filter(proposal => {
-    const matchesSearch = proposal.config_id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    const matchesSearch = proposal.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         proposal.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          proposal.proposer_id.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === 'all' || proposal.status === statusFilter;
-    return matchesSearch && matchesStatus;
+    const matchesDAO = selectedDAO === 'all' || proposal.dao_id === selectedDAO;
+    return matchesSearch && matchesStatus && matchesDAO;
   });
 
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case 'pending':
-        return <Badge variant="secondary" className="bg-yellow-500/10 text-yellow-700 border-yellow-500/20">Pending</Badge>;
-      case 'approved':
-        return <Badge variant="default" className="bg-green-500/10 text-green-700 border-green-500/20">Approved</Badge>;
-      case 'rejected':
-        return <Badge variant="destructive" className="bg-red-500/10 text-red-700 border-red-500/20">Rejected</Badge>;
-      case 'implemented':
-        return <Badge variant="outline" className="bg-blue-500/10 text-blue-700 border-blue-500/20">Implemented</Badge>;
+      case 'draft':
+        return <Badge variant="secondary" className="bg-gray-500/10 text-gray-700 border-gray-500/20">Draft</Badge>;
+      case 'active':
+        return <Badge variant="secondary" className="bg-yellow-500/10 text-yellow-700 border-yellow-500/20">Active</Badge>;
+      case 'passed':
+        return <Badge variant="default" className="bg-green-500/10 text-green-700 border-green-500/20">Passed</Badge>;
+      case 'failed':
+        return <Badge variant="destructive" className="bg-red-500/10 text-red-700 border-red-500/20">Failed</Badge>;
+      case 'executed':
+        return <Badge variant="outline" className="bg-blue-500/10 text-blue-700 border-blue-500/20">Executed</Badge>;
       default:
         return <Badge variant="secondary">{status}</Badge>;
     }
@@ -165,11 +153,21 @@ const DAOPublic = () => {
     return new Date(timestamp).toLocaleString();
   };
 
-  const formatInterval = (seconds: number) => {
-    const hours = Math.floor(seconds / 3600);
-    const days = Math.floor(hours / 24);
-    if (days > 0) return `${days} day${days > 1 ? 's' : ''}`;
-    return `${hours} hour${hours > 1 ? 's' : ''}`;
+  const formatVotingType = (votingType: string) => {
+    switch (votingType) {
+      case 'simple_majority':
+        return 'Simple Majority';
+      case 'super_majority':
+        return 'Super Majority';
+      case 'unanimous':
+        return 'Unanimous';
+      default:
+        return votingType;
+    }
+  };
+
+  const formatCategory = (category: string) => {
+    return category.charAt(0).toUpperCase() + category.slice(1);
   };
 
   if (loading) {
@@ -207,32 +205,39 @@ const DAOPublic = () => {
 
         {/* Voting Statistics */}
         {votingStats && (
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-6 gap-4 mb-8">
             <Card className="bg-gradient-to-br from-background/60 to-background/30 backdrop-blur-md border border-primary/20">
               <CardContent className="p-4 text-center">
-                <div className="text-2xl font-bold text-primary">{votingStats.total_proposals}</div>
+                <div className="text-2xl font-bold text-primary">{votingStats.total_daos}</div>
+                <div className="text-sm text-muted-foreground">Active DAOs</div>
+              </CardContent>
+            </Card>
+            
+            <Card className="bg-gradient-to-br from-background/60 to-background/30 backdrop-blur-md border border-blue-500/20">
+              <CardContent className="p-4 text-center">
+                <div className="text-2xl font-bold text-blue-500">{votingStats.total_proposals}</div>
                 <div className="text-sm text-muted-foreground">Total Proposals</div>
               </CardContent>
             </Card>
             
             <Card className="bg-gradient-to-br from-background/60 to-background/30 backdrop-blur-md border border-yellow-500/20">
               <CardContent className="p-4 text-center">
-                <div className="text-2xl font-bold text-yellow-500">{votingStats.pending_proposals}</div>
-                <div className="text-sm text-muted-foreground">Pending</div>
+                <div className="text-2xl font-bold text-yellow-500">{votingStats.active_proposals}</div>
+                <div className="text-sm text-muted-foreground">Active</div>
               </CardContent>
             </Card>
             
             <Card className="bg-gradient-to-br from-background/60 to-background/30 backdrop-blur-md border border-green-500/20">
               <CardContent className="p-4 text-center">
-                <div className="text-2xl font-bold text-green-500">{votingStats.approved_proposals}</div>
-                <div className="text-sm text-muted-foreground">Approved</div>
+                <div className="text-2xl font-bold text-green-500">{votingStats.passed_proposals}</div>
+                <div className="text-sm text-muted-foreground">Passed</div>
               </CardContent>
             </Card>
             
             <Card className="bg-gradient-to-br from-background/60 to-background/30 backdrop-blur-md border border-red-500/20">
               <CardContent className="p-4 text-center">
-                <div className="text-2xl font-bold text-red-500">{votingStats.rejected_proposals}</div>
-                <div className="text-sm text-muted-foreground">Rejected</div>
+                <div className="text-2xl font-bold text-red-500">{votingStats.failed_proposals}</div>
+                <div className="text-sm text-muted-foreground">Failed</div>
               </CardContent>
             </Card>
             
@@ -263,29 +268,43 @@ const DAOPublic = () => {
                   onClick={() => setStatusFilter('all')}
                   size="sm"
                 >
-                  All
+                  All Status
                 </Button>
                 <Button
-                  variant={statusFilter === 'pending' ? 'default' : 'outline'}
-                  onClick={() => setStatusFilter('pending')}
+                  variant={statusFilter === 'active' ? 'default' : 'outline'}
+                  onClick={() => setStatusFilter('active')}
                   size="sm"
                 >
-                  Pending
+                  Active
                 </Button>
                 <Button
-                  variant={statusFilter === 'approved' ? 'default' : 'outline'}
-                  onClick={() => setStatusFilter('approved')}
+                  variant={statusFilter === 'passed' ? 'default' : 'outline'}
+                  onClick={() => setStatusFilter('passed')}
                   size="sm"
                 >
-                  Approved
+                  Passed
                 </Button>
                 <Button
-                  variant={statusFilter === 'implemented' ? 'default' : 'outline'}
-                  onClick={() => setStatusFilter('implemented')}
+                  variant={statusFilter === 'failed' ? 'default' : 'outline'}
+                  onClick={() => setStatusFilter('failed')}
                   size="sm"
                 >
-                  Implemented
+                  Failed
                 </Button>
+              </div>
+              <div className="flex gap-2">
+                <select
+                  value={selectedDAO}
+                  onChange={(e) => setSelectedDAO(e.target.value)}
+                  className="px-3 py-2 border border-border rounded-md bg-background text-foreground"
+                >
+                  <option value="all">All DAOs</option>
+                  {daoOrganizations.map((dao) => (
+                    <option key={dao.id} value={dao.id}>
+                      {dao.name}
+                    </option>
+                  ))}
+                </select>
               </div>
             </div>
           </CardContent>
@@ -311,26 +330,37 @@ const DAOPublic = () => {
                 <CardHeader>
                   <div className="flex items-center justify-between">
                     <CardTitle className="flex items-center gap-2">
-                      <Settings className="h-5 w-5 text-primary" />
-                      Configuration Proposal
+                      <Vote className="h-5 w-5 text-primary" />
+                      {proposal.title}
                     </CardTitle>
                     {getStatusBadge(proposal.status)}
                   </div>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
+                    {/* Proposal Description */}
+                    <div>
+                      <p className="text-muted-foreground">{proposal.description}</p>
+                    </div>
+
                     {/* Proposal Details */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div>
-                        <label className="text-sm font-medium text-muted-foreground">Distribution Interval</label>
+                        <label className="text-sm font-medium text-muted-foreground">Category</label>
                         <div className="text-lg font-semibold text-foreground">
-                          {formatInterval(proposal.proposed_distribution_interval)}
+                          {formatCategory(proposal.category)}
                         </div>
                       </div>
                       <div>
-                        <label className="text-sm font-medium text-muted-foreground">Max Rewards Per User</label>
+                        <label className="text-sm font-medium text-muted-foreground">Voting Type</label>
                         <div className="text-lg font-semibold text-foreground">
-                          {proposal.proposed_max_rewards_per_user.toLocaleString()}
+                          {formatVotingType(proposal.voting_type)}
+                        </div>
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium text-muted-foreground">DAO</label>
+                        <div className="text-lg font-semibold text-foreground">
+                          {daoOrganizations.find(dao => dao.id === proposal.dao_id)?.name || 'Unknown DAO'}
                         </div>
                       </div>
                     </div>
@@ -345,22 +375,22 @@ const DAOPublic = () => {
                         <Calendar className="h-4 w-4" />
                         <span>Created: {formatTime(proposal.created_at)}</span>
                       </div>
-                      {proposal.approved_at && (
+                      {proposal.start_time && (
                         <div className="flex items-center gap-1">
-                          <CheckCircle className="h-4 w-4" />
-                          <span>Approved: {formatTime(proposal.approved_at)}</span>
+                          <Calendar className="h-4 w-4" />
+                          <span>Voting Started: {formatTime(proposal.start_time)}</span>
                         </div>
                       )}
-                      {proposal.implemented_at && (
+                      {proposal.end_time && (
                         <div className="flex items-center gap-1">
-                          <TrendingUp className="h-4 w-4" />
-                          <span>Implemented: {formatTime(proposal.implemented_at)}</span>
+                          <Calendar className="h-4 w-4" />
+                          <span>Voting Ends: {formatTime(proposal.end_time)}</span>
                         </div>
                       )}
                     </div>
 
                     {/* Voting Section */}
-                    {proposal.status === 'pending' && isDAOMember && (
+                    {proposal.status === 'active' && isDAOMember && (
                       <div className="border-t border-border pt-4">
                         <div className="flex items-center justify-between">
                           <div className="text-sm text-muted-foreground">
@@ -370,7 +400,7 @@ const DAOPublic = () => {
                             <Button
                               size="sm"
                               variant="outline"
-                              onClick={() => voteOnProposal(proposal.id, 'against')}
+                              onClick={() => voteOnProposal(proposal.id, 'no')}
                               disabled={voting === proposal.id}
                               className="text-red-600 border-red-600 hover:bg-red-600 hover:text-white"
                             >
@@ -379,11 +409,11 @@ const DAOPublic = () => {
                               ) : (
                                 <XCircle className="h-4 w-4" />
                               )}
-                              Against
+                              No
                             </Button>
                             <Button
                               size="sm"
-                              onClick={() => voteOnProposal(proposal.id, 'for')}
+                              onClick={() => voteOnProposal(proposal.id, 'yes')}
                               disabled={voting === proposal.id}
                               className="bg-green-600 hover:bg-green-700 text-white"
                             >
@@ -392,7 +422,7 @@ const DAOPublic = () => {
                               ) : (
                                 <CheckCircle className="h-4 w-4" />
                               )}
-                              For
+                              Yes
                             </Button>
                           </div>
                         </div>
@@ -400,21 +430,27 @@ const DAOPublic = () => {
                     )}
 
                     {/* Vote Counts */}
-                    {(proposal.votes_for || proposal.votes_against) && (
+                    {proposal.total_votes > 0 && (
                       <div className="border-t border-border pt-4">
                         <div className="flex items-center justify-between text-sm">
                           <div className="flex items-center gap-4">
                             <div className="flex items-center gap-1 text-green-600">
                               <CheckCircle className="h-4 w-4" />
-                              <span>{proposal.votes_for || 0} For</span>
+                              <span>{proposal.yes_votes} Yes</span>
                             </div>
                             <div className="flex items-center gap-1 text-red-600">
                               <XCircle className="h-4 w-4" />
-                              <span>{proposal.votes_against || 0} Against</span>
+                              <span>{proposal.no_votes} No</span>
                             </div>
+                            {proposal.abstain_votes > 0 && (
+                              <div className="flex items-center gap-1 text-gray-600">
+                                <span>•</span>
+                                <span>{proposal.abstain_votes} Abstain</span>
+                              </div>
+                            )}
                           </div>
                           <div className="text-muted-foreground">
-                            Total: {(proposal.votes_for || 0) + (proposal.votes_against || 0)} votes
+                            Total: {proposal.total_votes} votes
                           </div>
                         </div>
                       </div>

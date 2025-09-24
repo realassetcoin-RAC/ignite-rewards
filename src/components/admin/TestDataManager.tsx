@@ -9,7 +9,6 @@ import {
   Plus, 
   Trash2, 
   Download, 
-  Upload, 
   AlertTriangle,
   CheckCircle,
   Loader2,
@@ -21,17 +20,17 @@ import {
   Store
 } from 'lucide-react';
 import TestDataGenerator from '@/utils/testDataGenerator';
-import { ComprehensiveTestDataService } from '@/lib/comprehensiveTestDataService';
-import { DirectTestDataService } from '@/lib/directTestDataService';
-import { SimpleTestDataService } from '@/lib/simpleTestDataService';
-import { RobustTestDataService } from '@/lib/robustTestDataService';
+import { EnhancedTestDataService } from '@/lib/enhancedTestDataService';
+import { EnhancedTestRunner } from '@/lib/enhancedTestRunner';
 
 const TestDataManager: React.FC = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [isClearing, setIsClearing] = useState(false);
   const [lastGenerated, setLastGenerated] = useState<Date | null>(null);
   const [isComprehensiveSetup, setIsComprehensiveSetup] = useState(false);
+  const [isRunningTests, setIsRunningTests] = useState(false);
   const [testDataSummary, setTestDataSummary] = useState<any>(null);
+  const [testResults, setTestResults] = useState<any>(null);
   const { toast } = useToast();
 
   const generator = new TestDataGenerator();
@@ -65,34 +64,34 @@ const TestDataManager: React.FC = () => {
     }
   };
 
-  const handleClearTestData = async () => {
-    try {
-      setIsClearing(true);
-      
-      toast({
-        title: "Clearing Test Data",
-        description: "Removing all test data from the database...",
-      });
+  // const _clearTestData = async () => {
+  //   try {
+  //     setIsClearing(true);
+  //     
+  //     toast({
+  //       title: "Clearing Test Data",
+  //       description: "Removing all test data from the database...",
+  //     });
 
-      await generator.clearTestData();
-      
-      setLastGenerated(null);
-      
-      toast({
-        title: "Success",
-        description: "Test data cleared successfully!",
-      });
-    } catch (error) {
-      console.error('Error clearing test data:', error);
-      toast({
-        title: "Error",
-        description: "Failed to clear test data. Please check the console for details.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsClearing(false);
-    }
-  };
+  //     await generator.clearTestData();
+  //     
+  //     setLastGenerated(null);
+  //     
+  //     toast({
+  //       title: "Success",
+  //       description: "Test data cleared successfully!",
+  //     });
+  //   } catch (error) {
+  //     console.error('Error clearing test data:', error);
+  //     toast({
+  //       title: "Error",
+  //       description: "Failed to clear test data. Please check the console for details.",
+  //       variant: "destructive",
+  //     });
+  //   } finally {
+  //     setIsClearing(false);
+  //   }
+  // };
 
   const handleExportData = () => {
     const data = generator.getGeneratedData();
@@ -120,8 +119,8 @@ const TestDataManager: React.FC = () => {
         description: "Creating test data for all application subsystems...",
       });
 
-      // Use robust service that checks tables and provides better error messages
-      const result = await RobustTestDataService.createComprehensiveTestData();
+      // Use enhanced service that creates 100+ records
+      const result = await EnhancedTestDataService.createComprehensiveTestData();
       
       if (result.success) {
         toast({
@@ -147,7 +146,7 @@ const TestDataManager: React.FC = () => {
 
   const handleGetSummary = async () => {
     try {
-      const result = await RobustTestDataService.getTestDataSummary();
+      const result = await EnhancedTestDataService.getTestDataSummary();
       
       if (result.success) {
         setTestDataSummary(result.data);
@@ -165,6 +164,73 @@ const TestDataManager: React.FC = () => {
         description: "Failed to get test data summary.",
         variant: "destructive",
       });
+    }
+  };
+
+  const handleRunTests = async () => {
+    try {
+      setIsRunningTests(true);
+      
+      toast({
+        title: "Running Tests",
+        description: "Running comprehensive tests for all subsystems...",
+      });
+
+      const results = await EnhancedTestRunner.runAllTests();
+      setTestResults(results);
+      
+      const totalTests = results.reduce((sum, suite) => sum + suite.totalTests, 0);
+      const totalPassed = results.reduce((sum, suite) => sum + suite.passedTests, 0);
+      const totalFailed = results.reduce((sum, suite) => sum + suite.failedTests, 0);
+      
+      toast({
+        title: "Tests Completed",
+        description: `${totalPassed} passed, ${totalFailed} failed out of ${totalTests} tests`,
+      });
+    } catch (error) {
+      console.error('Error running tests:', error);
+      toast({
+        title: "Error",
+        description: "Failed to run tests. Please check the console for details.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsRunningTests(false);
+    }
+  };
+
+  const handleClearAllTestData = async () => {
+    try {
+      setIsClearing(true);
+      
+      toast({
+        title: "Clearing All Test Data",
+        description: "Removing all test data from the database...",
+      });
+
+      const result = await EnhancedTestDataService.clearAllTestData();
+      
+      if (result.success) {
+        setLastGenerated(null);
+        setTestDataSummary(null);
+        setTestResults(null);
+        
+        toast({
+          title: "Success",
+          description: "All test data cleared successfully!",
+        });
+      } else {
+        throw new Error(result.error || 'Failed to clear test data');
+      }
+    } catch (error) {
+      console.error('Error clearing test data:', error);
+      toast({
+        title: "Error",
+        description: "Failed to clear test data. Please check the console for details.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsClearing(false);
     }
   };
 
@@ -300,6 +366,7 @@ const TestDataManager: React.FC = () => {
                 <div>DAO Members: {testDataSummary.dao?.members || 0}</div>
                 <div>DAO Proposals: {testDataSummary.dao?.proposals || 0}</div>
                 <div>DAO Votes: {testDataSummary.dao?.votes || 0}</div>
+                <div>Subscription Plans: {testDataSummary.subscriptionPlans || 0}</div>
                 <div>Merchants: {testDataSummary.merchants || 0}</div>
                 <div>Transactions: {testDataSummary.transactions || 0}</div>
                 <div>Listings: {testDataSummary.listings || 0}</div>
@@ -366,7 +433,7 @@ const TestDataManager: React.FC = () => {
               </AlertDescription>
             </Alert>
             <Button 
-              onClick={handleClearTestData}
+              onClick={handleClearAllTestData}
               disabled={isClearing}
               variant="destructive"
               className="w-full"
@@ -379,13 +446,69 @@ const TestDataManager: React.FC = () => {
               ) : (
                 <>
                   <Trash2 className="w-4 h-4 mr-2" />
-                  Clear Test Data
+                  Clear All Test Data
                 </>
               )}
             </Button>
           </CardContent>
         </Card>
       </div>
+
+      {/* Test Runner */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <BarChart3 className="w-5 h-5" />
+            Test Runner
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <p className="text-sm text-muted-foreground">
+            Run comprehensive tests to validate all application subsystems and data handling capabilities.
+          </p>
+          <div className="flex gap-2">
+            <Button 
+              onClick={handleRunTests}
+              disabled={isRunningTests}
+              className="flex-1"
+            >
+              {isRunningTests ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Running Tests...
+                </>
+              ) : (
+                <>
+                  <BarChart3 className="w-4 h-4 mr-2" />
+                  Run Comprehensive Tests
+                </>
+              )}
+            </Button>
+            <Button 
+              onClick={handleGetSummary}
+              variant="outline"
+            >
+              <BarChart3 className="w-4 h-4 mr-2" />
+              Get Summary
+            </Button>
+          </div>
+          {testResults && (
+            <div className="mt-4 p-4 bg-muted/50 rounded-lg">
+              <h4 className="font-semibold mb-2">Test Results:</h4>
+              <div className="space-y-2">
+                {testResults.map((suite: any, index: number) => (
+                  <div key={index} className="text-sm">
+                    <div className="font-medium">{suite.suiteName}</div>
+                    <div className="text-muted-foreground">
+                      {suite.passedTests} passed, {suite.failedTests} failed out of {suite.totalTests} tests
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Export Data */}
       <Card>
@@ -445,11 +568,30 @@ const TestDataManager: React.FC = () => {
             </div>
             
             <div>
-              <h4 className="font-medium mb-2">Proposals (30)</h4>
+              <h4 className="font-medium mb-2">DAO Members (50)</h4>
               <ul className="text-sm text-muted-foreground space-y-1">
-                <li>• Different categories (governance, treasury, technical)</li>
-                <li>• Various voting types and statuses</li>
-                <li>• Realistic vote counts and timeframes</li>
+                <li>• Different roles (admin, moderator, member)</li>
+                <li>• Various governance token balances</li>
+                <li>• Realistic voting power distributions</li>
+              </ul>
+            </div>
+            
+            <div>
+              <h4 className="font-medium mb-2">DAO Proposals (100+)</h4>
+              <ul className="text-sm text-muted-foreground space-y-1">
+                <li>• Different categories (governance, treasury, technical, community, partnership, marketing, rewards)</li>
+                <li>• Various voting types (simple_majority, super_majority, unanimous, weighted, quadratic)</li>
+                <li>• Multiple statuses (draft, active, passed, rejected, executed, expired)</li>
+                <li>• Realistic vote counts and participation rates</li>
+              </ul>
+            </div>
+            
+            <div>
+              <h4 className="font-medium mb-2">DAO Votes (200+)</h4>
+              <ul className="text-sm text-muted-foreground space-y-1">
+                <li>• Different vote choices (yes, no, abstain)</li>
+                <li>• Various voting power and weights</li>
+                <li>• Realistic voting reasons and timestamps</li>
               </ul>
             </div>
             

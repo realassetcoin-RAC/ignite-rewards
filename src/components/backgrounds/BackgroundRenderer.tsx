@@ -12,51 +12,51 @@ const BackgroundRenderer: React.FC<BackgroundRendererProps> = ({
   backgroundType, 
   className = '' 
 }) => {
-  const renderCosmicBackground = () => (
-    <>
-      {/* Deep space gradient */}
-      <div className="absolute inset-0 bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-900"></div>
-      
-      {/* Nebula effects */}
-      <div className="absolute inset-0 opacity-40">
-        <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_20%_30%,rgba(147,51,234,0.4),transparent_60%)]"></div>
-        <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_80%_70%,rgba(236,72,153,0.3),transparent_60%)]"></div>
-        <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_50%_50%,rgba(99,102,241,0.2),transparent_70%)]"></div>
-      </div>
-      
-      {/* Stars */}
-      <div className="absolute inset-0">
-        {Array.from({ length: 100 }).map((_, i) => (
-          <div
-            key={i}
-            className="absolute w-1 h-1 bg-white rounded-full animate-pulse"
-            style={{
-              left: `${Math.random() * 100}%`,
-              top: `${Math.random() * 100}%`,
-              animationDelay: `${Math.random() * 3}s`,
-              animationDuration: `${2 + Math.random() * 2}s`
-            }}
-          />
-        ))}
-      </div>
-      
-      {/* Large stars */}
-      <div className="absolute inset-0">
-        {Array.from({ length: 20 }).map((_, i) => (
-          <div
-            key={i}
-            className="absolute w-2 h-2 bg-white rounded-full animate-pulse"
-            style={{
-              left: `${Math.random() * 100}%`,
-              top: `${Math.random() * 100}%`,
-              animationDelay: `${Math.random() * 4}s`,
-              animationDuration: `${3 + Math.random() * 2}s`
-            }}
-          />
-        ))}
-      </div>
-    </>
-  );
+  // const _cosmicBackground = () => (
+  //   <>
+  //     {/* Deep space gradient */}
+  //     <div className="absolute inset-0 bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-900"></div>
+  //     
+  //     {/* Nebula effects */}
+  //     <div className="absolute inset-0 opacity-40">
+  //       <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_20%_30%,rgba(147,51,234,0.4),transparent_60%)]"></div>
+  //       <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_80%_70%,rgba(236,72,153,0.3),transparent_60%)]"></div>
+  //       <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_50%_50%,rgba(99,102,241,0.2),transparent_70%)]"></div>
+  //     </div>
+  //     
+  //     {/* Stars */}
+  //     <div className="absolute inset-0">
+  //       {Array.from({ length: 100 }).map((_, i) => (
+  //         <div
+  //           key={i}
+  //           className="absolute w-1 h-1 bg-white rounded-full animate-pulse"
+  //           style={{
+  //             left: `${Math.random() * 100}%`,
+  //             top: `${Math.random() * 100}%`,
+  //             animationDelay: `${Math.random() * 3}s`,
+  //             animationDuration: `${2 + Math.random() * 2}s`
+  //           }}
+  //         />
+  //       ))}
+  //     </div>
+  //     
+  //     {/* Large stars */}
+  //     <div className="absolute inset-0">
+  //       {Array.from({ length: 20 }).map((_, i) => (
+  //         <div
+  //           key={i}
+  //           className="absolute w-2 h-2 bg-white rounded-full animate-pulse"
+  //           style={{
+  //             left: `${Math.random() * 100}%`,
+  //             top: `${Math.random() * 100}%`,
+  //             animationDelay: `${Math.random() * 4}s`,
+  //             animationDuration: `${3 + Math.random() * 2}s`
+  //           }}
+  //         />
+  //       ))}
+  //     </div>
+  //   </>
+  // );
 
   const renderAuroraBackground = () => (
     <>

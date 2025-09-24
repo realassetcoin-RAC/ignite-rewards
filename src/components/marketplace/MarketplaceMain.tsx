@@ -1,8 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Navigate } from 'react-router-dom';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { useSecureAuth } from '@/hooks/useSecureAuth';
@@ -16,11 +15,7 @@ import {
   Target,
   Grid3X3,
   List,
-  ArrowUpDown,
   RefreshCw,
-  Plus,
-  Star,
-  Shield,
   Sparkles
 } from 'lucide-react';
 import racLogo from '@/assets/rac-logo-exact.svg';
@@ -32,8 +27,8 @@ import {
   MarketplaceFilters as MarketplaceFiltersType,
   MarketplaceSortOptions,
   MarketplaceInvestment,
-  MarketplaceStats,
-  NFTCardTier
+  MarketplaceStats
+  // NFTCardTier
 } from '@/types/marketplace';
 import { 
   filterListings, 
@@ -43,106 +38,13 @@ import {
   formatNumber
 } from '@/lib/marketplaceUtils';
 import { MarketplaceService } from '@/lib/marketplaceService';
+import { LoyaltyNFTService } from '@/lib/loyaltyNFTService';
 
 interface MarketplaceMainProps {
   className?: string;
 }
 
-// Mock data - moved outside component to prevent re-creation on every render
-const mockListings: MarketplaceListing[] = [
-  {
-    id: '1',
-    title: 'Downtown Office Building',
-    description: 'Premium office space in the heart of downtown with high rental yields and appreciation potential.',
-    short_description: 'Premium downtown office building with excellent rental yields',
-    image_url: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=500',
-    listing_type: 'asset',
-    status: 'active',
-    total_funding_goal: 5000000,
-    current_funding_amount: 3200000,
-    current_investor_count: 45,
-    campaign_type: 'time_bound',
-    end_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-    expected_return_rate: 12.5,
-    risk_level: 'medium',
-    minimum_investment: 1000,
-    maximum_investment: 100000,
-    asset_type: 'real_estate',
-    token_symbol: 'DOB',
-    total_token_supply: 1000000,
-    token_price: 5,
-    is_featured: true,
-    is_verified: true,
-    tags: ['real-estate', 'commercial', 'downtown'],
-    created_by: 'admin',
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-    funding_progress_percentage: 64,
-    days_remaining: 30,
-    is_expired: false
-  },
-  {
-    id: '2',
-    title: 'Green Energy Solar Farm',
-    description: 'Large-scale solar energy project with guaranteed government contracts and environmental benefits.',
-    short_description: 'Sustainable solar energy project with government backing',
-    image_url: 'https://images.unsplash.com/photo-1509391366360-2e959784a276?w=500',
-    listing_type: 'initiative',
-    status: 'active',
-    total_funding_goal: 8000000,
-    current_funding_amount: 2400000,
-    current_investor_count: 32,
-    campaign_type: 'time_bound',
-    end_date: new Date(Date.now() + 45 * 24 * 60 * 60 * 1000).toISOString(),
-    expected_return_rate: 15.2,
-    risk_level: 'low',
-    minimum_investment: 500,
-    maximum_investment: 50000,
-    asset_type: 'other',
-    token_symbol: 'SOLAR',
-    total_token_supply: 1600000,
-    token_price: 5,
-    is_featured: false,
-    is_verified: true,
-    tags: ['renewable-energy', 'solar', 'green'],
-    created_by: 'admin',
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-    funding_progress_percentage: 30,
-    days_remaining: 45,
-    is_expired: false
-  },
-  {
-    id: '3',
-    title: 'Tech Startup Equity',
-    description: 'Early-stage AI startup with innovative machine learning solutions for healthcare applications.',
-    short_description: 'AI healthcare startup with breakthrough technology',
-    image_url: 'https://images.unsplash.com/photo-1551434678-e076c223a692?w=500',
-    listing_type: 'asset',
-    status: 'active',
-    total_funding_goal: 3000000,
-    current_funding_amount: 1800000,
-    current_investor_count: 28,
-    campaign_type: 'open_ended',
-    expected_return_rate: 25.0,
-    risk_level: 'high',
-    minimum_investment: 2000,
-    maximum_investment: 200000,
-    asset_type: 'startup_equity',
-    token_symbol: 'AIHC',
-    total_token_supply: 600000,
-    token_price: 5,
-    is_featured: true,
-    is_verified: false,
-    tags: ['startup', 'ai', 'healthcare', 'tech'],
-    created_by: 'admin',
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-    funding_progress_percentage: 60,
-    days_remaining: null,
-    is_expired: false
-  }
-];
+// Real data will be loaded from the database
 
 const mockStats: MarketplaceStats = {
   total_listings: 3,
@@ -180,9 +82,27 @@ const MarketplaceMain: React.FC<MarketplaceMainProps> = ({ className = '' }) => 
     total_pages: 0
   });
   const [userBalance] = useState(10000);
-  const [nftTier] = useState<NFTCardTier | null>(null);
+  // const [_nftTier] = useState<NFTCardTier | null>(null);
+  const [nftMultiplier, setNftMultiplier] = useState(1.0);
+  const [loyaltyCard, setLoyaltyCard] = useState<any>(null);
 
   // All useCallback hooks
+  const loadNFTData = useCallback(async () => {
+    if (!user?.id) return;
+    
+    try {
+      // Load user's loyalty card
+      const card = await LoyaltyNFTService.getUserLoyaltyCard(user.id);
+      setLoyaltyCard(card);
+      
+      // Get NFT multiplier
+      const multiplier = await MarketplaceService.getUserNFTMultiplier(user.id);
+      setNftMultiplier(multiplier);
+    } catch (error) {
+      console.error('Failed to load NFT data:', error);
+    }
+  }, [user?.id]);
+
   const loadListings = useCallback(async () => {
     setLoading(true);
     try {
@@ -190,11 +110,11 @@ const MarketplaceMain: React.FC<MarketplaceMainProps> = ({ className = '' }) => 
       setListings(data);
     } catch (error) {
       console.error('Failed to load listings:', error);
-      setListings(mockListings);
+      setListings([]);
       toast({
-        title: "Warning",
-        description: "Using demo data. Database connection failed.",
-        variant: "default",
+        title: "Error",
+        description: "Failed to load marketplace listings. Please try again later.",
+        variant: "destructive",
       });
     } finally {
       setLoading(false);
@@ -249,8 +169,9 @@ const MarketplaceMain: React.FC<MarketplaceMainProps> = ({ className = '' }) => 
     if (user) {
       loadListings();
       loadStats();
+      loadNFTData();
     }
-  }, [user, loadListings, loadStats]);
+  }, [user, loadListings, loadStats, loadNFTData]);
 
   useEffect(() => {
     let filtered = filterListings(listings, filters);
@@ -284,9 +205,10 @@ const MarketplaceMain: React.FC<MarketplaceMainProps> = ({ className = '' }) => 
     );
   }
 
-  if (!user) {
-    return <Navigate to="/" replace />;
-  }
+  // Allow access to marketplace for all users (both authenticated and non-authenticated)
+  // if (!user) {
+  //   return <Navigate to="/" replace />;
+  // }
 
   return (
     <div className={`min-h-screen bg-gradient-to-br from-slate-950 via-blue-950 to-slate-950 relative overflow-hidden ${className}`}>
@@ -415,6 +337,26 @@ const MarketplaceMain: React.FC<MarketplaceMainProps> = ({ className = '' }) => 
                      <p className="text-2xl font-bold text-white">
                        {formatCurrency(stats.average_investment_amount)}
                      </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* NFT Multiplier Card */}
+            <Card className="bg-gradient-to-br from-purple-900/60 to-blue-800/30 backdrop-blur-md border border-purple-500/20">
+              <CardContent className="p-6">
+                <div className="flex items-center space-x-3">
+                  <Sparkles className="w-8 h-8 text-purple-400" />
+                  <div>
+                    <p className="text-sm text-gray-400">Your NFT Multiplier</p>
+                    <p className="text-2xl font-bold text-white">
+                      {nftMultiplier.toFixed(1)}x
+                    </p>
+                    {loyaltyCard && (
+                      <p className="text-xs text-purple-300">
+                        {loyaltyCard.nft_types?.nft_name} ({loyaltyCard.tier_level})
+                      </p>
+                    )}
                   </div>
                 </div>
               </CardContent>

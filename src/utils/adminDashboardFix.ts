@@ -5,7 +5,7 @@
  * by working around the schema restrictions and creating proper admin access.
  */
 
-import { supabase } from '@/integrations/supabase/client';
+// import { supabase } from '@/integrations/supabase/client';
 
 export interface AdminFixResult {
   success: boolean;
@@ -83,7 +83,7 @@ async function createAdminProfile(user: any): Promise<{ success: boolean; error?
     console.log('🔧 Creating/updating admin profile...');
 
     // Try to create/update profile in api schema
-    const { data, error } = await supabase
+    const { error } = await supabase
       .from('profiles')
       .upsert({
         id: user.id,
@@ -256,7 +256,7 @@ export async function enhancedAdminCheck(): Promise<boolean> {
         console.log('✅ Admin access confirmed via is_admin RPC');
         return true;
       }
-    } catch (error) {
+    } catch {
       console.log('⚠️ is_admin RPC failed, trying alternatives');
     }
 
@@ -266,7 +266,7 @@ export async function enhancedAdminCheck(): Promise<boolean> {
         console.log('✅ Admin access confirmed via check_admin_access RPC');
         return true;
       }
-    } catch (error) {
+    } catch {
       console.log('⚠️ check_admin_access RPC failed, trying alternatives');
     }
 
@@ -285,7 +285,7 @@ export async function enhancedAdminCheck(): Promise<boolean> {
           return true;
         }
       }
-    } catch (error) {
+    } catch {
       console.log('⚠️ Direct profile query failed');
     }
 
@@ -296,7 +296,7 @@ export async function enhancedAdminCheck(): Promise<boolean> {
         console.log('✅ Admin access granted to known admin email');
         return true;
       }
-    } catch (error) {
+    } catch {
       console.log('⚠️ Known admin email check failed');
     }
 
@@ -308,7 +308,7 @@ export async function enhancedAdminCheck(): Promise<boolean> {
         console.log('✅ Admin access confirmed via localStorage fallback');
         return true;
       }
-    } catch (error) {
+    } catch {
       console.log('⚠️ LocalStorage fallback failed');
     }
 

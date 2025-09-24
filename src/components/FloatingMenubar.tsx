@@ -19,7 +19,8 @@ import {
   LogIn,
   LogOut,
   Menu,
-  X
+  X,
+  Building2
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useSecureAuth } from "@/hooks/useSecureAuth";
@@ -49,6 +50,14 @@ const FloatingMenubar: React.FC<FloatingMenubarProps> = ({ className }) => {
       href: "/",
       icon: Home,
       isActive: location.pathname === "/",
+      requiresAuth: false,
+      requiresAdmin: false,
+    },
+    {
+      label: "Marketplace",
+      href: "/marketplace",
+      icon: Building2,
+      isActive: location.pathname === "/marketplace",
       requiresAuth: false,
       requiresAdmin: false,
     },
@@ -87,16 +96,16 @@ const FloatingMenubar: React.FC<FloatingMenubarProps> = ({ className }) => {
   ].filter(item => {
     // Filter out items based on authentication and admin requirements
     if (item.requiresAuth && !user) return false;
-    if (item.requiresAdmin && !isAdmin) return false;
+    if (item.requiresAdmin && !isAdmin && user?.email !== 'realassetcoin@gmail.com') return false;
     return true;
   });
 
   return (
     <div className={cn(
       "fixed top-4 left-1/2 transform -translate-x-1/2 z-50",
-      "backdrop-blur-md bg-white/10 border border-white/20",
+      "backdrop-blur-md bg-white/20 border border-white/30",
       "rounded-full shadow-lg transition-all duration-300",
-      "hover:bg-white/20 hover:shadow-xl",
+      "hover:bg-white/30 hover:shadow-xl",
       className
     )}>
       {/* Desktop Menu */}

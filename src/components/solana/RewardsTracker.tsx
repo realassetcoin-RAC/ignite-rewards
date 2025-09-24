@@ -10,7 +10,6 @@ import {
   Wallet, 
   Gift,
   Calendar,
-  ArrowUpRight,
   RefreshCw
 } from 'lucide-react';
 import { useSolanaRewards } from '@/hooks/useSolanaRewards';
@@ -28,7 +27,7 @@ const RewardsTracker: React.FC<RewardsTrackerProps> = ({ userId }) => {
     claimRewards,
     getVestingProgress,
     getDaysUntilVesting,
-    getTotalVested,
+    // getTotalVested,
     getTotalVesting,
     getTotalClaimable,
     refreshRewards
@@ -83,9 +82,9 @@ const RewardsTracker: React.FC<RewardsTrackerProps> = ({ userId }) => {
     .filter(earning => earning.status === 'vested')
     .reduce((sum, earning) => sum + earning.amount, 0);
   
-  const totalEarned = userRewards?.total_earned || 0;
+  // const totalEarned = userRewards?.total_earned || 0;
   const totalClaimed = userRewards?.total_claimed || 0;
-  const totalVested = getTotalVested();
+  // const totalVested = getTotalVested();
   const totalVesting = getTotalVesting();
   const totalClaimable = getTotalClaimable();
 

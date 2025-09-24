@@ -1,22 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useSecureAuth } from '@/hooks/useSecureAuth';
 import { Navigate } from 'react-router-dom';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { 
   Zap, 
-  Cpu, 
-  Database, 
   Network, 
   Shield, 
-  Activity,
-  TrendingUp,
-  Users,
-  Coins,
-  Star,
   ArrowLeft,
-  LogOut,
   Sparkles
 } from 'lucide-react';
 import NeonCard from '@/components/futuristic/NeonCard';

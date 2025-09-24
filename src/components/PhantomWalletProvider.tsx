@@ -78,7 +78,7 @@ export const PhantomWalletProvider: React.FC<PhantomWalletProviderProps> = ({ ch
         setPublicKey(response.publicKey.toString());
         console.log('Auto-reconnected to Phantom:', response.publicKey.toString());
       }
-    } catch (error) {
+    } catch {
       // User hasn't connected before or rejected auto-connect
       console.log('No existing Phantom connection');
       setConnected(false);

@@ -44,7 +44,6 @@ interface PendingChange {
 }
 
 const LoyaltyChangeApproval: React.FC<LoyaltyChangeApprovalProps> = ({
-  onSettingsChange,
   className = ''
 }) => {
   const [pendingChanges, setPendingChanges] = useState<PendingChange[]>([]);

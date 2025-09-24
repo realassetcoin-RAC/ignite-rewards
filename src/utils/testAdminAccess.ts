@@ -5,7 +5,7 @@
  * It's designed to be run from the browser console or as part of debugging.
  */
 
-import { supabase } from '@/integrations/supabase/client';
+// import { supabase } from '@/integrations/supabase/client';
 import { verifyAdminAccess, diagnoseAdminIssues } from './adminVerification';
 
 /**

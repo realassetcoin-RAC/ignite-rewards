@@ -105,7 +105,7 @@ class Logger {
       if (user?.user?.id) {
         entry.userId = user.user.id;
       }
-    } catch (e) {
+    } catch {
       // Ignore errors when getting user ID
     }
 

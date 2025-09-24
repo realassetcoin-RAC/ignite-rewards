@@ -5,29 +5,27 @@ import { useTheme } from "@/contexts/ThemeContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Navigate, Link } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
+import { Navigate } from "react-router-dom";
+// import { supabase } from "@/integrations/supabase/client";
+// import { useToast } from "@/hooks/use-toast";
 import { 
   CreditCard, 
   Activity, 
   TrendingUp, 
   Share2, 
   Sparkles, 
-  ArrowLeft, 
-  Coins, 
-  LogOut,
+  Coins,
   Star,
   Zap,
-  Crown,
+  // Crown,
   Gift,
   Users,
-  Award,
-  Target,
-  Settings,
-  Palette
+  // Award,
+  // Target,
+  // Settings,
+  // Palette
 } from "lucide-react";
-import LoyaltyCardTab from "@/components/dashboard/LoyaltyCardTab";
+// import LoyaltyCardTab from "@/components/dashboard/LoyaltyCardTab";
 import ReferralsTab from "@/components/dashboard/ReferralsTab";
 import RewardsTracker from "@/components/solana/RewardsTracker";
 import ThemeSelector from "@/components/ThemeSelector";
@@ -36,38 +34,38 @@ import HomeNavigation from "@/components/HomeNavigation";
 import BreadcrumbNavigation from "@/components/BreadcrumbNavigation";
 
 const UserDashboardEnhanced = () => {
-  const { user, isAdmin, loading } = useSecureAuth();
-  const { toast } = useToast();
+  const { user, loading } = useSecureAuth();
+  // const { toast } = useToast();
   const { currentTheme, themes } = useTheme();
   const [activeSection, setActiveSection] = useState<'overview' | 'loyalty' | 'referrals' | 'rewards'>('overview');
   const [isLoaded, setIsLoaded] = useState(false);
 
   const theme = themes[currentTheme];
 
-  const handleSignOut = async () => {
-    try {
-      await supabase.auth.signOut();
-      toast({
-        title: "Signed Out",
-        description: "You have been successfully signed out.",
-      });
-      // Force redirect to home page after signout
-      setTimeout(() => {
-        window.location.href = '/';
-      }, 1000);
-    } catch (error) {
-      console.error('Error signing out:', error);
-      toast({
-        title: "Error",
-        description: "Failed to sign out. Please try again.",
-        variant: "destructive",
-      });
-      // Still redirect even if there's an error
-      setTimeout(() => {
-        window.location.href = '/';
-      }, 1000);
-    }
-  };
+  // const handleSignOut = async () => {
+  //   try {
+  //     await supabase.auth.signOut();
+  //     toast({
+  //       title: "Signed Out",
+  //       description: "You have been successfully signed out.",
+  //     });
+  //     // Force redirect to home page after signout
+  //     setTimeout(() => {
+  //       window.location.href = '/';
+  //     }, 1000);
+  //   } catch (error) {
+  //     console.error('Error signing out:', error);
+  //     toast({
+  //       title: "Error",
+  //       description: "Failed to sign out. Please try again.",
+  //       variant: "destructive",
+  //     });
+  //     // Still redirect even if there's an error
+  //     setTimeout(() => {
+  //       window.location.href = '/';
+  //     }, 1000);
+  //   }
+  // };
 
   // Smart data refresh - refreshes component data when returning to app
   const refreshDashboardData = async () => {

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useWallet } from '@solana/wallet-adapter-react';
+// import { useWallet } from '@solana/wallet-adapter-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';

@@ -6,7 +6,7 @@
  */
 
 import { logger, log } from './logger';
-import { supabase } from '@/integrations/supabase/client';
+// import { supabase } from '@/integrations/supabase/client';
 
 export interface VirtualCardError {
   id: string;
@@ -205,7 +205,7 @@ class VirtualCardErrorTracker {
         }
         return value;
       }));
-    } catch (e) {
+    } catch {
       return {
         message: error.message || 'Error serialization failed',
         name: error.name,
@@ -238,7 +238,7 @@ class VirtualCardErrorTracker {
       });
 
       return sanitized;
-    } catch (e) {
+    } catch {
       return { error: 'Card data sanitization failed' };
     }
   }
@@ -253,7 +253,7 @@ class VirtualCardErrorTracker {
         const parsed = JSON.parse(authData);
         return parsed.user?.id;
       }
-    } catch (e) {
+    } catch {
       // Ignore
     }
     return undefined;
@@ -308,7 +308,7 @@ class VirtualCardErrorTracker {
 
     // Check 1: Database connection
     try {
-      const { data, error: dbError } = await supabase.from('virtual_cards').select('count').limit(1);
+      const { error: dbError } = await supabase.from('virtual_cards').select('count').limit(1);
       diagnostics.checks.push({
         name: 'Database Connection',
         result: dbError ? `Failed: ${dbError.message}` : 'Success',
@@ -324,7 +324,7 @@ class VirtualCardErrorTracker {
 
     // Check 2: Table access
     try {
-      const { data, error: tableError } = await supabase
+      const { error: tableError } = await supabase
         .from('virtual_cards')
         .select('id')
         .limit(1);

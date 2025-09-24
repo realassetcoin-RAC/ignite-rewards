@@ -7,7 +7,7 @@ import { Progress } from '@/components/ui/progress';
 import { Separator } from '@/components/ui/separator';
 import { 
   Star, 
-  Heart, 
+  // Heart, 
   Share2, 
   Download, 
   Play, 
@@ -16,7 +16,7 @@ import {
   Settings,
   Bell,
   Search,
-  Menu,
+  // Menu,
   ChevronRight,
   TrendingUp,
   Users,

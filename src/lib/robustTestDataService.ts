@@ -1,4 +1,4 @@
-import { supabase } from '@/integrations/supabase/client';
+// import { supabase } from '@/integrations/supabase/client';
 
 export interface TestDataResult {
   success: boolean;
@@ -98,7 +98,7 @@ export class RobustTestDataService {
         } else {
           console.log(`✅ Table ${table} exists`);
         }
-      } catch (err) {
+      } catch {
         missingTables.push(table);
       }
     }

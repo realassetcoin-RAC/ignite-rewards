@@ -1,4 +1,4 @@
-import { supabase } from '@/integrations/supabase/client';
+// import { supabase } from '@/integrations/supabase/client';
 
 interface TestResult {
   testName: string;
@@ -80,7 +80,7 @@ class FunctionalTestSuite {
   // Database Connection Tests
   async testDatabaseConnection(): Promise<void> {
     // Test database connection using RPC function instead of direct table access
-    const { data, error } = await supabase.rpc('get_current_user_profile');
+    const { error } = await supabase.rpc('get_current_user_profile');
 
     if (error) {
       throw new Error(`Database connection failed: ${error.message}`);
@@ -101,15 +101,15 @@ class FunctionalTestSuite {
   // User Management Tests
   async testUserCreation(): Promise<void> {
     // Test user creation using RPC function
-    const testUser = {
-      id: 'test-user-' + Date.now(),
-      email: `test-${Date.now()}@example.com`,
-      full_name: 'Test User',
-      role: 'customer'
-    };
+    // const _testUser = {
+    //   id: 'test-user-' + Date.now(),
+    //   email: `test-${Date.now()}@example.com`,
+    //   full_name: 'Test User',
+    //   role: 'customer'
+    // };
 
     // Since we can't directly insert into profiles, we'll test the RPC function
-    const { data, error } = await supabase.rpc('get_current_user_profile');
+    const { error } = await supabase.rpc('get_current_user_profile');
 
     if (error) {
       throw new Error(`User profile access failed: ${error.message}`);
@@ -118,7 +118,7 @@ class FunctionalTestSuite {
 
   async testUserRetrieval(): Promise<void> {
     // Test user retrieval using RPC function
-    const { data, error } = await supabase.rpc('get_current_user_profile');
+    const { error } = await supabase.rpc('get_current_user_profile');
 
     if (error) {
       throw new Error(`User retrieval failed: ${error.message}`);
@@ -128,7 +128,7 @@ class FunctionalTestSuite {
   // Merchant Management Tests
   async testMerchantCreation(): Promise<void> {
     // Test merchant table access instead of creating test data
-    const { data, error } = await supabase
+    const { error } = await supabase
       .from('merchants')
       .select('count')
       .limit(1);
@@ -139,7 +139,7 @@ class FunctionalTestSuite {
   }
 
   async testMerchantRetrieval(): Promise<void> {
-    const { data, error } = await supabase
+    const { error } = await supabase
       .from('merchants')
       .select('*')
       .limit(1);
@@ -152,7 +152,7 @@ class FunctionalTestSuite {
   // DAO Management Tests
   async testDAOCreation(): Promise<void> {
     // Test DAO organizations table access
-    const { data, error } = await supabase
+    const { error } = await supabase
       .from('dao_organizations')
       .select('count')
       .limit(1);
@@ -164,7 +164,7 @@ class FunctionalTestSuite {
 
   async testDAOProposalCreation(): Promise<void> {
     // Test DAO proposals table access
-    const { data, error } = await supabase
+    const { error } = await supabase
       .from('dao_proposals')
       .select('count')
       .limit(1);
@@ -177,7 +177,7 @@ class FunctionalTestSuite {
   // Transaction Tests
   async testTransactionCreation(): Promise<void> {
     // Test loyalty transactions table access instead of creating test data
-    const { data, error } = await supabase
+    const { error } = await supabase
       .from('loyalty_transactions')
       .select('count')
       .limit(1);
@@ -190,7 +190,7 @@ class FunctionalTestSuite {
   // Marketplace Tests
   async testMarketplaceListingCreation(): Promise<void> {
     // Test marketplace listings table access instead of creating test data
-    const { data, error } = await supabase
+    const { error } = await supabase
       .from('marketplace_listings')
       .select('count')
       .limit(1);

@@ -1,4 +1,4 @@
-import { supabase } from '@/integrations/supabase/client';
+// import { supabase } from '@/integrations/supabase/client';
 
 export class SetupDAOTestData {
   /**
@@ -112,7 +112,7 @@ export class SetupDAOTestData {
    */
   private static async createTestData(): Promise<void> {
     // Create DAO organization
-    const { data: org, error: orgError } = await supabase
+    const { error: orgError } = await supabase
       .from('dao_organizations')
       .insert({
         id: '550e8400-e29b-41d4-a716-446655440000',
@@ -404,14 +404,14 @@ export class SetupDAOTestData {
    */
   static async checkTestDataExists(): Promise<boolean> {
     try {
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from('dao_organizations')
         .select('id')
         .eq('id', '550e8400-e29b-41d4-a716-446655440000')
         .single();
 
       return !error && !!data;
-    } catch (error) {
+    } catch {
       return false;
     }
   }

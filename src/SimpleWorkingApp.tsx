@@ -26,19 +26,9 @@ const queryClient = new QueryClient({
   },
 });
 
-// Simple test page component
-const SimpleTestPage = () => {
-  console.log('SimpleTestPage is rendering');
-  
-  return (
-    <div className="min-h-screen bg-blue-500 flex items-center justify-center">
-      <h1 className="text-white text-4xl font-bold">SIMPLE TEST PAGE IS WORKING!</h1>
-    </div>
-  );
-};
 
 const SimpleWorkingApp = () => {
-  console.log('SimpleTestApp is rendering');
+  // console.log('SimpleTestApp is rendering');
   
   return (
     <QueryClientProvider client={queryClient}>

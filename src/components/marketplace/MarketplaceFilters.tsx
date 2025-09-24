@@ -5,16 +5,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Slider } from '@/components/ui/slider';
-import { Checkbox } from '@/components/ui/checkbox';
 import { 
   Filter, 
   Search, 
   X, 
-  TrendingUp, 
   Shield, 
-  Calendar,
-  DollarSign,
   Tag
 } from 'lucide-react';
 import { MarketplaceFilters as MarketplaceFiltersType } from '@/types/marketplace';

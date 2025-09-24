@@ -102,7 +102,7 @@ export const VirtualLoyaltyCard: React.FC = () => {
       
       // Based on our testing, focus on API schema first
       try {
-        console.log('Loading from api.user_loyalty_cards (configured schema)...');
+        console.log('Loading from user_loyalty_cards (public schema)...');
         const { data, error } = await supabase
           .from('user_loyalty_cards')
           .select('*')
@@ -232,7 +232,7 @@ export const VirtualLoyaltyCard: React.FC = () => {
         return initial + timestamp + random;
       };
       
-      loyaltyNumber = await generateLoyaltyNumber();
+      const loyaltyNumber = await generateLoyaltyNumber();
       console.log('Final loyalty number to use:', loyaltyNumber);
 
       // Insert into user_loyalty_cards with improved error handling
@@ -252,11 +252,10 @@ export const VirtualLoyaltyCard: React.FC = () => {
       };
       
       let insertResult = null;
-      let insertError = null;
       
       // Based on our testing, we can only access the api schema, so try that first
       try {
-        console.log('Trying api.user_loyalty_cards (configured schema)...');
+        console.log('Trying user_loyalty_cards (public schema)...');
         const { data, error } = await supabase
           .from('user_loyalty_cards')
           .insert(insertData)
@@ -271,7 +270,6 @@ export const VirtualLoyaltyCard: React.FC = () => {
         console.log('Successfully inserted into user_loyalty_cards:', data);
       } catch (primaryError) {
         console.warn('Primary insert failed:', primaryError);
-        insertError = primaryError;
         
         // Try with public schema reference (corrected from api)
         try {

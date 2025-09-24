@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -112,7 +112,7 @@ const MerchantRewardGenerator: React.FC<MerchantRewardGeneratorProps> = ({
       const rewardPoints = calculateRewardPoints(transactionValue);
 
       // Create the reward transaction record
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from('loyalty_transactions')
         .insert({
           merchant_id: merchantId,

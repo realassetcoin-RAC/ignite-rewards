@@ -63,7 +63,7 @@ const LoyaltyCardTab = () => {
       
       // Based on our testing, focus on API schema first
       try {
-        console.log('Loading from api.user_loyalty_cards (configured schema)...');
+        console.log('Loading from user_loyalty_cards (public schema)...');
         const { data, error } = await supabase
           .from('user_loyalty_cards')
           .select('*')

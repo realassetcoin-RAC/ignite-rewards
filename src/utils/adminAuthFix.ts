@@ -5,7 +5,7 @@
  * It can be run from the browser console to diagnose and resolve problems.
  */
 
-import { supabase } from '@/integrations/supabase/client';
+// import { supabase } from '@/integrations/supabase/client';
 
 interface FixResult {
   success: boolean;
@@ -199,8 +199,8 @@ async function testAdminVerification(user: any) {
       results.methods.rpcIsAdmin = true;
       results.isAdmin = true;
     }
-  } catch (error) {
-    results.errors.push(`RPC is_admin failed: ${error}`);
+  } catch (_error) {
+    results.errors.push(`RPC is_admin failed: ${_error}`);
   }
   
   // Method 2: RPC check_admin_access
@@ -210,8 +210,8 @@ async function testAdminVerification(user: any) {
       results.methods.rpcCheckAdmin = true;
       results.isAdmin = true;
     }
-  } catch (error) {
-    results.errors.push(`RPC check_admin_access failed: ${error}`);
+  } catch (_error) {
+    results.errors.push(`RPC check_admin_access failed: ${_error}`);
   }
   
   // Method 3: Direct profile query

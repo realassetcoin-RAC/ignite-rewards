@@ -37,8 +37,32 @@ export class TermsPrivacyService {
       }
 
       return data;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to fetch user acceptance:', error);
+      
+      // Handle specific error cases gracefully
+      if (error.message && error.message.includes('limit is not a function')) {
+        console.warn('Query builder limit method not available, using alternative approach');
+        try {
+          // Try without limit and single, just get the first result
+          const { data, error: altError } = await supabase
+            .from('terms_privacy_acceptance')
+            .select('*')
+            .eq('user_id', userId)
+            .order('accepted_at', { ascending: false });
+          
+          if (altError) {
+            console.warn('Alternative query also failed, returning null');
+            return null;
+          }
+          
+          return data && data.length > 0 ? data[0] : null;
+        } catch (altError) {
+          console.warn('Alternative query failed, returning null');
+          return null;
+        }
+      }
+      
       // Return null instead of throwing to prevent app crashes
       return null;
     }

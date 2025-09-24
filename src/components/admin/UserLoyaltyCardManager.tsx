@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
@@ -11,7 +11,7 @@ import { Switch } from "@/components/ui/switch";
 import { useForm } from "react-hook-form";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Edit2, Eye, Trash2, CreditCard, User, Mail, Phone } from "lucide-react";
+import { Plus, Edit2, Trash2, CreditCard, User, Mail, Phone } from "lucide-react";
 
 interface UserLoyaltyCard {
   id: string;
@@ -193,7 +193,7 @@ const UserLoyaltyCardManager = ({ onStatsUpdate }: UserLoyaltyCardManagerProps) 
       };
 
       let result = null;
-      let insertError = null;
+      // let insertError = null;
 
       if (editingCard) {
         // Update existing card
@@ -211,7 +211,7 @@ const UserLoyaltyCardManager = ({ onStatsUpdate }: UserLoyaltyCardManagerProps) 
           console.log('Successfully updated loyalty card:', result);
         } catch (primaryError) {
           console.warn('Primary update failed:', primaryError);
-          insertError = primaryError;
+          // const _insertError = primaryError;
           
           // Try explicit API schema reference
           try {
@@ -252,7 +252,7 @@ const UserLoyaltyCardManager = ({ onStatsUpdate }: UserLoyaltyCardManagerProps) 
           console.log('Successfully created loyalty card:', result);
         } catch (primaryError) {
           console.warn('Primary insert failed:', primaryError);
-          insertError = primaryError;
+          // const _insertError = primaryError;
           
           // Try explicit API schema reference
           try {
@@ -337,7 +337,7 @@ const UserLoyaltyCardManager = ({ onStatsUpdate }: UserLoyaltyCardManagerProps) 
     if (!confirm(`Are you sure you want to delete the loyalty card for ${cardName}?`)) return;
 
     try {
-      let deleteError = null;
+        // const deleteError = null;
       
       // Try to delete from configured schema first
       try {
@@ -350,7 +350,7 @@ const UserLoyaltyCardManager = ({ onStatsUpdate }: UserLoyaltyCardManagerProps) 
         console.log('Successfully deleted from configured schema');
       } catch (primaryError) {
         console.warn('Primary delete failed:', primaryError);
-        deleteError = primaryError;
+        // const deleteError = primaryError;
         
         // Try explicit API schema reference
         try {

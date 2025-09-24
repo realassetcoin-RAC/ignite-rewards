@@ -13,8 +13,6 @@ import {
   Minimize2,
   Maximize2,
   Paperclip,
-  CheckCircle,
-  AlertCircle
 } from "lucide-react";
 import { 
   createConversation, 
@@ -22,9 +20,7 @@ import {
   getIssueCategories, 
   getIssueTags,
   createTicket,
-  uploadAttachment
 } from "@/lib/contactSystem";
-import { sendSlackMessage } from "@/lib/slackIntegration";
 
 interface ChatMessage {
   id: string;
@@ -455,7 +451,7 @@ const ContactChatbot = () => {
     };
   };
 
-  const generateAIResponse = async (query: string): Promise<string> => {
+  const generateAIResponse = async (): Promise<string> => {
     // Simulate AI response generation
     await new Promise(resolve => setTimeout(resolve, 1000));
     

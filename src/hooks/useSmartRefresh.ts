@@ -21,7 +21,7 @@ export const useSmartRefresh = () => {
 
   useEffect(() => {
     // Handle focus events for smart updates
-    const handleFocus = (event: FocusEvent) => {
+    const handleFocus = (/* _event: FocusEvent */) => {
       const now = Date.now();
       const timeSinceLastFocus = now - lastFocusTime.current;
       

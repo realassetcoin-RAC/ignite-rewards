@@ -11,7 +11,7 @@ const steps = [
   {
     icon: ShoppingBag,
     step: "02", 
-    title: "Shop & Earn Notional",
+    title: "Shop & Earn",
     description: "Scan QR codes at any merchant worldwide. Earn notional rewards immediately - you see them in your dashboard right away. No boundaries, no restrictions."
   },
   {

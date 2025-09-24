@@ -34,7 +34,7 @@ interface CarouselSlide {
 interface HomePageCarouselProps {
   onStartEarning: () => void;
   onJoinMerchant: () => void;
-  onLearnMoreBenefits?: () => void;
+  onLearnMoreBenefits: () => void;
 }
 
 const HomePageCarousel: React.FC<HomePageCarouselProps> = ({

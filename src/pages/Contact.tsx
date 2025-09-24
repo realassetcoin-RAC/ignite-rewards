@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+// import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { 
   ArrowLeft, 
@@ -11,11 +10,8 @@ import {
   MessageSquare, 
   Send, 
   Clock, 
-  MapPin, 
   Phone,
-  Shield,
-  Globe,
-  Users
+  Shield
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import Footer from "@/components/Footer";
@@ -65,7 +61,7 @@ const Contact = () => {
         message: "",
         type: "general"
       });
-    } catch (error) {
+      } catch {
       toast({
         title: "Error",
         description: "Failed to send message. Please try again.",
@@ -142,17 +138,19 @@ const Contact = () => {
 
       {/* Header */}
       <div className="relative z-10 container mx-auto px-4 py-6">
-        <Link to="/">
-          <Button 
-            variant="ghost" 
-            className={`gap-2 group bg-background/60 backdrop-blur-md hover:bg-background/80 border-primary/30 hover:border-primary/50 transform hover:scale-105 transition-all duration-300 ${
-              isLoaded ? 'animate-fade-in-up' : 'opacity-0'
-            }`}
-          >
-            <ArrowLeft className="h-4 w-4 group-hover:-translate-x-1 transition-transform" />
-            Back to Home
-          </Button>
-        </Link>
+        <div className="flex justify-end">
+          <Link to="/">
+            <Button 
+              variant="ghost" 
+              className={`gap-2 group bg-background/60 backdrop-blur-md hover:bg-background/80 border-primary/30 hover:border-primary/50 transform hover:scale-105 transition-all duration-300 ${
+                isLoaded ? 'animate-fade-in-up' : 'opacity-0'
+              }`}
+            >
+              <ArrowLeft className="h-4 w-4 group-hover:-translate-x-1 transition-transform" />
+              Back to Home
+            </Button>
+          </Link>
+        </div>
       </div>
 
       {/* Hero Section */}

@@ -5,25 +5,20 @@ import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { 
   Vote, 
-  Clock, 
   CheckCircle, 
-  XCircle, 
   AlertTriangle,
   FileText,
   Building2,
   Settings,
   Users
 } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
 import { DAOMarketplaceProposal } from '@/types/marketplace';
 
-interface MarketplaceDAOIntegrationProps {
-  onProposalCreated?: (proposal: DAOMarketplaceProposal) => void;
-}
+// interface MarketplaceDAOIntegrationProps {
+//   onProposalCreated?: (proposal: DAOMarketplaceProposal) => void;
+// }
 
-const MarketplaceDAOIntegration: React.FC<MarketplaceDAOIntegrationProps> = ({
-  onProposalCreated
-}) => {
+const MarketplaceDAOIntegration: React.FC = (/* _props */) => {
   const [proposals, setProposals] = useState<DAOMarketplaceProposal[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
@@ -69,7 +64,7 @@ const MarketplaceDAOIntegration: React.FC<MarketplaceDAOIntegrationProps> = ({
       ];
 
       setProposals(mockProposals);
-    } catch (error) {
+    } catch {
       toast({
         title: "Error",
         description: "Failed to load DAO proposals",
@@ -80,75 +75,75 @@ const MarketplaceDAOIntegration: React.FC<MarketplaceDAOIntegrationProps> = ({
     }
   };
 
-  const createListingApprovalProposal = async (listingId: string, listingData: any) => {
-    try {
-      const proposal: DAOMarketplaceProposal = {
-        id: crypto.randomUUID(),
-        proposal_type: 'listing_approval',
-        listing_id: listingId,
-        title: `Approve ${listingData.title} Listing`,
-        description: `Request to approve the ${listingData.title} tokenized asset listing with $${listingData.total_funding_goal.toLocaleString()} funding goal.`,
-        proposed_changes: {
-          listing_type: listingData.listing_type,
-          total_funding_goal: listingData.total_funding_goal,
-          expected_return_rate: listingData.expected_return_rate,
-          risk_level: listingData.risk_level,
-          asset_type: listingData.asset_type,
-          campaign_type: listingData.campaign_type
-        },
-        status: 'pending',
-        created_by: 'current_user_id', // This would come from auth context
-        created_at: new Date().toISOString(),
-      };
+  // const _createProposal = async (listingId: string, listingData: any) => {
+  //   try {
+  //     const proposal: DAOMarketplaceProposal = {
+  //       id: crypto.randomUUID(),
+  //       proposal_type: 'listing_approval',
+  //       listing_id: listingId,
+  //       title: `Approve ${listingData.title} Listing`,
+  //       description: `Request to approve the ${listingData.title} tokenized asset listing with $${listingData.total_funding_goal.toLocaleString()} funding goal.`,
+  //       proposed_changes: {
+  //         listing_type: listingData.listing_type,
+  //         total_funding_goal: listingData.total_funding_goal,
+  //         expected_return_rate: listingData.expected_return_rate,
+  //         risk_level: listingData.risk_level,
+  //         asset_type: listingData.asset_type,
+  //         campaign_type: listingData.campaign_type
+  //       },
+  //       status: 'pending',
+  //       created_by: 'current_user_id', // This would come from auth context
+  //       created_at: new Date().toISOString(),
+  //     };
 
-      // TODO: Implement actual API call to create DAO proposal
-      setProposals(prev => [proposal, ...prev]);
-      
-      toast({
-        title: "DAO Proposal Created",
-        description: "A DAO proposal has been created for listing approval. Community voting will begin shortly.",
-      });
+  //     // TODO: Implement actual API call to create DAO proposal
+  //     setProposals(prev => [proposal, ...prev]);
+  //     
+  //     toast({
+  //       title: "DAO Proposal Created",
+  //       description: "A DAO proposal has been created for listing approval. Community voting will begin shortly.",
+  //     });
 
-      onProposalCreated?.(proposal);
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to create DAO proposal",
-        variant: "destructive",
-      });
-    }
-  };
+  //     onProposalCreated?.(proposal);
+  //   } catch {
+  //     toast({
+  //       title: "Error",
+  //       description: "Failed to create DAO proposal",
+  //       variant: "destructive",
+  //     });
+  //   }
+  // };
 
-  const createConfigChangeProposal = async (configChanges: any) => {
-    try {
-      const proposal: DAOMarketplaceProposal = {
-        id: crypto.randomUUID(),
-        proposal_type: 'marketplace_config_change',
-        title: 'Update Marketplace Configuration',
-        description: 'Proposal to update marketplace configuration settings.',
-        proposed_changes: configChanges,
-        status: 'pending',
-        created_by: 'current_user_id', // This would come from auth context
-        created_at: new Date().toISOString(),
-      };
+  // const _createConfigProposal = async (configChanges: any) => {
+  //   try {
+  //     const proposal: DAOMarketplaceProposal = {
+  //       id: crypto.randomUUID(),
+  //       proposal_type: 'marketplace_config_change',
+  //       title: 'Update Marketplace Configuration',
+  //       description: 'Proposal to update marketplace configuration settings.',
+  //       proposed_changes: configChanges,
+  //       status: 'pending',
+  //       created_by: 'current_user_id', // This would come from auth context
+  //       created_at: new Date().toISOString(),
+  //     };
 
-      // TODO: Implement actual API call to create DAO proposal
-      setProposals(prev => [proposal, ...prev]);
-      
-      toast({
-        title: "DAO Proposal Created",
-        description: "A DAO proposal has been created for configuration changes. Community voting will begin shortly.",
-      });
+  //     // TODO: Implement actual API call to create DAO proposal
+  //     setProposals(prev => [proposal, ...prev]);
+  //     
+  //     toast({
+  //       title: "DAO Proposal Created",
+  //       description: "A DAO proposal has been created for configuration changes. Community voting will begin shortly.",
+  //     });
 
-      onProposalCreated?.(proposal);
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to create DAO proposal",
-        variant: "destructive",
-      });
-    }
-  };
+  //     onProposalCreated?.(proposal);
+  //   } catch {
+  //     toast({
+  //       title: "Error",
+  //       description: "Failed to create DAO proposal",
+  //       variant: "destructive",
+  //     });
+  //   }
+  // };
 
   const getStatusColor = (status: string) => {
     switch (status) {

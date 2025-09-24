@@ -8,7 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Mail, Plus, Trash2, Check, X, AlertCircle } from 'lucide-react';
+import { Mail, Plus, Trash2, Check, AlertCircle } from 'lucide-react';
 
 interface MerchantEmail {
   id: string;

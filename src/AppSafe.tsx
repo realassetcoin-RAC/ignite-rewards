@@ -3,9 +3,8 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
-import Dashboard from "./pages/Dashboard";
 import Privacy from "./pages/Privacy";
 import Partners from "./pages/Partners";
 import FAQs from "./pages/FAQs";
@@ -49,11 +48,11 @@ const queryClient = new QueryClient({
         const isStale = now - lastFetch > 30000; // 30 seconds
         
         if (isStale) {
-          console.log('🔄 Smart refetching query:', query.queryKey);
+          // console.log('🔄 Smart refetching query:', query.queryKey);
           return true;
         }
         
-        console.log('🔄 Skipping refetch, data is fresh:', query.queryKey);
+        // console.log('🔄 Skipping refetch, data is fresh:', query.queryKey);
         return false;
       },
     },
@@ -66,7 +65,7 @@ const AppSafe = () => {
   // Dev-only debugging utilities
   useEffect(() => {
     if (isDev) {
-      console.log('Development mode - AppSafe loaded');
+      // console.log('Development mode - AppSafe loaded');
     }
   }, [isDev]);
 

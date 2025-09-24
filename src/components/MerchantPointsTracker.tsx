@@ -4,8 +4,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
-import { Coins, TrendingUp, AlertTriangle, CheckCircle } from 'lucide-react';
+import { supabase } from '@/lib/supabaseClient';
+import { Coins, AlertTriangle, CheckCircle } from 'lucide-react';
 
 interface MonthlyPointsData {
   id: string;
@@ -68,18 +68,13 @@ export const MerchantPointsTracker: React.FC<MerchantPointsTrackerProps> = ({
             variant: "destructive",
           });
         }
-        // If table doesn't exist, create a mock data structure
+        // If table doesn't exist, show error
         if (error.message?.includes('relation') || error.message?.includes('does not exist')) {
-          console.warn('merchant_monthly_points table does not exist, using mock data');
-          setCurrentMonthData({
-            id: 'mock',
-            merchant_id: merchantId,
-            year: currentYear,
-            month: currentMonth,
-            points_distributed: 0,
-            points_cap: pointsCap,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
+          console.error('merchant_monthly_points table does not exist');
+          toast({
+            title: "Database Error",
+            description: "Points tracking table not found. Please contact support.",
+            variant: "destructive",
           });
         }
         return;
@@ -103,18 +98,13 @@ export const MerchantPointsTracker: React.FC<MerchantPointsTrackerProps> = ({
 
         if (createError) {
           console.error('Error creating points record:', createError);
-          // If table doesn't exist, use mock data instead of showing error
+          // If table doesn't exist, show error
           if (createError.message?.includes('relation') || createError.message?.includes('does not exist')) {
-            console.warn('merchant_monthly_points table does not exist, using mock data');
-            setCurrentMonthData({
-              id: 'mock',
-              merchant_id: merchantId,
-              year: currentYear,
-              month: currentMonth,
-              points_distributed: 0,
-              points_cap: pointsCap,
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString()
+            console.error('merchant_monthly_points table does not exist');
+            toast({
+              title: "Database Error",
+              description: "Points tracking table not found. Please contact support.",
+              variant: "destructive",
             });
             return;
           }
@@ -141,19 +131,14 @@ export const MerchantPointsTracker: React.FC<MerchantPointsTrackerProps> = ({
           variant: "destructive",
         });
       }
-      // If table doesn't exist, use mock data
+      // If table doesn't exist, show error
       if (error instanceof Error && 
           (error.message.includes('relation') || error.message.includes('does not exist'))) {
-        console.warn('merchant_monthly_points table does not exist, using mock data');
-        setCurrentMonthData({
-          id: 'mock',
-          merchant_id: merchantId,
-          year: currentYear,
-          month: currentMonth,
-          points_distributed: 0,
-          points_cap: pointsCap,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
+        console.error('merchant_monthly_points table does not exist');
+        toast({
+          title: "Database Error",
+          description: "Points tracking table not found. Please contact support.",
+          variant: "destructive",
         });
       }
     } finally {
@@ -161,66 +146,9 @@ export const MerchantPointsTracker: React.FC<MerchantPointsTrackerProps> = ({
     }
   };
 
-  const updatePointsDistributed = async (additionalPoints: number) => {
-    if (!currentMonthData) return;
-
-    const newTotal = currentMonthData.points_distributed + additionalPoints;
-    
-    if (newTotal > pointsCap) {
-      toast({
-        title: "Points Cap Exceeded",
-        description: `Cannot distribute ${additionalPoints} points. This would exceed your monthly cap of ${pointsCap} points.`,
-        variant: "destructive",
-      });
-      return false;
-    }
-
-    // If using mock data, just update the local state
-    if (currentMonthData.id === 'mock') {
-      setCurrentMonthData(prev => prev ? {
-        ...prev,
-        points_distributed: newTotal,
-        updated_at: new Date().toISOString()
-      } : null);
-      return true;
-    }
-
-    try {
-      const { error } = await supabase
-        .from('merchant_monthly_points')
-        .update({ 
-          points_distributed: newTotal,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', currentMonthData.id);
-
-      if (error) {
-        console.error('Error updating points:', error);
-        toast({
-          title: "Error",
-          description: "Failed to update points distribution.",
-          variant: "destructive",
-        });
-        return false;
-      }
-
-      setCurrentMonthData(prev => prev ? {
-        ...prev,
-        points_distributed: newTotal,
-        updated_at: new Date().toISOString()
-      } : null);
-
-      return true;
-    } catch (error) {
-      console.error('Error updating points:', error);
-      toast({
-        title: "Error",
-        description: "Failed to update points distribution.",
-        variant: "destructive",
-      });
-      return false;
-    }
-  };
+  // const _updatePointsDistributed = async (additionalPoints: number) => {
+  //   // Function removed - was unused
+  // };
 
   const getUsagePercentage = () => {
     if (!currentMonthData || pointsCap === 0) return 0;

@@ -184,6 +184,19 @@ export class DAOService {
     try {
       console.log('🗳️ Casting vote:', { proposalId, userId, choice, votingPower, reason });
 
+      // Validate inputs
+      if (!proposalId || !userId || !choice) {
+        throw new Error('Missing required parameters: proposalId, userId, and choice are required');
+      }
+
+      if (!['yes', 'no', 'abstain'].includes(choice)) {
+        throw new Error('Invalid vote choice. Must be "yes", "no", or "abstain"');
+      }
+
+      if (votingPower <= 0) {
+        throw new Error('Voting power must be greater than 0');
+      }
+
       // Validate UUID format for proposalId
       const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
       if (!uuidRegex.test(proposalId)) {
@@ -195,22 +208,51 @@ export class DAOService {
         throw new Error(`Invalid user ID format: ${userId}. Expected a valid UUID.`);
       }
 
-      // First, verify the proposal exists in the database
+      // First, verify the proposal exists and is active
       const { data: proposal, error: proposalError } = await supabase
-        .from('dao_proposals' as any)
-        .select('id, status')
+        .from('dao_proposals')
+        .select('id, status, end_time, dao_id')
         .eq('id', proposalId)
         .single();
 
-      if (proposalError || !proposal) {
-        throw new Error(`Proposal not found: ${proposalId}. This may be a sample proposal that doesn't exist in the database.`);
+      if (proposalError) {
+        if (proposalError.message.includes('relation') || proposalError.message.includes('does not exist')) {
+          throw new Error('DAO voting system is not set up yet. Please contact an administrator.');
+        }
+        throw new Error(`Failed to fetch proposal: ${proposalError.message}`);
+      }
+
+      if (!proposal) {
+        throw new Error(`Proposal not found: ${proposalId}`);
       }
 
       if (proposal.status !== 'active') {
         throw new Error(`Proposal is not active for voting. Current status: ${proposal.status}`);
       }
 
-      // Then, check if user already voted
+      // Check if voting period has ended
+      if (proposal.end_time && new Date(proposal.end_time) < new Date()) {
+        throw new Error('Voting period has ended for this proposal');
+      }
+
+      // Verify user is a member of the DAO
+      const { data: membership, error: membershipError } = await supabase
+        .from('dao_members')
+        .select('id, voting_power, is_active')
+        .eq('dao_id', proposal.dao_id)
+        .eq('user_id', userId)
+        .eq('is_active', true)
+        .single();
+
+      if (membershipError && membershipError.code !== 'PGRST116') {
+        throw new Error(`Failed to verify DAO membership: ${membershipError.message}`);
+      }
+
+      if (!membership) {
+        throw new Error('You must be a member of this DAO to vote');
+      }
+
+      // Check if user already voted
       const { data: existingVote, error: checkError } = await supabase
         .from('dao_votes')
         .select('id')
@@ -233,24 +275,22 @@ export class DAOService {
         .insert({
           proposal_id: proposalId,
           voter_id: userId,
-          vote_choice: choice,
+          choice: choice,
           voting_power: votingPower,
-          voting_weight: votingPower, // Set voting_weight same as voting_power for now
-          reason
+          reason: reason || null
         });
 
       if (voteError) {
         console.error('Error inserting vote:', voteError);
-        // If table doesn't exist, provide a helpful error message
         if (voteError.message.includes('relation') || voteError.message.includes('does not exist')) {
           throw new Error('DAO voting system is not set up yet. Please contact an administrator.');
         }
         throw new Error(`Failed to cast vote: ${voteError.message}`);
       }
 
-      // Update proposal vote counts - first get current counts, then update
+      // Update proposal vote counts
       const { data: currentProposal, error: fetchError } = await supabase
-        .from('dao_proposals' as any)
+        .from('dao_proposals')
         .select('total_votes, yes_votes, no_votes, abstain_votes')
         .eq('id', proposalId)
         .single();
@@ -267,7 +307,7 @@ export class DAOService {
       const newAbstainVotes = choice === 'abstain' ? (currentProposal.abstain_votes || 0) + 1 : (currentProposal.abstain_votes || 0);
 
       const { error: updateError } = await supabase
-        .from('dao_proposals' as any)
+        .from('dao_proposals')
         .update({
           total_votes: newTotalVotes,
           yes_votes: newYesVotes,
@@ -278,7 +318,6 @@ export class DAOService {
 
       if (updateError) {
         console.error('Error updating proposal vote counts:', updateError);
-        // If table doesn't exist, provide a helpful error message
         if (updateError.message.includes('relation') || updateError.message.includes('does not exist')) {
           throw new Error('DAO voting system is not set up yet. Please contact an administrator.');
         }

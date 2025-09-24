@@ -6,6 +6,9 @@ import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { QrCode, RefreshCw, Calendar, DollarSign, Hash, CreditCard, Link as LinkIcon, Shield, Sparkles, ArrowLeft, Coins, Users, BarChart3, Receipt, Search, Edit, X } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -82,6 +85,17 @@ const MerchantDashboard = () => {
     amountMax: ''
   });
   const [filteredTransactions, setFilteredTransactions] = useState<Transaction[]>([]);
+  
+  // ✅ IMPLEMENT REQUIREMENT: Transaction editing state
+  const [showEditDialog, setShowEditDialog] = useState(false);
+  const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
+  const [editForm, setEditForm] = useState({
+    transaction_amount: '',
+    transaction_reference: '',
+    transaction_date: '',
+    name: '',
+    comments: ''
+  });
   
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -400,11 +414,22 @@ const MerchantDashboard = () => {
   };
 
   const handleEditTransaction = (transaction: Transaction) => {
-    // TODO: Implement transaction editing functionality
-    toast({
-      title: "Edit Transaction",
-      description: "Transaction editing functionality will be implemented soon.",
-    });
+    // ✅ IMPLEMENT REQUIREMENT: Transaction editing within 30 days
+    const transactionDate = new Date(transaction.transaction_date);
+    const now = new Date();
+    const daysDiff = Math.floor((now.getTime() - transactionDate.getTime()) / (1000 * 60 * 60 * 24));
+    
+    if (daysDiff > 30) {
+      toast({
+        title: "Edit Not Allowed",
+        description: "Transactions can only be edited within 30 days of the transaction date.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    setEditingTransaction(transaction);
+    setShowEditDialog(true);
   };
 
   const handleCancelTransaction = (transaction: Transaction) => {
@@ -414,6 +439,80 @@ const MerchantDashboard = () => {
       description: "Transaction cancellation functionality will be implemented soon.",
     });
   };
+
+  // ✅ IMPLEMENT REQUIREMENT: Transaction editing functionality
+  const handleEditFormChange = (field: string, value: string) => {
+    setEditForm(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
+  const handleSaveTransaction = async () => {
+    if (!editingTransaction) return;
+
+    try {
+      setLoading(true);
+      
+      // Validate required fields
+      if (!editForm.transaction_amount || !editForm.transaction_reference || !editForm.transaction_date) {
+        toast({
+          title: "Validation Error",
+          description: "Amount, Receipt Number, and Transaction Date are required fields.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Update transaction in database
+      const { error } = await supabase
+        .from('transactions')
+        .update({
+          transaction_amount: parseFloat(editForm.transaction_amount),
+          transaction_reference: editForm.transaction_reference,
+          transaction_date: editForm.transaction_date,
+          customer_name: editForm.name || null,
+          comments: editForm.comments || null,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', editingTransaction.id);
+
+      if (error) {
+        throw error;
+      }
+
+      toast({
+        title: "Transaction Updated",
+        description: "Transaction has been successfully updated.",
+      });
+
+      setShowEditDialog(false);
+      setEditingTransaction(null);
+      loadTransactions(); // Refresh the transactions list
+    } catch (error: any) {
+      console.error('Error updating transaction:', error);
+      toast({
+        title: "Update Failed",
+        description: error.message || "Failed to update transaction. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Initialize edit form when editing transaction changes
+  useEffect(() => {
+    if (editingTransaction) {
+      setEditForm({
+        transaction_amount: editingTransaction.transaction_amount.toString(),
+        transaction_reference: editingTransaction.transaction_reference || '',
+        transaction_date: editingTransaction.transaction_date.split('T')[0], // Format for date input
+        name: editingTransaction.user_loyalty_cards?.full_name || '',
+        comments: '' // Comments field would need to be added to Transaction interface
+      });
+    }
+  }, [editingTransaction]);
 
   const getSubscriptionStatus = () => {
     if (!merchant) return 'None';
@@ -1334,6 +1433,89 @@ const MerchantDashboard = () => {
             </div>
           )}
         </div>
+
+        {/* ✅ IMPLEMENT REQUIREMENT: Transaction editing dialog */}
+        <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Edit Transaction</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-amount">Amount (Required) *</Label>
+                <Input
+                  id="edit-amount"
+                  type="number"
+                  step="0.01"
+                  value={editForm.transaction_amount}
+                  onChange={(e) => handleEditFormChange('transaction_amount', e.target.value)}
+                  placeholder="0.00"
+                  required
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="edit-receipt">Receipt Number (Required) *</Label>
+                <Input
+                  id="edit-receipt"
+                  value={editForm.transaction_reference}
+                  onChange={(e) => handleEditFormChange('transaction_reference', e.target.value)}
+                  placeholder="Enter receipt number"
+                  required
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="edit-date">Transaction Date (Required) *</Label>
+                <Input
+                  id="edit-date"
+                  type="date"
+                  value={editForm.transaction_date}
+                  onChange={(e) => handleEditFormChange('transaction_date', e.target.value)}
+                  required
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="edit-name">Customer Name (Optional)</Label>
+                <Input
+                  id="edit-name"
+                  value={editForm.name}
+                  onChange={(e) => handleEditFormChange('name', e.target.value)}
+                  placeholder="Enter customer name"
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="edit-comments">Comments (Optional)</Label>
+                <Textarea
+                  id="edit-comments"
+                  value={editForm.comments}
+                  onChange={(e) => handleEditFormChange('comments', e.target.value)}
+                  placeholder="Add any comments about this transaction"
+                  rows={3}
+                />
+              </div>
+              
+              <div className="flex gap-3 pt-4">
+                <Button
+                  variant="outline"
+                  onClick={() => setShowEditDialog(false)}
+                  className="flex-1"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleSaveTransaction}
+                  disabled={loading}
+                  className="flex-1"
+                >
+                  {loading ? 'Saving...' : 'Save Changes'}
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
 
         {/* QR Code Generator Dialog */}
         {showQrGenerator && merchant && (

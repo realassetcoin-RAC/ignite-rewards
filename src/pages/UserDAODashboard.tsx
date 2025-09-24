@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
+// import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Progress } from '@/components/ui/progress';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -26,31 +26,31 @@ import {
   Sparkles,
   User,
   Shield,
-  LogOut
+  LogOut,
+  Bug
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useSecureAuth } from '@/hooks/useSecureAuth';
 import { format } from 'date-fns';
 import { 
-  DAOOrganization, 
   DAOProposal, 
   DAOMember, 
   DAOStats, 
   ProposalStatus, 
-  VotingType,
   PROPOSAL_CATEGORIES,
-  VOTING_TYPES,
   MEMBER_ROLES
 } from '@/types/dao';
 import { useSmartDataRefresh } from '@/hooks/useSmartDataRefresh';
 import { DAOService } from '@/lib/daoService';
 import { SetupDAOTestData } from '@/lib/setupDAOTestData';
-import { ComprehensiveTestDataService } from '@/lib/comprehensiveTestDataService';
-import { DirectTestDataService } from '@/lib/directTestDataService';
-import { SimpleTestDataService } from '@/lib/simpleTestDataService';
+import { FixedTestDataService } from '@/lib/fixedTestDataService';
+import { DebugLogger } from '@/lib/debugLogger';
+import { DebugPanel } from '@/components/DebugPanel';
+import { createModuleLogger } from '@/utils/consoleReplacer';
 
 const UserDAODashboard = () => {
+  const logger = createModuleLogger('UserDAODashboard');
   const [activeTab, setActiveTab] = useState('proposals');
   const [proposals, setProposals] = useState<DAOProposal[]>([]);
   const [members, setMembers] = useState<DAOMember[]>([]);
@@ -67,6 +67,7 @@ const UserDAODashboard = () => {
   const [authLoading, setAuthLoading] = useState(true);
   const [isSettingUpTestData, setIsSettingUpTestData] = useState(false);
   const [testDataExists, setTestDataExists] = useState(false);
+  const [showDebugPanel, setShowDebugPanel] = useState(false);
   const [votingInProgress, setVotingInProgress] = useState<Set<string>>(new Set());
   const [userVotes, setUserVotes] = useState<Map<string, string>>(new Map());
   
@@ -79,17 +80,17 @@ const UserDAODashboard = () => {
     checkUserMembership();
     checkTestDataExists();
     setIsLoaded(true);
-  }, []);
+  }, [loadDAOData, checkUserMembership]);
 
   useEffect(() => {
     if (currentUser) {
       loadUserVotes();
     }
-  }, [currentUser]);
+  }, [currentUser, loadUserVotes]);
 
   // Smart data refresh for DAO data
   const refreshDAOData = async () => {
-    console.log('🔄 Refreshing DAO data...');
+    logger.info('Refreshing DAO data');
     await loadDAOData();
     await checkUserMembership();
     await loadUserVotes();
@@ -118,7 +119,7 @@ const UserDAODashboard = () => {
         
         if (membership) {
           setUserMembership(membership);
-          console.log('UserDAO: User membership loaded:', membership);
+          logger.debug('User membership loaded', membership);
         } else {
           // User is not a member, create a default membership for display
           const defaultMembership: DAOMember = {
@@ -139,7 +140,7 @@ const UserDAODashboard = () => {
         }
       }
     } catch (error) {
-      console.error('Error checking user membership:', error);
+      logger.error('Error checking user membership', error);
     } finally {
       setAuthLoading(false);
     }
@@ -158,7 +159,7 @@ const UserDAODashboard = () => {
         .eq('voter_id', currentUser.id);
 
       if (error) {
-        console.error('Error loading user votes:', error);
+        logger.error('Error loading user votes', error);
         return;
       }
 
@@ -170,7 +171,7 @@ const UserDAODashboard = () => {
       }
       setUserVotes(votesMap);
     } catch (error) {
-      console.error('Error loading user votes:', error);
+      logger.error('Error loading user votes', error);
     }
   };
 
@@ -181,7 +182,7 @@ const UserDAODashboard = () => {
       // Load DAO organizations from database
       const organizations = await DAOService.getOrganizations();
       if (organizations.length === 0) {
-        console.warn('No DAO organizations found');
+        logger.warn('No DAO organizations found');
         setProposals([]);
         setMembers([]);
         setDaoStats({
@@ -212,7 +213,7 @@ const UserDAODashboard = () => {
       setDaoStats(statsData);
 
     } catch (error) {
-      console.error('Error loading DAO data:', error);
+      logger.error('Error loading DAO data', error);
       toast({
         title: "Error",
         description: "Failed to load DAO data.",
@@ -290,17 +291,20 @@ const UserDAODashboard = () => {
       const exists = await SetupDAOTestData.checkTestDataExists();
       setTestDataExists(exists);
     } catch (error) {
-      console.error('Error checking test data:', error);
+      logger.error('Error checking test data', error);
     }
   };
 
   const setupTestData = async () => {
     setIsSettingUpTestData(true);
+    DebugLogger.info('DAO_SETUP', 'Starting test data setup');
+    
     try {
-      // Use the simple service that works with existing tables
-      const result = await SimpleTestDataService.createComprehensiveTestData();
+      // Use the fixed service that handles errors better
+      const result = await FixedTestDataService.createComprehensiveTestData();
       
       if (result.success) {
+        DebugLogger.info('DAO_SETUP', 'Test data setup successful', result);
         toast({
           title: "Success",
           description: result.message,
@@ -309,6 +313,7 @@ const UserDAODashboard = () => {
         // Reload DAO data to show the new test data
         await loadDAOData();
       } else {
+        DebugLogger.error('DAO_SETUP', 'Test data setup failed', result);
         toast({
           title: "Error",
           description: result.message,
@@ -316,7 +321,8 @@ const UserDAODashboard = () => {
         });
       }
     } catch (error) {
-      console.error('Error setting up test data:', error);
+      DebugLogger.error('DAO_SETUP', 'Test data setup exception', error);
+      logger.error('Error setting up test data', error);
       toast({
         title: "Error",
         description: "Failed to set up test data. Please try again.",
@@ -330,7 +336,7 @@ const UserDAODashboard = () => {
   const handleVote = async (proposalId: string, choice: 'yes' | 'no' | 'abstain', reason?: string) => {
     // Prevent multiple simultaneous votes on the same proposal
     if (votingInProgress.has(proposalId)) {
-      console.log('Vote already in progress for proposal:', proposalId);
+      logger.warn('Vote already in progress for proposal', proposalId);
       return;
     }
 
@@ -380,7 +386,7 @@ const UserDAODashboard = () => {
       // Refresh the data to show updated vote counts
       await loadDAOData();
     } catch (error) {
-      console.error('Error casting vote:', error);
+      logger.error('Error casting vote', error);
       const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred while voting.';
       toast({
         title: "Voting Error",
@@ -570,6 +576,18 @@ const UserDAODashboard = () => {
                 <span className="sm:hidden">Back</span>
               </Button>
               
+              {/* Debug Button */}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowDebugPanel(true)}
+                className="bg-gradient-to-r from-yellow-500/20 to-orange-500/20 backdrop-blur-md hover:from-yellow-500/30 hover:to-orange-500/30 border-yellow-500/30 hover:border-yellow-500/50 flex-shrink-0"
+              >
+                <Bug className="mr-1 sm:mr-2 h-4 w-4" />
+                <span className="hidden sm:inline">Debug</span>
+                <span className="sm:hidden">Debug</span>
+              </Button>
+
               {/* Setup Test Data Button */}
               {!testDataExists && (
                 <Button 
@@ -1258,6 +1276,12 @@ const UserDAODashboard = () => {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Debug Panel */}
+      <DebugPanel 
+        isOpen={showDebugPanel} 
+        onClose={() => setShowDebugPanel(false)} 
+      />
     </div>
   );
 };
