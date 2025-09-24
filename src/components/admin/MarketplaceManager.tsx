@@ -16,30 +16,19 @@ import {
   Edit, 
   Trash2, 
   Eye, 
-  TrendingUp, 
   DollarSign, 
   Users, 
-  Calendar,
-  Target,
-  Shield,
-  Star,
   Settings,
-  BarChart3,
-  FileText,
-  Image as ImageIcon,
-  Upload,
-  Vote
+  Target,
+  TrendingUp
 } from 'lucide-react';
 import { 
   MarketplaceListing, 
   CreateListingRequest, 
-  UpdateListingRequest,
   MarketplaceStats,
-  NFTCardTier,
-  MarketplaceFilters,
-  DAOMarketplaceProposal
+  NFTCardTier
 } from '@/types/marketplace';
-import { formatCurrency, formatNumber } from '@/lib/marketplaceUtils';
+import { formatCurrency } from '@/lib/marketplaceUtils';
 import MarketplaceDAOIntegration from '@/components/dao/MarketplaceDAOIntegration';
 
 interface MarketplaceManagerProps {
@@ -74,93 +63,9 @@ const MarketplaceManager: React.FC<MarketplaceManagerProps> = ({ onStatsUpdate }
     tags: []
   });
 
-  // Mock data - replace with actual API calls
-  const mockListings: MarketplaceListing[] = [
-    {
-      id: '1',
-      title: 'Downtown Office Building',
-      description: 'Premium office space in the heart of downtown with high rental yields and appreciation potential.',
-      short_description: 'Premium downtown office building with excellent rental yields',
-      image_url: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=500',
-      listing_type: 'asset',
-      status: 'active',
-      total_funding_goal: 5000000,
-      current_funding_amount: 3200000,
-      current_investor_count: 45,
-      campaign_type: 'time_bound',
-      end_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-      expected_return_rate: 12.5,
-      risk_level: 'medium',
-      minimum_investment: 1000,
-      maximum_investment: 100000,
-      asset_type: 'real_estate',
-      token_symbol: 'DOB',
-      total_token_supply: 1000000,
-      token_price: 5,
-      is_featured: true,
-      is_verified: true,
-      tags: ['real-estate', 'commercial', 'downtown'],
-      created_by: 'admin',
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-      funding_progress_percentage: 64,
-      days_remaining: 30,
-      is_expired: false
-    }
-  ];
+  // Real data will be loaded from the database
 
-  const mockNftTiers: NFTCardTier[] = [
-    {
-      id: '1',
-      tier_name: 'standard',
-      display_name: 'Standard',
-      description: 'Basic loyalty card with standard investment access',
-      investment_multiplier: 1.0,
-      minimum_balance_required: 0,
-      can_access_premium_listings: false,
-      can_access_early_listings: false,
-      is_active: true,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    },
-    {
-      id: '2',
-      tier_name: 'premium',
-      display_name: 'Premium',
-      description: 'Premium loyalty card with enhanced investment benefits',
-      investment_multiplier: 1.25,
-      minimum_balance_required: 1000,
-      can_access_premium_listings: true,
-      can_access_early_listings: false,
-      is_active: true,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    },
-    {
-      id: '3',
-      tier_name: 'vip',
-      display_name: 'VIP',
-      description: 'VIP loyalty card with maximum investment benefits',
-      investment_multiplier: 1.5,
-      minimum_balance_required: 5000,
-      can_access_premium_listings: true,
-      can_access_early_listings: true,
-      is_active: true,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    }
-  ];
-
-  const mockStats: MarketplaceStats = {
-    total_listings: 1,
-    active_listings: 1,
-    total_investments: 45,
-    total_funding_raised: 3200000,
-    total_users_invested: 45,
-    average_investment_amount: 71111,
-    top_performing_assets: mockListings,
-    recent_investments: []
-  };
+  // Real data will be loaded from the database
 
   useEffect(() => {
     loadData();
@@ -177,19 +82,19 @@ const MarketplaceManager: React.FC<MarketplaceManagerProps> = ({ onStatsUpdate }
       
       setListings(listingsData);
       setStats(statsData);
-      setNftTiers(mockNftTiers); // TODO: Implement NFT tiers service
+      setNftTiers([]); // TODO: Implement NFT tiers service
       console.log('Marketplace data loaded successfully');
-    } catch (error) {
-      console.error('Failed to load marketplace data:', error);
-      // Use fallback data instead of showing error
-      setListings(mockListings);
-      setNftTiers(mockNftTiers);
-      setStats(mockStats);
+    } catch {
+      console.error('Failed to load marketplace data');
+      // Set empty data instead of mock data
+      setListings([]);
+      setNftTiers([]);
+      setStats(null);
       
       toast({
-        title: "Using Demo Data",
-        description: "Marketplace data loaded from demo dataset",
-        variant: "default",
+        title: "Error",
+        description: "Failed to load marketplace data. Please try again later.",
+        variant: "destructive",
       });
     } finally {
       setLoading(false);
@@ -212,24 +117,24 @@ const MarketplaceManager: React.FC<MarketplaceManagerProps> = ({ onStatsUpdate }
         // Following project conventions: Any changes that change the behavior of the loyalty application must create a DAO record for voting
         // Create a DAO proposal for listing approval instead of directly creating the listing
         
-        const proposalData = {
-          proposal_type: 'listing_approval',
-          title: `Approve ${formData.title} Listing`,
-          description: `Request to approve the ${formData.title} tokenized asset listing with $${formData.total_funding_goal.toLocaleString()} funding goal.`,
-          proposed_changes: {
-            listing_type: formData.listing_type,
-            total_funding_goal: formData.total_funding_goal,
-            expected_return_rate: formData.expected_return_rate,
-            risk_level: formData.risk_level,
-            asset_type: formData.asset_type,
-            campaign_type: formData.campaign_type,
-            minimum_investment: formData.minimum_investment,
-            maximum_investment: formData.maximum_investment,
-            description: formData.description,
-            short_description: formData.short_description,
-            image_url: formData.image_url
-          }
-        };
+          // const _proposalData = {
+          // proposal_type: 'listing_approval',
+          // title: `Approve ${formData.title} Listing`,
+          // description: `Request to approve the ${formData.title} tokenized asset listing with $${formData.total_funding_goal.toLocaleString()} funding goal.`,
+          // proposed_changes: {
+          //   listing_type: formData.listing_type,
+          //   total_funding_goal: formData.total_funding_goal,
+          //   expected_return_rate: formData.expected_return_rate,
+          //   risk_level: formData.risk_level,
+          //   asset_type: formData.asset_type,
+          //   campaign_type: formData.campaign_type,
+          //   minimum_investment: formData.minimum_investment,
+          //   maximum_investment: formData.maximum_investment,
+          //   description: formData.description,
+          //   short_description: formData.short_description,
+          //   image_url: formData.image_url
+          // }
+          // };
 
         // Create a draft listing that requires DAO approval
         const newListing = await MarketplaceService.createListing({
@@ -263,7 +168,7 @@ const MarketplaceManager: React.FC<MarketplaceManagerProps> = ({ onStatsUpdate }
       }
 
       onStatsUpdate?.();
-    } catch (error) {
+    } catch {
       toast({
         title: "Error",
         description: "Failed to create listing",
@@ -285,7 +190,7 @@ const MarketplaceManager: React.FC<MarketplaceManagerProps> = ({ onStatsUpdate }
       });
 
       onStatsUpdate?.();
-    } catch (error) {
+    } catch {
       toast({
         title: "Error",
         description: "Failed to update listing",
@@ -305,7 +210,7 @@ const MarketplaceManager: React.FC<MarketplaceManagerProps> = ({ onStatsUpdate }
       });
 
       onStatsUpdate?.();
-    } catch (error) {
+    } catch {
       toast({
         title: "Error",
         description: "Failed to delete listing",

@@ -1,5 +1,6 @@
 import { supabase } from '@/integrations/supabase/client';
 import { MarketplaceListing, CreateListingRequest, UpdateListingRequest } from '@/types/marketplace';
+import { LoyaltyNFTService } from './loyaltyNFTService';
 
 export class MarketplaceService {
   /**
@@ -102,8 +103,8 @@ export class MarketplaceService {
       }
 
       return data;
-    } catch (error) {
-      console.error('Failed to create listing:', error);
+    } catch {
+      console.error('Failed to create listing');
       throw error;
     }
   }
@@ -216,6 +217,170 @@ export class MarketplaceService {
         total_investments: 0,
         total_investment_amount: 0
       };
+    }
+  }
+
+  /**
+   * Get user's NFT multiplier for marketplace investments
+   */
+  static async getUserNFTMultiplier(userId: string): Promise<number> {
+    try {
+      // Get user's loyalty NFT
+      const loyaltyCard = await LoyaltyNFTService.getUserLoyaltyCard(userId);
+      
+      if (!loyaltyCard || !loyaltyCard.nft_types) {
+        return 1.0; // Default multiplier for users without NFTs
+      }
+
+      const nftType = loyaltyCard.nft_types;
+      
+      // Calculate multiplier based on NFT tier and features
+      let multiplier = 1.0;
+      
+      // Base multiplier from NFT tier
+      switch (nftType.tier_level?.toLowerCase()) {
+        case 'bronze':
+          multiplier = 1.0;
+          break;
+        case 'silver':
+          multiplier = 1.1;
+          break;
+        case 'gold':
+          multiplier = 1.25;
+          break;
+        case 'platinum':
+          multiplier = 1.5;
+          break;
+        case 'diamond':
+          multiplier = 1.75;
+          break;
+        default:
+          multiplier = 1.0;
+      }
+
+      // Bonus for upgraded custodial NFTs
+      if (loyaltyCard.is_custodial && loyaltyCard.is_upgraded && nftType.upgrade_bonus_ratio) {
+        multiplier += parseFloat(nftType.upgrade_bonus_ratio.toString());
+      }
+
+      // Bonus for evolved NFTs
+      if (loyaltyCard.is_evolved && nftType.evolution_earnings_ratio) {
+        multiplier += parseFloat(nftType.evolution_earnings_ratio.toString());
+      }
+
+      return Math.min(multiplier, 2.0); // Cap at 2.0x multiplier
+    } catch (error) {
+      console.error('Error getting NFT multiplier:', error);
+      return 1.0; // Default multiplier on error
+    }
+  }
+
+  /**
+   * Invest in a marketplace listing with NFT multiplier
+   */
+  static async investWithNFTMultiplier(
+    listingId: string, 
+    investmentAmount: number, 
+    userId: string
+  ): Promise<{ success: boolean; effectiveAmount: number; multiplier: number; message?: string }> {
+    try {
+      // Get user's NFT multiplier
+      const multiplier = await this.getUserNFTMultiplier(userId);
+      const effectiveAmount = investmentAmount * multiplier;
+
+      // Get the listing to validate investment
+      const listing = await this.getListingById(listingId);
+      if (!listing) {
+        return { success: false, effectiveAmount: 0, multiplier, message: 'Listing not found' };
+      }
+
+      // Check if listing is active
+      if (listing.status !== 'active') {
+        return { success: false, effectiveAmount: 0, multiplier, message: 'Listing is not active' };
+      }
+
+      // Check if investment exceeds remaining funding goal
+      const remainingGoal = (listing.total_funding_goal || 0) - (listing.current_funding_amount || 0);
+      if (effectiveAmount > remainingGoal) {
+        return { 
+          success: false, 
+          effectiveAmount, 
+          multiplier, 
+          message: `Investment exceeds remaining goal of ${remainingGoal}` 
+        };
+      }
+
+      // Create investment record
+      const { error } = await supabase
+        .from('marketplace_investments')
+        .insert([{
+          listing_id: listingId,
+          investor_id: userId,
+          investment_amount: investmentAmount,
+          effective_amount: effectiveAmount,
+          nft_multiplier: multiplier,
+          tokens_received: effectiveAmount / (listing.token_price || 1),
+          status: 'confirmed',
+          created_at: new Date().toISOString()
+        }])
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error creating investment:', error);
+        return { success: false, effectiveAmount: 0, multiplier, message: 'Failed to create investment' };
+      }
+
+      // Update listing funding amount
+      await supabase
+        .from('marketplace_listings')
+        .update({
+          current_funding_amount: (listing.current_funding_amount || 0) + effectiveAmount,
+          current_investor_count: (listing.current_investor_count || 0) + 1,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', listingId);
+
+      return { 
+        success: true, 
+        effectiveAmount, 
+        multiplier, 
+        message: `Investment successful! ${multiplier}x multiplier applied.` 
+      };
+    } catch (error) {
+      console.error('Error investing with NFT multiplier:', error);
+      return { success: false, effectiveAmount: 0, multiplier: 1.0, message: 'Investment failed' };
+    }
+  }
+
+  /**
+   * Get user's investment history with NFT multipliers
+   */
+  static async getUserInvestments(userId: string): Promise<any[]> {
+    try {
+      const { data, error } = await supabase
+        .from('marketplace_investments')
+        .select(`
+          *,
+          marketplace_listings (
+            title,
+            description,
+            status,
+            token_price
+          )
+        `)
+        .eq('investor_id', userId)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Error fetching user investments:', error);
+        return [];
+      }
+
+      return data || [];
+    } catch (error) {
+      console.error('Error fetching user investments:', error);
+      return [];
     }
   }
 }

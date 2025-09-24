@@ -18,9 +18,9 @@ import NFTManager from "@/components/admin/NFTManager";
 import { CreditCard, Users, Package, TrendingUp, Shield, UserCheck, Gift, Settings, Wallet, Link, Star } from "lucide-react";
 
 const AdminDashboard = () => {
-  const [user, setUser] = useState<any>(null);
+  // const [_user, setUser] = useState<any>(null);
   const [profile, setProfile] = useState<any>(null);
-  const [isAdmin, setIsAdmin] = useState(false);
+  // const [_isAdmin, setIsAdmin] = useState(false);
   const [stats, setStats] = useState({
     totalCards: 0,
     totalMerchants: 0,
@@ -326,9 +326,9 @@ const AdminDashboard = () => {
           {activeTab === "cards" && (
             <Card>
               <CardHeader>
-                <CardTitle>Virtual Card Management</CardTitle>
+                <CardTitle>Loyalty Card Management</CardTitle>
                 <CardDescription>
-                  Create and manage virtual cards with different pricing models and features.
+                  Create and manage loyalty NFT cards with different rarities and earning capabilities.
                 </CardDescription>
               </CardHeader>
               <CardContent>
