@@ -851,6 +851,45 @@ class DatabaseAdapter {
               updated_at: new Date().toISOString()
                   },
                 ];
+            case 'transaction_qr_codes':
+              return [
+                {
+                  id: '1',
+                  merchant_id: '00000000-0000-0000-0000-000000000001',
+                  qr_code_data: JSON.stringify({
+                    id: '1',
+                    merchant_id: '00000000-0000-0000-0000-000000000001',
+                    amount: 25.99,
+                    reward_points: 25,
+                    receipt_number: 'RCP001',
+                    expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
+                  }),
+                  transaction_amount: 25.99,
+                  reward_points: 25,
+                  receipt_number: 'RCP001',
+                  expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+                  created_at: new Date().toISOString(),
+                  updated_at: new Date().toISOString()
+                },
+                {
+                  id: '2',
+                  merchant_id: '00000000-0000-0000-0000-000000000001',
+                  qr_code_data: JSON.stringify({
+                    id: '2',
+                    merchant_id: '00000000-0000-0000-0000-000000000001',
+                    amount: 49.50,
+                    reward_points: 49,
+                    receipt_number: 'RCP002',
+                    expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
+                  }),
+                  transaction_amount: 49.50,
+                  reward_points: 49,
+                  receipt_number: 'RCP002',
+                  expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+                  created_at: new Date().toISOString(),
+                  updated_at: new Date().toISOString()
+                }
+              ];
               default:
                 return [];
           }
@@ -897,9 +936,34 @@ class DatabaseAdapter {
             };
             },
         insert: (data: any) => ({
-          select: () => ({ data: null, error: null }),
+          select: () => ({
+            single: async () => {
+              console.log(`Mock insert into ${table}:`, data);
+              if (table === 'transaction_qr_codes') {
+                // Return the inserted data with a generated ID
+                const insertedData = {
+                  id: 'qr-' + Date.now(),
+                  ...data,
+                  created_at: new Date().toISOString(),
+                  updated_at: new Date().toISOString()
+                };
+                return { data: insertedData, error: null };
+              }
+              return { data: null, error: null };
+            }
+          }),
           then: async (callback: (result: any) => any) => {
             console.log(`Mock insert into ${table}:`, data);
+            if (table === 'transaction_qr_codes') {
+              // Return the inserted data with a generated ID
+              const insertedData = {
+                id: 'qr-' + Date.now(),
+                ...data,
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString()
+              };
+              return callback({ data: insertedData, error: null });
+            }
             return callback({ data: null, error: null });
           }
         }),

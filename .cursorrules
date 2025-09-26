@@ -41,6 +41,17 @@ This is a rewards application with:
   - Referral campaign caps maximum referrals per user
   - Automatic referral settlement when criteria are met
   - Referral code field in signup and login popup screens
+  - **Enhanced Referral Types:**
+    - User-to-User referrals: Standard points for referring other users
+    - User-to-Merchant referrals: Higher points for referring merchants
+    - Merchant-to-User referrals: Merchants can refer users
+    - Merchant-to-Merchant referrals: Merchants can refer other merchants
+    - Campaign types: 'user', 'merchant', or 'both' for comprehensive referral programs
+    - Merchant referrals offer higher point earnings compared to user referrals
+  - **GMT Timezone Requirements:**
+    - All referral campaign start/end dates must be stored and displayed in GMT
+    - Campaign scheduling uses GMT timezone for consistency across global users
+    - Date/time pickers should show GMT timezone indicator
 
 - **Rewards & Points:**
   - Display list of all earned loyalty rewards

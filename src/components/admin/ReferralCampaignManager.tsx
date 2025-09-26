@@ -17,6 +17,8 @@ interface ReferralCampaign {
   name: string;
   description?: string | null;
   reward_points: number;
+  merchant_reward_points?: number;
+  referral_type: 'user' | 'merchant' | 'both';
   start_date: string;
   end_date: string;
   is_active: boolean;
@@ -212,22 +214,14 @@ const ReferralCampaignManager = () => {
                       <FormItem>
                         <FormLabel>Reward Points</FormLabel>
                         <FormControl>
-                          <Button
-                            variant="outline"
-                            size="default"
-                            className="w-full justify-start text-left font-normal"
-                            type="button"
-                            onClick={() => {
-                              const newValue = prompt('Enter reward points:', field.value?.toString() || '1');
-                              if (newValue !== null) {
-                                const numValue = parseInt(newValue) || 0;
-                                field.onChange(numValue);
-                              }
-                            }}
-                          >
-                            <span className="mr-2 h-4 w-4 text-center text-xs font-bold">#</span>
-                            {field.value || '1'}
-                          </Button>
+                          <Input
+                            type="number"
+                            min="1"
+                            max="10000"
+                            placeholder="Enter reward points"
+                            {...field}
+                            onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>

@@ -7,9 +7,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { QrCode, RefreshCw, Calendar, DollarSign, Hash, CreditCard, Link as LinkIcon, Shield, Sparkles, ArrowLeft, Coins, Users, BarChart3, Receipt, Search, Edit, X } from 'lucide-react';
+import { QrCode, RefreshCw, Calendar, DollarSign, Hash, CreditCard, Link as LinkIcon, Shield, Sparkles, ArrowLeft, Coins, Users, BarChart3, Receipt, Search, Edit, X, User, LogOut, Settings, FileText, Store, Vote } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { QrCodeGenerator } from '@/components/QrCodeGenerator';
@@ -360,6 +361,28 @@ const MerchantDashboard = () => {
     }
   };
 
+  const handleSignOut = async () => {
+    try {
+      await supabase.auth.signOut();
+      // Clear any local storage items
+      localStorage.removeItem('mock_oauth_user');
+      localStorage.removeItem('supabase.auth.token');
+      // Redirect to home page
+      navigate('/');
+      toast({
+        title: "Signed Out",
+        description: "You have been successfully signed out.",
+      });
+    } catch (error) {
+      console.error('Error signing out:', error);
+      toast({
+        title: "Error",
+        description: "Failed to sign out. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
   const loadTransactions = async () => {
     try {
       setLoading(true);
@@ -621,7 +644,7 @@ const MerchantDashboard = () => {
   }
 
   return (
-    <div className="min-h-screen hero-gradient relative overflow-x-hidden flex flex-col">
+    <div className="h-screen hero-gradient relative overflow-hidden flex flex-col">
       {/* Animated Background Elements */}
       <div className="absolute top-20 left-20 w-72 h-72 bg-gradient-to-r from-primary/20 to-purple-500/20 rounded-full mix-blend-multiply filter blur-xl animate-pulse pointer-events-none"></div>
       <div className="absolute top-40 right-20 w-96 h-96 bg-gradient-to-r from-purple-500/20 to-blue-500/20 rounded-full mix-blend-multiply filter blur-xl animate-pulse animation-delay-2000 pointer-events-none"></div>
@@ -652,39 +675,75 @@ const MerchantDashboard = () => {
               </Badge>
             </div>
             <div className="flex items-center space-x-3">
-              {/* Merchant Information */}
-              <div className="flex items-center space-x-4 text-sm">
-                <div className="flex items-center space-x-2">
-                  <span className="text-muted-foreground">Email:</span>
-                  <span className="font-medium">{userProfile?.email || 'N/A'}</span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <span className="text-muted-foreground">Status:</span>
-                  <Badge variant={merchant.status === 'active' ? 'default' : 'secondary'}>
-                    {merchant.status}
-                  </Badge>
-                </div>
-                {merchant.subscription_plan && (
-                  <div className="flex items-center space-x-2">
-                    <span className="text-muted-foreground">Plan:</span>
-                    <span className="font-medium">{merchant.subscription_plan.name}</span>
-                  </div>
-                )}
-              </div>
-              
-              <Button 
-                variant="outline" 
-                size="sm" 
-                asChild
-                className={`group bg-background/60 backdrop-blur-md hover:bg-background/80 border-primary/30 hover:border-primary/50 transform hover:scale-105 transition-all duration-300 ${
-                  isLoaded ? 'animate-fade-in-up animation-delay-200' : 'opacity-0'
-                }`}
-              >
-                <Link to="/" className="flex items-center">
-                  <ArrowLeft className="mr-2 h-4 w-4 group-hover:-translate-x-1 transition-transform" />
-                  Back to Home
-                </Link>
-              </Button>
+              {/* User Menu */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    className={`group bg-background/60 backdrop-blur-md hover:bg-background/80 border-primary/30 hover:border-primary/50 transform hover:scale-105 transition-all duration-300 ${
+                      isLoaded ? 'animate-fade-in-up animation-delay-300' : 'opacity-0'
+                    }`}
+                  >
+                    <User className="mr-2 h-4 w-4" />
+                    {userProfile?.full_name || 'User'}
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuLabel>
+                    <div className="flex flex-col space-y-1">
+                      <p className="text-sm font-medium leading-none">
+                        {userProfile?.full_name || 'Admin User'}
+                      </p>
+                      <p className="text-xs leading-none text-muted-foreground">
+                        {userProfile?.email || 'admin@igniterewards.com'}
+                      </p>
+                    </div>
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem asChild>
+                    <Link to="/user" className="flex items-center">
+                      <User className="mr-2 h-4 w-4" />
+                      My Dashboard
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link to="/marketplace" className="flex items-center">
+                      <FileText className="mr-2 h-4 w-4" />
+                      Marketplace
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link to="/user" className="flex items-center">
+                      <User className="mr-2 h-4 w-4" />
+                      User Dashboard
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link to="/merchant" className="flex items-center">
+                      <Store className="mr-2 h-4 w-4" />
+                      Merchant Dashboard
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link to="/admin-panel" className="flex items-center">
+                      <Settings className="mr-2 h-4 w-4" />
+                      Admin Panel
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link to="/dao" className="flex items-center">
+                      <Vote className="mr-2 h-4 w-4" />
+                      DAO Voting
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={handleSignOut} className="text-red-600 focus:text-red-600">
+                    <LogOut className="mr-2 h-4 w-4" />
+                    Sign out
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </div>
         </div>

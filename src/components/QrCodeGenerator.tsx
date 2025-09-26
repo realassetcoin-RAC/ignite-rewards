@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Download, QrCode, Copy, RefreshCw } from 'lucide-react';
-// import { supabase } from '@/integrations/supabase/client';
+import { databaseAdapter } from '@/lib/databaseAdapter';
 import { useToast } from '@/hooks/use-toast';
 import QRCodeLib from 'qrcode';
 import { updateMerchantPoints } from '@/components/MerchantPointsTracker';
@@ -79,7 +79,7 @@ export const QrCodeGenerator: React.FC<QrCodeGeneratorProps> = ({
         expires_at: expiresAt.toISOString(),
       };
 
-      const { data, error } = await (supabase as any)
+      const { data, error } = await databaseAdapter.supabase
         .from('transaction_qr_codes')
         .insert({
           merchant_id: merchantId,

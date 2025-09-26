@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Alignment Debug Test</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .debug-border { border: 2px solid red !important; }
+        .debug-height { min-height: 40px !important; }
+    </style>
+</head>
+<body class="bg-gray-900 text-white p-8">
+    <div class="max-w-4xl mx-auto">
+        <h1 class="text-2xl font-bold mb-8">Alignment Debug Test</h1>
+        
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+            <!-- Reward Points Button (Current Implementation) -->
+            <div>
+                <label class="block text-sm font-medium mb-2">Reward Points</label>
+                <button class="w-full justify-start text-left font-normal h-10 px-4 py-2 border border-gray-300 bg-white text-gray-900 rounded-md hover:bg-gray-50 debug-border">
+                    <span class="mr-2 h-4 w-4 text-center text-xs font-bold">#</span>
+                    10
+                </button>
+            </div>
+            
+            <!-- Date Picker Button (Simulated) -->
+            <div>
+                <label class="block text-sm font-medium mb-2">Start Date</label>
+                <button class="w-full justify-start text-left font-normal border border-gray-300 bg-white text-gray-900 rounded-md hover:bg-gray-50 debug-border">
+                    <svg class="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                    </svg>
+                    Select start date
+                </button>
+            </div>
+            
+            <!-- Date Picker Button (Simulated) -->
+            <div>
+                <label class="block text-sm font-medium mb-2">End Date</label>
+                <button class="w-full justify-start text-left font-normal border border-gray-300 bg-white text-gray-900 rounded-md hover:bg-gray-50 debug-border">
+                    <svg class="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                    </svg>
+                    Select end date
+                </button>
+            </div>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+            <!-- Fixed Reward Points Button -->
+            <div>
+                <label class="block text-sm font-medium mb-2">Reward Points (Fixed)</label>
+                <button class="w-full justify-start text-left font-normal border border-gray-300 bg-white text-gray-900 rounded-md hover:bg-gray-50 debug-border debug-height">
+                    <span class="mr-2 h-4 w-4 text-center text-xs font-bold">#</span>
+                    10
+                </button>
+            </div>
+            
+            <!-- Date Picker Button (Simulated) -->
+            <div>
+                <label class="block text-sm font-medium mb-2">Start Date</label>
+                <button class="w-full justify-start text-left font-normal border border-gray-300 bg-white text-gray-900 rounded-md hover:bg-gray-50 debug-border">
+                    <svg class="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                    </svg>
+                    Select start date
+                </button>
+            </div>
+            
+            <!-- Date Picker Button (Simulated) -->
+            <div>
+                <label class="block text-sm font-medium mb-2">End Date</label>
+                <button class="w-full justify-start text-left font-normal border border-gray-300 bg-white text-gray-900 rounded-md hover:bg-gray-50 debug-border">
+                    <svg class="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                    </svg>
+                    Select end date
+                </button>
+            </div>
+        </div>
+        
+        <div class="mt-8 p-4 bg-gray-800 rounded-lg">
+            <h2 class="text-lg font-semibold mb-4">Analysis:</h2>
+            <ul class="space-y-2">
+                <li>• Red borders show the actual button boundaries</li>
+                <li>• First row: Current implementation with explicit h-10 px-4 py-2</li>
+                <li>• Second row: Fixed implementation with min-height: 40px</li>
+                <li>• The issue might be that DatePicker buttons don't have explicit height classes</li>
+            </ul>
+        </div>
+    </div>
+</body>
+</html>
