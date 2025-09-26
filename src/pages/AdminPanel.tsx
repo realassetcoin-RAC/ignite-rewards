@@ -45,8 +45,10 @@ import {
   Building2,
   ArrowRight
 } from "lucide-react";
-import { DateRangePickerWithPresets } from "@/components/admin/DateRangePicker";
+import { DateRangePickerWithPresets, DateRangePickerWithTime } from "@/components/admin/DateRangePicker";
 import { DateRange } from "react-day-picker";
+import { Bar, BarChart, Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts";
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 
 const AdminPanel = () => {
   const logger = createModuleLogger('AdminPanel');
@@ -307,19 +309,29 @@ const AdminPanel = () => {
       }
 
       const merchants = data || [];
-      const startUp = merchants.filter((m: any) => m.subscription_plan === 'StartUp').length;
-      const momentumPlan = merchants.filter((m: any) => m.subscription_plan === 'Momentum Plan').length;
-      const energizerPlan = merchants.filter((m: any) => m.subscription_plan === 'Energizer Plan').length;
-      const cloud9Plan = merchants.filter((m: any) => m.subscription_plan === 'Cloud9 Plan').length;
-      const superPlan = merchants.filter((m: any) => m.subscription_plan === 'Super Plan').length;
+      
+      // Debug: Log the actual subscription plan values
+      logger.info('Merchant subscription plans found:', merchants.map((m: any) => m.subscription_plan));
+      
+      // Use the correct product plan names
+      const startUp = merchants.filter((m: any) => m.subscription_plan === 'startup-plan').length;
+      const momentumPlan = merchants.filter((m: any) => m.subscription_plan === 'momentum-plan').length;
+      const energizerPlan = merchants.filter((m: any) => m.subscription_plan === 'energizer-plan').length;
+      const cloud9Plan = merchants.filter((m: any) => m.subscription_plan === 'cloud9-plan').length;
+      const superPlan = merchants.filter((m: any) => m.subscription_plan === 'super-plan').length;
 
-      setMerchantSubscriptionStats({
+      const stats = {
         startUp,
         momentumPlan,
         energizerPlan,
         cloud9Plan,
         superPlan
-      });
+      };
+      
+      // Debug: Log the final stats
+      logger.info('Merchant subscription stats:', stats);
+      
+      setMerchantSubscriptionStats(stats);
     } catch (e) {
       logger.error('Unexpected error loading merchant subscription stats', e as Error);
       // Set mock data when database is not available
@@ -546,7 +558,7 @@ const AdminPanel = () => {
           {/* Revenue Date Range */}
           <div className="mt-4 flex flex-col sm:flex-row gap-4 items-start sm:items-end">
             <div className="flex-1">
-              <DateRangePickerWithPresets
+              <DateRangePickerWithTime
                 dateRange={revenueRange}
                 onDateRangeChange={(range) => {
                   setRevenueRange(range);
@@ -558,7 +570,7 @@ const AdminPanel = () => {
                     }
                   }
                 }}
-                placeholder="Select revenue date range"
+                placeholder="Select revenue date & time range (GMT)"
                 className="w-full"
               />
             </div>
@@ -1003,31 +1015,22 @@ const AdminPanel = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-4">
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm text-muted-foreground">From</span>
-                    <Input type="date" value={analyticsRange?.from?.toISOString().split('T')[0] || ''} onChange={(e) => setAnalyticsRange(prev => ({ from: e.target.value ? new Date(e.target.value) : undefined, to: prev?.to } as DateRange))} />
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm text-muted-foreground">To</span>
-                    <Input type="date" value={analyticsRange?.to?.toISOString().split('T')[0] || ''} onChange={(e) => setAnalyticsRange(prev => ({ from: prev?.from, to: e.target.value ? new Date(e.target.value) : undefined } as DateRange))} />
-                  </div>
-                  <div className="sm:col-span-2 flex items-center">
-                    <Button
-                      onClick={() => {
-                        if (analyticsRange?.from && analyticsRange?.to) {
-                          const fromStr = analyticsRange.from.toISOString().split('T')[0] || '';
-                          const toStr = analyticsRange.to.toISOString().split('T')[0] || '';
+                <div className="space-y-4 mb-6">
+                  <DateRangePickerWithTime
+                    dateRange={analyticsRange}
+                    onDateRangeChange={(range) => {
+                      setAnalyticsRange(range);
+                      if (range?.from && range?.to) {
+                        const fromStr = range.from.toISOString().split('T')[0] || '';
+                        const toStr = range.to.toISOString().split('T')[0] || '';
                           if (fromStr && toStr) {
                             loadAnalyticsStats(fromStr, toStr);
                           }
                         }
                       }}
-                      disabled={analyticsLoading || !analyticsRange?.from || !analyticsRange?.to}
-                    >
-                      {analyticsLoading ? 'Updating…' : 'Apply'}
-                    </Button>
-                  </div>
+                    placeholder="Select analytics date & time range (GMT)"
+                    className="w-full"
+                  />
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
                   <Card className="card-gradient border-primary/20"><CardContent className="p-6"><div className="text-sm text-muted-foreground">Transactions</div><div className="text-2xl font-bold">{analyticsStats.totalTransactions}</div></CardContent></Card>
@@ -1037,212 +1040,138 @@ const AdminPanel = () => {
                   <Card className="card-gradient border-primary/20"><CardContent className="p-6"><div className="text-sm text-muted-foreground">Active Merchants</div><div className="text-2xl font-bold">{analyticsStats.activeMerchants}</div></CardContent></Card>
                 </div>
                 
-                {/* Merchant Subscription Chart - Full Width */}
-                <div className="mt-8 w-full">
-                  <Card className="card-gradient border-primary/20 w-full">
+                {/* Analytics Charts - 2 per row layout */}
+                <div className="mt-8 grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {/* Merchant Subscription Chart */}
+                <Card className="card-gradient border-primary/20">
                     <CardHeader>
-                      <CardTitle className="text-xl font-bold">Merchant Subscriptions by Plan Type</CardTitle>
-                      <CardDescription>Distribution of merchant subscriptions across all plan tiers</CardDescription>
+                    <CardTitle className="text-lg font-bold">Merchant Subscriptions</CardTitle>
+                    <CardDescription>Distribution by plan type</CardDescription>
                     </CardHeader>
-                    <CardContent className="w-full">
-                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 w-full">
-                        {/* Left Column - Visual Chart */}
-                        <div className="space-y-6">
-                          <div className="relative h-80 w-full">
-                            <div className="absolute inset-0 flex items-end justify-between p-6">
-                              {/* StartUp Bar */}
-                              <div className="flex flex-col items-center space-y-3 flex-1">
-                                <div 
-                                  className="bg-gradient-to-t from-blue-500 to-blue-400 rounded-t-xl transition-all duration-500 hover:from-blue-600 hover:to-blue-500 shadow-lg hover:shadow-xl"
-                                  style={{ 
-                                    width: '100%',
-                                    height: `${Math.max(merchantSubscriptionStats.startUp / Math.max(merchantSubscriptionStats.startUp, merchantSubscriptionStats.momentumPlan, merchantSubscriptionStats.energizerPlan, merchantSubscriptionStats.cloud9Plan, merchantSubscriptionStats.superPlan, 1) * 250, 30)}px`
-                                  }}
-                                ></div>
-                                <div className="text-center">
-                                  <div className="text-3xl font-bold text-blue-600">{merchantSubscriptionStats.startUp}</div>
-                                  <div className="text-sm font-medium text-muted-foreground">StartUp</div>
-                                  <div className="text-xs text-muted-foreground">$20/month</div>
-                                </div>
-                              </div>
-                              
-                              {/* Momentum Plan Bar */}
-                              <div className="flex flex-col items-center space-y-3 flex-1">
-                                <div 
-                                  className="bg-gradient-to-t from-green-500 to-green-400 rounded-t-xl transition-all duration-500 hover:from-green-600 hover:to-green-500 shadow-lg hover:shadow-xl"
-                                  style={{ 
-                                    width: '100%',
-                                    height: `${Math.max(merchantSubscriptionStats.momentumPlan / Math.max(merchantSubscriptionStats.startUp, merchantSubscriptionStats.momentumPlan, merchantSubscriptionStats.energizerPlan, merchantSubscriptionStats.cloud9Plan, merchantSubscriptionStats.superPlan, 1) * 250, 30)}px`
-                                  }}
-                                ></div>
-                                <div className="text-center">
-                                  <div className="text-3xl font-bold text-green-600">{merchantSubscriptionStats.momentumPlan}</div>
-                                  <div className="text-sm font-medium text-muted-foreground">Momentum</div>
-                                  <div className="text-xs text-muted-foreground">$50/month</div>
-                                </div>
-                              </div>
-                              
-                              {/* Energizer Plan Bar */}
-                              <div className="flex flex-col items-center space-y-3 flex-1">
-                                <div 
-                                  className="bg-gradient-to-t from-purple-500 to-purple-400 rounded-t-xl transition-all duration-500 hover:from-purple-600 hover:to-purple-500 shadow-lg hover:shadow-xl relative"
-                                  style={{ 
-                                    width: '100%',
-                                    height: `${Math.max(merchantSubscriptionStats.energizerPlan / Math.max(merchantSubscriptionStats.startUp, merchantSubscriptionStats.momentumPlan, merchantSubscriptionStats.energizerPlan, merchantSubscriptionStats.cloud9Plan, merchantSubscriptionStats.superPlan, 1) * 250, 30)}px`
-                                  }}
-                                >
-                                  <div className="absolute -top-2 -right-2 bg-yellow-400 text-yellow-900 text-xs font-bold px-2 py-1 rounded-full">
-                                    POPULAR
-                                  </div>
-                                </div>
-                                <div className="text-center">
-                                  <div className="text-3xl font-bold text-purple-600">{merchantSubscriptionStats.energizerPlan}</div>
-                                  <div className="text-sm font-medium text-muted-foreground">Energizer</div>
-                                  <div className="text-xs text-muted-foreground">$100/month</div>
-                                </div>
-                              </div>
-                              
-                              {/* Cloud9 Plan Bar */}
-                              <div className="flex flex-col items-center space-y-3 flex-1">
-                                <div 
-                                  className="bg-gradient-to-t from-orange-500 to-orange-400 rounded-t-xl transition-all duration-500 hover:from-orange-600 hover:to-orange-500 shadow-lg hover:shadow-xl"
-                                  style={{ 
-                                    width: '100%',
-                                    height: `${Math.max(merchantSubscriptionStats.cloud9Plan / Math.max(merchantSubscriptionStats.startUp, merchantSubscriptionStats.momentumPlan, merchantSubscriptionStats.energizerPlan, merchantSubscriptionStats.cloud9Plan, merchantSubscriptionStats.superPlan, 1) * 250, 30)}px`
-                                  }}
-                                ></div>
-                                <div className="text-center">
-                                  <div className="text-3xl font-bold text-orange-600">{merchantSubscriptionStats.cloud9Plan}</div>
-                                  <div className="text-sm font-medium text-muted-foreground">Cloud9</div>
-                                  <div className="text-xs text-muted-foreground">$250/month</div>
-                                </div>
-                              </div>
-                              
-                              {/* Super Plan Bar */}
-                              <div className="flex flex-col items-center space-y-3 flex-1">
-                                <div 
-                                  className="bg-gradient-to-t from-red-500 to-red-400 rounded-t-xl transition-all duration-500 hover:from-red-600 hover:to-red-500 shadow-lg hover:shadow-xl"
-                                  style={{ 
-                                    width: '100%',
-                                    height: `${Math.max(merchantSubscriptionStats.superPlan / Math.max(merchantSubscriptionStats.startUp, merchantSubscriptionStats.momentumPlan, merchantSubscriptionStats.energizerPlan, merchantSubscriptionStats.cloud9Plan, merchantSubscriptionStats.superPlan, 1) * 250, 30)}px`
-                                  }}
-                                ></div>
-                                <div className="text-center">
-                                  <div className="text-3xl font-bold text-red-600">{merchantSubscriptionStats.superPlan}</div>
-                                  <div className="text-sm font-medium text-muted-foreground">Super</div>
-                                  <div className="text-xs text-muted-foreground">$500/month</div>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                        
-                        {/* Right Column - Detailed Stats */}
-                        <div className="space-y-4">
-                          <h3 className="text-lg font-semibold text-foreground mb-4">Plan Distribution</h3>
-                          
-                          {/* StartUp */}
-                          <div className="flex items-center justify-between p-4 rounded-lg bg-blue-50 dark:bg-blue-800/20 border border-blue-200 dark:border-blue-700">
-                            <div className="flex items-center space-x-3">
-                              <div className="w-4 h-4 rounded-full bg-blue-500"></div>
-                              <div>
-                                <div className="font-medium text-foreground">StartUp</div>
-                                <div className="text-sm text-muted-foreground">$20/month • 100 points • 100 transactions</div>
-                              </div>
-                            </div>
-                            <div className="text-right">
-                              <div className="text-2xl font-bold text-blue-600">{merchantSubscriptionStats.startUp}</div>
-                              <div className="text-sm text-muted-foreground">
-                                {Math.round((merchantSubscriptionStats.startUp / (merchantSubscriptionStats.startUp + merchantSubscriptionStats.momentumPlan + merchantSubscriptionStats.energizerPlan + merchantSubscriptionStats.cloud9Plan + merchantSubscriptionStats.superPlan)) * 100) || 0}%
-                              </div>
-                            </div>
-                          </div>
-                          
-                          {/* Momentum Plan */}
-                          <div className="flex items-center justify-between p-4 rounded-lg bg-green-50 dark:bg-green-800/20 border border-green-200 dark:border-green-700">
-                            <div className="flex items-center space-x-3">
-                              <div className="w-4 h-4 rounded-full bg-green-500"></div>
-                              <div>
-                                <div className="font-medium text-foreground">Momentum Plan</div>
-                                <div className="text-sm text-muted-foreground">$50/month • 300 points • 300 transactions</div>
-                              </div>
-                            </div>
-                            <div className="text-right">
-                              <div className="text-2xl font-bold text-green-600">{merchantSubscriptionStats.momentumPlan}</div>
-                              <div className="text-sm text-muted-foreground">
-                                {Math.round((merchantSubscriptionStats.momentumPlan / (merchantSubscriptionStats.startUp + merchantSubscriptionStats.momentumPlan + merchantSubscriptionStats.energizerPlan + merchantSubscriptionStats.cloud9Plan + merchantSubscriptionStats.superPlan)) * 100) || 0}%
-                              </div>
-                            </div>
-                          </div>
-                          
-                          {/* Energizer Plan */}
-                          <div className="flex items-center justify-between p-4 rounded-lg bg-purple-50 dark:bg-purple-800/20 border border-purple-200 dark:border-purple-700 relative">
-                            <div className="absolute -top-2 -right-2 bg-yellow-400 text-yellow-900 text-xs font-bold px-2 py-1 rounded-full">
-                              POPULAR
-                            </div>
-                            <div className="flex items-center space-x-3">
-                              <div className="w-4 h-4 rounded-full bg-purple-500"></div>
-                              <div>
-                                <div className="font-medium text-foreground">Energizer Plan</div>
-                                <div className="text-sm text-muted-foreground">$100/month • 600 points • 600 transactions</div>
-                              </div>
-                            </div>
-                            <div className="text-right">
-                              <div className="text-2xl font-bold text-purple-600">{merchantSubscriptionStats.energizerPlan}</div>
-                              <div className="text-sm text-muted-foreground">
-                                {Math.round((merchantSubscriptionStats.energizerPlan / (merchantSubscriptionStats.startUp + merchantSubscriptionStats.momentumPlan + merchantSubscriptionStats.energizerPlan + merchantSubscriptionStats.cloud9Plan + merchantSubscriptionStats.superPlan)) * 100) || 0}%
-                              </div>
-                            </div>
-                          </div>
-                          
-                          {/* Cloud9 Plan */}
-                          <div className="flex items-center justify-between p-4 rounded-lg bg-orange-50 dark:bg-orange-800/20 border border-orange-200 dark:border-orange-700">
-                            <div className="flex items-center space-x-3">
-                              <div className="w-4 h-4 rounded-full bg-orange-500"></div>
-                              <div>
-                                <div className="font-medium text-foreground">Cloud9 Plan</div>
-                                <div className="text-sm text-muted-foreground">$250/month • 1,800 points • 1,800 transactions</div>
-                              </div>
-                            </div>
-                            <div className="text-right">
-                              <div className="text-2xl font-bold text-orange-600">{merchantSubscriptionStats.cloud9Plan}</div>
-                              <div className="text-sm text-muted-foreground">
-                                {Math.round((merchantSubscriptionStats.cloud9Plan / (merchantSubscriptionStats.startUp + merchantSubscriptionStats.momentumPlan + merchantSubscriptionStats.energizerPlan + merchantSubscriptionStats.cloud9Plan + merchantSubscriptionStats.superPlan)) * 100) || 0}%
-                              </div>
-                            </div>
-                          </div>
-                          
-                          {/* Super Plan */}
-                          <div className="flex items-center justify-between p-4 rounded-lg bg-red-50 dark:bg-red-800/20 border border-red-200 dark:border-red-700">
-                            <div className="flex items-center space-x-3">
-                              <div className="w-4 h-4 rounded-full bg-red-500"></div>
-                              <div>
-                                <div className="font-medium text-foreground">Super Plan</div>
-                                <div className="text-sm text-muted-foreground">$500/month • 4,000 points • 4,000 transactions</div>
-                              </div>
-                            </div>
-                            <div className="text-right">
-                              <div className="text-2xl font-bold text-red-600">{merchantSubscriptionStats.superPlan}</div>
-                              <div className="text-sm text-muted-foreground">
-                                {Math.round((merchantSubscriptionStats.superPlan / (merchantSubscriptionStats.startUp + merchantSubscriptionStats.momentumPlan + merchantSubscriptionStats.energizerPlan + merchantSubscriptionStats.cloud9Plan + merchantSubscriptionStats.superPlan)) * 100) || 0}%
-                              </div>
-                            </div>
-                          </div>
-                          
-                          {/* Total Summary */}
-                          <div className="mt-6 p-4 rounded-lg bg-gradient-to-r from-primary/10 to-purple-500/10 border border-primary/20">
-                            <div className="text-center">
-                              <div className="text-3xl font-bold text-primary">
-                                {merchantSubscriptionStats.startUp + merchantSubscriptionStats.momentumPlan + merchantSubscriptionStats.energizerPlan + merchantSubscriptionStats.cloud9Plan + merchantSubscriptionStats.superPlan}
-                              </div>
-                              <div className="text-sm text-muted-foreground">Total Active Merchants</div>
-                              <div className="text-xs text-muted-foreground mt-1">
-                                Across {5} subscription tiers
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
+                    <CardContent>
+                      <ChartContainer
+                        config={{
+                          merchants: {
+                            label: "Merchants",
+                          },
+                          StartUp: {
+                            label: "StartUp",
+                            color: "hsl(var(--primary))",
+                          },
+                          Momentum: {
+                            label: "Momentum",
+                            color: "hsl(var(--secondary))",
+                          },
+                          Energizer: {
+                            label: "Energizer",
+                            color: "hsl(var(--accent))",
+                          },
+                          Cloud9: {
+                            label: "Cloud9",
+                            color: "hsl(var(--muted))",
+                          },
+                          Super: {
+                            label: "Super",
+                            color: "hsl(var(--destructive))",
+                          },
+                        }}
+                        className="h-[300px] w-full"
+                      >
+                        <BarChart
+                          accessibilityLayer
+                          data={[
+                            { plan: "StartUp", merchants: merchantSubscriptionStats.startUp || 0, fill: "hsl(var(--primary))" },
+                            { plan: "Momentum", merchants: merchantSubscriptionStats.momentumPlan || 0, fill: "hsl(var(--secondary))" },
+                            { plan: "Energizer", merchants: merchantSubscriptionStats.energizerPlan || 0, fill: "hsl(var(--accent))" },
+                            { plan: "Cloud9", merchants: merchantSubscriptionStats.cloud9Plan || 0, fill: "hsl(var(--muted))" },
+                            { plan: "Super", merchants: merchantSubscriptionStats.superPlan || 0, fill: "hsl(var(--destructive))" },
+                          ]}
+                          layout="vertical"
+                          margin={{
+                            left: 20,
+                            right: 20,
+                            top: 20,
+                            bottom: 20,
+                          }}
+                        >
+                          <YAxis
+                            dataKey="plan"
+                            type="category"
+                            tickLine={false}
+                            tickMargin={10}
+                            axisLine={false}
+                            width={120}
+                            tick={{ fontSize: 12 }}
+                tickFormatter={(value) => {
+                  // The value is already the full plan name, so just return it
+                  return value
+                }}
+                          />
+                          <XAxis dataKey="merchants" type="number" hide />
+                          <ChartTooltip
+                            cursor={false}
+                            content={<ChartTooltipContent hideLabel />}
+                          />
+                          <Bar dataKey="merchants" layout="vertical" radius={5} />
+                        </BarChart>
+                      </ChartContainer>
+                    </CardContent>
+                  </Card>
+
+                  {/* Revenue Analytics Chart */}
+                <Card className="card-gradient border-primary/20">
+                  <CardHeader>
+                    <CardTitle className="text-lg font-bold">Revenue Analytics</CardTitle>
+                    <CardDescription>Monthly revenue trends</CardDescription>
+                  </CardHeader>
+                    <CardContent>
+                      <ChartContainer
+                        config={{
+                          revenue: {
+                            label: "Revenue",
+                          },
+                          monthly: {
+                            label: "Monthly Revenue",
+                            color: "hsl(var(--primary))",
+                          },
+                        }}
+                        className="h-[300px] w-full"
+                      >
+                        <AreaChart
+                          accessibilityLayer
+                          data={[
+                            { month: "Jan", revenue: 45000 },
+                            { month: "Feb", revenue: 52000 },
+                            { month: "Mar", revenue: 48000 },
+                            { month: "Apr", revenue: 61000 },
+                            { month: "May", revenue: 55000 },
+                            { month: "Jun", revenue: 67000 },
+                          ]}
+                          margin={{
+                            left: 12,
+                            right: 12,
+                          }}
+                        >
+                          <CartesianGrid vertical={false} />
+                          <XAxis
+                            dataKey="month"
+                            tickLine={false}
+                            axisLine={false}
+                            tickMargin={8}
+                          />
+                          <ChartTooltip
+                            cursor={false}
+                            content={<ChartTooltipContent indicator="line" />}
+                          />
+                          <Area
+                            dataKey="revenue"
+                            type="natural"
+                            fill="hsl(var(--primary))"
+                            fillOpacity={0.4}
+                            stroke="hsl(var(--primary))"
+                          />
+                        </AreaChart>
+                      </ChartContainer>
                     </CardContent>
                   </Card>
                 </div>

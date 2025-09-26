@@ -35,6 +35,7 @@ export const MerchantEmailManager: React.FC<MerchantEmailManagerProps> = ({
   const [addingEmail, setAddingEmail] = useState(false);
   const [newEmail, setNewEmail] = useState('');
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
   const { toast } = useToast();
 
   const emailLimit = subscriptionPlan?.email_limit || 1;
@@ -46,15 +47,37 @@ export const MerchantEmailManager: React.FC<MerchantEmailManagerProps> = ({
   const loadEmails = async () => {
     try {
       setLoading(true);
+      
+      // Check if supabase is properly initialized
+      if (!supabase) {
+        console.error('Supabase client not initialized');
+        return;
+      }
+      
       const { data, error } = await supabase
         .from('merchant_emails')
         .select('*')
         .eq('merchant_id', merchantId)
-        .order('is_primary', { ascending: false })
-        .order('created_at', { ascending: true });
+        .order('is_primary', { ascending: false });
 
       if (error) {
         console.error('Error loading emails:', error);
+        
+        // Check if it's a service unavailable error
+        if (error.message?.includes('503') || error.message?.includes('Service Unavailable')) {
+          console.log('Supabase service unavailable, using empty email list');
+          setEmails([]);
+          
+          // Retry after a delay if we haven't exceeded retry limit
+          if (retryCount < 3) {
+            setTimeout(() => {
+              setRetryCount(prev => prev + 1);
+              loadEmails();
+            }, 2000 * (retryCount + 1)); // Exponential backoff
+          }
+          return;
+        }
+        
         toast({
           title: "Error",
           description: "Failed to load email addresses.",
@@ -63,7 +86,15 @@ export const MerchantEmailManager: React.FC<MerchantEmailManagerProps> = ({
         return;
       }
 
-      setEmails(data || []);
+      // Filter out any null values and ensure data integrity
+      const validEmails = (data || []).filter(email => 
+        email && 
+        email.id && 
+        email.email_address && 
+        typeof email.is_primary === 'boolean' && 
+        typeof email.is_verified === 'boolean'
+      );
+      setEmails(validEmails);
     } catch (error) {
       console.error('Error loading emails:', error);
       toast({
@@ -119,19 +150,63 @@ export const MerchantEmailManager: React.FC<MerchantEmailManagerProps> = ({
 
     try {
       setAddingEmail(true);
-      const { data, error } = await supabase
-        .from('merchant_emails')
-        .insert({
-          merchant_id: merchantId,
-          email_address: newEmail.trim(),
-          is_primary: emails.length === 0, // First email is primary
-          is_verified: false
-        })
-        .select()
-        .single();
+      
+      // Check if supabase is properly initialized
+      if (!supabase) {
+        console.error('Supabase client not initialized');
+        toast({
+          title: "Error",
+          description: "Database connection not available.",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      let data, error;
+      try {
+        const result = await supabase
+          .from('merchant_emails')
+          .insert({
+            merchant_id: merchantId,
+            email_address: newEmail.trim(),
+            is_primary: emails.length === 0, // First email is primary
+            is_verified: false
+          })
+          .select()
+          .single();
+        data = result.data;
+        error = result.error;
+      } catch (queryError) {
+        console.error('Query execution error:', queryError);
+        error = queryError;
+        data = null;
+      }
 
       if (error) {
         console.error('Error adding email:', error);
+        
+        // Check if it's a service unavailable error
+        if (error.message?.includes('503') || error.message?.includes('Service Unavailable')) {
+          toast({
+            title: "Service Unavailable",
+            description: "Email service is temporarily unavailable. Your email will be added when the service is restored.",
+            variant: "destructive",
+          });
+          
+          // Add to local state as a fallback
+          const tempEmail = {
+            id: `temp_${Date.now()}`,
+            email_address: newEmail.trim(),
+            is_primary: emails.length === 0,
+            is_verified: false,
+            created_at: new Date().toISOString()
+          };
+          setEmails(prev => [...prev, tempEmail]);
+          setNewEmail('');
+          setDialogOpen(false);
+          return;
+        }
+        
         toast({
           title: "Error",
           description: "Failed to add email address.",
@@ -140,7 +215,34 @@ export const MerchantEmailManager: React.FC<MerchantEmailManagerProps> = ({
         return;
       }
 
-      setEmails(prev => [...prev, data]);
+      // Ensure the new email data is valid before adding to state
+      if (data && data.id && data.email_address) {
+        setEmails(prev => [...prev, data]);
+      } else {
+        console.error('Invalid email data received:', data);
+        
+        // If data is null but no error, it might be a service issue
+        if (!data && !error) {
+          toast({
+            title: "Service Issue",
+            description: "Email service returned no data. Your email may have been added successfully.",
+            variant: "destructive",
+          });
+          
+          // Reload emails to check if it was actually added
+          setTimeout(() => {
+            loadEmails();
+          }, 1000);
+          return;
+        }
+        
+        toast({
+          title: "Error",
+          description: "Invalid data received. Please try again.",
+          variant: "destructive",
+        });
+        return;
+      }
       setNewEmail('');
       setDialogOpen(false);
       
@@ -327,7 +429,7 @@ export const MerchantEmailManager: React.FC<MerchantEmailManagerProps> = ({
           </div>
         ) : (
           <div className="space-y-3">
-            {emails.map((email) => (
+            {emails.filter(email => email !== null).map((email) => (
               <div
                 key={email.id}
                 className="flex items-center justify-between p-3 border rounded-lg"

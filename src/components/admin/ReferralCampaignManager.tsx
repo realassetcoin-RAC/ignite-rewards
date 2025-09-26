@@ -16,9 +16,9 @@ interface ReferralCampaign {
   id: string;
   name: string;
   description?: string | null;
-  reward_points: number;
-  merchant_reward_points?: number;
-  referral_type: 'user' | 'merchant' | 'both';
+  reward_points: number; // Legacy field - will be removed
+  user_to_user_points: number;
+  user_to_merchant_points: number;
   start_date: string;
   end_date: string;
   is_active: boolean;
@@ -36,7 +36,8 @@ const ReferralCampaignManager = () => {
     defaultValues: {
       name: "",
       description: "",
-      reward_points: 10,
+      user_to_user_points: 10,
+      user_to_merchant_points: 50,
       start_date: "",
       end_date: "",
       is_active: true,
@@ -79,7 +80,15 @@ const ReferralCampaignManager = () => {
 
   const openCreate = () => {
     setEditing(null);
-    form.reset({ name: "", description: "", reward_points: 10, start_date: "", end_date: "", is_active: true });
+    form.reset({ 
+      name: "", 
+      description: "", 
+      user_to_user_points: 10, 
+      user_to_merchant_points: 50, 
+      start_date: "", 
+      end_date: "", 
+      is_active: true 
+    });
     setDialogOpen(true);
   };
 
@@ -88,7 +97,8 @@ const ReferralCampaignManager = () => {
     form.reset({
       name: campaign.name,
       description: campaign.description || "",
-      reward_points: campaign.reward_points,
+      user_to_user_points: campaign.user_to_user_points || campaign.reward_points || 10,
+      user_to_merchant_points: campaign.user_to_merchant_points || (campaign.reward_points ? campaign.reward_points * 5 : 50),
       start_date: campaign.start_date?.split('T')[0] || "",
       end_date: campaign.end_date?.split('T')[0] || "",
       is_active: !!campaign.is_active,
@@ -117,7 +127,8 @@ const ReferralCampaignManager = () => {
       const payload = {
         name: values.name.trim(),
         description: values.description?.trim() || null,
-        reward_points: Number(values.reward_points) || 0,
+        user_to_user_points: Number(values.user_to_user_points) || 10,
+        user_to_merchant_points: Number(values.user_to_merchant_points) || 50,
         start_date: values.start_date,
         end_date: values.end_date,
         is_active: !!values.is_active,
@@ -206,19 +217,19 @@ const ReferralCampaignManager = () => {
                     </FormItem>
                   )}
                 />
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <FormField
                     control={form.control}
-                    name="reward_points"
+                    name="user_to_user_points"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Reward Points</FormLabel>
+                        <FormLabel>User-to-User Points (Standard)</FormLabel>
                         <FormControl>
                           <Input
                             type="number"
                             min="1"
                             max="10000"
-                            placeholder="Enter reward points"
+                            placeholder="Enter standard points"
                             {...field}
                             onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
                           />
@@ -227,6 +238,28 @@ const ReferralCampaignManager = () => {
                       </FormItem>
                     )}
                   />
+                  <FormField
+                    control={form.control}
+                    name="user_to_merchant_points"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>User-to-Merchant Points (Higher)</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            min="1"
+                            max="10000"
+                            placeholder="Enter higher points"
+                            {...field}
+                            onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <FormField
                     control={form.control}
                     name="start_date"
@@ -315,7 +348,7 @@ const ReferralCampaignManager = () => {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Name</TableHead>
-                    <TableHead>Reward</TableHead>
+                    <TableHead>Reward Points</TableHead>
                     <TableHead>Dates</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
@@ -329,11 +362,18 @@ const ReferralCampaignManager = () => {
                         <div className="text-sm text-muted-foreground">{c.description}</div>
                       </TableCell>
                       <TableCell>
-                        <div className="flex items-center gap-2">
+                        <div className="flex flex-col gap-2">
                           <div className="flex items-center gap-1 px-3 py-1 bg-gradient-to-r from-emerald-500/20 to-teal-500/20 text-emerald-600 rounded-full border border-emerald-500/30">
                             <Gift className="w-3 h-3" />
-                            <span className="font-medium">{c.reward_points}</span>
+                            <span className="font-medium">{c.user_to_user_points || c.reward_points || 10}</span>
                             <span className="text-xs">pts</span>
+                            <span className="text-xs text-muted-foreground">(User)</span>
+                          </div>
+                          <div className="flex items-center gap-1 px-3 py-1 bg-gradient-to-r from-purple-500/20 to-pink-500/20 text-purple-600 rounded-full border border-purple-500/30">
+                            <Gift className="w-3 h-3" />
+                            <span className="font-medium">{c.user_to_merchant_points || (c.reward_points ? c.reward_points * 5 : 50)}</span>
+                            <span className="text-xs">pts</span>
+                            <span className="text-xs text-muted-foreground">(Merchant)</span>
                           </div>
                         </div>
                       </TableCell>

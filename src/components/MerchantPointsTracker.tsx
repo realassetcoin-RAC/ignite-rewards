@@ -46,14 +46,29 @@ export const MerchantPointsTracker: React.FC<MerchantPointsTrackerProps> = ({
     try {
       setLoading(true);
       
+      // Check if supabase is properly initialized
+      if (!supabase) {
+        console.error('Supabase client not initialized');
+        return;
+      }
+      
       // Try to get existing data for current month
-      const { data, error } = await supabase
-        .from('merchant_monthly_points')
-        .select('*')
-        .eq('merchant_id', merchantId)
-        .eq('year', currentYear)
-        .eq('month', currentMonth)
-        .single();
+      let data, error;
+      try {
+        const result = await supabase
+          .from('merchant_monthly_points')
+          .select('*')
+          .eq('merchant_id', merchantId)
+          .eq('year', currentYear)
+          .eq('month', currentMonth)
+          .single();
+        data = result.data;
+        error = result.error;
+      } catch (queryError) {
+        console.error('Query execution error:', queryError);
+        error = queryError;
+        data = null;
+      }
 
       if (error && error.code !== 'PGRST116') { // PGRST116 = no rows found
         console.error('Error loading points data:', error);

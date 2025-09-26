@@ -3,9 +3,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { DatePicker } from '@/components/ui/date-picker';
+import { EnhancedDatePicker } from '@/components/ui/enhanced-date-picker';
+import { DateRangePickerWithTime } from '@/components/admin/DateRangePicker';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { DateRange } from 'react-day-picker';
 import { 
   Calendar, 
   Users, 
@@ -35,18 +38,24 @@ export const DateRangeAnalytics: React.FC<DateRangeAnalyticsProps> = ({
   merchantId,
   currencySymbol = '$'
 }) => {
-  const [dateFrom, setDateFrom] = useState('');
-  const [dateTo, setDateTo] = useState('');
+  const [dateFrom, setDateFrom] = useState<Date | undefined>();
+  const [dateTo, setDateTo] = useState<Date | undefined>();
+  const [dateRange, setDateRange] = useState<DateRange | undefined>();
   const [analyticsData, setAnalyticsData] = useState<AnalyticsData | null>(null);
   const [loading, setLoading] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
+  const [useTimeRange, setUseTimeRange] = useState(false);
   const { toast } = useToast();
 
   // Initialize with blank date fields - user must select dates
   // Removed automatic date setting to allow blank fields by default
 
   const loadAnalytics = async () => {
-    if (!dateFrom || !dateTo) {
+    // Use date range if available, otherwise fall back to individual dates
+    const fromDate = dateRange?.from || dateFrom;
+    const toDate = dateRange?.to || dateTo;
+
+    if (!fromDate || !toDate) {
       toast({
         title: "Date Range Required",
         description: "Please select both start and end dates.",
@@ -55,7 +64,7 @@ export const DateRangeAnalytics: React.FC<DateRangeAnalyticsProps> = ({
       return;
     }
 
-    if (new Date(dateFrom) > new Date(dateTo)) {
+    if (fromDate > toDate) {
       toast({
         title: "Invalid Date Range",
         description: "Start date must be before end date.",
@@ -67,6 +76,10 @@ export const DateRangeAnalytics: React.FC<DateRangeAnalyticsProps> = ({
     try {
       setLoading(true);
       setIsVisible(true);
+
+      // Format dates for database query
+      const fromDateStr = fromDate.toISOString();
+      const toDateStr = toDate.toISOString();
 
       // Get transactions within date range
       const { data: transactions, error } = await supabase
@@ -80,8 +93,8 @@ export const DateRangeAnalytics: React.FC<DateRangeAnalyticsProps> = ({
           )
         `)
         .eq('merchant_id', merchantId)
-        .gte('transaction_date', `${dateFrom}T00:00:00.000Z`)
-        .lte('transaction_date', `${dateTo}T23:59:59.999Z`)
+        .gte('transaction_date', fromDateStr)
+        .lte('transaction_date', toDateStr)
         .order('transaction_date', { ascending: false });
 
       if (error) {
@@ -132,12 +145,26 @@ export const DateRangeAnalytics: React.FC<DateRangeAnalyticsProps> = ({
   const clearAnalytics = () => {
     setAnalyticsData(null);
     setIsVisible(false);
+    setDateFrom(undefined);
+    setDateTo(undefined);
+    setDateRange(undefined);
   };
 
   const formatDateRange = () => {
-    if (!dateFrom || !dateTo) return '';
-    const from = new Date(dateFrom).toLocaleDateString();
-    const to = new Date(dateTo).toLocaleDateString();
+    const fromDate = dateRange?.from || dateFrom;
+    const toDate = dateRange?.to || dateTo;
+    
+    if (!fromDate || !toDate) return '';
+    
+    const from = fromDate.toLocaleDateString();
+    const to = toDate.toLocaleDateString();
+    
+    if (useTimeRange && dateRange?.from && dateRange?.to) {
+      const fromTime = dateRange.from.toLocaleTimeString();
+      const toTime = dateRange.to.toLocaleTimeString();
+      return `${from} ${fromTime} - ${to} ${toTime} GMT`;
+    }
+    
     return `${from} - ${to}`;
   };
 
@@ -164,42 +191,106 @@ export const DateRangeAnalytics: React.FC<DateRangeAnalyticsProps> = ({
       <CardContent>
         <div className="space-y-4">
           {/* Date Range Selector */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <Label htmlFor="dateFrom">From Date</Label>
-              <DatePicker
-                date={dateFrom ? new Date(dateFrom) : undefined}
-                onSelect={(date) => setDateFrom(date?.toISOString().split('T')[0] || '')}
-                placeholder="Select start date"
-              />
+          <div className="space-y-4">
+            {/* Toggle between individual dates and date range */}
+            <div className="flex items-center space-x-4">
+              <Label className="text-sm font-medium">Date Selection Mode:</Label>
+              <div className="flex space-x-2">
+                <Button
+                  variant={!useTimeRange ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setUseTimeRange(false)}
+                >
+                  Date Only
+                </Button>
+                <Button
+                  variant={useTimeRange ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setUseTimeRange(true)}
+                >
+                  Date & Time (GMT)
+                </Button>
+              </div>
             </div>
-            <div>
-              <Label htmlFor="dateTo">To Date</Label>
-              <DatePicker
-                date={dateTo ? new Date(dateTo) : undefined}
-                onSelect={(date) => setDateTo(date?.toISOString().split('T')[0] || '')}
-                placeholder="Select end date"
-              />
-            </div>
-            <div className="flex items-end">
-              <Button
-                onClick={loadAnalytics}
-                disabled={loading || !dateFrom || !dateTo}
-                className="w-full"
-              >
-                {loading ? (
-                  <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                    Loading...
-                  </>
-                ) : (
-                  <>
-                    <TrendingUp className="w-4 h-4 mr-2" />
-                    Generate Analytics
-                  </>
-                )}
-              </Button>
-            </div>
+
+            {useTimeRange ? (
+              /* Enhanced Date Range Picker with Time */
+              <div className="space-y-4">
+                <DateRangePickerWithTime
+                  dateRange={dateRange}
+                  onDateRangeChange={setDateRange}
+                  placeholder="Select date and time range (GMT)"
+                />
+                <Button
+                  onClick={loadAnalytics}
+                  disabled={loading || !dateRange?.from || !dateRange?.to}
+                  className="w-full"
+                >
+                  {loading ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                      Loading...
+                    </>
+                  ) : (
+                    <>
+                      <TrendingUp className="w-4 h-4 mr-2" />
+                      Generate Analytics
+                    </>
+                  )}
+                </Button>
+              </div>
+            ) : (
+              /* Individual Date Pickers */
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <Label htmlFor="dateFrom">From Date</Label>
+                  <EnhancedDatePicker
+                    date={dateFrom}
+                    onSelect={setDateFrom}
+                    placeholder="Select start date"
+                    presets={[
+                      { label: "Today", value: new Date() },
+                      { label: "Yesterday", value: new Date(Date.now() - 24 * 60 * 60 * 1000) },
+                      { label: "Last 7 days", value: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) },
+                      { label: "Last 30 days", value: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) }
+                    ]}
+                    allowClear={true}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="dateTo">To Date</Label>
+                  <EnhancedDatePicker
+                    date={dateTo}
+                    onSelect={setDateTo}
+                    placeholder="Select end date"
+                    presets={[
+                      { label: "Today", value: new Date() },
+                      { label: "Yesterday", value: new Date(Date.now() - 24 * 60 * 60 * 1000) }
+                    ]}
+                    allowClear={true}
+                  />
+                </div>
+                <div className="flex items-end">
+                  <Button
+                    onClick={loadAnalytics}
+                    disabled={loading || !dateFrom || !dateTo}
+                    className="w-full"
+                  >
+                    {loading ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                        Loading...
+                      </>
+                    ) : (
+                      <>
+                        <TrendingUp className="w-4 h-4 mr-2" />
+                        Generate Analytics
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Analytics Results */}

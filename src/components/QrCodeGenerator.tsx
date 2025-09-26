@@ -1,15 +1,12 @@
-import React, { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import React, { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Download, QrCode, Copy, RefreshCw } from 'lucide-react';
+import { Download, QrCode, Copy, RefreshCw, GripVertical } from 'lucide-react';
 import { databaseAdapter } from '@/lib/databaseAdapter';
 import { useToast } from '@/hooks/use-toast';
 import QRCodeLib from 'qrcode';
-import { updateMerchantPoints } from '@/components/MerchantPointsTracker';
 
 interface QrCodeGeneratorProps {
   merchantId: string;
@@ -22,7 +19,6 @@ interface QrCodeData {
   id: string;
   merchant_id: string;
   amount: number;
-  reward_points: number;
   receipt_number: string;
   expires_at: string;
 }
@@ -38,8 +34,96 @@ export const QrCodeGenerator: React.FC<QrCodeGeneratorProps> = ({
   const [qrCodeUrl, setQrCodeUrl] = useState('');
   const [qrCodeData, setQrCodeData] = useState<QrCodeData | null>(null);
   const [loading, setLoading] = useState(false);
-  // const canvasRef = useRef<HTMLCanvasElement>(null);
+  
+  // Draggable state
+  const [position, setPosition] = useState({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+  const dialogRef = useRef<HTMLDivElement>(null);
+  
   const { toast } = useToast();
+
+  // Load saved position on mount
+  useEffect(() => {
+    const savedPosition = localStorage.getItem('qr-generator-position');
+    if (savedPosition) {
+      try {
+        const { x, y } = JSON.parse(savedPosition);
+        setPosition({ x, y });
+      } catch (error) {
+        console.error('Error loading saved position:', error);
+        // Fallback to center if saved position is invalid
+        const centerX = Math.max(0, (window.innerWidth - 448) / 2);
+        const centerY = Math.max(0, (window.innerHeight - 400) / 2);
+        setPosition({ x: centerX, y: centerY });
+      }
+    } else {
+      // Center the dialog if no saved position
+      const centerX = Math.max(0, (window.innerWidth - 448) / 2);
+      const centerY = Math.max(0, (window.innerHeight - 400) / 2);
+      setPosition({ x: centerX, y: centerY });
+    }
+  }, []);
+
+  // Save position when it changes
+  useEffect(() => {
+    if (position.x !== 0 || position.y !== 0) {
+      localStorage.setItem('qr-generator-position', JSON.stringify(position));
+    }
+  }, [position]);
+
+  // Handle mouse down for dragging
+  const handleMouseDown = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    if (dialogRef.current) {
+      const rect = dialogRef.current.getBoundingClientRect();
+      setDragOffset({
+        x: e.clientX - rect.left,
+        y: e.clientY - rect.top,
+      });
+      setIsDragging(true);
+    }
+  };
+
+  // Handle mouse move for dragging
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (isDragging) {
+        e.preventDefault();
+        const newX = e.clientX - dragOffset.x;
+        const newY = e.clientY - dragOffset.y;
+        
+        // Keep dialog within viewport bounds
+        const maxX = window.innerWidth - 448; // Dialog width
+        const maxY = window.innerHeight - 400; // Approximate dialog height
+        
+        setPosition({
+          x: Math.max(0, Math.min(newX, maxX)),
+          y: Math.max(0, Math.min(newY, maxY)),
+        });
+      }
+    };
+
+    const handleMouseUp = (e: MouseEvent) => {
+      e.preventDefault();
+      setIsDragging(false);
+    };
+
+    if (isDragging) {
+      document.addEventListener('mousemove', handleMouseMove, { passive: false });
+      document.addEventListener('mouseup', handleMouseUp, { passive: false });
+      // Prevent text selection while dragging
+      document.body.style.userSelect = 'none';
+    }
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+      document.body.style.userSelect = '';
+    };
+  }, [isDragging, dragOffset]);
 
   const generateQrCode = async () => {
     if (!amount || !receiptNumber) {
@@ -52,8 +136,8 @@ export const QrCodeGenerator: React.FC<QrCodeGeneratorProps> = ({
     }
 
     const amountNum = parseFloat(amount);
-    // Calculate reward points automatically based on transaction amount (1 point per dollar)
-    const pointsNum = Math.floor(amountNum);
+    // Points will be determined by the user's Loyalty NFT configuration on blockchain
+    // No local calculation needed
 
     if (amountNum <= 0) {
       toast({
@@ -74,7 +158,6 @@ export const QrCodeGenerator: React.FC<QrCodeGeneratorProps> = ({
       const qrData = {
         merchant_id: merchantId,
         amount: amountNum,
-        reward_points: pointsNum,
         receipt_number: receiptNumber,
         expires_at: expiresAt.toISOString(),
       };
@@ -85,7 +168,6 @@ export const QrCodeGenerator: React.FC<QrCodeGeneratorProps> = ({
           merchant_id: merchantId,
           qr_code_data: JSON.stringify(qrData),
           transaction_amount: amountNum,
-          reward_points: pointsNum,
           receipt_number: receiptNumber,
           expires_at: expiresAt.toISOString(),
         })
@@ -121,15 +203,8 @@ export const QrCodeGenerator: React.FC<QrCodeGeneratorProps> = ({
 
       setQrCodeUrl(qrCodeDataUrl);
 
-      // Update monthly points tracking
-      const pointsUpdated = await updateMerchantPoints(merchantId, pointsNum);
-      if (!pointsUpdated) {
-        toast({
-          title: "Warning",
-          description: "QR code generated but points tracking failed. Please check your monthly points limit.",
-          variant: "destructive",
-        });
-      }
+      // Note: Points tracking will be handled when the transaction is processed
+      // based on the user's Loyalty NFT configuration
 
       toast({
         title: "QR Code Generated",
@@ -187,16 +262,50 @@ export const QrCodeGenerator: React.FC<QrCodeGeneratorProps> = ({
   };
 
   return (
-    <Dialog open={true} onOpenChange={onClose}>
-      <DialogContent className="max-w-md">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
+    <div className="fixed inset-0 z-50">
+      {/* Backdrop */}
+      <div 
+        className="fixed inset-0 bg-black/50" 
+        onClick={onClose}
+      />
+      
+      {/* Draggable Dialog */}
+      <div
+        ref={dialogRef}
+        className="absolute bg-background border rounded-lg shadow-lg max-w-md w-full mx-4 transition-shadow duration-200"
+        style={{
+          left: `${position.x}px`,
+          top: `${position.y}px`,
+          cursor: isDragging ? 'grabbing' : 'default',
+          boxShadow: isDragging ? '0 25px 50px -12px rgba(0, 0, 0, 0.25)' : '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
+        }}
+      >
+        {/* Header - Only draggable when QR code is generated */}
+        <div
+          className={`flex items-center justify-between p-6 border-b select-none ${
+            qrCodeUrl 
+              ? 'cursor-grab active:cursor-grabbing' 
+              : 'cursor-default'
+          }`}
+          onMouseDown={qrCodeUrl ? handleMouseDown : undefined}
+        >
+          <div className="flex items-center gap-2">
+            {qrCodeUrl && <GripVertical className="w-4 h-4 text-muted-foreground" />}
             <QrCode className="w-5 h-5" />
-            Generate Transaction QR Code
-          </DialogTitle>
-        </DialogHeader>
+            <h2 className="text-lg font-semibold">Generate Transaction QR Code</h2>
+          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onClose}
+            className="h-6 w-6 p-0 hover:bg-muted"
+          >
+            ×
+          </Button>
+        </div>
 
-        <div className="space-y-6">
+        {/* Dialog Content */}
+        <div className="p-6 space-y-6">
           {!qrCodeUrl ? (
             <>
               <div className="space-y-4">
@@ -212,7 +321,6 @@ export const QrCodeGenerator: React.FC<QrCodeGeneratorProps> = ({
                     onChange={(e) => setAmount(e.target.value)}
                   />
                 </div>
-
 
                 <div>
                   <Label htmlFor="receiptNumber">Receipt Number</Label>
@@ -260,10 +368,6 @@ export const QrCodeGenerator: React.FC<QrCodeGeneratorProps> = ({
                       <span className="font-semibold">{currencySymbol}{amount}</span>
                     </div>
                     <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Reward Points:</span>
-                      <Badge variant="default">{Math.floor(parseFloat(amount) || 0)} pts</Badge>
-                    </div>
-                    <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Receipt Number:</span>
                       <span className="font-mono text-xs">{receiptNumber}</span>
                     </div>
@@ -272,6 +376,9 @@ export const QrCodeGenerator: React.FC<QrCodeGeneratorProps> = ({
                       <span className="text-xs text-muted-foreground">
                         {qrCodeData && new Date(qrCodeData.expires_at).toLocaleString()}
                       </span>
+                    </div>
+                    <div className="text-center text-xs text-muted-foreground mt-2">
+                      Reward points will be calculated based on your Loyalty NFT
                     </div>
                   </div>
 
@@ -316,7 +423,7 @@ export const QrCodeGenerator: React.FC<QrCodeGeneratorProps> = ({
             </>
           )}
         </div>
-      </DialogContent>
-    </Dialog>
+      </div>
+    </div>
   );
 };

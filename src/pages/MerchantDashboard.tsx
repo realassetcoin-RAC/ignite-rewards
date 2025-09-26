@@ -10,15 +10,15 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { QrCode, RefreshCw, Calendar, DollarSign, Hash, CreditCard, Link as LinkIcon, Shield, Sparkles, ArrowLeft, Coins, Users, BarChart3, Receipt, Search, Edit, X, User, LogOut, Settings, FileText, Store, Vote } from 'lucide-react';
+import { QrCode, RefreshCw, Calendar, DollarSign, Hash, CreditCard, Link as LinkIcon, Shield, Sparkles, ArrowLeft, Users, BarChart3, Receipt, Search, Edit, X, User, LogOut, Settings, FileText, Store, Vote } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { QrCodeGenerator } from '@/components/QrCodeGenerator';
 import MerchantTransactionProcessor from '@/components/solana/MerchantTransactionProcessor';
-import MerchantRewardGenerator from '@/components/MerchantRewardGenerator';
 import { MerchantEmailManager } from '@/components/MerchantEmailManager';
 import { MerchantPointsTracker } from '@/components/MerchantPointsTracker';
 import { DateRangeAnalytics } from '@/components/DateRangeAnalytics';
+import { EnhancedDatePicker } from '@/components/ui/enhanced-date-picker';
 import { format } from 'date-fns';
 import { Link, useNavigate } from 'react-router-dom';
 
@@ -74,8 +74,8 @@ const MerchantDashboard = () => {
   // Search filters with blank date fields by default
   const getDefaultDateRange = () => {
     return {
-      dateFrom: '',
-      dateTo: '',
+      dateFrom: undefined as Date | undefined,
+      dateTo: undefined as Date | undefined,
     };
   };
 
@@ -113,13 +113,13 @@ const MerchantDashboard = () => {
 
     if (searchFilters.dateFrom) {
       filtered = filtered.filter(t => 
-        new Date(t.transaction_date) >= new Date(searchFilters.dateFrom)
+        new Date(t.transaction_date) >= searchFilters.dateFrom!
       );
     }
 
     if (searchFilters.dateTo) {
       filtered = filtered.filter(t => 
-        new Date(t.transaction_date) <= new Date(searchFilters.dateTo)
+        new Date(t.transaction_date) <= searchFilters.dateTo!
       );
     }
 
@@ -571,6 +571,53 @@ const MerchantDashboard = () => {
     return status === 'Expired' || status === 'None';
   };
 
+  // Get current month's points distributed
+  const getCurrentMonthPoints = () => {
+    if (!merchant) return 0;
+    
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
+    
+    // Calculate points from transactions this month
+    const monthlyTransactions = transactions.filter(t => {
+      const transactionDate = new Date(t.transaction_date);
+      return transactionDate >= startOfMonth && transactionDate <= endOfMonth;
+    });
+    
+    return monthlyTransactions.reduce((total, t) => total + (t.points_earned || 0), 0);
+  };
+
+  // Get current month's transaction count
+  const getCurrentMonthTransactions = () => {
+    if (!merchant) return 0;
+    
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
+    
+    return transactions.filter(t => {
+      const transactionDate = new Date(t.transaction_date);
+      return transactionDate >= startOfMonth && transactionDate <= endOfMonth;
+    }).length;
+  };
+
+  // Get transaction limit based on subscription plan
+  const getTransactionLimit = () => {
+    if (!merchant?.subscription_plan) return null;
+    
+    // Map subscription plans to transaction limits
+    const planLimits: { [key: string]: number } = {
+      'startup-plan': 100,
+      'momentum-plan': 300,
+      'energizer-plan': 600,
+      'cloud9-plan': 1800,
+      'super-plan': 4000
+    };
+    
+    return planLimits[merchant.subscription_plan.name.toLowerCase().replace(/\s+/g, '-')] || null;
+  };
+
   if (authLoading) {
     return (
       <div className="min-h-screen hero-gradient relative overflow-hidden flex items-center justify-center">
@@ -644,7 +691,7 @@ const MerchantDashboard = () => {
   }
 
   return (
-    <div className="h-screen hero-gradient relative overflow-hidden flex flex-col">
+    <div className="min-h-screen hero-gradient relative overflow-hidden flex flex-col">
       {/* Animated Background Elements */}
       <div className="absolute top-20 left-20 w-72 h-72 bg-gradient-to-r from-primary/20 to-purple-500/20 rounded-full mix-blend-multiply filter blur-xl animate-pulse pointer-events-none"></div>
       <div className="absolute top-40 right-20 w-96 h-96 bg-gradient-to-r from-purple-500/20 to-blue-500/20 rounded-full mix-blend-multiply filter blur-xl animate-pulse animation-delay-2000 pointer-events-none"></div>
@@ -750,7 +797,7 @@ const MerchantDashboard = () => {
       </header>
 
       {/* Content */}
-      <main className="relative z-10 container mx-auto px-4 py-8 space-y-8 flex-grow overflow-y-auto">
+      <main className="relative z-10 container mx-auto px-4 py-8 space-y-8 flex-grow">
         {/* Welcome Section */}
         <div className={`mb-8 ${
           isLoaded ? 'animate-fade-in-up animation-delay-400' : 'opacity-0'
@@ -815,17 +862,6 @@ const MerchantDashboard = () => {
                 <span className="hidden sm:inline">Transactions</span>
               </button>
               <button
-                onClick={() => setActiveTab('solana')}
-                className={`flex items-center justify-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
-                  activeTab === 'solana'
-                    ? 'bg-gradient-to-r from-primary to-purple-500 text-white shadow-sm'
-                    : 'text-muted-foreground hover:text-foreground hover:bg-foreground/5'
-                }`}
-              >
-                <Coins className="h-4 w-4" />
-                <span className="hidden sm:inline">Rewards</span>
-              </button>
-              <button
                 onClick={() => setActiveTab('analytics')}
                 className={`flex items-center justify-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
                   activeTab === 'analytics'
@@ -835,6 +871,17 @@ const MerchantDashboard = () => {
               >
                 <Users className="h-4 w-4" />
                 <span className="hidden sm:inline">Analytics</span>
+              </button>
+              <button
+                onClick={() => setActiveTab('settings')}
+                className={`flex items-center justify-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
+                  activeTab === 'settings'
+                    ? 'bg-gradient-to-r from-primary to-purple-500 text-white shadow-sm'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-foreground/5'
+                }`}
+              >
+                <Settings className="h-4 w-4" />
+                <span className="hidden sm:inline">Settings</span>
               </button>
             </div>
           </div>
@@ -900,7 +947,7 @@ const MerchantDashboard = () => {
           </div>
         )}
 
-        {/* Subscription & Payments */}
+        {/* Subscription & Utilization */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <Card className="card-gradient border-primary/20 backdrop-blur-md">
             <CardHeader>
@@ -982,6 +1029,65 @@ const MerchantDashboard = () => {
               )}
             </CardContent>
           </Card>
+
+          {/* Utilization Cards - Stacked Vertically */}
+          <div className="space-y-6">
+            {/* Points Utilization */}
+            <Card className="card-gradient border-primary/20 backdrop-blur-md">
+              <CardContent className="p-6">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-8 h-8 bg-gray-100 rounded flex items-center justify-center">
+                    <DollarSign className="w-4 h-4 text-gray-700" />
+                  </div>
+                  <span className="text-sm font-medium text-gray-700 flex-1">Points Distributed</span>
+                  <span className="text-sm font-medium text-gray-700">
+                    {merchant.subscription_plan?.monthly_points_cap 
+                      ? `${getCurrentMonthPoints()}/${merchant.subscription_plan.monthly_points_cap}`
+                      : 'Unlimited'
+                    }
+                  </span>
+                </div>
+                {merchant.subscription_plan?.monthly_points_cap && (
+                  <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div 
+                      className="bg-gray-800 h-2 rounded-full transition-all duration-300"
+                      style={{ 
+                        width: `${Math.min((getCurrentMonthPoints() / merchant.subscription_plan.monthly_points_cap) * 100, 100)}%` 
+                      }}
+                    ></div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Transactions Utilization */}
+            <Card className="card-gradient border-primary/20 backdrop-blur-md">
+              <CardContent className="p-6">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-8 h-8 bg-gray-100 rounded flex items-center justify-center">
+                    <Receipt className="w-4 h-4 text-gray-700" />
+                  </div>
+                  <span className="text-sm font-medium text-gray-700 flex-1">Transactions</span>
+                  <span className="text-sm font-medium text-gray-700">
+                    {getTransactionLimit() 
+                      ? `${getCurrentMonthTransactions()}/${getTransactionLimit()}`
+                      : 'Unlimited'
+                    }
+                  </span>
+                </div>
+                {getTransactionLimit() && (
+                  <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div 
+                      className="bg-gray-800 h-2 rounded-full transition-all duration-300"
+                      style={{ 
+                        width: `${Math.min((getCurrentMonthTransactions() / getTransactionLimit()) * 100, 100)}%` 
+                      }}
+                    ></div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
         </div>
 
         {/* Quick Action Buttons */}
@@ -1002,12 +1108,6 @@ const MerchantDashboard = () => {
                 <QrCode className="w-4 h-4 mr-2" />
                 Generate QR Code
               </Button>
-              {merchant && (
-                <MerchantRewardGenerator 
-                  merchantId={merchant.id} 
-                  onTransactionCreated={loadTransactions}
-                />
-              )}
               <Button 
                 variant="outline" 
                 size="default"
@@ -1022,21 +1122,6 @@ const MerchantDashboard = () => {
           </CardContent>
         </Card>
 
-        {/* Email Management and Points Tracking */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {merchant && (
-            <MerchantEmailManager 
-              merchantId={merchant.id} 
-              subscriptionPlan={merchant.subscription_plan}
-            />
-          )}
-          {merchant && (
-            <MerchantPointsTracker 
-              merchantId={merchant.id} 
-              subscriptionPlan={merchant.subscription_plan}
-            />
-          )}
-        </div>
 
         {/* Date Range Analytics */}
         {merchant && (
@@ -1188,21 +1273,27 @@ const MerchantDashboard = () => {
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3">
                     <div>
                       <label className="text-xs text-muted-foreground">Date From</label>
-                      <Input
-                        type="date"
-                        value={searchFilters.dateFrom}
-                        onChange={(e) => setSearchFilters(prev => ({ ...prev, dateFrom: e.target.value }))}
-                        className="mt-1"
-                      />
+                      <div className="mt-1">
+                        <EnhancedDatePicker
+                          date={searchFilters.dateFrom || undefined}
+                          onSelect={(date) => setSearchFilters(prev => ({ ...prev, dateFrom: date }))}
+                          placeholder="Select start date"
+                          className="w-full"
+                          allowClear={true}
+                        />
+                      </div>
                     </div>
                     <div>
                       <label className="text-xs text-muted-foreground">Date To</label>
-                      <Input
-                        type="date"
-                        value={searchFilters.dateTo}
-                        onChange={(e) => setSearchFilters(prev => ({ ...prev, dateTo: e.target.value }))}
-                        className="mt-1"
-                      />
+                      <div className="mt-1">
+                        <EnhancedDatePicker
+                          date={searchFilters.dateTo || undefined}
+                          onSelect={(date) => setSearchFilters(prev => ({ ...prev, dateTo: date }))}
+                          placeholder="Select end date"
+                          className="w-full"
+                          allowClear={true}
+                        />
+                      </div>
                     </div>
                     <div>
                       <label className="text-xs text-muted-foreground">Receipt Number</label>
@@ -1241,20 +1332,6 @@ const MerchantDashboard = () => {
                     <div className="text-sm text-muted-foreground">
                       Showing {filteredTransactions.length} of {transactions.length} transactions
                     </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setSearchFilters({
-                        dateFrom: '',
-                        dateTo: '',
-                        receiptNumber: '',
-                        amountMin: '',
-                        amountMax: ''
-                      })}
-                      className="text-xs"
-                    >
-                      Clear Filters
-                    </Button>
                   </div>
                 </div>
 
@@ -1271,7 +1348,7 @@ const MerchantDashboard = () => {
                       Transactions will appear here once customers start using your loyalty system.
                     </p>
                     <p className="text-sm text-muted-foreground">
-                      Go to the Rewards tab to generate QR codes and rewards.
+                      Use the Quick Actions section to generate QR codes and rewards.
                     </p>
               </div>
                 ) : filteredTransactions.length === 0 ? (
@@ -1281,19 +1358,6 @@ const MerchantDashboard = () => {
                     <p className="text-muted-foreground mb-4">
                       No transactions match your search criteria.
                     </p>
-                    <Button 
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setSearchFilters({
-                        dateFrom: '',
-                        dateTo: '',
-                        receiptNumber: '',
-                        amountMin: '',
-                        amountMax: ''
-                      })}
-                    >
-                      Clear Filters
-                </Button>
               </div>
             ) : (
               <div className="overflow-x-auto">
@@ -1375,78 +1439,6 @@ const MerchantDashboard = () => {
             </div>
           )}
 
-          {/* Solana Rewards Tab */}
-          {activeTab === 'solana' && (
-            <div className="space-y-6">
-              {/* Action Buttons */}
-              <div className="flex flex-wrap gap-3 w-full">
-                <Button 
-                  onClick={() => setShowQrGenerator(true)}
-                  size="default"
-                  className="btn-gradient"
-                >
-                  <QrCode className="w-4 h-4 mr-2" />
-                  Generate QR Code
-                </Button>
-                {merchant && (
-                  <MerchantRewardGenerator 
-                    merchantId={merchant.id} 
-                    onTransactionCreated={loadTransactions}
-                  />
-                )}
-                <Button 
-                  variant="outline" 
-                  size="default"
-                  onClick={handleRefresh}
-                  disabled={loading}
-                  className="bg-background/60 backdrop-blur-md border-primary/30 hover:bg-background/80"
-                >
-                  <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
-                  Refresh
-                </Button>
-              </div>
-
-              {/* Rewards Analytics */}
-              <Card className="card-gradient border-primary/20 backdrop-blur-md">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Coins className="h-5 w-5 text-primary" />
-                    Rewards Overview
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div className="text-center p-6 rounded-lg bg-gradient-to-br from-primary/10 to-primary/5 border border-primary/20">
-                      <div className="text-3xl font-bold text-primary mb-2">
-                        {transactions.length}
-                      </div>
-                      <div className="text-sm text-muted-foreground">Total Transactions</div>
-                    </div>
-                    
-                    <div className="text-center p-6 rounded-lg bg-gradient-to-br from-green-500/10 to-green-500/5 border border-green-500/20">
-                      <div className="text-3xl font-bold text-green-500 mb-2">
-                        {merchant?.currency_symbol || '$'}{transactions.reduce((sum, t) => sum + Number(t.transaction_amount), 0).toFixed(2)}
-                      </div>
-                      <div className="text-sm text-muted-foreground">Total Volume</div>
-                    </div>
-                    
-                    <div className="text-center p-6 rounded-lg bg-gradient-to-br from-blue-500/10 to-blue-500/5 border border-blue-500/20">
-                      <div className="text-3xl font-bold text-blue-500 mb-2">
-                        {transactions.reduce((sum, t) => sum + t.points_earned, 0)}
-                      </div>
-                      <div className="text-sm text-muted-foreground">Rewards Distributed</div>
-                    </div>
-                  </div>
-                  
-                  <div className="mt-6 p-4 rounded-lg bg-gradient-to-r from-primary/5 to-purple-500/5 border border-primary/10">
-                    <div className="text-sm text-muted-foreground">
-                      <strong>Privacy-First Rewards:</strong> All reward transactions are processed anonymously. No personal information is stored or tracked across merchants.
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          )}
 
           {/* Analytics Tab */}
           {activeTab === 'analytics' && (
@@ -1489,6 +1481,27 @@ const MerchantDashboard = () => {
                 </div>
               </CardContent>
             </Card>
+            </div>
+          )}
+
+          {/* Settings Tab */}
+          {activeTab === 'settings' && (
+            <div className="space-y-6">
+              {/* Email Management and Points Tracking */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {merchant && (
+                  <MerchantEmailManager 
+                    merchantId={merchant.id} 
+                    subscriptionPlan={merchant.subscription_plan}
+                  />
+                )}
+                {merchant && (
+                  <MerchantPointsTracker 
+                    merchantId={merchant.id} 
+                    subscriptionPlan={merchant.subscription_plan}
+                  />
+                )}
+              </div>
             </div>
           )}
         </div>
