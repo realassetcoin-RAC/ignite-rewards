@@ -896,7 +896,7 @@ class DatabaseAdapter {
         };
         
         return {
-          select: (columns: string = '*') => {
+          select: (columns: string = '*', options?: any) => {
             const mockData = getMockData();
             return {
             eq: (column: string, value: any) => ({
@@ -908,12 +908,26 @@ class DatabaseAdapter {
                 console.log(`🔧 Mock: single() called for ${table}`);
                   return { data: mockData.length > 0 ? mockData[0] : null, error: null };
               },
+              limit: (count: number) => ({
+                then: async (callback: (result: any) => any) => {
+                  console.log(`🔧 Mock query: SELECT ${columns} FROM ${table} WHERE ${column} = ? LIMIT ${count}`);
+                  const limitedData = mockData.slice(0, count);
+                  return callback({ data: limitedData, error: null });
+                }
+              }),
               order: (orderColumn: string, options?: { ascending?: boolean }) => ({
                 then: async (callback: (result: any) => any) => {
                   console.log(`🔧 Mock query: SELECT ${columns} FROM ${table} WHERE ${column} = ? ORDER BY ${orderColumn}`);
                     return callback({ data: mockData, error: null });
                   }
               })
+            }),
+            limit: (count: number) => ({
+              then: async (callback: (result: any) => any) => {
+                console.log(`🔧 Mock query: SELECT ${columns} FROM ${table} LIMIT ${count}`);
+                const limitedData = mockData.slice(0, count);
+                return callback({ data: limitedData, error: null });
+              }
             }),
             order: (orderColumn: string, options?: { ascending?: boolean }) => ({
               then: async (callback: (result: any) => any) => {
@@ -998,6 +1012,55 @@ class DatabaseAdapter {
               return Promise.resolve({ data: true, error: null });
             }
           }
+          return Promise.resolve({ data: false, error: null });
+        }
+        
+        // Mock check_admin_access function
+        if (functionName === 'check_admin_access') {
+          const mockUserData = localStorage.getItem('mock_oauth_user');
+          if (mockUserData) {
+            const mockUser = JSON.parse(mockUserData);
+            if (mockUser.email === 'admin@igniterewards.com') {
+              return Promise.resolve({ data: true, error: null });
+            }
+          }
+          return Promise.resolve({ data: false, error: null });
+        }
+        
+        // Mock can_use_mfa function
+        if (functionName === 'can_use_mfa') {
+          return Promise.resolve({ data: true, error: null });
+        }
+        
+        // Mock get_current_user_profile function
+        if (functionName === 'get_current_user_profile') {
+          const mockUserData = localStorage.getItem('mock_oauth_user');
+          if (mockUserData) {
+            const mockUser = JSON.parse(mockUserData);
+            const mockProfile = {
+              id: mockUser.id,
+              email: mockUser.email,
+              full_name: mockUser.user_metadata?.full_name || 'Test User',
+              role: mockUser.email === 'admin@igniterewards.com' ? 'admin' : 'user',
+              created_at: mockUser.created_at,
+              updated_at: mockUser.updated_at
+            };
+            return Promise.resolve({ data: [mockProfile], error: null });
+          }
+          return Promise.resolve({ data: [], error: null });
+        }
+        
+        // Mock generate_loyalty_number function
+        if (functionName === 'generate_loyalty_number') {
+          const randomNumber = Math.floor(Math.random() * 9000000) + 1000000;
+          const loyaltyNumber = 'A' + randomNumber.toString();
+          return Promise.resolve({ data: loyaltyNumber, error: null });
+        }
+        
+        // Mock generate_referral_code function
+        if (functionName === 'generate_referral_code') {
+          const randomCode = Math.random().toString(36).substring(2, 8).toUpperCase();
+          return Promise.resolve({ data: randomCode, error: null });
         }
         
         // Mock get_valid_subscription_plans function
@@ -1156,7 +1219,41 @@ class DatabaseAdapter {
             return callback({ data: null, error: null });
           }
         };
-      }
+      },
+      storage: {
+        from: (bucket: string) => ({
+          list: (path: string = '', options?: any) => ({
+            then: async (callback: (result: any) => any) => {
+              console.log(`🔧 Mock storage: list(${bucket}, ${path})`);
+              // Return mock storage data
+              const mockFiles = [
+                { name: 'sample-image.jpg', size: 1024, updated_at: new Date().toISOString() },
+                { name: 'sample-document.pdf', size: 2048, updated_at: new Date().toISOString() }
+              ];
+              return callback({ data: mockFiles, error: null });
+            }
+          }),
+          upload: (path: string, file: any, options?: any) => ({
+            then: async (callback: (result: any) => any) => {
+              console.log(`🔧 Mock storage: upload(${bucket}, ${path})`);
+              return callback({ data: { path }, error: null });
+            }
+          }),
+          download: (path: string) => ({
+            then: async (callback: (result: any) => any) => {
+              console.log(`🔧 Mock storage: download(${bucket}, ${path})`);
+              return callback({ data: new Blob(['mock file content']), error: null });
+            }
+          }),
+          remove: (paths: string[]) => ({
+            then: async (callback: (result: any) => any) => {
+              console.log(`🔧 Mock storage: remove(${bucket}, ${paths.join(', ')})`);
+              return callback({ data: paths, error: null });
+            }
+          })
+        })
+      },
+      _isMockClient: true
     };
   }
 

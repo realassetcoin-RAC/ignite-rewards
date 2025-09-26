@@ -414,6 +414,12 @@ const ApiHealthTab = () => {
         run: async () => {
           const start = performance.now();
           try {
+            // Check if storage is available
+            if (!databaseAdapter.supabase.storage) {
+              const latencyMs = performance.now() - start;
+              return { id: "storage-public-assets", name: "Storage public-assets", status: "warn", latencyMs, message: "Storage not available" };
+            }
+            
             const { data, error } = await databaseAdapter.supabase.storage.from("public-assets").list("", { limit: 1 });
             const latencyMs = performance.now() - start;
             if (error) {
