@@ -588,7 +588,7 @@ const AdminPanel = () => {
         }`}>
           <Card className="card-gradient border-primary/20 backdrop-blur-md hover:scale-105 transition-all duration-300">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Virtual Cards</CardTitle>
+              <CardTitle className="text-sm font-medium">Total Loyalty Cards</CardTitle>
               <CreditCard className="h-4 w-4 text-primary" />
             </CardHeader>
             <CardContent>
@@ -687,7 +687,7 @@ const AdminPanel = () => {
                 style={{minWidth: 0, maxWidth: '100%', flex: '1 1 auto'}}
               >
                 <CreditCard className="h-4 w-4 flex-shrink-0" />
-                <span className="hidden sm:inline truncate">Virtual Cards</span>
+                <span className="hidden sm:inline truncate">Loyalty Cards</span>
                 <span className="sm:hidden text-xs">Cards</span>
               </button>
               <button

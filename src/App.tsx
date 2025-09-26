@@ -18,6 +18,7 @@ import AuthCallback from "./pages/AuthCallback";
 import MerchantDashboard from "./pages/MerchantDashboard";
 import NotFound from "./pages/NotFound";
 import UserDashboard from "./pages/UserDashboard";
+import UserDashboardSimple from "./pages/UserDashboardSimple";
 import UserDashboardEnhanced from "./pages/UserDashboardEnhanced";
 import UserDashboardWithBackgrounds from "./pages/UserDashboardWithBackgrounds";
 import TestBackgrounds from "./pages/TestBackgrounds";
@@ -184,7 +185,8 @@ const App = () => {
             {/* Role-based dashboard routing - redirects to appropriate dashboard based on user role */}
             <Route path="/dashboard" element={<RoleBasedDashboard />} />
             {/* Keep the old dashboard route for backward compatibility if bookmarked */}
-            <Route path="/user" element={<UserDashboard />} />
+            <Route path="/user" element={<UserDashboardSimple />} />
+            <Route path="/user-original" element={<UserDashboard />} />
             <Route path="/user-enhanced" element={<UserDashboardEnhanced />} />
             <Route path="/user-backgrounds" element={<UserDashboardWithBackgrounds />} />
             <Route path="/test-backgrounds" element={<TestBackgrounds />} />

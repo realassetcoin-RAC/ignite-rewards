@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Input Alignment Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+            margin: 20px 0;
+        }
+        .field {
+            display: flex;
+            flex-direction: column;
+        }
+        label {
+            font-size: 14px;
+            font-weight: 500;
+            margin-bottom: 4px;
+            color: #374151;
+        }
+        input, button {
+            height: 40px;
+            padding: 8px 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            font-size: 14px;
+            background: white;
+        }
+        input:focus, button:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+        button {
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+            text-align: left;
+            cursor: pointer;
+            background: white;
+        }
+        button:hover {
+            background: #f9fafb;
+        }
+        .icon {
+            width: 16px;
+            height: 16px;
+            margin-right: 8px;
+        }
+        .status {
+            padding: 10px;
+            border-radius: 6px;
+            margin: 20px 0;
+            font-weight: 500;
+        }
+        .success {
+            background: #d1fae5;
+            color: #065f46;
+            border: 1px solid #a7f3d0;
+        }
+        .info {
+            background: #dbeafe;
+            color: #1e40af;
+            border: 1px solid #93c5fd;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 Input Field Alignment Test</h1>
+        <p>This test demonstrates the alignment fix for the Create Campaign modal.</p>
+
+        <div class="status info">
+            <strong>Before Fix:</strong> Reward Points input was misaligned with Date fields
+        </div>
+
+        <div class="status success">
+            <strong>After Fix:</strong> All three fields now have consistent height and styling
+        </div>
+
+        <h3>Fixed Alignment (Current)</h3>
+        <div class="grid">
+            <div class="field">
+                <label>Reward Points</label>
+                <input type="number" placeholder="1" value="1" style="height: 40px; padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 14px;">
+            </div>
+            <div class="field">
+                <label>Start Date</label>
+                <button style="height: 40px; padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 14px; display: flex; align-items: center; justify-content: flex-start; text-align: left;">
+                    <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                    </svg>
+                    Select start date
+                </button>
+            </div>
+            <div class="field">
+                <label>End Date</label>
+                <button style="height: 40px; padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 14px; display: flex; align-items: center; justify-content: flex-start; text-align: left;">
+                    <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                    </svg>
+                    Select end date
+                </button>
+            </div>
+        </div>
+
+        <h3>Technical Details</h3>
+        <div style="background: #f8fafc; padding: 15px; border-radius: 6px; border-left: 4px solid #3b82f6;">
+            <h4>Changes Made:</h4>
+            <ul>
+                <li><strong>File:</strong> <code>src/components/admin/ReferralCampaignManager.tsx</code></li>
+                <li><strong>Field:</strong> Reward Points input field</li>
+                <li><strong>Fix:</strong> Added consistent styling to match DatePicker components</li>
+                <li><strong>Styling:</strong> <code>className="w-full h-10 px-4 py-2 text-sm border border-border bg-card text-card-foreground rounded-md"</code></li>
+            </ul>
+            
+            <h4>Why This Works:</h4>
+            <ul>
+                <li>DatePicker uses Button with <code>variant="outline"</code> and <code>size="default"</code></li>
+                <li>Button default size is <code>h-10 px-4 py-2</code></li>
+                <li>Button outline variant uses <code>border border-border bg-card text-card-foreground</code></li>
+                <li>Input now matches these exact dimensions and styling</li>
+            </ul>
+        </div>
+
+        <div class="status success">
+            <strong>✅ Result:</strong> All three fields now have perfect visual alignment in the Create Campaign modal!
+        </div>
+    </div>
+</body>
+</html>

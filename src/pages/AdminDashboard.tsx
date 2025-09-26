@@ -220,7 +220,7 @@ const AdminDashboard = () => {
                 }`}
               >
                 <CreditCard className="h-4 w-4 flex-shrink-0" />
-                <span className="hidden sm:inline">Virtual Cards</span>
+                <span className="hidden sm:inline">Loyalty Cards</span>
                 <span className="sm:hidden text-xs">Cards</span>
               </button>
               <button

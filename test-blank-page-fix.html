@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blank Page Fix Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            min-height: 100vh;
+        }
+        .container {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 30px;
+            margin: 20px 0;
+        }
+        .test-section {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 20px;
+            margin: 15px 0;
+        }
+        .status {
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        .success { background: rgba(34, 197, 94, 0.3); border: 1px solid #22c55e; }
+        .error { background: rgba(239, 68, 68, 0.3); border: 1px solid #ef4444; }
+        .warning { background: rgba(245, 158, 11, 0.3); border: 1px solid #f59e0b; }
+        .info { background: rgba(59, 130, 246, 0.3); border: 1px solid #3b82f6; }
+        button {
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+        iframe {
+            width: 100%;
+            height: 600px;
+            border: none;
+            border-radius: 10px;
+            background: white;
+        }
+        .code {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 10px;
+            border-radius: 5px;
+            font-family: monospace;
+            margin: 10px 0;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 Blank Page Fix Test</h1>
+        <p>Testing the fix for the blank page issue caused by the initializeSupabaseClient error.</p>
+        
+        <div class="test-section">
+            <h2>🔧 Issue Fixed</h2>
+            <div class="status success">
+                ✅ <strong>initializeSupabaseClient Error Fixed</strong> - Changed to correct method name initializeSupabase()
+            </div>
+            <div class="status success">
+                ✅ <strong>Database Adapter Constructor</strong> - Now calls the correct initialization method
+            </div>
+            <div class="status success">
+                ✅ <strong>Application Loading</strong> - Should now load properly without blank page
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h2>🚀 Test Application</h2>
+            <p>Test that the application loads properly after the fix:</p>
+            <button onclick="openApp()">Open Application</button>
+            <button onclick="checkConsole()">Check Console</button>
+            <button onclick="testLoading()">Test Loading</button>
+        </div>
+
+        <div class="test-section">
+            <h2>📱 Application Preview</h2>
+            <iframe src="http://localhost:8085" title="RAC Rewards Application"></iframe>
+        </div>
+
+        <div class="test-section">
+            <h2>🔍 Technical Details</h2>
+            <div class="code">
+<strong>Issue Identified:</strong>
+The console showed a critical error:
+"Uncaught TypeError: this.initializeSupabaseClient is not a function"
+at databaseAdapter.ts:51
+
+<strong>Root Cause:</strong>
+The DatabaseAdapter constructor was calling:
+this.initializeSupabaseClient()
+
+But the actual method name was:
+initializeSupabase()
+
+<strong>Fix Applied:</strong>
+Changed the constructor call from:
+this.initializeSupabaseClient();
+
+To:
+this.initializeSupabase();
+
+<strong>Expected Results:</strong>
+- No more "initializeSupabaseClient is not a function" error
+- Application should load properly
+- No more blank page
+- Database adapter should initialize correctly
+- Console should show proper initialization messages
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h2>✅ Expected Results</h2>
+            <div class="status success">
+                <strong>Console Should Now Show:</strong><br>
+                • "DatabaseAdapter constructor" ✅<br>
+                • "FORCING Supabase cloud client" ✅<br>
+                • "Initializing Supabase client..." ✅<br>
+                • "Testing Supabase connection..." ✅<br>
+                • "Creating comprehensive mock Supabase client" (if Supabase unavailable) ✅<br>
+                • NO "initializeSupabaseClient is not a function" error ✅<br>
+                • NO blank page ✅<br>
+                • Application should load properly ✅
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h2>🔍 Testing Steps</h2>
+            <div class="status info">
+                <strong>Application Loading Test:</strong><br>
+                1. Open the application<br>
+                2. Check that the page loads (not blank)<br>
+                3. Check console for initialization messages<br>
+                4. Should see "DatabaseAdapter constructor" message<br>
+                5. Should see "FORCING Supabase cloud client" message<br>
+                6. Should see "Initializing Supabase client..." message<br>
+                7. Should see "Testing Supabase connection..." message<br>
+                8. NO "initializeSupabaseClient is not a function" error<br>
+                9. Application should be fully functional<br>
+                10. Should be able to navigate and use features
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h2>⚠️ Current Status</h2>
+            <div class="status warning">
+                <strong>Blank Page Issue:</strong> ✅ Fixed - initializeSupabaseClient error resolved<br>
+                <strong>Database Adapter:</strong> ✅ Should initialize properly<br>
+                <strong>Application Loading:</strong> ✅ Should load without blank page<br>
+                <strong>Console Errors:</strong> ✅ Should show no critical errors<br>
+                <strong>User Experience:</strong> ✅ Should be fully functional
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h2>🎯 Success Criteria</h2>
+            <div class="status success">
+                <strong>Test is successful if:</strong><br>
+                • Application loads properly (not blank page)<br>
+                • Console shows initialization messages<br>
+                • NO "initializeSupabaseClient is not a function" error<br>
+                • NO critical JavaScript errors<br>
+                • Application is fully functional<br>
+                • Can navigate and use features<br>
+                • Database adapter initializes correctly<br>
+                • All RPC functions work properly
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function openApp() {
+            window.open('http://localhost:8085', '_blank');
+        }
+
+        function checkConsole() {
+            alert('Open browser developer tools (F12) and check the Console tab. You should see:\n\n• "DatabaseAdapter constructor"\n• "FORCING Supabase cloud client"\n• "Initializing Supabase client..."\n• "Testing Supabase connection..."\n• "Creating comprehensive mock Supabase client" (if Supabase unavailable)\n• NO "initializeSupabaseClient is not a function" error\n• NO critical JavaScript errors\n• Application should load properly');
+        }
+
+        function testLoading() {
+            alert('Test the application loading:\n\n1. Open the application\n2. Check that the page loads (not blank)\n3. Check console for initialization messages\n4. Should see proper database adapter initialization\n5. Should see connection testing messages\n6. NO "initializeSupabaseClient is not a function" error\n7. Application should be fully functional\n8. Should be able to navigate and use features');
+        }
+    </script>
+</body>
+</html>

@@ -4,7 +4,7 @@
  * Only applicable for email/social authentication users
  */
 
-import { supabase } from '@/integrations/supabase/client';
+import { databaseAdapter } from '@/lib/databaseAdapter';
 
 // Base32 alphabet for encoding/decoding
 const BASE32_ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
@@ -143,7 +143,7 @@ export function generateQRCodeURL(secret: string, email: string, issuer: string 
  */
 export async function canUserUseMFA(userId: string): Promise<boolean> {
   try {
-    const { data, error } = await supabase.rpc('can_use_mfa', { user_id: userId });
+    const { data, error } = await databaseAdapter.supabase.rpc('can_use_mfa', { user_id: userId });
     if (error) {
       console.error('Error checking MFA eligibility:', error);
       return false;
@@ -160,7 +160,7 @@ export async function canUserUseMFA(userId: string): Promise<boolean> {
  */
 export async function enableMFA(userId: string, totpSecret: string): Promise<{ success: boolean; backupCodes?: string[]; error?: string }> {
   try {
-    const { error } = await supabase.rpc('enable_mfa', {
+    const { error } = await databaseAdapter.supabase.rpc('enable_mfa', {
       user_id: userId,
       totp_secret: totpSecret
     });
@@ -193,7 +193,7 @@ export async function enableMFA(userId: string, totpSecret: string): Promise<{ s
  */
 export async function disableMFA(userId: string): Promise<{ success: boolean; error?: string }> {
   try {
-    const { error } = await supabase.rpc('disable_mfa', { user_id: userId });
+    const { error } = await databaseAdapter.supabase.rpc('disable_mfa', { user_id: userId });
 
     if (error) {
       return { success: false, error: error.message };
@@ -213,7 +213,7 @@ export async function disableMFA(userId: string): Promise<{ success: boolean; er
  */
 export async function verifyBackupCode(userId: string, code: string): Promise<{ success: boolean; error?: string }> {
   try {
-    const { data, error } = await supabase.rpc('verify_backup_code', {
+    const { data, error } = await databaseAdapter.supabase.rpc('verify_backup_code', {
       user_id: userId,
       code: code
     });
@@ -236,7 +236,7 @@ export async function verifyBackupCode(userId: string, code: string): Promise<{ 
  */
 export async function regenerateBackupCodes(userId: string): Promise<{ success: boolean; backupCodes?: string[]; error?: string }> {
   try {
-    const { data, error } = await supabase.rpc('regenerate_backup_codes', { user_id: userId });
+    const { data, error } = await databaseAdapter.supabase.rpc('regenerate_backup_codes', { user_id: userId });
 
     if (error) {
       return { success: false, error: error.message };

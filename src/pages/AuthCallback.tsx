@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
+import { databaseAdapter } from "@/lib/databaseAdapter";
 import { Loader2, Sparkles } from "lucide-react";
 import { getDashboardUrl } from "@/lib/dashboard-routing";
 import { robustAdminCheck } from "@/utils/adminVerification";
@@ -103,7 +103,7 @@ const AuthCallback = () => {
             const { data: newProfile, error: createError } = await Promise.race([createPromise, createTimeoutPromise]) as any;
             
             if (createError) {
-              logger.warn('Profile creation timeout, using fallback');
+              logger.warn('Profile creation failed, using fallback');
               // Create a fallback profile object
               profile = {
                 id: user.id,
@@ -113,7 +113,7 @@ const AuthCallback = () => {
                 created_at: user.created_at,
                 updated_at: user.updated_at || user.created_at
               };
-              logger.info('Using fallback profile');
+              logger.info('Using fallback profile for user:', user.email);
             } else {
               logger.info('Profile created successfully');
               profile = newProfile;
@@ -192,6 +192,13 @@ const AuthCallback = () => {
           privacyAccepted: termsAcceptance?.privacy_accepted
         });
         
+        // Ensure we have a valid profile before navigating
+        if (!profile) {
+          logger.error('No profile available for user, cannot proceed to dashboard');
+          navigate('/');
+          return;
+        }
+        
         navigate(dashboardUrl);
       } catch (error) {
         logger.error('Error processing user session', error);
@@ -204,7 +211,7 @@ const AuthCallback = () => {
         logger.info('Starting OAuth callback handling');
         
         // Listen for auth state changes (this is more reliable for OAuth callbacks)
-        authStateSubscription = supabase.auth.onAuthStateChange(async (event, session) => {
+        authStateSubscription = databaseAdapter.supabase.auth.onAuthStateChange(async (event, session) => {
           logger.info('Auth state change event:', event);
           logger.info('Session details:', session);
           logger.info('User details:', session?.user);
@@ -236,7 +243,7 @@ const AuthCallback = () => {
         });
 
         // Also try to get the current session immediately
-        const { data: authData, error: authError } = await supabase.auth.getSession();
+        const { data: authData, error: authError } = await databaseAdapter.supabase.auth.getSession();
         
         if (authError) {
           logger.error('Error getting session', authError);
@@ -253,7 +260,7 @@ const AuthCallback = () => {
           // Set up a more aggressive session check
           const checkSessionInterval = setInterval(async () => {
             logger.info('Checking for session');
-            const { data: checkData, error: checkError } = await supabase.auth.getSession();
+            const { data: checkData, error: checkError } = await databaseAdapter.supabase.auth.getSession();
             
             if (!checkError && checkData?.session?.user) {
               logger.info('Found session during interval check, processing');

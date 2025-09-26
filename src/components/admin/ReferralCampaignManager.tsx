@@ -212,7 +212,22 @@ const ReferralCampaignManager = () => {
                       <FormItem>
                         <FormLabel>Reward Points</FormLabel>
                         <FormControl>
-                          <Input type="number" min={0} step={1} {...field} />
+                          <Button
+                            variant="outline"
+                            size="default"
+                            className="w-full justify-start text-left font-normal"
+                            type="button"
+                            onClick={() => {
+                              const newValue = prompt('Enter reward points:', field.value?.toString() || '1');
+                              if (newValue !== null) {
+                                const numValue = parseInt(newValue) || 0;
+                                field.onChange(numValue);
+                              }
+                            }}
+                          >
+                            <span className="mr-2 h-4 w-4 text-center text-xs font-bold">#</span>
+                            {field.value || '1'}
+                          </Button>
                         </FormControl>
                         <FormMessage />
                       </FormItem>

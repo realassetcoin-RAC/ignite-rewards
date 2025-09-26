@@ -208,7 +208,7 @@ const LoyaltyCardTab = () => {
             <div className="text-sm text-muted-foreground space-y-2">
               <p>To create your virtual loyalty card:</p>
               <ul className="list-disc list-inside space-y-1 ml-4">
-                <li>Use the <strong>"Add Virtual Card"</strong> button in the main dashboard</li>
+                <li>Use the <strong>"Add Loyalty Card"</strong> button in the main dashboard</li>
                 <li>Fill in your details to generate a unique loyalty number</li>
                 <li>Start earning points with your new loyalty card</li>
               </ul>

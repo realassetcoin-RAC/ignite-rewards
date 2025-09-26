@@ -202,7 +202,7 @@ export async function shouldAllowAdminAccess(): Promise<boolean> {
  * Enhanced admin check with automatic fallbacks and error recovery
  */
 export async function robustAdminCheck(): Promise<boolean> {
-  console.group('🔍 Robust Admin Check');
+  console.log('🔍 Robust Admin Check');
   try {
     // First, check known admin emails (fastest and most reliable)
     console.log('Step 1: Checking known admin emails...');
@@ -222,7 +222,6 @@ export async function robustAdminCheck(): Promise<boolean> {
       
       if (knownAdminEmails.includes(user.email.toLowerCase())) {
         console.log(`🔓 Granting admin access to known admin email: ${user.email}`);
-        console.groupEnd();
         return true;
       } else {
         console.log(`❌ User email ${user.email} is not in known admin list`);
@@ -246,7 +245,6 @@ export async function robustAdminCheck(): Promise<boolean> {
       
       if (result) {
         console.log('✅ Admin access granted via enhanced admin check');
-        console.groupEnd();
         return true;
       }
     } catch {
@@ -254,11 +252,9 @@ export async function robustAdminCheck(): Promise<boolean> {
     }
     
     console.log('❌ Admin access denied');
-    console.groupEnd();
     return false;
   } catch (error) {
     console.error('Robust admin check failed:', error);
-    console.groupEnd();
     return false;
   }
 }

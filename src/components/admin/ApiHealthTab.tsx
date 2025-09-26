@@ -1,10 +1,10 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, useRef } from "react";
 import { useSmartDataRefresh } from "@/hooks/useSmartDataRefresh";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { supabase } from "@/integrations/supabase/client";
+import { databaseAdapter } from "@/lib/databaseAdapter";
 import { useSecureAuth } from "@/hooks/useSecureAuth";
 import { Activity, CheckCircle, XCircle, RefreshCw, Clock, AlertTriangle } from "lucide-react";
 
@@ -76,7 +76,7 @@ const ApiHealthTab = () => {
       run: async () => {
         const start = performance.now();
         try {
-          const { data, error } = await supabase.auth.getSession();
+          const { data, error } = await databaseAdapter.supabase.auth.getSession();
           const latencyMs = performance.now() - start;
           if (error) {
             return { id: "auth-session", name: "Supabase Auth Session", status: "error", latencyMs, message: error.message };
@@ -132,7 +132,7 @@ const ApiHealthTab = () => {
       run: async () => {
         const start = performance.now();
         try {
-          const { count, error } = await supabase.from(table).select("*", { count: "exact", head: true });
+          const { count, error } = await databaseAdapter.supabase.from(table).select("*", { count: "exact", head: true });
           const latencyMs = performance.now() - start;
           if (error) {
             const status: HealthStatus = isNonCriticalTableError(error) ? "warn" : "error";
@@ -156,7 +156,7 @@ const ApiHealthTab = () => {
         run: async () => {
           const start = performance.now();
           try {
-            const { error } = await supabase.rpc("is_admin");
+            const { data, error } = await databaseAdapter.supabase.rpc("is_admin");
             const latencyMs = performance.now() - start;
             if (error) {
               const status: HealthStatus = isMissingRpcError(error) ? "warn" : "error";
@@ -177,13 +177,13 @@ const ApiHealthTab = () => {
         run: async () => {
           const start = performance.now();
           try {
-            const { error } = await supabase.rpc("check_admin_access");
+            const { data, error } = await databaseAdapter.supabase.rpc("check_admin_access");
             let latencyMs = performance.now() - start;
             if (error) {
               if (isMissingRpcError(error)) {
                 // Fallback to is_admin
                 const fbStart = performance.now();
-                const { data: fb, error: fbErr } = await supabase.rpc("is_admin");
+                const { data: fb, error: fbErr } = await databaseAdapter.supabase.rpc("is_admin");
                 latencyMs = performance.now() - fbStart;
                 if (!fbErr && (fb === true || fb === false)) {
                   return { id: "rpc-check-admin", name: "RPC check_admin_access", status: "warn", latencyMs, message: `Missing RPC; used is_admin fallback: ${String(fb)}` };
@@ -208,7 +208,7 @@ const ApiHealthTab = () => {
           const start = performance.now();
           try {
             const userId = user?.id || "00000000-0000-0000-0000-000000000000";
-            const { error } = await supabase.rpc("can_use_mfa", { user_id: userId });
+            const { data, error } = await databaseAdapter.supabase.rpc("can_use_mfa", { user_id: userId });
             const latencyMs = performance.now() - start;
             if (error) {
               const status: HealthStatus = isMissingRpcError(error) ? "warn" : "error";
@@ -230,7 +230,7 @@ const ApiHealthTab = () => {
         run: async () => {
           const start = performance.now();
           try {
-            const { error } = await supabase.rpc("get_current_user_profile");
+            const { data, error } = await databaseAdapter.supabase.rpc("get_current_user_profile");
             let latencyMs = performance.now() - start;
             if (error) {
               if (isMissingRpcError(error)) {
@@ -240,7 +240,7 @@ const ApiHealthTab = () => {
                   return { id: "rpc-get-current-user-profile", name: "RPC get_current_user_profile", status: "warn", latencyMs, message: "No user; RPC missing" };
                 }
                 const fbStart = performance.now();
-                const { data: prof, error: profErr } = await supabase
+                const { data: prof, error: profErr } = await databaseAdapter.supabase
                   .from('profiles')
                   .select('id,email,full_name,role')
                   .or(`id.eq.${userId},user_id.eq.${userId}`)
@@ -269,7 +269,7 @@ const ApiHealthTab = () => {
         run: async () => {
           const start = performance.now();
           try {
-            const { error } = await supabase.rpc("generate_loyalty_number");
+            const { data, error } = await databaseAdapter.supabase.rpc("generate_loyalty_number");
             const latencyMs = performance.now() - start;
             if (error) {
               const status: HealthStatus = isMissingRpcError(error) ? "warn" : "error";
@@ -291,7 +291,7 @@ const ApiHealthTab = () => {
         run: async () => {
           const start = performance.now();
           try {
-            const { error } = await supabase.rpc("generate_referral_code");
+            const { data, error } = await databaseAdapter.supabase.rpc("generate_referral_code");
             const latencyMs = performance.now() - start;
             if (error) {
               const status: HealthStatus = isMissingRpcError(error) ? "warn" : "error";
@@ -318,7 +318,7 @@ const ApiHealthTab = () => {
           const start = performance.now();
           try {
             // Check if DAO tables exist and are accessible
-            const { error } = await supabase
+            const { error } = await databaseAdapter.supabase
               .from('dao_organizations')
               .select('id')
               .limit(1);
@@ -341,7 +341,7 @@ const ApiHealthTab = () => {
           const start = performance.now();
           try {
             // Check if rewards-related tables are accessible
-            const { error } = await supabase
+            const { error } = await databaseAdapter.supabase
               .from('loyalty_transactions')
               .select('id')
               .limit(1);
@@ -364,7 +364,7 @@ const ApiHealthTab = () => {
           const start = performance.now();
           try {
             // Check if user can access DAO proposals
-            const { error } = await supabase
+            const { error } = await databaseAdapter.supabase
               .from('dao_proposals')
               .select('id')
               .limit(1);
@@ -387,7 +387,7 @@ const ApiHealthTab = () => {
           const start = performance.now();
           try {
             // Check if loyalty_transactions table supports manual entries
-            const { error } = await supabase
+            const { error } = await databaseAdapter.supabase
               .from('loyalty_transactions')
               .select('transaction_type')
               .eq('transaction_type', 'manual_entry')
@@ -414,7 +414,7 @@ const ApiHealthTab = () => {
         run: async () => {
           const start = performance.now();
           try {
-            const { error } = await supabase.storage.from("public-assets").list("", { limit: 1 });
+            const { data, error } = await databaseAdapter.supabase.storage.from("public-assets").list("", { limit: 1 });
             const latencyMs = performance.now() - start;
             if (error) {
               // Treat missing bucket as a warning rather than hard error for health UI

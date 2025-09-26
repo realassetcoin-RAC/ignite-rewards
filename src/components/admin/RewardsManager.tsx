@@ -14,7 +14,7 @@ import {
   EyeOff
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
+import { databaseAdapter } from '@/lib/databaseAdapter';
 
 interface RewardsConfig {
   id: string;
@@ -73,7 +73,7 @@ const RewardsManager: React.FC = () => {
 
   const loadRewardsConfig = async () => {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await databaseAdapter.supabase
         .from('rewards_config')
         .select('*')
         .limit(1);
@@ -108,7 +108,7 @@ const RewardsManager: React.FC = () => {
 
   const loadPendingProposal = async () => {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await databaseAdapter.supabase
         .from('config_proposals')
         .select('*')
         .eq('status', 'pending' as any)
@@ -136,7 +136,7 @@ const RewardsManager: React.FC = () => {
 
   const loadAnonymousUsers = async () => {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await databaseAdapter.supabase
         .from('anonymous_users')
         .select('*')
         .order('created_at', { ascending: false })
@@ -190,7 +190,7 @@ const RewardsManager: React.FC = () => {
         created_at: new Date().toISOString()
       };
 
-      const { error } = await supabase
+      const { error } = await databaseAdapter.supabase
         .from('config_proposals')
         .insert([proposalData as any]);
 

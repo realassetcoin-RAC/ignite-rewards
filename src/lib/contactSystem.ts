@@ -1,4 +1,4 @@
-import { supabase } from "@/integrations/supabase/client";
+import { databaseAdapter } from "@/lib/databaseAdapter";
 
 export interface ContactTicket {
   id: string;
@@ -79,7 +79,7 @@ export async function createConversation(
   userEmail?: string
 ): Promise<{ success: boolean; conversationId?: string; error?: string }> {
   try {
-    const { error } = await supabase
+    const { data, error } = await databaseAdapter.supabase
       .from('chatbot_conversations')
       .insert({
         session_id: sessionId,
@@ -96,7 +96,7 @@ export async function createConversation(
       return { success: false, error: 'Failed to create conversation' };
     }
 
-    return { success: true, conversationId: data.id };
+    return { success: true, conversationId: data?.id };
   } catch (error) {
     console.error('Error creating conversation:', error);
     return { success: false, error: 'Failed to create conversation' };
@@ -143,7 +143,7 @@ export async function getIssueCategories(): Promise<{
   error?: string;
 }> {
   try {
-    const { data, error } = await supabase
+    const { data, error } = await databaseAdapter.supabase
       .from('issue_categories')
       .select('*')
       .eq('is_active', true)
@@ -192,7 +192,7 @@ export async function getIssueTags(categoryId: string): Promise<{
   error?: string;
 }> {
   try {
-    const { data, error } = await supabase
+    const { data, error } = await databaseAdapter.supabase
       .from('issue_tags')
       .select('*')
       .eq('category_id', categoryId)
@@ -264,7 +264,7 @@ export async function createTicket(params: {
 }): Promise<{ success: boolean; ticketId?: string; error?: string }> {
   try {
     // Generate ticket ID
-    const { data: ticketIdData, error: ticketIdError } = await supabase.rpc('generate_ticket_id');
+    const { data: ticketIdData, error: ticketIdError } = await databaseAdapter.supabase.rpc('generate_ticket_id');
     
     if (ticketIdError) {
       console.error('Error generating ticket ID:', ticketIdError);
@@ -447,7 +447,7 @@ export async function getConversationHistory(sessionId: string): Promise<{
   error?: string;
 }> {
   try {
-    const { data, error } = await supabase
+    const { data, error } = await databaseAdapter.supabase
       .from('chatbot_conversations')
       .select(`
         *,

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-// import { supabase } from "@/integrations/supabase/client";
+import { databaseAdapter } from "@/lib/databaseAdapter";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -36,7 +36,7 @@ const ReferralManager = () => {
   const loadReferrals = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
+      const { data, error } = await databaseAdapter.supabase
         .from('user_referrals')
         .select('*')
         .order('created_at', { ascending: false });
@@ -97,7 +97,7 @@ const ReferralManager = () => {
 
   const markRewarded = async (referral: Referral) => {
     try {
-      const { error } = await supabase
+      const { error } = await databaseAdapter.supabase
         .from('user_referrals')
         .update({ status: 'rewarded', rewarded_at: new Date().toISOString() })
         .eq('id', referral.id);

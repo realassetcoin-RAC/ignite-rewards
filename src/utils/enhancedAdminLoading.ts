@@ -5,7 +5,7 @@
  * with comprehensive error handling and fallback methods.
  */
 
-// import { supabase } from '@/integrations/supabase/client';
+import { databaseAdapter } from '@/lib/databaseAdapter';
 
 export interface LoadingResult<T = any> {
   success: boolean;
@@ -30,7 +30,7 @@ export async function verifyAdminAccess(): Promise<LoadingResult<boolean>> {
     console.log('🔍 Verifying admin access...');
     
     // Method 1: Check authentication
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    const { data: { user }, error: authError } = await databaseAdapter.supabase.auth.getUser();
     if (authError || !user) {
       return {
         success: false,
@@ -41,7 +41,7 @@ export async function verifyAdminAccess(): Promise<LoadingResult<boolean>> {
 
     // Method 2: Try public.is_admin RPC
     try {
-      const { data: isAdminPublic, error: rpcError } = await supabase.rpc('is_admin');
+      const { data: isAdminPublic, error: rpcError } = await databaseAdapter.supabase.rpc('is_admin');
       if (!rpcError && isAdminPublic === true) {
         console.log('✅ Admin access verified via public.is_admin');
         return {
@@ -57,7 +57,7 @@ export async function verifyAdminAccess(): Promise<LoadingResult<boolean>> {
 
     // Method 3: Try is_admin RPC (public schema)
     try {
-      const { data: isAdminApi, error: rpcError } = await supabase.rpc('is_admin');
+      const { data: isAdminApi, error: rpcError } = await databaseAdapter.supabase.rpc('is_admin');
       if (!rpcError && isAdminApi === true) {
         console.log('✅ Admin access verified via is_admin');
         return {
@@ -73,7 +73,7 @@ export async function verifyAdminAccess(): Promise<LoadingResult<boolean>> {
 
     // Method 4: Check profile role directly
     try {
-      const { data: profile, error: profileError } = await supabase
+      const { data: profile, error: profileError } = await databaseAdapter.supabase
         .from('profiles')
         .select('role')
         .eq('id', user.id)
@@ -128,7 +128,7 @@ export async function loadVirtualCards(): Promise<LoadingResult<any[]>> {
     
     // Method 1: Try public.virtual_cards
     try {
-      const { data, error } = await supabase
+      const { data, error } = await databaseAdapter.supabase
         .from('virtual_cards')
         .select('*')
         .order('created_at', { ascending: false });
@@ -148,7 +148,7 @@ export async function loadVirtualCards(): Promise<LoadingResult<any[]>> {
 
     // Method 2: Try virtual_cards
     try {
-      const { data, error } = await supabase
+      const { data, error } = await databaseAdapter.supabase
         .from('virtual_cards')
         .select('*')
         .order('created_at', { ascending: false });
@@ -194,7 +194,7 @@ export async function loadMerchants(): Promise<LoadingResult<any[]>> {
     
     // Method 1: Try public.merchants
     try {
-      const { data, error } = await supabase
+      const { data, error } = await databaseAdapter.supabase
         .from('merchants')
         .select(`
           *,
@@ -220,7 +220,7 @@ export async function loadMerchants(): Promise<LoadingResult<any[]>> {
 
     // Method 2: Try merchants
     try {
-      const { data, error } = await supabase
+      const { data, error } = await databaseAdapter.supabase
         .from('merchants')
         .select(`
           *,
@@ -272,7 +272,7 @@ export async function loadReferralCampaigns(): Promise<LoadingResult<any[]>> {
     
     // Method 1: Try public.referral_campaigns
     try {
-      const { data, error } = await supabase
+      const { data, error } = await databaseAdapter.supabase
         .from('referral_campaigns')
         .select('*')
         .order('created_at', { ascending: false });
@@ -292,7 +292,7 @@ export async function loadReferralCampaigns(): Promise<LoadingResult<any[]>> {
 
     // Method 2: Try referral_campaigns
     try {
-      const { data, error } = await supabase
+      const { data, error } = await databaseAdapter.supabase
         .from('referral_campaigns')
         .select('*')
         .order('created_at', { ascending: false });
@@ -338,7 +338,7 @@ export async function loadUserReferrals(): Promise<LoadingResult<any[]>> {
     
     // Method 1: Try public.user_referrals
     try {
-      const { data, error } = await supabase
+      const { data, error } = await databaseAdapter.supabase
         .from('user_referrals')
         .select(`
           *,
@@ -368,7 +368,7 @@ export async function loadUserReferrals(): Promise<LoadingResult<any[]>> {
 
     // Method 2: Try user_referrals
     try {
-      const { data, error } = await supabase
+      const { data, error } = await databaseAdapter.supabase
         .from('user_referrals')
         .select(`
           *,

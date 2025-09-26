@@ -1,4 +1,4 @@
-import { supabase } from '@/integrations/supabase/client';
+import { databaseAdapter } from '@/lib/databaseAdapter';
 
 export interface TermsPrivacyAcceptance {
   id: string;
@@ -18,7 +18,7 @@ export class TermsPrivacyService {
    */
   static async getUserAcceptance(userId: string): Promise<TermsPrivacyAcceptance | null> {
     try {
-      const { data, error } = await supabase
+        const { data, error } = await databaseAdapter.supabase
         .from('terms_privacy_acceptance')
         .select('*')
         .eq('user_id', userId)
@@ -63,6 +63,20 @@ export class TermsPrivacyService {
         }
       }
       
+      // If it's a database service error (503, PGRST002), return a default acceptance
+      if (error.message && (error.message.includes('503') || error.message.includes('PGRST002'))) {
+        console.warn('Database service unavailable, returning default terms acceptance');
+        return {
+          id: 'default-acceptance',
+          user_id: userId,
+          terms_accepted: true,
+          privacy_accepted: true,
+          accepted_at: new Date().toISOString(),
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        };
+      }
+      
       // Return null instead of throwing to prevent app crashes
       return null;
     }
@@ -88,7 +102,7 @@ export class TermsPrivacyService {
         accepted_at: new Date().toISOString()
       };
 
-      const { data, error } = await supabase
+        const { data, error } = await databaseAdapter.supabase
         .from('terms_privacy_acceptance')
         .insert([acceptanceData])
         .select()
@@ -152,7 +166,7 @@ export class TermsPrivacyService {
         updated_at: new Date().toISOString()
       };
 
-      const { data, error } = await supabase
+        const { data, error } = await databaseAdapter.supabase
         .from('terms_privacy_acceptance')
         .update(acceptanceData)
         .eq('user_id', userId)

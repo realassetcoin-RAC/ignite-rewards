@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Alignment Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #1a1a1a;
+            color: #fff;
+            padding: 20px;
+        }
+        .form-row {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+        .form-field {
+            flex: 1;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+        }
+        .button-field {
+            width: 100%;
+            height: 40px;
+            padding: 8px 16px;
+            background: transparent;
+            border: 1px solid #374151;
+            border-radius: 6px;
+            color: #fff;
+            font-size: 14px;
+            line-height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+            cursor: pointer;
+        }
+        .button-field:hover {
+            background: #374151;
+        }
+        .icon {
+            margin-right: 8px;
+            width: 16px;
+            height: 16px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Form Field Alignment Test</h1>
+    
+    <div class="form-row">
+        <div class="form-field">
+            <label>Reward Points</label>
+            <button class="button-field" onclick="alert('Reward Points clicked')">
+                <span class="icon">#</span>
+                10
+            </button>
+        </div>
+        
+        <div class="form-field">
+            <label>Start Date</label>
+            <button class="button-field" onclick="alert('Start Date clicked')">
+                <span class="icon">📅</span>
+                Select start date
+            </button>
+        </div>
+        
+        <div class="form-field">
+            <label>End Date</label>
+            <button class="button-field" onclick="alert('End Date clicked')">
+                <span class="icon">📅</span>
+                Select end date
+            </button>
+        </div>
+    </div>
+    
+    <p>All three fields should be perfectly aligned with the same height (40px) and styling.</p>
+</body>
+</html>

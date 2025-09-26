@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Modal Alignment Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #1a1a1a;
+            color: #fff;
+            padding: 20px;
+        }
+        .modal {
+            background: #2a2a2a;
+            border-radius: 8px;
+            padding: 24px;
+            max-width: 500px;
+            margin: 0 auto;
+        }
+        .form-row {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+        .form-field {
+            flex: 1;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #fff;
+        }
+        .button-field {
+            width: 100%;
+            height: 40px;
+            padding: 8px 16px;
+            background: transparent;
+            border: 1px solid #374151;
+            border-radius: 6px;
+            color: #fff;
+            font-size: 14px;
+            line-height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+            cursor: pointer;
+            font-family: inherit;
+        }
+        .button-field:hover {
+            background: #374151;
+        }
+        .icon {
+            margin-right: 8px;
+            width: 16px;
+            height: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .calendar-icon {
+            width: 16px;
+            height: 16px;
+            border: 1px solid currentColor;
+            border-radius: 2px;
+            position: relative;
+        }
+        .calendar-icon::before {
+            content: '';
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            right: 2px;
+            height: 1px;
+            background: currentColor;
+        }
+        .calendar-icon::after {
+            content: '';
+            position: absolute;
+            top: 4px;
+            left: 2px;
+            right: 2px;
+            height: 1px;
+            background: currentColor;
+        }
+    </style>
+</head>
+<body>
+    <div class="modal">
+        <h2>Create Campaign</h2>
+        
+        <div class="form-row">
+            <div class="form-field">
+                <label>Reward Points</label>
+                <button class="button-field" onclick="alert('Reward Points clicked')">
+                    <span class="icon">#</span>
+                    10
+                </button>
+            </div>
+            
+            <div class="form-field">
+                <label>Start Date</label>
+                <button class="button-field" onclick="alert('Start Date clicked')">
+                    <span class="icon">
+                        <div class="calendar-icon"></div>
+                    </span>
+                    Select start date
+                </button>
+            </div>
+            
+            <div class="form-field">
+                <label>End Date</label>
+                <button class="button-field" onclick="alert('End Date clicked')">
+                    <span class="icon">
+                        <div class="calendar-icon"></div>
+                    </span>
+                    Select end date
+                </button>
+            </div>
+        </div>
+        
+        <p style="color: #888; font-size: 14px;">
+            All three fields should be perfectly aligned with the same height (40px) and styling.
+            The Reward Points field now has an icon (#) to match the visual style of the date fields.
+        </p>
+    </div>
+</body>
+</html>

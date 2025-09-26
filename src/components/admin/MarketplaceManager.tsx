@@ -289,14 +289,14 @@ const MarketplaceManager: React.FC<MarketplaceManagerProps> = ({ onStatsUpdate }
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 w-full max-w-full overflow-hidden">
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-5">
-          <TabsTrigger value="listings">Listings</TabsTrigger>
-          <TabsTrigger value="nft-tiers">NFT Tiers</TabsTrigger>
-          <TabsTrigger value="analytics">Analytics</TabsTrigger>
-          <TabsTrigger value="dao">DAO</TabsTrigger>
-          <TabsTrigger value="settings">Settings</TabsTrigger>
+        <TabsList className="flex w-full overflow-x-auto">
+          <TabsTrigger value="listings" className="flex-shrink-0">Listings</TabsTrigger>
+          <TabsTrigger value="nft-tiers" className="flex-shrink-0">NFT Tiers</TabsTrigger>
+          <TabsTrigger value="analytics" className="flex-shrink-0">Analytics</TabsTrigger>
+          <TabsTrigger value="dao" className="flex-shrink-0">DAO</TabsTrigger>
+          <TabsTrigger value="settings" className="flex-shrink-0">Settings</TabsTrigger>
         </TabsList>
 
         {/* Listings Tab */}
@@ -560,7 +560,7 @@ const MarketplaceManager: React.FC<MarketplaceManagerProps> = ({ onStatsUpdate }
               <CardTitle className="text-white">General Settings</CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
                 <div>
                   <Label className="text-white">Default Minimum Investment</Label>
                   <Input

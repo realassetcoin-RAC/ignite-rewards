@@ -380,7 +380,7 @@ export const VirtualLoyaltyCard: React.FC = () => {
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <CreditCard className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
-          <CardTitle>Add Virtual Card</CardTitle>
+          <CardTitle>Add Loyalty Card</CardTitle>
         </CardHeader>
         <CardContent className="text-center">
           <p className="text-muted-foreground mb-6">
@@ -394,13 +394,13 @@ export const VirtualLoyaltyCard: React.FC = () => {
                 setAdminMode(false);
               }}>
                 <Plus className="w-4 h-4 mr-2" />
-                Add Virtual Card
+                Add Loyalty Card
               </Button>
             </DialogTrigger>
             <DialogContent className="max-w-md">
               <DialogHeader>
                 <DialogTitle>
-                  {adminMode ? "Add Virtual Card (Admin)" : "Create Your Virtual Loyalty Card"}
+                  {adminMode ? "Add Loyalty Card (Admin)" : "Create Your Loyalty Card"}
                 </DialogTitle>
               </DialogHeader>
               
@@ -495,7 +495,7 @@ export const VirtualLoyaltyCard: React.FC = () => {
                   ) : (
                     <>
                       <CreditCard className="w-4 h-4 mr-2" />
-                      {adminMode ? "Add Virtual Card for User" : "Add Virtual Card"}
+                      {adminMode ? "Add Loyalty Card for User" : "Add Loyalty Card"}
                     </>
                   )}
                 </Button>

@@ -7,7 +7,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { Check, ChevronLeft, ChevronRight, Loader2, CreditCard } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { databaseAdapter } from "@/lib/databaseAdapter";
 
 /**
  * Virtual card configuration interface
@@ -260,7 +260,7 @@ const CustomerSignupModal: React.FC<CustomerSignupModalProps> = ({ isOpen, onClo
       // ✅ IMPLEMENT REQUIREMENT: Automatic assignment of free Loyalty NFT card
       try {
         // Call the assign_free_loyalty_card RPC function
-        const { error: loyaltyError } = await supabase.rpc('assign_free_loyalty_card', {
+        const { error: loyaltyError } = await databaseAdapter.supabase.rpc('assign_free_loyalty_card', {
           user_uuid: authData.user.id,
           email: customerForm.email,
           full_name: customerForm.name,
@@ -376,7 +376,7 @@ const CustomerSignupModal: React.FC<CustomerSignupModalProps> = ({ isOpen, onClo
         {step === 'select' && (
           <div className="space-y-6">
             <div className="text-center px-2">
-              <h3 className="text-lg sm:text-xl font-semibold mb-2">Choose Your Virtual Card</h3>
+              <h3 className="text-lg sm:text-xl font-semibold mb-2">Choose Your Loyalty Card</h3>
               <p className="text-sm sm:text-base text-muted-foreground">Select the card that best fits your needs</p>
             </div>
 

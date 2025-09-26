@@ -14,14 +14,9 @@ if (typeof window === 'undefined') {
 import { createClient } from '@supabase/supabase-js';
 import { environment } from '@/config/environment';
 
-interface QueryResult {
-  data: any;
-  error: any;
-}
 
 class DatabaseAdapter {
   private isLocal: boolean;
-  private localClient: any = null;
   public supabaseClient: any = null;
 
   constructor() {
@@ -42,11 +37,6 @@ class DatabaseAdapter {
         this.initializeSupabase();
   }
 
-  private initializeMockMode() {
-    console.log('Initializing mock database mode');
-    // Mock mode - no actual database connection needed
-    // All database operations will return mock data
-  }
 
   private initializeSupabase() {
     console.log('Initializing Supabase client...');
@@ -81,9 +71,9 @@ class DatabaseAdapter {
         );
       console.log('✅ Real Supabase client created successfully');
       
-      // Test the connection immediately (async)
-      this.testConnection().catch(error => {
-        console.error('❌ Connection test failed:', error);
+      // Test the connection with retry mechanism (async)
+      this.testConnectionWithRetry().catch(error => {
+        console.error('❌ All connection attempts failed:', error);
         console.log('🔄 Switching to mock client for development');
         this.supabaseClient = this.createMockSupabaseClient();
       });
@@ -96,26 +86,79 @@ class DatabaseAdapter {
     }
   }
 
+  private async testConnectionWithRetry(maxRetries: number = 3) {
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      console.log(`🔍 Testing Supabase connection (attempt ${attempt}/${maxRetries})...`);
+      
+      try {
+        await this.testConnection();
+        console.log('✅ Connection test successful');
+        return; // Success, exit retry loop
+      } catch (error) {
+        console.warn(`⚠️ Connection attempt ${attempt} failed:`, error);
+        
+        if (attempt === maxRetries) {
+          console.error('❌ All connection attempts failed');
+          throw error;
+        }
+        
+        // Wait before retry (exponential backoff)
+        const delay = Math.pow(2, attempt) * 1000; // 2s, 4s, 8s
+        console.log(`⏳ Waiting ${delay}ms before retry...`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
+    }
+  }
+
   private async testConnection() {
     try {
       console.log('🔍 Testing Supabase connection...');
-      const { data, error } = await this.supabaseClient.from('profiles').select('count').limit(1);
       
-      if (error && error.code === 'PGRST002') {
-        console.error('❌ PGRST002 error detected - Supabase service issue');
-        console.log('🔄 Switching to mock client for development');
-        this.supabaseClient = this.createMockSupabaseClient();
-      } else if (error) {
-        console.error('❌ Supabase connection error:', error.message);
-        console.log('🔄 Switching to mock client for development');
-        this.supabaseClient = this.createMockSupabaseClient();
+      // Create a timeout promise for the connection test
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Connection timeout after 10 seconds')), 10000)
+      );
+      
+      const queryPromise = this.supabaseClient.from('profiles').select('count').limit(1);
+      
+      const { error } = await Promise.race([queryPromise, timeoutPromise]) as any;
+      
+      if (error) {
+        console.error('❌ Supabase connection error:', error);
+        
+        // Only fallback to mock mode for specific critical errors
+        if (error.code === 'PGRST002' || 
+            error.message?.includes('503') || 
+            error.message?.includes('Service Unavailable') ||
+            error.message?.includes('timeout') ||
+            error.message?.includes('Connection timeout')) {
+          console.error('❌ Critical Supabase service error - switching to mock client');
+          console.log('🔄 Switching to mock client for development');
+          this.supabaseClient = this.createMockSupabaseClient();
+          return;
+        }
+        
+        // For other errors (like table not found, permission issues), keep using real client
+        console.warn('⚠️ Non-critical Supabase error - keeping real client:', error.message);
+        console.log('✅ Continuing with real Supabase client despite error');
       } else {
         console.log('✅ Supabase connection successful');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('❌ Connection test failed:', error);
-      console.log('🔄 Switching to mock client for development');
-      this.supabaseClient = this.createMockSupabaseClient();
+      
+      // Only fallback for network/timeout errors
+      if (error.message?.includes('timeout') || 
+          error.message?.includes('503') || 
+          error.message?.includes('Service Unavailable') ||
+          error.message?.includes('Connection timeout')) {
+        console.error('❌ Network/timeout error - switching to mock client');
+        console.log('🔄 Switching to mock client for development');
+        this.supabaseClient = this.createMockSupabaseClient();
+      } else {
+        console.warn('⚠️ Non-critical connection error - keeping real client:', error.message);
+        console.log('✅ Continuing with real Supabase client despite error');
+      }
     }
   }
 
@@ -340,7 +383,9 @@ class DatabaseAdapter {
           switch (table) {
             case 'nft_types':
               return [
-                // ✅ IMPLEMENT REQUIREMENT: Pearl White (Custodial)
+                // ✅ EXACT SPECIFICATIONS FROM CUSTODIAL ATTRIBUTES TABLE
+                
+                // 1. Pearl White - Buy Price NFT: 0, Rarity: Common, Mint: 10000
                 { 
                   id: '1', 
                   collection: 'Classic',
@@ -348,13 +393,13 @@ class DatabaseAdapter {
                   display_name: 'Pearl White', 
                   image_url: 'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=400',
                   evolution_image_url: 'https://images.unsplash.com/photo-1620121692029-d088224ddc74?w=400',
-                  buy_price_usdt: 0, // Free for custodial
+                  buy_price_usdt: 0,
                   buy_price_nft: 0,
                   rarity: 'Common',
                   mint_quantity: 10000,
                   is_upgradeable: true,
                   is_evolvable: true,
-                  is_fractional_eligible: true,
+                  is_fractional_eligible: false, // Fractional: No
                   is_custodial: true,
                   auto_staking_duration: 'Forever',
                   earn_on_spend_ratio: 0.01, // 1.00%
@@ -367,46 +412,142 @@ class DatabaseAdapter {
                   created_at: new Date().toISOString(),
                   updated_at: new Date().toISOString()
                 },
+                
+                // 2. Lava Orange - Buy Price NFT: 100, Rarity: Less Common, Mint: 3000
                 { 
                   id: '2', 
-                  nft_name: 'Premium Loyalty Card', 
-                  display_name: 'Premium Loyalty Card', 
+                  collection: 'Classic',
+                  nft_name: 'Lava Orange', 
+                  display_name: 'Lava Orange', 
                   image_url: 'https://images.unsplash.com/photo-1551698618-1dfe5d97d256?w=400',
-                  evolution_image_url: 'https://images.unsplash.com/photo-1634973357973-f2ed2657db3c?w=400', // ✅ 3D animated evolution
-                  buy_price_usdt: 50, 
-                  rarity: 'Rare',
-                  mint_quantity: 500,
+                  evolution_image_url: 'https://images.unsplash.com/photo-1634973357973-f2ed2657db3c?w=400',
+                  buy_price_usdt: 100,
+                  buy_price_nft: 100,
+                  rarity: 'Less Common',
+                  mint_quantity: 3000,
                   is_upgradeable: true,
                   is_evolvable: true,
-                  is_fractional_eligible: true,
-                  auto_staking_duration: 'Forever',
-                  earn_on_spend_ratio: 0.02,
-                  upgrade_bonus_ratio: 0.01,
-                  evolution_min_investment: 100,
-                  evolution_earnings_ratio: 0.05,
+                  is_fractional_eligible: false, // Fractional: No
                   is_custodial: true,
+                  auto_staking_duration: 'Forever',
+                  earn_on_spend_ratio: 0.011, // 1.10%
+                  upgrade_bonus_ratio: 0.001, // 0.10%
+                  evolution_min_investment: 500,
+                  evolution_earnings_ratio: 0.005, // 0.50%
+                  passive_income_rate: 0.011,
+                  custodial_income_rate: 0.001,
                   is_active: true,
                   created_at: new Date().toISOString(),
                   updated_at: new Date().toISOString()
                 },
+                
+                // 3. Pink - Buy Price NFT: 100, Rarity: Less Common, Mint: 3000
                 { 
                   id: '3', 
-                  nft_name: 'Elite Loyalty Card', 
-                  display_name: 'Elite Loyalty Card', 
+                  collection: 'Classic',
+                  nft_name: 'Pink', 
+                  display_name: 'Pink', 
                   image_url: 'https://images.unsplash.com/photo-1580894736036-1d3b4b9d3ad4?w=400',
-                  evolution_image_url: 'https://images.unsplash.com/photo-1634973357973-f2ed2657db3c?w=400', // ✅ 3D animated evolution
-                  buy_price_usdt: 100, 
-                  rarity: 'Epic',
-                  mint_quantity: 100,
+                  evolution_image_url: 'https://images.unsplash.com/photo-1634973357973-f2ed2657db3c?w=400',
+                  buy_price_usdt: 100,
+                  buy_price_nft: 100,
+                  rarity: 'Less Common',
+                  mint_quantity: 3000,
                   is_upgradeable: true,
                   is_evolvable: true,
-                  is_fractional_eligible: true,
-                  auto_staking_duration: 'Forever',
-                  earn_on_spend_ratio: 0.05,
-                  upgrade_bonus_ratio: 0.02,
-                  evolution_min_investment: 500,
-                  evolution_earnings_ratio: 0.1,
+                  is_fractional_eligible: false, // Fractional: No
                   is_custodial: true,
+                  auto_staking_duration: 'Forever',
+                  earn_on_spend_ratio: 0.011, // 1.10%
+                  upgrade_bonus_ratio: 0.001, // 0.10%
+                  evolution_min_investment: 500,
+                  evolution_earnings_ratio: 0.005, // 0.50%
+                  passive_income_rate: 0.011,
+                  custodial_income_rate: 0.001,
+                  is_active: true,
+                  created_at: new Date().toISOString(),
+                  updated_at: new Date().toISOString()
+                },
+                
+                // 4. Silver - Buy Price NFT: 200, Rarity: Rare, Mint: 750
+                { 
+                  id: '4', 
+                  collection: 'Classic',
+                  nft_name: 'Silver', 
+                  display_name: 'Silver', 
+                  image_url: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=400',
+                  evolution_image_url: 'https://images.unsplash.com/photo-1634973357973-f2ed2657db3c?w=400',
+                  buy_price_usdt: 200,
+                  buy_price_nft: 200,
+                  rarity: 'Rare',
+                  mint_quantity: 750,
+                  is_upgradeable: true,
+                  is_evolvable: true,
+                  is_fractional_eligible: false, // Fractional: No
+                  is_custodial: true,
+                  auto_staking_duration: 'Forever',
+                  earn_on_spend_ratio: 0.012, // 1.20%
+                  upgrade_bonus_ratio: 0.0015, // 0.15%
+                  evolution_min_investment: 1000,
+                  evolution_earnings_ratio: 0.0075, // 0.75%
+                  passive_income_rate: 0.012,
+                  custodial_income_rate: 0.0015,
+                  is_active: true,
+                  created_at: new Date().toISOString(),
+                  updated_at: new Date().toISOString()
+                },
+                
+                // 5. Gold - Buy Price NFT: 300, Rarity: Rare, Mint: 750
+                { 
+                  id: '5', 
+                  collection: 'Classic',
+                  nft_name: 'Gold', 
+                  display_name: 'Gold', 
+                  image_url: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=400',
+                  evolution_image_url: 'https://images.unsplash.com/photo-1634973357973-f2ed2657db3c?w=400',
+                  buy_price_usdt: 300,
+                  buy_price_nft: 300,
+                  rarity: 'Rare',
+                  mint_quantity: 750,
+                  is_upgradeable: true,
+                  is_evolvable: true,
+                  is_fractional_eligible: false, // Fractional: No
+                  is_custodial: true,
+                  auto_staking_duration: 'Forever',
+                  earn_on_spend_ratio: 0.013, // 1.30%
+                  upgrade_bonus_ratio: 0.002, // 0.20%
+                  evolution_min_investment: 1500,
+                  evolution_earnings_ratio: 0.01, // 1.00%
+                  passive_income_rate: 0.013,
+                  custodial_income_rate: 0.002,
+                  is_active: true,
+                  created_at: new Date().toISOString(),
+                  updated_at: new Date().toISOString()
+                },
+                
+                // 6. Black - Buy Price NFT: 500, Rarity: Very Rare, Mint: 250
+                { 
+                  id: '6', 
+                  collection: 'Classic',
+                  nft_name: 'Black', 
+                  display_name: 'Black', 
+                  image_url: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=400',
+                  evolution_image_url: 'https://images.unsplash.com/photo-1634973357973-f2ed2657db3c?w=400',
+                  buy_price_usdt: 500,
+                  buy_price_nft: 500,
+                  rarity: 'Very Rare',
+                  mint_quantity: 250,
+                  is_upgradeable: true,
+                  is_evolvable: true,
+                  is_fractional_eligible: false, // Fractional: No
+                  is_custodial: true,
+                  auto_staking_duration: 'Forever',
+                  earn_on_spend_ratio: 0.014, // 1.40%
+                  upgrade_bonus_ratio: 0.003, // 0.30%
+                  evolution_min_investment: 2500,
+                  evolution_earnings_ratio: 0.0125, // 1.25%
+                  passive_income_rate: 0.014,
+                  custodial_income_rate: 0.003,
                   is_active: true,
                   created_at: new Date().toISOString(),
                   updated_at: new Date().toISOString()
@@ -970,6 +1111,15 @@ class DatabaseAdapter {
 
   // Local query builder removed - using cloud Supabase only
 
+  // Supabase client getter for compatibility
+  get supabase() {
+    if (!this.supabaseClient) {
+      console.error('❌ Supabase client is null, initializing fallback...');
+      this.supabaseClient = this.createMockSupabaseClient();
+    }
+    return this.supabaseClient;
+  }
+
   // Auth methods - always use Supabase
   get auth() {
     if (!this.supabaseClient) {
@@ -1003,6 +1153,54 @@ class DatabaseAdapter {
         return callback({ data: null, error: null });
       }
     };
+    }
+  }
+
+  // Check if we're in mock mode
+  isMockMode() {
+    return this.supabaseClient && this.supabaseClient._isMockClient;
+  }
+
+  // Force real Supabase client usage (for when database is confirmed working)
+  forceRealSupabase() {
+    console.log('🔄 Forcing real Supabase client usage...');
+    try {
+      this.supabaseClient = createClient(
+        environment.database.supabase.url,
+        environment.database.supabase.anonKey
+      );
+      console.log('✅ Real Supabase client forced successfully');
+      return true;
+    } catch (error) {
+      console.error('❌ Failed to force real Supabase client:', error);
+      return false;
+    }
+  }
+
+  // Test if real Supabase is working without fallback
+  async testRealSupabaseConnection() {
+    if (!this.supabaseClient || this.supabaseClient._isMockClient) {
+      console.log('🔄 Creating real Supabase client for testing...');
+      this.supabaseClient = createClient(
+        environment.database.supabase.url,
+        environment.database.supabase.anonKey
+      );
+    }
+
+    try {
+      console.log('🔍 Testing real Supabase connection...');
+      const { error } = await this.supabaseClient.from('profiles').select('count').limit(1);
+      
+      if (error) {
+        console.error('❌ Real Supabase connection error:', error);
+        return false;
+      } else {
+        console.log('✅ Real Supabase connection successful');
+        return true;
+      }
+    } catch (error) {
+      console.error('❌ Real Supabase connection test failed:', error);
+      return false;
     }
   }
 
