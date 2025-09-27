@@ -30,7 +30,8 @@ import {
   ChevronRight,
   Shield,
   Zap,
-  Target
+  Target,
+  Wallet
 } from "lucide-react";
 
 // Import existing components
@@ -45,6 +46,7 @@ import LoyaltyCardHeader from "@/components/LoyaltyCardHeader";
 import NFTManagementPanel from "@/components/nft/NFTManagementPanel";
 import DAOGovernancePanel from "@/components/dao/DAOGovernancePanel";
 import { AssetInitiativeSelector } from "@/components/AssetInitiativeSelector";
+import { AssetWalletSystem } from "@/components/AssetWalletSystem";
 import { WalletAddressDisplay } from "@/components/WalletAddressDisplay";
 import { SeedPhraseManager } from "@/components/SeedPhraseManager";
 import { ReferralStats } from "@/components/ReferralStats";
@@ -427,6 +429,18 @@ const UserDashboard = () => {
                 Reward Preferences
               </h3>
               <AssetInitiativeSelector userId={user?.id || ''} />
+                </div>
+                
+                <div className="mt-8">
+                  <h3 className="text-2xl font-bold text-white mb-6 flex items-center">
+                    <Wallet className="w-6 h-6 mr-3 text-green-400" />
+                    Asset Wallets
+                  </h3>
+                  <AssetWalletSystem 
+                    userId={user?.id || ''} 
+                    userBalance={userBalance}
+                    onBalanceUpdate={handleRefresh}
+                  />
                 </div>
               </div>
         );

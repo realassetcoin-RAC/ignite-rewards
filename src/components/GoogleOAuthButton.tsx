@@ -1,12 +1,8 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
 import { createModuleLogger } from '@/utils/consoleReplacer';
-import { debugOAuthConfiguration, testGoogleOAuth, getOAuthTroubleshootingGuide } from '@/lib/oauthDebugger';
-import { Loader2, AlertCircle, ExternalLink, Settings } from 'lucide-react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Loader2 } from 'lucide-react';
 
 interface GoogleOAuthButtonProps {
   onSuccess?: () => void;
@@ -15,7 +11,6 @@ interface GoogleOAuthButtonProps {
   variant?: 'default' | 'outline' | 'secondary' | 'ghost' | 'link' | 'destructive';
   size?: 'default' | 'sm' | 'lg' | 'icon';
   children?: React.ReactNode;
-  showDebugInfo?: boolean;
 }
 
 const GoogleOAuthButton: React.FC<GoogleOAuthButtonProps> = ({
@@ -25,38 +20,16 @@ const GoogleOAuthButton: React.FC<GoogleOAuthButtonProps> = ({
   variant = 'default',
   size = 'default',
   children,
-  showDebugInfo = false
 }) => {
   const logger = createModuleLogger('GoogleOAuthButton');
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
-  const [debugInfo, setDebugInfo] = useState<any>(null);
-  const [showDebugModal, setShowDebugModal] = useState(false);
 
   const handleGoogleSignIn = async () => {
     logger.info('Starting Google OAuth sign in');
     setLoading(true);
 
     try {
-      // First, run diagnostics if debug mode is enabled
-      if (showDebugInfo) {
-        logger.info('Running OAuth diagnostics...');
-        const diagnostics = await debugOAuthConfiguration();
-        setDebugInfo(diagnostics);
-        logger.info('OAuth diagnostics result:', diagnostics);
-
-        if (diagnostics.error) {
-          logger.error('OAuth configuration issue detected:', diagnostics.error);
-          toast({
-            title: "OAuth Configuration Issue",
-            description: "There's a problem with the OAuth setup. Check the debug info for details.",
-            variant: "destructive"
-          });
-          setShowDebugModal(true);
-          setLoading(false);
-          return;
-        }
-      }
 
       // Construct redirect URL
       const redirectUrl = `${window.location.origin}/auth/callback`;
@@ -149,22 +122,16 @@ const GoogleOAuthButton: React.FC<GoogleOAuthButtonProps> = ({
     }
   };
 
-  const handleDebugClick = async () => {
-    logger.info('Running OAuth diagnostics...');
-    const diagnostics = await debugOAuthConfiguration();
-    setDebugInfo(diagnostics);
-    setShowDebugModal(true);
-  };
 
   return (
     <>
-      <div className="flex flex-col gap-2">
+      <div>
         <Button
           onClick={handleGoogleSignIn}
           disabled={loading}
           variant={variant}
           size={size}
-          className={`w-full ${className}`}
+          className={className}
         >
           {loading ? (
             <>
@@ -196,143 +163,8 @@ const GoogleOAuthButton: React.FC<GoogleOAuthButtonProps> = ({
           )}
         </Button>
 
-        {showDebugInfo && (
-          <Button
-            onClick={handleDebugClick}
-            variant="outline"
-            size="sm"
-            className="w-full"
-          >
-            <Settings className="w-4 h-4 mr-2" />
-            Debug OAuth Configuration
-          </Button>
-        )}
       </div>
 
-      {/* Debug Modal */}
-      <Dialog open={showDebugModal} onOpenChange={setShowDebugModal}>
-        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <AlertCircle className="w-5 h-5 text-yellow-500" />
-              Google OAuth Debug Information
-            </DialogTitle>
-            <DialogDescription>
-              Diagnostic information about the Google OAuth configuration
-            </DialogDescription>
-          </DialogHeader>
-
-          {debugInfo && (
-            <div className="space-y-4">
-              {/* Configuration Status */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">Configuration Status</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium">Supabase Client:</span>
-                      <span className={debugInfo.supabaseClient ? 'text-green-600' : 'text-red-600'}>
-                        {debugInfo.supabaseClient ? '✅ Available' : '❌ Missing'}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium">Auth Methods:</span>
-                      <span className={debugInfo.authMethods ? 'text-green-600' : 'text-red-600'}>
-                        {debugInfo.authMethods ? '✅ Available' : '❌ Missing'}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium">OAuth Method:</span>
-                      <span className={debugInfo.signInWithOAuth ? 'text-green-600' : 'text-red-600'}>
-                        {debugInfo.signInWithOAuth ? '✅ Available' : '❌ Missing'}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium">Environment:</span>
-                      <span className="text-blue-600">{debugInfo.environment}</span>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* URL Information */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">URL Configuration</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2">
-                    <div>
-                      <span className="font-medium">Current URL:</span>
-                      <p className="text-sm text-gray-600 font-mono">{debugInfo.currentUrl}</p>
-                    </div>
-                    <div>
-                      <span className="font-medium">Redirect URL:</span>
-                      <p className="text-sm text-gray-600 font-mono">{debugInfo.redirectUrl}</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Troubleshooting Guide */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">Troubleshooting Guide</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2">
-                    {getOAuthTroubleshootingGuide(debugInfo).map((line, index) => (
-                      <p key={index} className={`text-sm ${
-                        line.startsWith('❌') ? 'text-red-600' :
-                        line.startsWith('✅') ? 'text-green-600' :
-                        line.startsWith('===') ? 'font-bold text-blue-600' :
-                        line.startsWith('-') ? 'text-gray-600 ml-4' :
-                        'text-gray-800'
-                      }`}>
-                        {line}
-                      </p>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Error Information */}
-              {debugInfo.error && (
-                <Card className="border-red-200 bg-red-50">
-                  <CardHeader>
-                    <CardTitle className="text-lg text-red-800">Error Details</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-red-700 font-mono text-sm">{debugInfo.error}</p>
-                  </CardContent>
-                </Card>
-              )}
-
-              {/* Quick Actions */}
-              <div className="flex gap-2">
-                <Button
-                  onClick={() => window.open('https://supabase.com/dashboard', '_blank')}
-                  variant="outline"
-                  size="sm"
-                >
-                  <ExternalLink className="w-4 h-4 mr-2" />
-                  Open Supabase Dashboard
-                </Button>
-                <Button
-                  onClick={() => window.open('https://console.cloud.google.com/', '_blank')}
-                  variant="outline"
-                  size="sm"
-                >
-                  <ExternalLink className="w-4 h-4 mr-2" />
-                  Open Google Cloud Console
-                </Button>
-              </div>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
     </>
   );
 };

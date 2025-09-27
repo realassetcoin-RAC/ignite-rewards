@@ -10,7 +10,8 @@ import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { Plus, Edit2, Calendar, Gift, CheckCircle2 } from "lucide-react";
-import { DatePicker } from "@/components/ui/date-picker";
+import { DateTimePickerGMT } from "@/components/ui/date-time-picker-gmt";
+import { ensureGMT, formatDateGMT, validateCampaignDates, formatForAPIGMT } from "@/utils/gmtUtils";
 
 interface ReferralCampaign {
   id: string;
@@ -38,8 +39,8 @@ const ReferralCampaignManager = () => {
       description: "",
       user_to_user_points: 10,
       user_to_merchant_points: 50,
-      start_date: "",
-      end_date: "",
+      start_date: undefined as Date | undefined,
+      end_date: undefined as Date | undefined,
       is_active: true,
     },
   });
@@ -85,8 +86,8 @@ const ReferralCampaignManager = () => {
       description: "", 
       user_to_user_points: 10, 
       user_to_merchant_points: 50, 
-      start_date: "", 
-      end_date: "", 
+      start_date: undefined, 
+      end_date: undefined, 
       is_active: true 
     });
     setDialogOpen(true);
@@ -99,8 +100,8 @@ const ReferralCampaignManager = () => {
       description: campaign.description || "",
       user_to_user_points: campaign.user_to_user_points || campaign.reward_points || 10,
       user_to_merchant_points: campaign.user_to_merchant_points || (campaign.reward_points ? campaign.reward_points * 5 : 50),
-      start_date: campaign.start_date?.split('T')[0] || "",
-      end_date: campaign.end_date?.split('T')[0] || "",
+      start_date: campaign.start_date ? new Date(campaign.start_date) : undefined,
+      end_date: campaign.end_date ? new Date(campaign.end_date) : undefined,
       is_active: !!campaign.is_active,
     });
     setDialogOpen(true);
@@ -112,8 +113,10 @@ const ReferralCampaignManager = () => {
         toast({ title: 'Missing fields', description: 'Name, start and end dates are required.', variant: 'destructive' });
         return;
       }
-      if (new Date(values.end_date) < new Date(values.start_date)) {
-        toast({ title: 'Invalid dates', description: 'End date must be after start date.', variant: 'destructive' });
+      // Validate campaign dates using GMT utilities
+      const dateValidation = validateCampaignDates(values.start_date, values.end_date);
+      if (!dateValidation.isValid) {
+        toast({ title: 'Invalid dates', description: dateValidation.error, variant: 'destructive' });
         return;
       }
       
@@ -124,13 +127,17 @@ const ReferralCampaignManager = () => {
         return;
       }
 
+      // Ensure dates are in GMT timezone using utility functions
+      const startDateGMT = ensureGMT(values.start_date);
+      const endDateGMT = ensureGMT(values.end_date);
+
       const payload = {
         name: values.name.trim(),
         description: values.description?.trim() || null,
         user_to_user_points: Number(values.user_to_user_points) || 10,
         user_to_merchant_points: Number(values.user_to_merchant_points) || 50,
-        start_date: values.start_date,
-        end_date: values.end_date,
+        start_date: formatForAPIGMT(startDateGMT),
+        end_date: formatForAPIGMT(endDateGMT),
         is_active: !!values.is_active,
         ...(editing ? {} : { created_by: user.id }), // Only add created_by for new campaigns
       };
@@ -266,13 +273,13 @@ const ReferralCampaignManager = () => {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel className="flex items-center gap-2">
-                          <Calendar className="w-3 h-3" /> Start Date
+                          <Calendar className="w-3 h-3" /> Start Date (GMT)
                         </FormLabel>
                         <FormControl>
-                          <DatePicker
-                            date={field.value ? new Date(field.value) : undefined}
-                            onSelect={(date) => field.onChange(date?.toISOString().split('T')[0])}
-                            placeholder="Select start date"
+                          <DateTimePickerGMT
+                            date={field.value}
+                            onSelect={field.onChange}
+                            placeholder="Select start date and time (GMT)"
                           />
                         </FormControl>
                         <FormMessage />
@@ -285,13 +292,13 @@ const ReferralCampaignManager = () => {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel className="flex items-center gap-2">
-                          <Calendar className="w-3 h-3" /> End Date
+                          <Calendar className="w-3 h-3" /> End Date (GMT)
                         </FormLabel>
                         <FormControl>
-                          <DatePicker
-                            date={field.value ? new Date(field.value) : undefined}
-                            onSelect={(date) => field.onChange(date?.toISOString().split('T')[0])}
-                            placeholder="Select end date"
+                          <DateTimePickerGMT
+                            date={field.value}
+                            onSelect={field.onChange}
+                            placeholder="Select end date and time (GMT)"
                           />
                         </FormControl>
                         <FormMessage />
@@ -382,12 +389,12 @@ const ReferralCampaignManager = () => {
                           <div className="flex items-center gap-2 text-sm">
                             <Calendar className="w-3 h-3 text-muted-foreground" />
                             <span className="text-muted-foreground">Start:</span>
-                            <span className="font-medium">{new Date(c.start_date).toLocaleDateString()}</span>
+                            <span className="font-medium">{formatDateGMT(new Date(c.start_date))}</span>
                           </div>
                           <div className="flex items-center gap-2 text-sm">
                             <Calendar className="w-3 h-3 text-muted-foreground" />
                             <span className="text-muted-foreground">End:</span>
-                            <span className="font-medium">{new Date(c.end_date).toLocaleDateString()}</span>
+                            <span className="font-medium">{formatDateGMT(new Date(c.end_date))}</span>
                           </div>
                         </div>
                       </TableCell>

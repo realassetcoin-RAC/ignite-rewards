@@ -1,12 +1,19 @@
 # Cursor Rules for RAC Rewards Application
 
+## 📋 **Documentation References**
+- **Complete Product Features**: See `PRODUCT_FEATURES.md` for comprehensive feature specifications
+- **Development Guidelines**: See `APPLICATION_STACK.md` for technical stack and best practices
+- **Web3 Investment Flow**: See `WEB3_INVESTMENT_FLOW_IMPLEMENTATION.md` for investment system details
+
 ## Project Context
-This is a rewards application with:
+This is a Web3-native rewards and investment platform with:
 - PostgreSQL database with Supabase
-- React/TypeScript frontend
-- NFT-based loyalty system
-- Merchant subscription plans
-- User points and transactions
+- React/TypeScript frontend with Next.js
+- NFT-based loyalty system with upgradeable benefits
+- Web3 investment system for asset initiatives
+- Merchant subscription plans and custom NFT creation
+- Multi-currency support (USDT, ETH, BTC, SOL, RAC)
+- Dual user experience (custodial and non-custodial)
 
 ## Requirements Document
 

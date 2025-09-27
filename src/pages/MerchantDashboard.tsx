@@ -1,26 +1,25 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useSmartDataRefresh } from '@/hooks/useSmartDataRefresh';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { QrCode, RefreshCw, Calendar, DollarSign, Hash, CreditCard, Link as LinkIcon, Shield, Sparkles, ArrowLeft, Users, BarChart3, Receipt, Search, Edit, X, User, LogOut, Settings, FileText, Store, Vote } from 'lucide-react';
+import { QrCode, RefreshCw, Calendar, DollarSign, Hash, CreditCard, Link as LinkIcon, Shield, Sparkles, Users, BarChart3, Receipt, Search, Edit, X, User, Settings, FileText, Store, Vote, Camera } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { QrCodeGenerator } from '@/components/QrCodeGenerator';
-import MerchantTransactionProcessor from '@/components/solana/MerchantTransactionProcessor';
 import { MerchantEmailManager } from '@/components/MerchantEmailManager';
 import { MerchantPointsTracker } from '@/components/MerchantPointsTracker';
 import { DateRangeAnalytics } from '@/components/DateRangeAnalytics';
+import { MerchantCustomNFT } from '@/components/MerchantCustomNFT';
 import { EnhancedDatePicker } from '@/components/ui/enhanced-date-picker';
 import { format } from 'date-fns';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
+import ProfileDropdown from '@/components/ProfileDropdown';
 
 interface Transaction {
   id: string;
@@ -65,6 +64,7 @@ const MerchantDashboard = () => {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [merchant, setMerchant] = useState<MerchantData | null>(null);
   const [userProfile, setUserProfile] = useState<any>(null);
+  const [userAvatar, setUserAvatar] = useState<string>('https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&h=150&fit=crop&crop=face&auto=format&q=80');
   const [loading, setLoading] = useState(true);
   const [authLoading, setAuthLoading] = useState(true);
   const [showQrGenerator, setShowQrGenerator] = useState(false);
@@ -223,6 +223,7 @@ const MerchantDashboard = () => {
           // For testing: Create a mock merchant data for admin
           const mockMerchant = {
             id: 'admin-test-merchant',
+            user_id: user.id,
             name: 'Admin Test Merchant',
             description: 'Admin Test Merchant Business',
             status: 'active',
@@ -243,6 +244,7 @@ const MerchantDashboard = () => {
           console.log('Force admin access - user has admin role');
           const mockMerchant = {
             id: 'admin-test-merchant',
+            user_id: user.id,
             name: 'Admin Test Merchant',
             description: 'Admin Test Merchant Business',
             status: 'active',
@@ -383,6 +385,14 @@ const MerchantDashboard = () => {
     }
   };
 
+  const handleAvatarChange = (newAvatarUrl: string) => {
+    setUserAvatar(newAvatarUrl);
+    toast({
+      title: "Avatar Updated",
+      description: "Your avatar has been successfully updated.",
+    });
+  };
+
   const loadTransactions = async () => {
     try {
       setLoading(true);
@@ -455,7 +465,7 @@ const MerchantDashboard = () => {
     setShowEditDialog(true);
   };
 
-  const handleCancelTransaction = (transaction: Transaction) => {
+  const handleCancelTransaction = () => {
     // TODO: Implement transaction cancellation functionality
     toast({
       title: "Cancel Transaction",
@@ -530,7 +540,7 @@ const MerchantDashboard = () => {
       setEditForm({
         transaction_amount: editingTransaction.transaction_amount.toString(),
         transaction_reference: editingTransaction.transaction_reference || '',
-        transaction_date: editingTransaction.transaction_date.split('T')[0], // Format for date input
+        transaction_date: editingTransaction.transaction_date?.split('T')[0] || '', // Format for date input
         name: editingTransaction.user_loyalty_cards?.full_name || '',
         comments: '' // Comments field would need to be added to Transaction interface
       });
@@ -722,75 +732,55 @@ const MerchantDashboard = () => {
               </Badge>
             </div>
             <div className="flex items-center space-x-3">
-              {/* User Menu */}
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    className={`group bg-background/60 backdrop-blur-md hover:bg-background/80 border-primary/30 hover:border-primary/50 transform hover:scale-105 transition-all duration-300 ${
-                      isLoaded ? 'animate-fade-in-up animation-delay-300' : 'opacity-0'
-                    }`}
-                  >
-                    <User className="mr-2 h-4 w-4" />
-                    {userProfile?.full_name || 'User'}
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56">
-                  <DropdownMenuLabel>
-                    <div className="flex flex-col space-y-1">
-                      <p className="text-sm font-medium leading-none">
-                        {userProfile?.full_name || 'Admin User'}
-                      </p>
-                      <p className="text-xs leading-none text-muted-foreground">
-                        {userProfile?.email || 'admin@igniterewards.com'}
-                      </p>
-                    </div>
-                  </DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem asChild>
-                    <Link to="/user" className="flex items-center">
-                      <User className="mr-2 h-4 w-4" />
-                      My Dashboard
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link to="/marketplace" className="flex items-center">
-                      <FileText className="mr-2 h-4 w-4" />
-                      Marketplace
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link to="/user" className="flex items-center">
-                      <User className="mr-2 h-4 w-4" />
-                      User Dashboard
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link to="/merchant" className="flex items-center">
-                      <Store className="mr-2 h-4 w-4" />
-                      Merchant Dashboard
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link to="/admin-panel" className="flex items-center">
-                      <Settings className="mr-2 h-4 w-4" />
-                      Admin Panel
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link to="/dao" className="flex items-center">
-                      <Vote className="mr-2 h-4 w-4" />
-                      DAO Voting
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={handleSignOut} className="text-red-600 focus:text-red-600">
-                    <LogOut className="mr-2 h-4 w-4" />
-                    Sign out
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+              {/* Enhanced Profile Dropdown */}
+              <ProfileDropdown 
+                data={{
+                  name: userProfile?.full_name || 'Admin User',
+                  email: userProfile?.email || 'admin@igniterewards.com',
+                  avatar: userAvatar,
+                  subscription: userProfile?.role === 'admin' ? 'ADMIN' : userProfile?.role === 'merchant' ? 'MERCHANT' : 'USER',
+                  model: 'RAC Rewards'
+                }}
+                onSignOut={handleSignOut}
+                onAvatarChange={handleAvatarChange}
+                menuItems={[
+                  {
+                    label: "My Dashboard",
+                    href: "/user",
+                    icon: <User className="w-4 h-4" />
+                  },
+                  {
+                    label: "Change Avatar",
+                    href: "#",
+                    icon: <Camera className="w-4 h-4" />
+                  },
+                  {
+                    label: "Marketplace",
+                    href: "/marketplace",
+                    icon: <FileText className="w-4 h-4" />
+                  },
+                  {
+                    label: "User Dashboard",
+                    href: "/user",
+                    icon: <User className="w-4 h-4" />
+                  },
+                  {
+                    label: "Merchant Dashboard",
+                    href: "/merchant",
+                    icon: <Store className="w-4 h-4" />
+                  },
+                  {
+                    label: "Admin Panel",
+                    href: "/admin-panel",
+                    icon: <Settings className="w-4 h-4" />
+                  },
+                  {
+                    label: "DAO Voting",
+                    href: "/dao",
+                    icon: <Vote className="w-4 h-4" />
+                  }
+                ]}
+              />
             </div>
           </div>
         </div>
@@ -838,7 +828,7 @@ const MerchantDashboard = () => {
           isLoaded ? 'animate-fade-in-up animation-delay-600' : 'opacity-0'
         }`}>
           <div className="w-full bg-background/60 backdrop-blur-md border border-primary/20 rounded-lg p-1">
-            <div className="grid grid-cols-4 gap-1">
+            <div className="grid grid-cols-5 gap-1">
               <button
                 onClick={() => setActiveTab('overview')}
                 className={`flex items-center justify-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
@@ -871,6 +861,17 @@ const MerchantDashboard = () => {
               >
                 <Users className="h-4 w-4" />
                 <span className="hidden sm:inline">Analytics</span>
+              </button>
+              <button
+                onClick={() => setActiveTab('custom-nft')}
+                className={`flex items-center justify-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
+                  activeTab === 'custom-nft'
+                    ? 'bg-gradient-to-r from-primary to-purple-500 text-white shadow-sm'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-foreground/5'
+                }`}
+              >
+                <Sparkles className="h-4 w-4" />
+                <span className="hidden sm:inline">Custom NFTs</span>
               </button>
               <button
                 onClick={() => setActiveTab('settings')}
@@ -1080,7 +1081,7 @@ const MerchantDashboard = () => {
                     <div 
                       className="bg-gray-800 h-2 rounded-full transition-all duration-300"
                       style={{ 
-                        width: `${Math.min((getCurrentMonthTransactions() / getTransactionLimit()) * 100, 100)}%` 
+                        width: `${Math.min((getCurrentMonthTransactions() / (getTransactionLimit() || 1)) * 100, 100)}%` 
                       }}
                     ></div>
                   </div>
@@ -1127,7 +1128,7 @@ const MerchantDashboard = () => {
         {merchant && (
           <DateRangeAnalytics 
             merchantId={merchant.id} 
-            currencySymbol={merchant.currency_symbol}
+            currencySymbol={merchant.currency_symbol || '$'}
           />
         )}
 
@@ -1275,7 +1276,7 @@ const MerchantDashboard = () => {
                       <label className="text-xs text-muted-foreground">Date From</label>
                       <div className="mt-1">
                         <EnhancedDatePicker
-                          date={searchFilters.dateFrom || undefined}
+                          {...(searchFilters.dateFrom && { date: searchFilters.dateFrom })}
                           onSelect={(date) => setSearchFilters(prev => ({ ...prev, dateFrom: date }))}
                           placeholder="Select start date"
                           className="w-full"
@@ -1287,7 +1288,7 @@ const MerchantDashboard = () => {
                       <label className="text-xs text-muted-foreground">Date To</label>
                       <div className="mt-1">
                         <EnhancedDatePicker
-                          date={searchFilters.dateTo || undefined}
+                          {...(searchFilters.dateTo && { date: searchFilters.dateTo })}
                           onSelect={(date) => setSearchFilters(prev => ({ ...prev, dateTo: date }))}
                           placeholder="Select end date"
                           className="w-full"
@@ -1420,7 +1421,7 @@ const MerchantDashboard = () => {
                             <Button
                               variant="outline"
                               size="sm"
-                              onClick={() => handleCancelTransaction(transaction)}
+                              onClick={() => handleCancelTransaction()}
                               className="text-xs text-red-500 border-red-500/20 hover:bg-red-500/10"
                             >
                               <X className="w-3 h-3 mr-1" />
@@ -1481,24 +1482,50 @@ const MerchantDashboard = () => {
                 </div>
               </CardContent>
             </Card>
+            
+            {/* Monthly Points Tracking */}
+            {merchant && (
+              <MerchantPointsTracker 
+                merchantId={merchant.id} 
+                subscriptionPlan={merchant.subscription_plan ? (() => {
+                  const plan: { name: string; monthly_points_cap?: number } = { name: merchant.subscription_plan.name };
+                  if (merchant.subscription_plan.monthly_points_cap !== undefined) {
+                    plan.monthly_points_cap = merchant.subscription_plan.monthly_points_cap;
+                  }
+                  return plan;
+                })() : null}
+              />
+            )}
+            </div>
+          )}
+
+          {/* Custom NFT Tab */}
+          {activeTab === 'custom-nft' && (
+            <div className="space-y-6">
+              {merchant && (
+                <MerchantCustomNFT
+                  merchantId={merchant.id}
+                  subscriptionPlan={merchant.subscription_plan}
+                />
+              )}
             </div>
           )}
 
           {/* Settings Tab */}
           {activeTab === 'settings' && (
             <div className="space-y-6">
-              {/* Email Management and Points Tracking */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Email Management */}
+              <div className="grid grid-cols-1 lg:grid-cols-1 gap-6">
                 {merchant && (
                   <MerchantEmailManager 
                     merchantId={merchant.id} 
-                    subscriptionPlan={merchant.subscription_plan}
-                  />
-                )}
-                {merchant && (
-                  <MerchantPointsTracker 
-                    merchantId={merchant.id} 
-                    subscriptionPlan={merchant.subscription_plan}
+                    subscriptionPlan={merchant.subscription_plan ? (() => {
+                      const plan: { name: string; email_limit?: number } = { name: merchant.subscription_plan.name };
+                      if (merchant.subscription_plan.email_limit !== undefined) {
+                        plan.email_limit = merchant.subscription_plan.email_limit;
+                      }
+                      return plan;
+                    })() : null}
                   />
                 )}
               </div>

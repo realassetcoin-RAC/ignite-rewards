@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Wallet, Gift } from "lucide-react";
+import { Loader2, Wallet, Gift, Key } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { useSecureAuth } from "@/hooks/useSecureAuth";
@@ -18,6 +18,7 @@ import { useTermsPrivacy } from "@/hooks/useTermsPrivacy";
 import { createModuleLogger } from "@/utils/consoleReplacer";
 import { ReferralService } from "@/lib/referralService";
 import GoogleOAuthButton from "@/components/GoogleOAuthButton";
+import { SeedPhraseLoginModal } from "@/components/SeedPhraseLoginModal";
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -39,6 +40,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
   const [activeTab, setActiveTab] = useState('signin');
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [acceptedPrivacy, setAcceptedPrivacy] = useState(false);
+  const [showSeedPhraseLogin, setShowSeedPhraseLogin] = useState(false);
   
   // Hooks
   const { toast } = useToast();
@@ -404,10 +406,20 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                       }}
                       className="w-full h-11 sm:h-12 border-primary/40 text-primary bg-primary/10 hover:bg-primary/20 backdrop-blur-sm transition-smooth"
                       variant="outline"
-                      showDebugInfo={true}
                     >
                       <span className="text-sm sm:text-base">Continue with Google</span>
                     </GoogleOAuthButton>
+                    
+                    <Button 
+                      type="button"
+                      variant="outline"
+                      className="w-full h-11 sm:h-12 border-primary/40 text-primary bg-primary/10 hover:bg-primary/20 backdrop-blur-sm transition-smooth"
+                      onClick={() => setShowSeedPhraseLogin(true)}
+                    >
+                      <Key className="mr-2 h-4 w-4" />
+                      <span className="text-sm sm:text-base">Login with Seed Phrase</span>
+                    </Button>
+                    
                     <Button 
                       type="button"
                       variant="outline"
@@ -514,10 +526,20 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                       }}
                       className="w-full h-11 sm:h-12 border-primary/40 text-primary bg-primary/10 hover:bg-primary/20 backdrop-blur-sm transition-smooth"
                       variant="outline"
-                      showDebugInfo={true}
                     >
                       <span className="text-sm sm:text-base">Continue with Google</span>
                     </GoogleOAuthButton>
+                    
+                    <Button 
+                      type="button"
+                      variant="outline"
+                      className="w-full h-11 sm:h-12 border-primary/40 text-primary bg-primary/10 hover:bg-primary/20 backdrop-blur-sm transition-smooth"
+                      onClick={() => setShowSeedPhraseLogin(true)}
+                    >
+                      <Key className="mr-2 h-4 w-4" />
+                      <span className="text-sm sm:text-base">Login with Seed Phrase</span>
+                    </Button>
+                    
                     <Button 
                       type="button"
                       variant="outline"
@@ -652,6 +674,16 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
       isOpen={showWalletSelector}
       onClose={() => setShowWalletSelector(false)}
       onWalletConnected={handleWalletConnected}
+    />
+    
+    {/* Seed Phrase Login Modal */}
+    <SeedPhraseLoginModal
+      isOpen={showSeedPhraseLogin}
+      onClose={() => setShowSeedPhraseLogin(false)}
+      onSuccess={() => {
+        onClose();
+        setShowSeedPhraseLogin(false);
+      }}
     />
     </>
   );
