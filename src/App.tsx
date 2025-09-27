@@ -34,6 +34,7 @@ import ExclusiveBenefitsPage from "./pages/ExclusiveBenefitsPage";
 import UserDAODashboard from "./pages/UserDAODashboard";
 import TestPage from "./pages/TestPage";
 import Marketplace from "./pages/Marketplace";
+import AuthPopupTest from "./pages/AuthPopupTest";
 import { useSessionPersistence } from "./hooks/useSessionPersistence";
 import { useInactivityLogout } from "./hooks/useInactivityLogout";
 import { BackgroundJobService } from "./lib/backgroundJobs";
@@ -211,6 +212,7 @@ const App = () => {
             <Route path="/dao-governance" element={<Navigate to="/dao-voting" replace />} />
             <Route path="/marketplace" element={<Marketplace />} />
             <Route path="/test" element={<TestPage />} />
+            <Route path="/auth-popup-test" element={<AuthPopupTest />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
