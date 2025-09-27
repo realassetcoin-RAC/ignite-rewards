@@ -24,7 +24,8 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useSecureAuth } from "@/hooks/useSecureAuth";
-import AuthModal from "@/components/AuthModal";
+import LoginPopup from "@/components/LoginPopup";
+import SignupPopup from "@/components/SignupPopup";
 
 interface FloatingMenubarProps {
   className?: string;
@@ -33,7 +34,8 @@ interface FloatingMenubarProps {
 const FloatingMenubar: React.FC<FloatingMenubarProps> = ({ className }) => {
   const location = useLocation();
   const [isOpen, setIsOpen] = React.useState(false);
-  const [authModalOpen, setAuthModalOpen] = React.useState(false);
+  const [loginModalOpen, setLoginModalOpen] = React.useState(false);
+  const [signupModalOpen, setSignupModalOpen] = React.useState(false);
   const { user, profile, isAdmin, signOut } = useSecureAuth();
 
   const handleSignOut = async () => {
@@ -145,7 +147,7 @@ const FloatingMenubar: React.FC<FloatingMenubarProps> = ({ className }) => {
                   </MenubarItem>
                 </>
               ) : (
-                <MenubarItem onClick={() => setAuthModalOpen(true)} className="cursor-pointer">
+                <MenubarItem onClick={() => setLoginModalOpen(true)} className="cursor-pointer">
                   <LogIn className="h-4 w-4 mr-2" />
                   Sign In
                 </MenubarItem>
@@ -167,7 +169,7 @@ const FloatingMenubar: React.FC<FloatingMenubarProps> = ({ className }) => {
               variant="outline" 
               size="sm" 
               className="border-white/20 text-white bg-white/10 hover:bg-white/20"
-              onClick={() => setAuthModalOpen(true)}
+              onClick={() => setLoginModalOpen(true)}
             >
               <LogIn className="h-4 w-4 mr-2" />
               Sign In
@@ -227,7 +229,7 @@ const FloatingMenubar: React.FC<FloatingMenubarProps> = ({ className }) => {
                 <button
                   onClick={() => {
                     setIsOpen(false);
-                    setAuthModalOpen(true);
+                    setLoginModalOpen(true);
                   }}
                   className="flex items-center gap-2 px-3 py-2 rounded-md text-white hover:bg-white/20 transition-colors w-full text-left"
                 >
@@ -241,7 +243,22 @@ const FloatingMenubar: React.FC<FloatingMenubarProps> = ({ className }) => {
       </div>
       
       {/* Auth Modal */}
-      <AuthModal isOpen={authModalOpen} onClose={() => setAuthModalOpen(false)} />
+      <LoginPopup 
+        isOpen={loginModalOpen} 
+        onClose={() => setLoginModalOpen(false)}
+        onSwitchToSignup={() => {
+          setLoginModalOpen(false);
+          setSignupModalOpen(true);
+        }}
+      />
+      <SignupPopup 
+        isOpen={signupModalOpen} 
+        onClose={() => setSignupModalOpen(false)}
+        onSwitchToLogin={() => {
+          setSignupModalOpen(false);
+          setLoginModalOpen(true);
+        }}
+      />
     </div>
   );
 };
