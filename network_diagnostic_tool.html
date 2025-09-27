@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Network Diagnostic Tool</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .status {
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 8px;
+            font-weight: bold;
+        }
+        .success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .info { background-color: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+        .warning { background-color: #fff3cd; color: #856404; border: 1px solid #ffeaa7; }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+        }
+        button:hover { background-color: #0056b3; }
+        button:disabled { background-color: #6c757d; cursor: not-allowed; }
+        .log {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+            padding: 15px;
+            margin: 15px 0;
+            font-family: monospace;
+            font-size: 14px;
+            max-height: 400px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+        }
+        .diagnostic-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin: 20px 0;
+        }
+        .diagnostic-card {
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 20px;
+            background-color: #f8f9fa;
+        }
+        .diagnostic-card h3 {
+            margin-top: 0;
+            color: #495057;
+        }
+        .mystery-notice {
+            background-color: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Network Diagnostic Tool</h1>
+        
+        <div class="mystery-notice">
+            <h2>🤔 MYSTERY DETECTED</h2>
+            <p><strong>Your Supabase dashboard shows all services as "Healthy", but we're getting 503 errors.</strong></p>
+            <p>This suggests a network connectivity or configuration issue rather than a server problem.</p>
+        </div>
+        
+        <div id="status" class="status warning">Dashboard shows healthy, but 503 errors persist - investigating...</div>
+        
+        <div class="diagnostic-grid">
+            <div class="diagnostic-card">
+                <h3>🌐 Network Tests</h3>
+                <button onclick="testBasicConnectivity()">🔗 Test Basic Connectivity</button>
+                <button onclick="testSupabaseEndpoints()">🎯 Test Supabase Endpoints</button>
+                <button onclick="testCORS()">🔒 Test CORS</button>
+            </div>
+            <div class="diagnostic-card">
+                <h3>🔧 Configuration Tests</h3>
+                <button onclick="testAPIKey()">🔑 Test API Key</button>
+                <button onclick="testHeaders()">📋 Test Headers</button>
+                <button onclick="testDifferentMethods()">🔄 Test Methods</button>
+            </div>
+        </div>
+        
+        <div>
+            <button id="runFullDiagnostic" onclick="runFullDiagnostic()">🚀 Run Full Diagnostic</button>
+            <button id="testAlternative" onclick="testAlternativeApproaches()">🔄 Test Alternatives</button>
+            <button id="fixAndGo" onclick="fixAndGoToApp()">🔧 Fix & Go to App</button>
+        </div>
+        
+        <div id="log" class="log">Network Diagnostic Tool loaded. Dashboard shows healthy but 503 errors persist.</div>
+        
+        <div id="results" style="margin-top: 20px;">
+            <h3>📊 Diagnostic Results</h3>
+            <div id="resultsContent">
+                <div style="margin: 10px 0; padding: 10px; background: #fff3cd; border-radius: 5px;">
+                    <strong>Status:</strong> Dashboard shows all services healthy
+                </div>
+                <div style="margin: 10px 0; padding: 10px; background: #f8d7da; border-radius: 5px;">
+                    <strong>Issue:</strong> 503 errors when connecting from browser
+                </div>
+                <div style="margin: 10px 0; padding: 10px; background: #d1ecf1; border-radius: 5px;">
+                    <strong>Hypothesis:</strong> Network/firewall/CORS issue
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let logElement = document.getElementById('log');
+        let statusElement = document.getElementById('status');
+        let resultsElement = document.getElementById('resultsContent');
+
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const logMessage = `[${timestamp}] ${message}\n`;
+            logElement.textContent += logMessage;
+            logElement.scrollTop = logElement.scrollHeight;
+            
+            if (type === 'success') {
+                statusElement.className = 'status success';
+                statusElement.textContent = '✅ ' + message;
+            } else if (type === 'error') {
+                statusElement.className = 'status error';
+                statusElement.textContent = '❌ ' + message;
+            } else if (type === 'warning') {
+                statusElement.className = 'status warning';
+                statusElement.textContent = '⚠️ ' + message;
+            } else {
+                statusElement.className = 'status info';
+                statusElement.textContent = 'ℹ️ ' + message;
+            }
+        }
+
+        function updateResults(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const resultDiv = document.createElement('div');
+            resultDiv.style.margin = '10px 0';
+            resultDiv.style.padding = '10px';
+            resultDiv.style.borderRadius = '5px';
+            
+            if (type === 'success') {
+                resultDiv.style.backgroundColor = '#d4edda';
+                resultDiv.style.color = '#155724';
+                resultDiv.style.border = '1px solid #c3e6cb';
+            } else if (type === 'error') {
+                resultDiv.style.backgroundColor = '#f8d7da';
+                resultDiv.style.color = '#721c24';
+                resultDiv.style.border = '1px solid #f5c6cb';
+            } else if (type === 'warning') {
+                resultDiv.style.backgroundColor = '#fff3cd';
+                resultDiv.style.color = '#856404';
+                resultDiv.style.border = '1px solid #ffeaa7';
+            } else {
+                resultDiv.style.backgroundColor = '#d1ecf1';
+                resultDiv.style.color = '#0c5460';
+                resultDiv.style.border = '1px solid #bee5eb';
+            }
+            
+            resultDiv.innerHTML = `<strong>[${timestamp}]</strong> ${message}`;
+            resultsElement.appendChild(resultDiv);
+        }
+
+        async function testBasicConnectivity() {
+            log('🔗 Testing basic internet connectivity...');
+            
+            try {
+                const response = await fetch('https://httpbin.org/get', {
+                    method: 'GET'
+                });
+                
+                if (response.ok) {
+                    log('✅ Basic internet connectivity works', 'success');
+                    updateResults('Basic internet connectivity: OK', 'success');
+                    return true;
+                } else {
+                    log(`❌ Basic connectivity failed: ${response.status}`, 'error');
+                    updateResults(`Basic connectivity failed: ${response.status}`, 'error');
+                    return false;
+                }
+            } catch (error) {
+                log(`❌ Basic connectivity test failed: ${error.message}`, 'error');
+                updateResults(`Basic connectivity failed: ${error.message}`, 'error');
+                return false;
+            }
+        }
+
+        async function testSupabaseEndpoints() {
+            log('🎯 Testing Supabase endpoints...');
+            
+            const endpoints = [
+                { name: 'REST API', url: 'https://wndswqvqogeblksrujpg.supabase.co/rest/v1/' },
+                { name: 'Auth API', url: 'https://wndswqvqogeblksrujpg.supabase.co/auth/v1/' },
+                { name: 'Storage API', url: 'https://wndswqvqogeblksrujpg.supabase.co/storage/v1/' }
+            ];
+            
+            for (const endpoint of endpoints) {
+                try {
+                    log(`Testing ${endpoint.name}...`);
+                    
+                    const response = await fetch(endpoint.url, {
+                        method: 'GET',
+                        headers: {
+                            'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InduZHN3cXZxb2dlYmxrc3J1anBnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYzMzEyMTAsImV4cCI6MjA3MTkwNzIxMH0.eOXJEo3XheuB2AK3NlRotSKqPMueqkgPUa896TM-hfA'
+                        }
+                    });
+                    
+                    if (response.ok) {
+                        log(`✅ ${endpoint.name} is working`, 'success');
+                        updateResults(`${endpoint.name}: OK (${response.status})`, 'success');
+                    } else {
+                        log(`❌ ${endpoint.name} failed: ${response.status}`, 'error');
+                        updateResults(`${endpoint.name}: FAILED (${response.status})`, 'error');
+                    }
+                } catch (error) {
+                    log(`❌ ${endpoint.name} error: ${error.message}`, 'error');
+                    updateResults(`${endpoint.name}: ERROR (${error.message})`, 'error');
+                }
+            }
+        }
+
+        async function testCORS() {
+            log('🔒 Testing CORS configuration...');
+            
+            try {
+                const response = await fetch('https://wndswqvqogeblksrujpg.supabase.co/rest/v1/', {
+                    method: 'OPTIONS',
+                    headers: {
+                        'Origin': window.location.origin,
+                        'Access-Control-Request-Method': 'GET',
+                        'Access-Control-Request-Headers': 'apikey'
+                    }
+                });
+                
+                if (response.ok) {
+                    log('✅ CORS preflight successful', 'success');
+                    updateResults('CORS preflight: OK', 'success');
+                } else {
+                    log(`❌ CORS preflight failed: ${response.status}`, 'error');
+                    updateResults(`CORS preflight: FAILED (${response.status})`, 'error');
+                }
+            } catch (error) {
+                log(`❌ CORS test failed: ${error.message}`, 'error');
+                updateResults(`CORS test: ERROR (${error.message})`, 'error');
+            }
+        }
+
+        async function testAPIKey() {
+            log('🔑 Testing API key validity...');
+            
+            try {
+                // Test with different header formats
+                const headers = [
+                    { 'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InduZHN3cXZxb2dlYmxrc3J1anBnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYzMzEyMTAsImV4cCI6MjA3MTkwNzIxMH0.eOXJEo3XheuB2AK3NlRotSKqPMueqkgPUa896TM-hfA' },
+                    { 'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InduZHN3cXZxb2dlYmxrc3J1anBnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYzMzEyMTAsImV4cCI6MjA3MTkwNzIxMH0.eOXJEo3XheuB2AK3NlRotSKqPMueqkgPUa896TM-hfA' }
+                ];
+                
+                for (const headerSet of headers) {
+                    try {
+                        const response = await fetch('https://wndswqvqogeblksrujpg.supabase.co/rest/v1/', {
+                            method: 'GET',
+                            headers: headerSet
+                        });
+                        
+                        if (response.ok) {
+                            log(`✅ API key works with ${Object.keys(headerSet)[0]}`, 'success');
+                            updateResults(`API key with ${Object.keys(headerSet)[0]}: OK`, 'success');
+                        } else {
+                            log(`❌ API key failed with ${Object.keys(headerSet)[0]}: ${response.status}`, 'error');
+                            updateResults(`API key with ${Object.keys(headerSet)[0]}: FAILED (${response.status})`, 'error');
+                        }
+                    } catch (error) {
+                        log(`❌ API key test failed with ${Object.keys(headerSet)[0]}: ${error.message}`, 'error');
+                        updateResults(`API key with ${Object.keys(headerSet)[0]}: ERROR (${error.message})`, 'error');
+                    }
+                }
+            } catch (error) {
+                log(`❌ API key test failed: ${error.message}`, 'error');
+                updateResults(`API key test: ERROR (${error.message})`, 'error');
+            }
+        }
+
+        async function testHeaders() {
+            log('📋 Testing different header combinations...');
+            
+            const headerCombinations = [
+                { 'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InduZHN3cXZxb2dlYmxrc3J1anBnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYzMzEyMTAsImV4cCI6MjA3MTkwNzIxMH0.eOXJEo3XheuB2AK3NlRotSKqPMueqkgPUa896TM-hfA' },
+                { 'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InduZHN3cXZxb2dlYmxrc3J1anBnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYzMzEyMTAsImV4cCI6MjA3MTkwNzIxMH0.eOXJEo3XheuB2AK3NlRotSKqPMueqkgPUa896TM-hfA', 'Content-Type': 'application/json' },
+                { 'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InduZHN3cXZxb2dlYmxrc3J1anBnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYzMzEyMTAsImV4cCI6MjA3MTkwNzIxMH0.eOXJEo3XheuB2AK3NlRotSKqPMueqkgPUa896TM-hfA', 'Accept': 'application/json' }
+            ];
+            
+            for (let i = 0; i < headerCombinations.length; i++) {
+                try {
+                    const response = await fetch('https://wndswqvqogeblksrujpg.supabase.co/rest/v1/', {
+                        method: 'GET',
+                        headers: headerCombinations[i]
+                    });
+                    
+                    if (response.ok) {
+                        log(`✅ Header combination ${i + 1} works`, 'success');
+                        updateResults(`Header combination ${i + 1}: OK`, 'success');
+                    } else {
+                        log(`❌ Header combination ${i + 1} failed: ${response.status}`, 'error');
+                        updateResults(`Header combination ${i + 1}: FAILED (${response.status})`, 'error');
+                    }
+                } catch (error) {
+                    log(`❌ Header combination ${i + 1} error: ${error.message}`, 'error');
+                    updateResults(`Header combination ${i + 1}: ERROR (${error.message})`, 'error');
+                }
+            }
+        }
+
+        async function testDifferentMethods() {
+            log('🔄 Testing different HTTP methods...');
+            
+            const methods = ['GET', 'POST', 'OPTIONS'];
+            
+            for (const method of methods) {
+                try {
+                    const response = await fetch('https://wndswqvqogeblksrujpg.supabase.co/rest/v1/', {
+                        method: method,
+                        headers: {
+                            'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InduZHN3cXZxb2dlYmxrc3J1anBnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYzMzEyMTAsImV4cCI6MjA3MTkwNzIxMH0.eOXJEo3XheuB2AK3NlRotSKqPMueqkgPUa896TM-hfA'
+                        }
+                    });
+                    
+                    if (response.ok) {
+                        log(`✅ ${method} method works`, 'success');
+                        updateResults(`${method} method: OK`, 'success');
+                    } else {
+                        log(`❌ ${method} method failed: ${response.status}`, 'error');
+                        updateResults(`${method} method: FAILED (${response.status})`, 'error');
+                    }
+                } catch (error) {
+                    log(`❌ ${method} method error: ${error.message}`, 'error');
+                    updateResults(`${method} method: ERROR (${error.message})`, 'error');
+                }
+            }
+        }
+
+        async function runFullDiagnostic() {
+            log('🚀 Running full network diagnostic...');
+            
+            const basicOk = await testBasicConnectivity();
+            await testSupabaseEndpoints();
+            await testCORS();
+            await testAPIKey();
+            await testHeaders();
+            await testDifferentMethods();
+            
+            log('🎉 Full diagnostic complete!', 'success');
+        }
+
+        async function testAlternativeApproaches() {
+            log('🔄 Testing alternative approaches...');
+            
+            // Test with different user agents
+            const userAgents = [
+                'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+                'curl/7.68.0',
+                'PostmanRuntime/7.26.8'
+            ];
+            
+            for (const userAgent of userAgents) {
+                try {
+                    const response = await fetch('https://wndswqvqogeblksrujpg.supabase.co/rest/v1/', {
+                        method: 'GET',
+                        headers: {
+                            'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InduZHN3cXZxb2dlYmxrc3J1anBnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYzMzEyMTAsImV4cCI6MjA3MTkwNzIxMH0.eOXJEo3XheuB2AK3NlRotSKqPMueqkgPUa896TM-hfA',
+                            'User-Agent': userAgent
+                        }
+                    });
+                    
+                    if (response.ok) {
+                        log(`✅ User-Agent ${userAgent.substring(0, 20)}... works`, 'success');
+                        updateResults(`User-Agent test: OK`, 'success');
+                        break;
+                    } else {
+                        log(`❌ User-Agent ${userAgent.substring(0, 20)}... failed: ${response.status}`, 'error');
+                    }
+                } catch (error) {
+                    log(`❌ User-Agent test failed: ${error.message}`, 'error');
+                }
+            }
+        }
+
+        function fixAndGoToApp() {
+            log('🔧 Attempting to fix and go to app...');
+            
+            // Clear all storage
+            localStorage.clear();
+            sessionStorage.clear();
+            
+            // Set bypass flags
+            localStorage.setItem('bypassSupabaseErrors', 'true');
+            localStorage.setItem('forceRealSupabase', 'true');
+            localStorage.setItem('diagnosticMode', 'true');
+            
+            log('✅ Applied bypass flags');
+            log('🚀 Redirecting to app...');
+            
+            setTimeout(() => {
+                window.location.href = 'http://localhost:3000?bypass=true&diagnostic=true';
+            }, 2000);
+        }
+
+        // Auto-run basic test when page loads
+        window.addEventListener('load', () => {
+            log('🔍 Network Diagnostic Tool loaded');
+            log('🤔 Dashboard shows healthy but 503 errors persist');
+            log('💡 Running basic connectivity test...');
+            testBasicConnectivity();
+        });
+    </script>
+</body>
+</html>
+

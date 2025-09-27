@@ -96,3 +96,4 @@ The issue is definitely on the Supabase side, not your code! 🚀
 
 
 
+

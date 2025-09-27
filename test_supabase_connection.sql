@@ -84,3 +84,4 @@ SELECT '✅ Supabase connection test completed!' as status;
 
 
 
+

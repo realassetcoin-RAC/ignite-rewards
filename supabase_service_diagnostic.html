@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Supabase Service Diagnostic</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .status {
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 8px;
+            font-weight: bold;
+        }
+        .success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .info { background-color: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+        .warning { background-color: #fff3cd; color: #856404; border: 1px solid #ffeaa7; }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+        }
+        button:hover { background-color: #0056b3; }
+        button:disabled { background-color: #6c757d; cursor: not-allowed; }
+        .log {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+            padding: 15px;
+            margin: 15px 0;
+            font-family: monospace;
+            font-size: 14px;
+            max-height: 400px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+        }
+        .diagnostic-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin: 20px 0;
+        }
+        .diagnostic-card {
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 20px;
+            background-color: #f8f9fa;
+        }
+        .diagnostic-card h3 {
+            margin-top: 0;
+            color: #495057;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Supabase Service Diagnostic</h1>
+        <p>This tool will diagnose the Supabase service status and provide solutions for connection issues.</p>
+        
+        <div id="status" class="status info">Ready to run diagnostics...</div>
+        
+        <div>
+            <button id="runDiagnostic" onclick="runFullDiagnostic()">🔍 Run Full Diagnostic</button>
+            <button id="checkServiceStatus" onclick="checkServiceStatus()">🌐 Check Service Status</button>
+            <button id="testAlternative" onclick="testAlternativeConnection()">🔄 Test Alternative Connection</button>
+            <button id="clearAll" onclick="clearAllData()">🧹 Clear All Data</button>
+        </div>
+        
+        <div class="diagnostic-grid">
+            <div class="diagnostic-card">
+                <h3>📊 Service Status</h3>
+                <div id="serviceStatus">Not checked</div>
+            </div>
+            <div class="diagnostic-card">
+                <h3>🔗 Connection Test</h3>
+                <div id="connectionStatus">Not tested</div>
+            </div>
+            <div class="diagnostic-card">
+                <h3>🔐 Authentication Test</h3>
+                <div id="authStatus">Not tested</div>
+            </div>
+            <div class="diagnostic-card">
+                <h3>💾 Local Storage</h3>
+                <div id="storageStatus">Not checked</div>
+            </div>
+        </div>
+        
+        <div id="log" class="log">Click "Run Full Diagnostic" to start...</div>
+        
+        <div id="recommendations" style="margin-top: 20px;">
+            <h3>💡 Recommendations</h3>
+            <div id="recommendationsContent">Run diagnostics first to get recommendations.</div>
+        </div>
+    </div>
+
+    <script>
+        let logElement = document.getElementById('log');
+        let statusElement = document.getElementById('status');
+        let serviceStatusElement = document.getElementById('serviceStatus');
+        let connectionStatusElement = document.getElementById('connectionStatus');
+        let authStatusElement = document.getElementById('authStatus');
+        let storageStatusElement = document.getElementById('storageStatus');
+        let recommendationsElement = document.getElementById('recommendationsContent');
+
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const logMessage = `[${timestamp}] ${message}\n`;
+            logElement.textContent += logMessage;
+            logElement.scrollTop = logElement.scrollHeight;
+            
+            // Update status
+            if (type === 'success') {
+                statusElement.className = 'status success';
+                statusElement.textContent = '✅ ' + message;
+            } else if (type === 'error') {
+                statusElement.className = 'status error';
+                statusElement.textContent = '❌ ' + message;
+            } else if (type === 'warning') {
+                statusElement.className = 'status warning';
+                statusElement.textContent = '⚠️ ' + message;
+            } else {
+                statusElement.className = 'status info';
+                statusElement.textContent = 'ℹ️ ' + message;
+            }
+        }
+
+        function updateStatus(element, message, type = 'info') {
+            element.textContent = message;
+            element.className = type;
+        }
+
+        async function checkServiceStatus() {
+            log('🌐 Checking Supabase service status...');
+            
+            try {
+                // Test basic connectivity
+                const response = await fetch('https://wndswqvqogeblksrujpg.supabase.co/rest/v1/', {
+                    method: 'GET',
+                    headers: {
+                        'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InduZHN3cXZxb2dlYmxrc3J1anBnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYzMzEyMTAsImV4cCI6MjA3MTkwNzIxMH0.eOXJEo3XheuB2AK3NlRotSKqPMueqkgPUa896TM-hfA'
+                    }
+                });
+                
+                if (response.ok) {
+                    updateStatus(serviceStatusElement, '✅ Service is online', 'success');
+                    log('✅ Supabase service is responding', 'success');
+                    return true;
+                } else {
+                    updateStatus(serviceStatusElement, `❌ Service error: ${response.status}`, 'error');
+                    log(`❌ Service returned error: ${response.status} ${response.statusText}`, 'error');
+                    return false;
+                }
+            } catch (error) {
+                updateStatus(serviceStatusElement, '❌ Service unreachable', 'error');
+                log(`❌ Service check failed: ${error.message}`, 'error');
+                return false;
+            }
+        }
+
+        async function testConnection() {
+            log('🔗 Testing database connection...');
+            
+            try {
+                const { createClient } = await import('https://cdn.skypack.dev/@supabase/supabase-js@2');
+                const supabase = createClient(
+                    'https://wndswqvqogeblksrujpg.supabase.co',
+                    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InduZHN3cXZxb2dlYmxrc3J1anBnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYzMzEyMTAsImV4cCI6MjA3MTkwNzIxMH0.eOXJEo3XheuB2AK3NlRotSKqPMueqkgPUa896TM-hfA'
+                );
+                
+                const { data, error } = await supabase.from('profiles').select('count').limit(1);
+                
+                if (error) {
+                    updateStatus(connectionStatusElement, `❌ Connection failed: ${error.message}`, 'error');
+                    log(`❌ Connection test failed: ${error.message}`, 'error');
+                    return false;
+                } else {
+                    updateStatus(connectionStatusElement, '✅ Connection successful', 'success');
+                    log('✅ Database connection successful', 'success');
+                    return true;
+                }
+            } catch (error) {
+                updateStatus(connectionStatusElement, `❌ Connection error: ${error.message}`, 'error');
+                log(`❌ Connection test failed: ${error.message}`, 'error');
+                return false;
+            }
+        }
+
+        async function testAuthentication() {
+            log('🔐 Testing authentication...');
+            
+            try {
+                const { createClient } = await import('https://cdn.skypack.dev/@supabase/supabase-js@2');
+                const supabase = createClient(
+                    'https://wndswqvqogeblksrujpg.supabase.co',
+                    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InduZHN3cXZxb2dlYmxrc3J1anBnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYzMzEyMTAsImV4cCI6MjA3MTkwNzIxMH0.eOXJEo3XheuB2AK3NlRotSKqPMueqkgPUa896TM-hfA'
+                );
+                
+                const { data, error } = await supabase.auth.signInWithPassword({
+                    email: 'admin@igniterewards.com',
+                    password: 'admin123!'
+                });
+                
+                if (error) {
+                    updateStatus(authStatusElement, `❌ Auth failed: ${error.message}`, 'error');
+                    log(`❌ Authentication failed: ${error.message}`, 'error');
+                    return false;
+                } else {
+                    updateStatus(authStatusElement, '✅ Authentication successful', 'success');
+                    log('✅ Authentication successful', 'success');
+                    log(`👤 User: ${data.user.email}`, 'success');
+                    return true;
+                }
+            } catch (error) {
+                updateStatus(authStatusElement, `❌ Auth error: ${error.message}`, 'error');
+                log(`❌ Authentication test failed: ${error.message}`, 'error');
+                return false;
+            }
+        }
+
+        function checkLocalStorage() {
+            log('💾 Checking local storage...');
+            
+            try {
+                const keys = Object.keys(localStorage);
+                const supabaseKeys = keys.filter(key => key.includes('supabase') || key.includes('sb-'));
+                
+                if (supabaseKeys.length > 0) {
+                    updateStatus(storageStatusElement, `⚠️ Found ${supabaseKeys.length} Supabase keys`, 'warning');
+                    log(`⚠️ Found Supabase storage keys: ${supabaseKeys.join(', ')}`, 'warning');
+                    return false;
+                } else {
+                    updateStatus(storageStatusElement, '✅ No Supabase keys found', 'success');
+                    log('✅ Local storage is clean', 'success');
+                    return true;
+                }
+            } catch (error) {
+                updateStatus(storageStatusElement, `❌ Storage check failed: ${error.message}`, 'error');
+                log(`❌ Storage check failed: ${error.message}`, 'error');
+                return false;
+            }
+        }
+
+        async function runFullDiagnostic() {
+            log('🚀 Running full diagnostic...');
+            
+            const serviceOk = await checkServiceStatus();
+            const connectionOk = await testConnection();
+            const authOk = await testAuthentication();
+            const storageOk = checkLocalStorage();
+            
+            // Generate recommendations
+            let recommendations = [];
+            
+            if (!serviceOk) {
+                recommendations.push('🌐 Supabase service is down - wait for service restoration');
+                recommendations.push('🔄 Try again in a few minutes');
+                recommendations.push('📞 Contact Supabase support if issue persists');
+            } else if (!connectionOk) {
+                recommendations.push('🔗 Database connection issues - check network');
+                recommendations.push('🔄 Try clearing browser cache and cookies');
+                recommendations.push('🌐 Check if you\'re behind a firewall');
+            } else if (!authOk) {
+                recommendations.push('🔐 Authentication issues - check credentials');
+                recommendations.push('🔄 Try resetting password');
+                recommendations.push('📧 Verify email address');
+            } else if (!storageOk) {
+                recommendations.push('💾 Clear local storage to reset session');
+                recommendations.push('🔄 Refresh the page after clearing');
+            } else {
+                recommendations.push('✅ All systems operational');
+                recommendations.push('🚀 You can proceed with normal usage');
+            }
+            
+            recommendationsElement.innerHTML = recommendations.map(rec => `<div style="margin: 5px 0; padding: 5px; background: #f8f9fa; border-radius: 3px;">${rec}</div>`).join('');
+            
+            log('🎉 Diagnostic complete!', 'success');
+        }
+
+        async function testAlternativeConnection() {
+            log('🔄 Testing alternative connection methods...');
+            
+            // Test with different timeout
+            try {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+                
+                const response = await fetch('https://wndswqvqogeblksrujpg.supabase.co/rest/v1/profiles?select=count&limit=1', {
+                    method: 'GET',
+                    headers: {
+                        'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InduZHN3cXZxb2dlYmxrc3J1anBnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYzMzEyMTAsImV4cCI6MjA3MTkwNzIxMH0.eOXJEo3XheuB2AK3NlRotSKqPMueqkgPUa896TM-hfA'
+                    },
+                    signal: controller.signal
+                });
+                
+                clearTimeout(timeoutId);
+                
+                if (response.ok) {
+                    log('✅ Alternative connection successful', 'success');
+                } else {
+                    log(`❌ Alternative connection failed: ${response.status}`, 'error');
+                }
+            } catch (error) {
+                if (error.name === 'AbortError') {
+                    log('❌ Connection timed out after 10 seconds', 'error');
+                } else {
+                    log(`❌ Alternative connection failed: ${error.message}`, 'error');
+                }
+            }
+        }
+
+        function clearAllData() {
+            log('🧹 Clearing all data...');
+            
+            try {
+                localStorage.clear();
+                sessionStorage.clear();
+                
+                // Clear any cached data
+                if ('caches' in window) {
+                    caches.keys().then(names => {
+                        names.forEach(name => {
+                            caches.delete(name);
+                        });
+                    });
+                }
+                
+                log('✅ All data cleared successfully', 'success');
+                updateStatus(storageStatusElement, '✅ All data cleared', 'success');
+            } catch (error) {
+                log(`❌ Failed to clear data: ${error.message}`, 'error');
+            }
+        }
+
+        // Auto-run diagnostic when page loads
+        window.addEventListener('load', () => {
+            log('📱 Supabase Service Diagnostic loaded');
+            log('💡 Click "Run Full Diagnostic" to start the diagnostic process');
+        });
+    </script>
+</body>
+</html>
+

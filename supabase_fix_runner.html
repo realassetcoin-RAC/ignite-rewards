@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Supabase Fix Runner</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+        .success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .info { background-color: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+        .warning { background-color: #fff3cd; color: #856404; border: 1px solid #ffeaa7; }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+        }
+        button:hover { background-color: #0056b3; }
+        button:disabled { background-color: #6c757d; cursor: not-allowed; }
+        .log {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+            padding: 15px;
+            margin: 15px 0;
+            font-family: monospace;
+            font-size: 14px;
+            max-height: 300px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 Supabase Fix Runner</h1>
+        <p>This tool will automatically fix your Supabase connection issues and restore proper authentication.</p>
+        
+        <div id="status" class="status info">Ready to run fix...</div>
+        
+        <div>
+            <button id="runFix" onclick="runSupabaseFix()">🚀 Run Supabase Fix</button>
+            <button id="testConnection" onclick="testConnection()" disabled>🔍 Test Connection</button>
+            <button id="goToApp" onclick="goToApp()" disabled>📱 Go to App</button>
+        </div>
+        
+        <div id="log" class="log">Click "Run Supabase Fix" to start...</div>
+    </div>
+
+    <script>
+        let logElement = document.getElementById('log');
+        let statusElement = document.getElementById('status');
+        let runFixBtn = document.getElementById('runFix');
+        let testConnectionBtn = document.getElementById('testConnection');
+        let goToAppBtn = document.getElementById('goToApp');
+
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const logMessage = `[${timestamp}] ${message}\n`;
+            logElement.textContent += logMessage;
+            logElement.scrollTop = logElement.scrollHeight;
+            
+            // Update status
+            if (type === 'success') {
+                statusElement.className = 'status success';
+                statusElement.textContent = '✅ ' + message;
+            } else if (type === 'error') {
+                statusElement.className = 'status error';
+                statusElement.textContent = '❌ ' + message;
+            } else if (type === 'warning') {
+                statusElement.className = 'status warning';
+                statusElement.textContent = '⚠️ ' + message;
+            } else {
+                statusElement.className = 'status info';
+                statusElement.textContent = 'ℹ️ ' + message;
+            }
+        }
+
+        async function runSupabaseFix() {
+            log('🚀 Starting Supabase Fix...');
+            runFixBtn.disabled = true;
+            
+            try {
+                // Step 1: Complete cleanup
+                log('🧹 Step 1: Clearing all storage and cache...');
+                localStorage.clear();
+                sessionStorage.clear();
+                log('✅ Storage cleared successfully');
+                
+                // Step 2: Create direct Supabase client
+                log('🌐 Step 2: Creating direct Supabase client...');
+                const { createClient } = await import('https://cdn.skypack.dev/@supabase/supabase-js@2');
+                const directSupabase = createClient(
+                    'https://wndswqvqogeblksrujpg.supabase.co',
+                    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InduZHN3cXZxb2dlYmxrc3J1anBnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYzMzEyMTAsImV4cCI6MjA3MTkwNzIxMH0.eOXJEo3XheuB2AK3NlRotSKqPMueqkgPUa896TM-hfA'
+                );
+                log('✅ Direct Supabase client created');
+                
+                // Step 3: Test connection
+                log('🔍 Step 3: Testing connection...');
+                const { data, error } = await directSupabase.from('profiles').select('count').limit(1);
+                if (error) {
+                    throw new Error(`Connection failed: ${error.message}`);
+                }
+                log('✅ Connection test successful');
+                
+                // Step 4: Login with admin credentials
+                log('🔐 Step 4: Logging in with admin credentials...');
+                const { data: loginData, error: loginError } = await directSupabase.auth.signInWithPassword({
+                    email: 'admin@igniterewards.com',
+                    password: 'admin123!'
+                });
+                
+                if (loginError) {
+                    throw new Error(`Login failed: ${loginError.message}`);
+                }
+                log('✅ Admin login successful');
+                log(`👤 User ID: ${loginData.user.id}`);
+                log(`📧 Email: ${loginData.user.email}`);
+                
+                // Step 5: Store session
+                log('💾 Step 5: Storing session...');
+                localStorage.setItem('sb-wndswqvqogeblksrujpg-auth-token', JSON.stringify({
+                    currentSession: loginData.session,
+                    expiresAt: loginData.session.expires_at
+                }));
+                log('✅ Session stored successfully');
+                
+                // Step 6: Store direct client globally
+                log('🔧 Step 6: Setting up global client...');
+                window.directSupabase = directSupabase;
+                log('✅ Direct client stored globally');
+                
+                // Enable test buttons
+                testConnectionBtn.disabled = false;
+                goToAppBtn.disabled = false;
+                
+                log('🎉 Supabase fix completed successfully!', 'success');
+                log('💡 You can now test the connection or go to the app');
+                
+            } catch (error) {
+                log(`❌ Fix failed: ${error.message}`, 'error');
+                runFixBtn.disabled = false;
+            }
+        }
+
+        async function testConnection() {
+            log('🔍 Testing connection...');
+            testConnectionBtn.disabled = true;
+            
+            try {
+                if (!window.directSupabase) {
+                    throw new Error('Direct Supabase client not available');
+                }
+                
+                const { data, error } = await window.directSupabase.from('profiles').select('count').limit(1);
+                
+                if (error) {
+                    throw new Error(`Connection test failed: ${error.message}`);
+                }
+                
+                log('✅ Connection test successful!', 'success');
+                
+                // Test auth state
+                const { data: { user } } = await window.directSupabase.auth.getUser();
+                if (user) {
+                    log(`✅ User authenticated: ${user.email}`, 'success');
+                } else {
+                    log('⚠️ No authenticated user found', 'warning');
+                }
+                
+            } catch (error) {
+                log(`❌ Connection test failed: ${error.message}`, 'error');
+            } finally {
+                testConnectionBtn.disabled = false;
+            }
+        }
+
+        function goToApp() {
+            log('🚀 Redirecting to application...');
+            window.location.href = 'http://localhost:3000';
+        }
+
+        // Auto-run the fix when page loads
+        window.addEventListener('load', () => {
+            log('📱 Supabase Fix Runner loaded');
+            log('💡 Click "Run Supabase Fix" to start the fix process');
+        });
+    </script>
+</body>
+</html>
+

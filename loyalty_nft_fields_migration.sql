@@ -251,3 +251,4 @@ SELECT 'Loyalty NFT fields migration completed successfully!' as status;
 
 
 
+

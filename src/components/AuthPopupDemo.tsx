@@ -54,6 +54,9 @@ export const AuthPopupDemo: React.FC = () => {
                 <ul className="text-sm text-gray-600 space-y-1">
                   <li>• Email and password authentication</li>
                   <li>• Google OAuth integration</li>
+                  <li>• Seed phrase login option</li>
+                  <li>• Wallet connection (Phantom, Solflare, MetaMask)</li>
+                  <li>• Referral code support</li>
                   <li>• Password visibility toggle</li>
                   <li>• Form validation</li>
                   <li>• Loading states</li>
@@ -87,6 +90,9 @@ export const AuthPopupDemo: React.FC = () => {
                 <ul className="text-sm text-gray-600 space-y-1">
                   <li>• Complete registration form</li>
                   <li>• Google OAuth integration</li>
+                  <li>• Seed phrase login option</li>
+                  <li>• Wallet connection (Phantom, Solflare, MetaMask)</li>
+                  <li>• Referral code support</li>
                   <li>• Password confirmation</li>
                   <li>• Terms and privacy acceptance</li>
                   <li>• Form validation</li>

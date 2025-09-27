@@ -157,3 +157,4 @@ The Virtual Card Manager should now work perfectly with all the new NFT fields! 
 
 
 
+
