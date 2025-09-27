@@ -11,8 +11,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useSecureAuth } from "@/hooks/useSecureAuth";
-import AuthModal from "./AuthModal";
-import PrivacyFirstSignupModal from "./PrivacyFirstSignupModal";
+import LoginPopup from "./LoginPopup";
+import SignupPopup from "./SignupPopup";
 import MerchantSignupModal from "./MerchantSignupModal";
 import HomePageCarousel from "./HomePageCarousel";
 import { 
@@ -39,8 +39,8 @@ const EnhancedHeroSection = () => {
   const { user, profile, isAdmin, signOut } = useSecureAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
-  const [authModalOpen, setAuthModalOpen] = useState(false);
-  const [privacySignupModalOpen, setPrivacySignupModalOpen] = useState(false);
+  const [loginModalOpen, setLoginModalOpen] = useState(false);
+  const [signupModalOpen, setSignupModalOpen] = useState(false);
   const [merchantModalOpen, setMerchantModalOpen] = useState(false);
   
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
@@ -62,7 +62,7 @@ const EnhancedHeroSection = () => {
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get('signup') === 'true') {
-      setAuthModalOpen(true);
+      setLoginModalOpen(true);
       // Clean up the URL parameter
       const newUrl = window.location.pathname;
       window.history.replaceState({}, '', newUrl);
@@ -253,7 +253,7 @@ const EnhancedHeroSection = () => {
                     variant="outline" 
                     onClick={() => {
                       console.log('Sign In button clicked');
-                      setAuthModalOpen(true);
+                      setLoginModalOpen(true);
                     }}
                     className="pointer-events-auto cursor-pointer"
                   >
@@ -301,7 +301,7 @@ const EnhancedHeroSection = () => {
             isLoaded ? 'animate-fade-in-up animation-delay-600' : 'opacity-0'
           }`}>
             <HomePageCarousel
-              onStartEarning={() => setAuthModalOpen(true)}
+              onStartEarning={() => setLoginModalOpen(true)}
               onJoinMerchant={() => setMerchantModalOpen(true)}
               onLearnMoreBenefits={() => navigate('/exclusive-benefits')}
             />
@@ -375,8 +375,22 @@ const EnhancedHeroSection = () => {
       </div>
 
       {/* Modals */}
-      <AuthModal isOpen={authModalOpen} onClose={() => setAuthModalOpen(false)} />
-      <PrivacyFirstSignupModal isOpen={privacySignupModalOpen} onClose={() => setPrivacySignupModalOpen(false)} />
+      <LoginPopup 
+        isOpen={loginModalOpen} 
+        onClose={() => setLoginModalOpen(false)}
+        onSwitchToSignup={() => {
+          setLoginModalOpen(false);
+          setSignupModalOpen(true);
+        }}
+      />
+      <SignupPopup 
+        isOpen={signupModalOpen} 
+        onClose={() => setSignupModalOpen(false)}
+        onSwitchToLogin={() => {
+          setSignupModalOpen(false);
+          setLoginModalOpen(true);
+        }}
+      />
       <MerchantSignupModal isOpen={merchantModalOpen} onClose={() => setMerchantModalOpen(false)} />
     </div>
   );
