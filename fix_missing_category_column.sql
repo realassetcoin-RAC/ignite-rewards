@@ -30,3 +30,5 @@ AND column_name = 'category'
 AND table_schema = 'public';
 
 SELECT '✅ Category column fix completed!' as status;
+
+

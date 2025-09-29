@@ -221,3 +221,5 @@ COMMENT ON TABLE public.user_solana_wallets IS 'Stores Solana custodial wallet i
 COMMENT ON TABLE public.user_notifications IS 'Stores user notifications for earnings, asset linking, and new features';
 COMMENT ON FUNCTION public.get_user_loyalty_card(UUID) IS 'Retrieves user loyalty card information with NFT details';
 COMMENT ON FUNCTION public.authenticate_with_seed_phrase(TEXT) IS 'Authenticates users using their seed phrase';
+
+

@@ -28,3 +28,5 @@ FOR UPDATE USING (auth.uid() = user_id);
 
 -- Verify table creation
 SELECT 'chatbot_conversations table created successfully' as status;
+
+

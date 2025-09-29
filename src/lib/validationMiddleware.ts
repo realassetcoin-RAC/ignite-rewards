@@ -241,3 +241,5 @@ export const errorHandler = (error: any, req: Request, res: Response, next: Next
     ...(process.env.NODE_ENV === 'development' && { stack: error.stack })
   });
 };
+
+
