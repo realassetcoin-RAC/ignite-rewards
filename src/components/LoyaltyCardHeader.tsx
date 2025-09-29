@@ -31,6 +31,8 @@ const LoyaltyCardHeader = () => {
   const { toast } = useToast();
   const [loyaltyCard, setLoyaltyCard] = useState<LoyaltyCardData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [retryCount, setRetryCount] = useState(0);
+  const [isRetrying, setIsRetrying] = useState(false);
 
   useEffect(() => {
     if (user?.id) {
@@ -38,14 +40,34 @@ const LoyaltyCardHeader = () => {
     }
   }, [user?.id]);
 
+  const retryFetch = async () => {
+    if (isRetrying || retryCount >= 3) return;
+    
+    setIsRetrying(true);
+    setRetryCount(prev => prev + 1);
+    
+    try {
+      await fetchLoyaltyCard();
+    } finally {
+      setIsRetrying(false);
+    }
+  };
+
   const fetchLoyaltyCard = async () => {
     try {
       setLoading(true);
       console.log('🎯 Fetching user loyalty card...');
 
-      const { data, error } = await databaseAdapter.supabase.rpc('get_user_loyalty_card', { 
+      // Add timeout to prevent infinite loading
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Request timeout')), 10000)
+      );
+
+      const fetchPromise = databaseAdapter.supabase.rpc('get_user_loyalty_card', { 
         user_uuid: user?.id 
       });
+
+      const { data, error } = await Promise.race([fetchPromise, timeoutPromise]) as any;
 
       console.log('📋 Loyalty card data:', data);
 
@@ -53,8 +75,8 @@ const LoyaltyCardHeader = () => {
         console.error('❌ RPC error:', error);
         
         // If it's a database connection error, show a mock loyalty card
-        if (error.code === 'PGRST002' || error.message?.includes('schema cache')) {
-          console.log('🔄 Database unavailable, showing mock loyalty card');
+        if (error.code === 'PGRST002' || error.message?.includes('schema cache') || error.message?.includes('timeout')) {
+          console.log('🔄 Database unavailable or timeout, showing mock loyalty card');
           setLoyaltyCard({
             id: 'mock-card',
             user_id: user?.id || '',
@@ -92,12 +114,11 @@ const LoyaltyCardHeader = () => {
               is_active: true,
               created_at: new Date().toISOString(),
               updated_at: new Date().toISOString(),
-              image_url: '/api/placeholder/300/200',
+              image_url: '/images/loyalty-cards/pearl-white.png',
               evolution_image_url: null,
               description: 'Free loyalty card for custodial users'
             }
           });
-          setLoading(false);
           return;
         }
         
@@ -122,7 +143,7 @@ const LoyaltyCardHeader = () => {
         nft_type_id: 'mock-nft',
         card_name: 'Pearl White',
         card_type: 'Pearl White',
-        image_url: '/api/placeholder/300/200',
+        image_url: '/images/loyalty-cards/pearl-white.png',
         is_active: true,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
@@ -147,7 +168,7 @@ const LoyaltyCardHeader = () => {
           is_active: true,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
-          image_url: '/api/placeholder/300/200',
+          image_url: '/images/loyalty-cards/pearl-white.png',
           evolution_image_url: null,
           description: 'Free loyalty card for custodial users'
         }
@@ -161,19 +182,32 @@ const LoyaltyCardHeader = () => {
     try {
       console.log('🎁 Assigning free loyalty card...');
       
-      const { data } = await databaseAdapter.supabase.rpc('assign_free_loyalty_card', {
-        user_uuid: user?.id,
-        email: user?.email,
-        full_name: user?.user_metadata?.full_name || 'User',
-        phone: user?.user_metadata?.phone || null
+      const { data, error } = await databaseAdapter.supabase.rpc('assign_free_loyalty_card', {
+        user_uuid: user?.id
       });
 
-      const result = await data();
-      console.log('✅ Assigned loyalty card:', result);
+      if (error) {
+        console.log('⚠️ assign_free_loyalty_card function not available, using fallback');
+        // Show mock card as fallback
+        setLoyaltyCard({
+          id: 'mock-card',
+          user_id: user?.id || '',
+          nft_type_id: 'mock-nft',
+          card_name: 'Pearl White',
+          loyalty_number: 'M0000001',
+          points_balance: 0,
+          tier_level: 'Common',
+          is_active: true,
+          created_at: new Date().toISOString()
+        });
+        return;
+      }
 
-      if (result.data) {
-        // Refresh the loyalty card data
-        fetchLoyaltyCard();
+      console.log('✅ Assigned loyalty card:', data);
+
+      if (data) {
+        // Set the loyalty card directly instead of calling fetchLoyaltyCard again
+        setLoyaltyCard(data);
         toast({
           title: "Welcome! 🎉",
           description: "Your free loyalty NFT card has been activated!",
@@ -181,9 +215,21 @@ const LoyaltyCardHeader = () => {
       }
     } catch (error) {
       console.error('❌ Error assigning loyalty card:', error);
+      // Show mock card on error to prevent UI breaking
+      setLoyaltyCard({
+        id: 'mock-card',
+        user_id: user?.id || '',
+        nft_type_id: 'mock-nft',
+        card_name: 'Pearl White',
+        loyalty_number: 'M0000001',
+        points_balance: 0,
+        tier_level: 'Common',
+        is_active: true,
+        created_at: new Date().toISOString()
+      });
       toast({
         title: "Error",
-        description: "Failed to activate your loyalty card. Please try again.",
+        description: "Failed to activate your loyalty card. Using fallback card.",
         variant: "destructive"
       });
     }
@@ -228,8 +274,23 @@ const LoyaltyCardHeader = () => {
         <CardContent className="p-6">
           <div className="flex items-center justify-center space-x-2">
             <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white"></div>
-            <span className="text-white/70">Loading your loyalty card...</span>
+            <span className="text-white/70">
+              {isRetrying ? `Retrying... (${retryCount}/3)` : 'Loading your loyalty card...'}
+            </span>
           </div>
+          {retryCount > 0 && retryCount < 3 && (
+            <div className="mt-4 text-center">
+              <Button 
+                onClick={retryFetch} 
+                disabled={isRetrying}
+                variant="outline" 
+                size="sm"
+                className="text-white border-white/20 hover:bg-white/10"
+              >
+                {isRetrying ? 'Retrying...' : 'Retry'}
+              </Button>
+            </div>
+          )}
         </CardContent>
       </Card>
     );
@@ -247,9 +308,21 @@ const LoyaltyCardHeader = () => {
                 <p className="text-white/70">Unable to load your loyalty card</p>
               </div>
             </div>
-            <Button onClick={assignFreeLoyaltyCard} className="bg-gradient-to-r from-purple-500 to-pink-500">
-              Activate Free Card
-            </Button>
+            <div className="flex gap-2">
+              {retryCount < 3 && (
+                <Button 
+                  onClick={retryFetch} 
+                  disabled={isRetrying}
+                  variant="outline" 
+                  className="text-white border-white/20 hover:bg-white/10"
+                >
+                  {isRetrying ? 'Retrying...' : 'Retry'}
+                </Button>
+              )}
+              <Button onClick={assignFreeLoyaltyCard} className="bg-gradient-to-r from-purple-500 to-pink-500">
+                Activate Free Card
+              </Button>
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -268,18 +341,15 @@ const LoyaltyCardHeader = () => {
             <div className="space-y-1">
               <div className="flex items-center space-x-2">
                 <h3 className="text-xl font-bold text-white">{loyaltyCard.nft_display_name} NFT</h3>
-                <Badge className={`${getTierColor(loyaltyCard.tier_level)} text-white border-0 capitalize`}>
-                  {loyaltyCard.tier_level}
-                </Badge>
                 <Badge className={`bg-gradient-to-r ${getRarityColor(loyaltyCard.nft_rarity)} text-white border-0`}>
                   {loyaltyCard.nft_rarity}
                 </Badge>
               </div>
               <div className="flex items-center space-x-3 text-white/90">
                 <span className="text-sm">Loyalty Number:</span>
-                <code className="bg-white/10 px-3 py-1 rounded-md text-lg font-mono tracking-wider">
+                <span className="text-sm bg-white/10 px-3 py-1 rounded-md">
                   {loyaltyCard.loyalty_number}
-                </code>
+                </span>
                 <Button
                   variant="ghost"
                   size="sm"
@@ -289,6 +359,7 @@ const LoyaltyCardHeader = () => {
                   <Copy className="h-4 w-4" />
                 </Button>
               </div>
+              
               <div className="text-sm text-white/70">
                 Earn {(loyaltyCard.nft_earn_ratio * 100).toFixed(2)}% on every spend
               </div>
@@ -304,9 +375,8 @@ const LoyaltyCardHeader = () => {
               </span>
               <span className="text-white/70">points</span>
             </div>
-            <div className="text-sm text-white/70">
-              Card: {loyaltyCard.card_number}
-            </div>
+            
+            
             <div className="text-xs text-white/50">
               Active since {new Date(loyaltyCard.created_at).toLocaleDateString()}
             </div>

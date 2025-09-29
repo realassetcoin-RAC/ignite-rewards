@@ -436,7 +436,7 @@ const UserDashboard = () => {
             </CardHeader>
             <CardContent>
               <p className="text-gray-400 text-sm mb-4">
-                Invite friends and earn bonus rewards
+                Invite Friends, Refer Merchants & Earn Bonus Rewards
               </p>
               <div className="flex items-center justify-between">
                 <span className="text-2xl font-bold text-white">3</span>
@@ -680,7 +680,7 @@ const UserDashboard = () => {
       )}
         {activeSection === 'referrals' && <ReferralsTab />}
         {activeSection === 'rewards' && user && <RewardsTracker userId={user.id} />}
-        {activeSection === 'marketplace' && <MarketplaceMain />}
+        {activeSection === 'marketplace' && <MarketplaceMain embedded={true} />}
         {activeSection === 'nft-management' && <NFTManagementPanel />}
         
         {activeSection === 'dao' && <DAOGovernancePanel />}

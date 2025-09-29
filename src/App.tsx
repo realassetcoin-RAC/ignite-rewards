@@ -3,7 +3,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { log } from "@/lib/logger";
 import Index from "./pages/Index";
 import Privacy from "./pages/Privacy";
@@ -15,6 +15,7 @@ import HelpCenter from "./pages/HelpCenter";
 import AdminPanel from "./pages/AdminPanel";
 import Auth from "./pages/Auth";
 import AuthCallback from "./pages/AuthCallback";
+import PopupAuthCallback from "./pages/PopupAuthCallback";
 import MerchantDashboard from "./pages/MerchantDashboard";
 import NotFound from "./pages/NotFound";
 import UserDashboard from "./pages/UserDashboard";
@@ -39,6 +40,18 @@ import { useSessionPersistence } from "./hooks/useSessionPersistence";
 import { useInactivityLogout } from "./hooks/useInactivityLogout";
 import { BackgroundJobService } from "./lib/backgroundJobs";
 import ContactChatbot from "@/components/ContactChatbot";
+
+// Conditional Chatbot Component
+const ConditionalChatbot = () => {
+  const location = useLocation();
+  
+  // Don't show chatbot on popup callback route
+  if (location.pathname === '/auth/popup-callback') {
+    return null;
+  }
+  
+  return <ContactChatbot />;
+};
 
 // Error Boundary Component
 interface ErrorBoundaryState {
@@ -122,6 +135,26 @@ const queryClient = new QueryClient({
 
 const App = () => {
   const isDev = import.meta.env.DEV;
+  
+  // Clean up unwanted URL parameters on app load (security measure)
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const unwantedParams = ['email', 'password'];
+    let hasUnwantedParams = false;
+    
+    unwantedParams.forEach(param => {
+      if (urlParams.has(param)) {
+        hasUnwantedParams = true;
+        urlParams.delete(param);
+      }
+    });
+    
+    if (hasUnwantedParams) {
+      const newUrl = window.location.pathname + (urlParams.toString() ? '?' + urlParams.toString() : '');
+      window.history.replaceState({}, '', newUrl);
+      console.warn('Removed unwanted URL parameters for security');
+    }
+  }, []);
   const [isInitialized, setIsInitialized] = useState(false);
 
   // Initialize session persistence to maintain auth state
@@ -142,21 +175,16 @@ const App = () => {
     
     // Cleanup on unmount
     return () => {
-      BackgroundJobService.stopAllJobs();
+      // Only stop jobs if they're actually running
+      if (BackgroundJobService.isRunning()) {
+        BackgroundJobService.stopAllJobs();
+      }
     };
   }, []);
 
-  // Initialize with timeout to prevent infinite loading
+  // Initialize immediately - no timeout needed
   useEffect(() => {
-    const timer = setTimeout(() => {
-      log.warn('App initialization timeout - forcing initialization', undefined, 'App');
-      setIsInitialized(true);
-    }, 3000); // 3 second timeout
-
-    // Also set immediately for fast initialization
     setIsInitialized(true);
-
-    return () => clearTimeout(timer);
   }, []);
 
   // Show loading state if not initialized
@@ -183,6 +211,7 @@ const App = () => {
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/auth/callback" element={<AuthCallback />} />
+            <Route path="/auth/popup-callback" element={<PopupAuthCallback />} />
             {/* Role-based dashboard routing - redirects to appropriate dashboard based on user role */}
             <Route path="/dashboard" element={<RoleBasedDashboard />} />
             {/* Keep the old dashboard route for backward compatibility if bookmarked */}
@@ -217,7 +246,7 @@ const App = () => {
             <Route path="*" element={<NotFound />} />
           </Routes>
           {/* Global chatbot for pre-login routes only */}
-          <ContactChatbot />
+          <ConditionalChatbot />
           </BrowserRouter>
         </TooltipProvider>
       </ThemeProvider>

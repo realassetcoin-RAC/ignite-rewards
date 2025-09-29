@@ -19,14 +19,17 @@ export default defineConfig(() => ({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
+      "buffer": "buffer",
     },
   },
   define: {
     global: 'globalThis',
     'process.env': {},
+    'process.browser': true,
   },
   optimizeDeps: {
     exclude: ['pg'],
+    include: ['buffer'],
   },
   build: {
     rollupOptions: {

@@ -16,10 +16,11 @@ import { environment } from '@/config/environment';
 
 
 class DatabaseAdapter {
+  private static instance: DatabaseAdapter | null = null;
   private isLocal: boolean;
   public supabaseClient: any = null;
 
-  constructor() {
+  private constructor() {
     // Always use cloud Supabase database
     this.isLocal = false;
 
@@ -37,6 +38,12 @@ class DatabaseAdapter {
         this.initializeSupabase();
   }
 
+  public static getInstance(): DatabaseAdapter {
+    if (!DatabaseAdapter.instance) {
+      DatabaseAdapter.instance = new DatabaseAdapter();
+    }
+    return DatabaseAdapter.instance;
+  }
 
   private initializeSupabase() {
     console.log('Initializing Supabase client...');
@@ -114,7 +121,7 @@ class DatabaseAdapter {
     try {
       console.log('🔍 Testing Supabase connection...');
       
-      // Create a timeout promise for the connection test
+      // Create a timeout promise for the connection test (reduced to 10 seconds)
       const timeoutPromise = new Promise((_, reject) => 
         setTimeout(() => reject(new Error('Connection timeout after 10 seconds')), 10000)
       );
@@ -1373,7 +1380,7 @@ class DatabaseAdapter {
 }
 
 // Create singleton instance
-export const databaseAdapter = new DatabaseAdapter();
+export const databaseAdapter = DatabaseAdapter.getInstance();
 
 // Ensure the client is initialized - FORCE real Supabase client
 if (!databaseAdapter.supabaseClient) {

@@ -3,250 +3,7 @@
 ## 📋 **Documentation References**
 - **Complete Product Features**: See `PRODUCT_FEATURES.md` for comprehensive feature specifications
 - **Development Guidelines**: See `APPLICATION_STACK.md` for technical stack and best practices
-- **Web3 Investment Flow**: See `WEB3_INVESTMENT_FLOW_IMPLEMENTATION.md` for investment system details
-
-## Project Context
-This is a Web3-native rewards and investment platform with:
-- PostgreSQL database with Supabase
-- React/TypeScript frontend with Next.js
-- NFT-based loyalty system with upgradeable benefits
-- Web3 investment system for asset initiatives
-- Merchant subscription plans and custom NFT creation
-- Multi-currency support (USDT, ETH, BTC, SOL, RAC)
-- Dual user experience (custodial and non-custodial)
-
-## Requirements Document
-
-### 1. User Types and Access
-
-#### A. Custodial Users
-- **Signup Process:**
-  - Signup via Web3 application using email address or Google (Social) account
-  - Email users must accept terms of use and privacy policy at signup
-  - Social users must accept terms post-authentication
-  - Automatic assignment of free Loyalty NFT card with predefined benefits
-  - Automatic wallet address creation with 12-word seed phrase generation
-  - Unique 8-character loyalty number (first character is user's initial, e.g., J0000001)
-
-- **Authentication & Security:**
-  - Option to backup seed phrases for email compromise scenarios
-  - Login capability using seed phrases
-  - Wallet address display in user dashboard
-  - Option to disable Google authentication for seed phrase-only login
-  - Account logout after 5 minutes of inactivity
-
-- **Loyalty NFT Management:**
-  - One loyalty NFT per account maximum
-  - NFT upgrade feature with payment gateway integration
-  - "Proceed to Pay" popup for NFT purchases
-  - New NFT features apply only to new transactions post-upgrade
-  - Loyalty card display in top-left section of user dashboard
-
-- **Referral System:**
-  - Friend referral feature with loyalty points rewards
-  - Points awarded only after successful referred user signup
-  - Referral campaign caps maximum referrals per user
-  - Automatic referral settlement when criteria are met
-  - Referral code field in signup and login popup screens
-  - **Enhanced Referral Types:**
-    - User-to-User referrals: Standard points for referring other users
-    - User-to-Merchant referrals: Higher points for referring merchants
-    - Merchant-to-User referrals: Merchants can refer users
-    - Merchant-to-Merchant referrals: Merchants can refer other merchants
-    - Campaign types: 'user', 'merchant', or 'both' for comprehensive referral programs
-    - Merchant referrals offer higher point earnings compared to user referrals
-  - **GMT Timezone Requirements:**
-    - All referral campaign start/end dates must be stored and displayed in GMT
-    - Campaign scheduling uses GMT timezone for consistency across global users
-    - Date/time pickers should show GMT timezone indicator
-
-- **Rewards & Points:**
-  - Display list of all earned loyalty rewards
-  - 30-day point release delay for merchant reversal handling
-  - User selection of one Asset/initiative for reward flow
-  - Three reward earning methods:
-    1. User scans merchant-generated transaction QR
-    2. Merchant scans user QR code with scanning tool
-    3. Ecommerce API integration for direct transactions
-
-- **Third-Party Loyalty Integration:**
-  - Port/transfer rewards from other loyalty partners
-  - Admin-defined loyalty networks with conversion rates
-  - One number per loyalty network maximum
-  - SMS OTP verification (5-minute validity)
-  - Resend OTP functionality
-  - Transfer or cancel options for third-party points
-  - Linked numbers display in user dashboard
-  - Email notifications for linking and transfer completion
-  - No mobile number changes allowed once linked
-
-#### B. Non-Custodial Users
-- **Core Features (Same as Custodial):**
-  - Unique 8-character loyalty number generation
-  - Referral system with campaign caps
-  - Loyalty card dashboard display
-  - Rewards list display
-  - Third-party loyalty integration
-  - One loyalty NFT per account
-  - Three reward earning methods
-  - 5-minute inactivity logout
-  - 30-day point release delay
-  - Asset/initiative selection for rewards
-  - Referral code fields in signup/login
-  - Automatic referral settlement
-
-### 2. Merchant Dashboard Features
-
-#### A. Loyalty NFT Management
-- **Custom NFT Creation:**
-  - Upload custom Loyalty NFT cards for subscribed merchants
-  - Free user access to merchant-specific NFTs
-  - Unique QR codes linking merchant and customer
-  - Discount codes for ecommerce merchants
-  - Discount code display on NFT card back
-  - Feature availability based on subscription plan
-  - Admin dashboard control for plan-based feature enabling
-
-#### B. Transaction Management
-- **Transaction Display & Editing:**
-  - List of all merchant transactions
-  - Edit capability for returns/exchanges
-  - Transaction value editing within 30 days of transaction date
-  - Transaction details: Amount (mandatory), Receipt Number (mandatory), Transaction Date (mandatory), Name (optional), Comments (optional)
-
-#### C. Subscription & Plan Management
-- **Plan Limitations:**
-  - Transaction count limits based on subscription plan
-  - Points distribution limits based on plan
-  - Immediate plan upgrades post-payment confirmation
-  - Dashboard visibility for plan renewal and upgrades
-  - Direct plan management from merchant dashboard
-
-- **Merchant Subscription Plans (Official Specifications):**
-  1. **StartUp Plan** - $20/month ($150/year)
-     - 100 monthly points, 100 transactions
-     - Basic loyalty program setup, customer management
-     - Email support, basic analytics, QR code generation
-     - 14-day trial, Plan #1
-     
-  2. **Momentum Plan** - $50/month ($500/year) 
-     - 300 monthly points, 300 transactions
-     - Advanced features, customer segmentation
-     - Priority support, custom branding, API access
-     - 14-day trial, Plan #2 (Popular)
-     
-  3. **Energizer Plan** - $100/month ($1000/year)
-     - 600 monthly points, 600 transactions
-     - Premium features, dedicated account manager
-     - Real-time analytics, custom integrations
-     - 21-day trial, Plan #3
-     
-  4. **Cloud Plan** - $250/month ($2500/year)
-     - 1800 monthly points, 1800 transactions
-     - Enterprise features, unlimited staff accounts
-     - Multi-location support, 24/7 support
-     - 30-day trial, Plan #4
-     
-     5. **Super Plan** - $500/month ($5000/year)
-     - 4000 monthly points, 4000 transactions
-     - Ultimate features, white-label solutions
-     - Priority feature requests, custom onboarding
-     - 30-day trial, Plan #5
-
-#### D. Merchant Subscription Management
-- **Subscription Start Date:**
-  - Default start date when creating merchant: current date
-  - No past date selection allowed for new merchants
-  - Current date validation required
-
-- **Plan Upgrade/Downgrade:**
-  - Merchants can upgrade or downgrade from merchant dashboard
-  - **Upgrades:** Take effect immediately after payment confirmation with current date as new start date
-  - **Downgrades:** Take effect from upcoming billing cycle (not immediate)
-  - Payment processing required for upgrades only
-  - Billing cycle calculation based on original subscription start date
-
-### 3. Loyalty NFT and Tokenized Platform Features
-
-#### A. General NFT Features
-- **Auto-Staking**: Optional feature allowing users to automatically lock earned rewards into staking pools
-- **Collections**: Support for different types of NFT collections with extensible system for new collections
-- **NFT Naming**: NFT name must match Loyalty Card name and be read from loyalty NFT contract
-- **Rarity**: Each NFT has a rarity level (card_type) with support for future rarity value updates
-- **Minting**: Defined number of NFTs to be minted for specific collections via smart contract
-- **Buy Price (in USDT)**: Price determined at listing time, read and displayed from contract
-- **Fractionalized Investment**: NFT holders can invest rewards or direct funds into fractionalized assets
-
-#### B. NFT Ownership and Functionality
-- **Custodial vs Non-Custodial Recognition**:
-  - Custodial users: NFT features displayed directly from platform database
-  - Non-custodial users: DApp connects to wallet, reads NFT from blockchain
-- **Upgrade Feature**: Users can upgrade loyalty NFTs to earn higher reward ratios from staked rewards
-- **Upgrade Bonus from Tokenization**: Exclusive bonus for custodial users who have upgraded NFTs
-- **Earning on Spend**: Core feature where users earn rewards by spending on partner merchant networks
-- **Evolve Function**: Unlocks surprise 3D NFT for users meeting minimum investment criteria
-- **Evolution Earnings**: Fixed earning ratio for evolved NFTs stored in dedicated contract wallet
-- **Evolution Minimum Investment**: Minimum investment required for user to be eligible for evolution
-
-#### C. NFT Constraints and Limits
-- **NFT Holding Limit**: Each user limited to holding only one loyalty NFT in wallet at any time
-- **Minimum Withdrawal (Custodial)**: 100 RAC native tokens minimum withdrawal amount (configurable)
-- **Timeout Period**: 5-minute application timeout after which user is logged out
-- **File Formats**: Standard loyalty NFT cards in .jpg or .png format, evolved NFTs in .gif format
-- **Auto-Staking Field**: When enabled, rewards earnings are automatically locked again
-
-#### E. Initial Loyalty NFT Cards Specification
-**Custodial Attributes (Free for users with custodial wallets):**
-- **Pearl White**: Buy Price 0, Upgrade: Yes, Evolve: Yes, Rarity: Common, Mint: 10000, Fractional: Yes, Auto Staking: Forever, Earn on Spend: 1.00%, Upgrade Bonus: 0.00%, Evolution Min Investment: 100, Evolution Earnings: 0.25%
-- **Lava Orange**: Buy Price 100, Upgrade: Yes, Evolve: Yes, Rarity: Less Common, Mint: 3000, Fractional: Yes, Auto Staking: Forever, Earn on Spend: 1.10%, Upgrade Bonus: 0.10%, Evolution Min Investment: 500, Evolution Earnings: 0.50%
-- **Pink**: Buy Price 100, Upgrade: Yes, Evolve: Yes, Rarity: Less Common, Mint: 3000, Fractional: Yes, Auto Staking: Forever, Earn on Spend: 1.10%, Upgrade Bonus: 0.10%, Evolution Min Investment: 500, Evolution Earnings: 0.50%
-- **Silver**: Buy Price 200, Upgrade: Yes, Evolve: Yes, Rarity: Rare, Mint: 750, Fractional: Yes, Auto Staking: Forever, Earn on Spend: 1.20%, Upgrade Bonus: 0.15%, Evolution Min Investment: 1000, Evolution Earnings: 0.75%
-- **Gold**: Buy Price 300, Upgrade: Yes, Evolve: Yes, Rarity: Rare, Mint: 750, Fractional: Yes, Auto Staking: Forever, Earn on Spend: 1.30%, Upgrade Bonus: 0.20%, Evolution Min Investment: 1500, Evolution Earnings: 1.00%
-- **Black**: Buy Price 500, Upgrade: Yes, Evolve: Yes, Rarity: Very Rare, Mint: 250, Fractional: Yes, Auto Staking: Forever, Earn on Spend: 1.40%, Upgrade Bonus: 0.30%, Evolution Min Investment: 2500, Evolution Earnings: 1.25%
-
-**Non-Custodial Attributes (For users with external wallets):**
-- **Pearl White**: Buy Price 100, Upgrade: No, Evolve: Yes, Rarity: Common, Mint: 10000, Fractional: Yes, Auto Staking: Forever, Earn on Spend: 1.00%, Upgrade Bonus: 0.00%, Evolution Min Investment: 500, Evolution Earnings: 0.50%
-- **Lava Orange**: Buy Price 500, Upgrade: No, Evolve: Yes, Rarity: Less Common, Mint: 3000, Fractional: Yes, Auto Staking: Forever, Earn on Spend: 1.10%, Upgrade Bonus: 0.00%, Evolution Min Investment: 2500, Evolution Earnings: 1.25%
-- **Pink**: Buy Price 500, Upgrade: No, Evolve: Yes, Rarity: Less Common, Mint: 3000, Fractional: Yes, Auto Staking: Forever, Earn on Spend: 1.10%, Upgrade Bonus: 0.00%, Evolution Min Investment: 2500, Evolution Earnings: 1.25%
-- **Silver**: Buy Price 1000, Upgrade: No, Evolve: Yes, Rarity: Rare, Mint: 750, Fractional: Yes, Auto Staking: Forever, Earn on Spend: 1.20%, Upgrade Bonus: 0.00%, Evolution Min Investment: 5000, Evolution Earnings: 0.15%
-- **Gold**: Buy Price 1000, Upgrade: No, Evolve: Yes, Rarity: Rare, Mint: 750, Fractional: Yes, Auto Staking: Forever, Earn on Spend: 1.30%, Upgrade Bonus: 0.00%, Evolution Min Investment: 5000, Evolution Earnings: 0.20%
-- **Black**: Buy Price 2500, Upgrade: No, Evolve: Yes, Rarity: Very Rare, Mint: 250, Fractional: Yes, Auto Staking: Forever, Earn on Spend: 1.40%, Upgrade Bonus: 0.00%, Evolution Min Investment: 13500, Evolution Earnings: 0.30%
-
-**Required NFT Form Fields:**
-- Collection, NFT Name, Buy Price NFT, Upgrade (Yes/No), Evolve (Yes/No), Rarity, Mint, Fractional (Yes/No), Auto Staking in platform, Earn on Spend (%), Upgrade Bonus from Tokenization (%), Evolution Minimum Investment, Evolution Earnings (%)
-
-#### D. NFT Technical Requirements
-- **Smart Contract Integration**: NFT features must be read from blockchain contracts
-- **Wallet Integration**: Support for both custodial and non-custodial wallet connections
-- **Metadata Management**: NFT metadata and benefit tracking in database
-- **Evolution System**: 3D NFT generation and surprise unlock mechanism
-- **Investment Tracking**: Monitor user investments for evolution eligibility
-- **Reward Ratio Management**: Dynamic reward ratios based on NFT type and upgrades
-
-### 4. Technical Implementation Requirements
-
-#### A. Database Schema
-- Support for both custodial and non-custodial user types
-- Loyalty number generation with initial-based format
-- Referral tracking and campaign management
-- Third-party loyalty network integration
-- Transaction history with 30-day edit window
-- NFT metadata and benefit tracking
-- Subscription plan limitations and features
-- NFT collection and rarity management
-- Evolution and upgrade tracking
-- Auto-staking configuration
-
-#### B. API Requirements
-- Ecommerce integration API for direct transaction processing
-- Third-party loyalty network API integration
-- SMS OTP service integration
-- Payment gateway integration for NFT upgrades
-- Email notification system
-- QR code generation and scanning functionality
-- Blockchain wallet connection APIs
-- Smart contract interaction APIs
-- NFT metadata and evolution APIs
+**Web3 Investment Flow**: See `WEB3_INVESTMENT_FLOW_IMPLEMENTATION.md` for investment system details
 
 #### C. Security & Compliance
 - Secure seed phrase generation and storage
@@ -258,11 +15,38 @@ This is a Web3-native rewards and investment platform with:
 - NFT ownership verification
 
 ## Database Rules
+- **CRITICAL: ONLY use Supabase Cloud Database** - Never connect to local databases
 - Always use `public` schema for tables (not `api`)
 - Use UUID for primary keys with `gen_random_uuid()`
 - Follow existing enum patterns: `app_role`, `merchant_status`, `subscription_plan`
 - Use `WHERE NOT EXISTS` instead of `ON CONFLICT` for safe insertions
 - Loyalty card numbers: 8 characters, first character is user's initial (e.g., J0000001)
+- All database operations must use the cloud Supabase instance at `wndswqvqogeblksrujpg.supabase.co`
+
+## Database Connection Requirements
+- **MANDATORY: Use Supabase Cloud Database Only**
+  - URL: `https://wndswqvqogeblksrujpg.supabase.co`
+  - Anon Key: `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InduZHN3cXZxb2dlYmxrc3J1anBnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYzMzEyMTAsImV4cCI6MjA3MTkwNzIxMH0.eOXJEo3XheuB2AK3NlRotSKqPMueqkgPUa896TM-hfA`
+- **NEVER use local PostgreSQL connections**
+- **NEVER use localhost database connections**
+- All SQL scripts and database operations must target the cloud instance
+- When creating tables, functions, or policies, use Supabase migrations or direct cloud connection
+
+## Supabase CLI Usage Rules
+- **MANDATORY: Use Supabase CLI for Database Operations**
+  - Install Supabase CLI: `npm install -g supabase`
+  - Initialize project: `supabase init`
+  - Link to cloud project: `supabase link --project-ref wndswqvqogeblksrujpg`
+  - Apply migrations: `supabase db push`
+  - Execute SQL scripts: `supabase db reset` or `supabase db push`
+- **Database Migration Workflow:**
+  1. Create migration files in `supabase/migrations/`
+  2. Use `supabase db push` to apply to cloud database
+  3. Verify changes with `supabase db diff`
+  4. Always test migrations before applying to production
+- **Project Reference:** `wndswqvqogeblksrujpg` (from Supabase URL)
+- **Migration File Naming:** `YYYYMMDD_description.sql`
+- **Always backup before major migrations**
 
 ## Code Style
 - Use TypeScript for all new code
@@ -366,8 +150,9 @@ This is a Web3-native rewards and investment platform with:
   - Implement request timeouts and size limits
 
 ### Database Security
+- **CRITICAL: ONLY use Supabase Cloud Database** - Never connect to local databases
 - Use Row Level Security (RLS) policies for all tables
-- Grant minimal required permissions to `postgres` role for local development
+- All database operations must use the cloud Supabase instance
 - Never hardcode sensitive data in scripts or code
 - Use environment variables for all configuration
 - Implement database connection encryption

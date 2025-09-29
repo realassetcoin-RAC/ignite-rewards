@@ -80,12 +80,22 @@ const DAOManager: React.FC = () => {
   
   // Form states
   const [newDAO, setNewDAO] = useState({
-    name: '',
-    description: '',
-    governance_token: 'RAC',
-    treasury_address: '',
-    voting_threshold: 51,
-    proposal_threshold: 1
+    name: 'Real Asset Coin $RAC',
+    description: '$RAC is the governance token for the ecosystem',
+    logo_url: 'D:\\RAC\\RAC_Logo.png',
+    website_url: 'https://openrac.io',
+    discord_url: '',
+    twitter_url: '',
+    github_url: '',
+    governance_token_address: 'Coming Soon',
+    governance_token_symbol: '$RAC',
+    governance_token_decimals: 9,
+    min_proposal_threshold: 1,
+    voting_period_days: 7,
+    execution_delay_hours: 24,
+    quorum_percentage: 10.0,
+    super_majority_threshold: 66.67,
+    treasury_address: ''
   });
 
   const [newProposal, setNewProposal] = useState({
@@ -235,12 +245,22 @@ const DAOManager: React.FC = () => {
 
       setShowCreateDAO(false);
       setNewDAO({
-        name: '',
-        description: '',
-        governance_token: 'RAC',
-        treasury_address: '',
-        voting_threshold: 51,
-        proposal_threshold: 1
+        name: 'Real Asset Coin $RAC',
+        description: '$RAC is the governance token for the ecosystem',
+        logo_url: 'D:\\RAC\\RAC_Logo.png',
+        website_url: 'https://openrac.io',
+        discord_url: '',
+        twitter_url: '',
+        github_url: '',
+        governance_token_address: 'Coming Soon',
+        governance_token_symbol: '$RAC',
+        governance_token_decimals: 9,
+        min_proposal_threshold: 1,
+        voting_period_days: 7,
+        execution_delay_hours: 24,
+        quorum_percentage: 10.0,
+        super_majority_threshold: 66.67,
+        treasury_address: ''
       });
       await loadOrganizations();
     } catch (error) {
@@ -389,62 +409,202 @@ const DAOManager: React.FC = () => {
                   Create DAO
                 </Button>
               </DialogTrigger>
-              <DialogContent className="max-w-md">
+              <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                   <DialogTitle>Create New DAO Organization</DialogTitle>
                 </DialogHeader>
-                <div className="space-y-4">
-                  <div>
-                    <Label htmlFor="name">Organization Name</Label>
-                    <Input
-                      id="name"
-                      value={newDAO.name}
-                      onChange={(e) => setNewDAO(prev => ({ ...prev, name: e.target.value }))}
-                      placeholder="Enter organization name"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="description">Description</Label>
-                    <Textarea
-                      id="description"
-                      value={newDAO.description}
-                      onChange={(e) => setNewDAO(prev => ({ ...prev, description: e.target.value }))}
-                      placeholder="Enter organization description"
-                      rows={3}
-                    />
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-6">
+                  {/* Basic Information */}
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold">Basic Information</h3>
                     <div>
-                      <Label htmlFor="governance_token">Governance Token</Label>
+                      <Label htmlFor="name">Organization Name *</Label>
                       <Input
-                        id="governance_token"
-                        value={newDAO.governance_token}
-                        onChange={(e) => setNewDAO(prev => ({ ...prev, governance_token: e.target.value }))}
-                        placeholder="RAC"
+                        id="name"
+                        value={newDAO.name}
+                        onChange={(e) => setNewDAO(prev => ({ ...prev, name: e.target.value }))}
+                        placeholder="Enter organization name"
                       />
                     </div>
                     <div>
-                      <Label htmlFor="voting_threshold">Voting Threshold (%)</Label>
+                      <Label htmlFor="description">Description *</Label>
+                      <Textarea
+                        id="description"
+                        value={newDAO.description}
+                        onChange={(e) => setNewDAO(prev => ({ ...prev, description: e.target.value }))}
+                        placeholder="Enter organization description"
+                        rows={3}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="logo_url">Logo URL</Label>
                       <Input
-                        id="voting_threshold"
-                        type="number"
-                        min="1"
-                        max="100"
-                        value={newDAO.voting_threshold}
-                        onChange={(e) => setNewDAO(prev => ({ ...prev, voting_threshold: parseInt(e.target.value) }))}
+                        id="logo_url"
+                        value={newDAO.logo_url}
+                        onChange={(e) => setNewDAO(prev => ({ ...prev, logo_url: e.target.value }))}
+                        placeholder="Enter logo URL or file path"
                       />
                     </div>
                   </div>
-                  <div>
-                    <Label htmlFor="treasury_address">Treasury Address (Optional)</Label>
-                    <Input
-                      id="treasury_address"
-                      value={newDAO.treasury_address}
-                      onChange={(e) => setNewDAO(prev => ({ ...prev, treasury_address: e.target.value }))}
-                      placeholder="Enter treasury wallet address"
-                    />
+
+                  {/* Social Media Links */}
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold">Social Media & Links</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="website_url">Website URL</Label>
+                        <Input
+                          id="website_url"
+                          value={newDAO.website_url}
+                          onChange={(e) => setNewDAO(prev => ({ ...prev, website_url: e.target.value }))}
+                          placeholder="https://example.com"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="discord_url">Discord URL</Label>
+                        <Input
+                          id="discord_url"
+                          value={newDAO.discord_url}
+                          onChange={(e) => setNewDAO(prev => ({ ...prev, discord_url: e.target.value }))}
+                          placeholder="https://discord.gg/..."
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="twitter_url">Twitter URL</Label>
+                        <Input
+                          id="twitter_url"
+                          value={newDAO.twitter_url}
+                          onChange={(e) => setNewDAO(prev => ({ ...prev, twitter_url: e.target.value }))}
+                          placeholder="https://twitter.com/..."
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="github_url">GitHub URL</Label>
+                        <Input
+                          id="github_url"
+                          value={newDAO.github_url}
+                          onChange={(e) => setNewDAO(prev => ({ ...prev, github_url: e.target.value }))}
+                          placeholder="https://github.com/..."
+                        />
+                      </div>
+                    </div>
                   </div>
-                  <div className="flex justify-end space-x-2">
+
+                  {/* Governance Token */}
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold">Governance Token</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div>
+                        <Label htmlFor="governance_token_symbol">Token Symbol *</Label>
+                        <Input
+                          id="governance_token_symbol"
+                          value={newDAO.governance_token_symbol}
+                          onChange={(e) => setNewDAO(prev => ({ ...prev, governance_token_symbol: e.target.value }))}
+                          placeholder="$RAC"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="governance_token_address">Token Address</Label>
+                        <Input
+                          id="governance_token_address"
+                          value={newDAO.governance_token_address}
+                          onChange={(e) => setNewDAO(prev => ({ ...prev, governance_token_address: e.target.value }))}
+                          placeholder="Coming Soon"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="governance_token_decimals">Token Decimals</Label>
+                        <Input
+                          id="governance_token_decimals"
+                          type="number"
+                          min="0"
+                          max="18"
+                          value={newDAO.governance_token_decimals}
+                          onChange={(e) => setNewDAO(prev => ({ ...prev, governance_token_decimals: parseInt(e.target.value) }))}
+                          placeholder="9"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Governance Settings */}
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold">Governance Settings</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="min_proposal_threshold">Min Proposal Threshold</Label>
+                        <Input
+                          id="min_proposal_threshold"
+                          type="number"
+                          min="0"
+                          value={newDAO.min_proposal_threshold}
+                          onChange={(e) => setNewDAO(prev => ({ ...prev, min_proposal_threshold: parseInt(e.target.value) }))}
+                          placeholder="1"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="voting_period_days">Voting Period (Days)</Label>
+                        <Input
+                          id="voting_period_days"
+                          type="number"
+                          min="1"
+                          max="365"
+                          value={newDAO.voting_period_days}
+                          onChange={(e) => setNewDAO(prev => ({ ...prev, voting_period_days: parseInt(e.target.value) }))}
+                          placeholder="7"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="execution_delay_hours">Execution Delay (Hours)</Label>
+                        <Input
+                          id="execution_delay_hours"
+                          type="number"
+                          min="0"
+                          max="168"
+                          value={newDAO.execution_delay_hours}
+                          onChange={(e) => setNewDAO(prev => ({ ...prev, execution_delay_hours: parseInt(e.target.value) }))}
+                          placeholder="24"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="quorum_percentage">Quorum Percentage</Label>
+                        <Input
+                          id="quorum_percentage"
+                          type="number"
+                          min="0"
+                          max="100"
+                          step="0.1"
+                          value={newDAO.quorum_percentage}
+                          onChange={(e) => setNewDAO(prev => ({ ...prev, quorum_percentage: parseFloat(e.target.value) }))}
+                          placeholder="10.0"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="super_majority_threshold">Super Majority Threshold</Label>
+                        <Input
+                          id="super_majority_threshold"
+                          type="number"
+                          min="0"
+                          max="100"
+                          step="0.1"
+                          value={newDAO.super_majority_threshold}
+                          onChange={(e) => setNewDAO(prev => ({ ...prev, super_majority_threshold: parseFloat(e.target.value) }))}
+                          placeholder="66.67"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="treasury_address">Treasury Address</Label>
+                        <Input
+                          id="treasury_address"
+                          value={newDAO.treasury_address}
+                          onChange={(e) => setNewDAO(prev => ({ ...prev, treasury_address: e.target.value }))}
+                          placeholder="Enter treasury wallet address"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex justify-end space-x-2 pt-4 border-t">
                     <Button variant="outline" onClick={() => setShowCreateDAO(false)}>
                       Cancel
                     </Button>

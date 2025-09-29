@@ -1,0 +1,41 @@
+version: '3.8'
+
+services:
+  # Development React App with Hot Reload
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: rac-rewards-dev-app
+    ports:
+      - "8084:8084"
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - /app/dist
+    environment:
+      - NODE_ENV=development
+      # Supabase environment variables (set these in .env)
+      - VITE_SUPABASE_URL=${VITE_SUPABASE_URL}
+      - VITE_SUPABASE_ANON_KEY=${VITE_SUPABASE_ANON_KEY}
+    networks:
+      - rac-dev-network
+    command: bun run dev --host 0.0.0.0
+
+  # Optional: Redis for development caching
+  redis:
+    image: redis:7-alpine
+    container_name: rac-rewards-dev-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_dev_data:/data
+    networks:
+      - rac-dev-network
+
+volumes:
+  redis_dev_data:
+
+networks:
+  rac-dev-network:
+    driver: bridge

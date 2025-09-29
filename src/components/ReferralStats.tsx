@@ -37,15 +37,40 @@ export const ReferralStats: React.FC<ReferralStatsProps> = ({ userId, className 
 
   const fetchReferralStats = async () => {
     try {
-      const { data, error } = await supabase
-        .from('referral_settlements')
-        .select(`
-          *,
-          referred_user:profiles!referral_settlements_referred_user_id_fkey(email, full_name)
-        `)
-        .eq('referrer_id', userId)
-        .eq('status', 'completed')
-        .order('settlement_date', { ascending: false });
+      // Try referral_settlements first, fallback to user_referrals if not available
+      let data = null;
+      let error = null;
+      
+      try {
+        const result = await supabase
+          .from('referral_settlements')
+          .select(`
+            *,
+            referred_user:profiles!referral_settlements_referred_user_id_fkey(email, full_name)
+          `)
+          .eq('referrer_id', userId)
+          .eq('status', 'completed')
+          .order('settlement_date', { ascending: false });
+        
+        data = result.data;
+        error = result.error;
+      } catch (settlementsError) {
+        console.warn('referral_settlements table not available, using user_referrals fallback');
+        
+        // Fallback to user_referrals table
+        const fallbackResult = await supabase
+          .from('user_referrals')
+          .select(`
+            *,
+            referred_user:profiles!user_referrals_referred_user_id_fkey(email, full_name)
+          `)
+          .eq('referrer_id', userId)
+          .eq('status', 'completed')
+          .order('created_at', { ascending: false });
+        
+        data = fallbackResult.data;
+        error = fallbackResult.error;
+      }
 
       if (error) {
         throw error;

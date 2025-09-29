@@ -365,7 +365,9 @@ const MerchantDashboard = () => {
 
   const handleSignOut = async () => {
     try {
-      await supabase.auth.signOut();
+      await supabase.auth.signOut({
+        scope: 'local' // This prevents redirect and keeps the sign out local
+      });
       // Clear any local storage items
       localStorage.removeItem('mock_oauth_user');
       localStorage.removeItem('supabase.auth.token');

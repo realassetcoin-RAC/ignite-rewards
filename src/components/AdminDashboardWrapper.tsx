@@ -132,7 +132,7 @@ const AdminDashboardWrapper: React.FC<AdminDashboardWrapperProps> = ({ children 
           </CardHeader>
           <CardContent className="space-y-4">
             <Button 
-              onClick={() => navigate('/auth')} 
+              onClick={() => navigate('/')} 
               className="w-full bg-gradient-to-r from-primary to-purple-500 hover:from-primary/90 hover:to-purple-500/90"
             >
               Sign In
@@ -277,7 +277,7 @@ const AdminDashboardWrapper: React.FC<AdminDashboardWrapperProps> = ({ children 
             <Button onClick={() => navigate('/')} variant="outline">
               Return Home
             </Button>
-            <Button onClick={() => navigate('/auth')} variant="outline">
+            <Button onClick={() => navigate('/')} variant="outline">
               Sign Out & Re-authenticate
             </Button>
           </div>

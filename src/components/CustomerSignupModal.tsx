@@ -6,8 +6,9 @@ import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Check, ChevronLeft, ChevronRight, Loader2, CreditCard } from "lucide-react";
+import { Check, ChevronLeft, ChevronRight, Loader2, CreditCard, AlertCircle } from "lucide-react";
 import { databaseAdapter } from "@/lib/databaseAdapter";
+import { customerSignupSchema, validateFormData, useFieldValidation, nameSchema, emailSchema, passwordSchema, phoneSchema, citySchema, referralCodeSchema } from "@/utils/validation";
 
 /**
  * Virtual card configuration interface
@@ -46,10 +47,10 @@ interface CustomerForm {
 const virtualCards: VirtualCard[] = [
   {
     id: "basic",
-    name: "Basic Card",
+    name: "Pearl White Card",
     price: 0,
-    image: "/src/assets/rac-card.jpg",
-    features: ["Standard rewards", "Basic design", "Mobile wallet support"]
+    image: "/images/loyalty-cards/pearl-white.png",
+    features: ["Standard rewards", "Pearl White design", "Mobile wallet support"]
   },
   {
     id: "premium",
@@ -90,6 +91,14 @@ const CustomerSignupModal: React.FC<CustomerSignupModalProps> = ({ isOpen, onClo
   const [acceptedPrivacy, setAcceptedPrivacy] = useState(false);
   
   const { toast } = useToast();
+
+  // Real-time validation
+  const nameValidation = useFieldValidation(nameSchema, customerForm.name);
+  const emailValidation = useFieldValidation(emailSchema, customerForm.email);
+  const passwordValidation = useFieldValidation(passwordSchema, customerForm.password);
+  const phoneValidation = useFieldValidation(phoneSchema, customerForm.phone);
+  const cityValidation = useFieldValidation(citySchema, customerForm.city);
+  const referralValidation = useFieldValidation(referralCodeSchema, customerForm.referralCode);
 
   /**
    * Reset modal state when it opens/closes
@@ -165,29 +174,20 @@ const CustomerSignupModal: React.FC<CustomerSignupModalProps> = ({ isOpen, onClo
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!customerForm.name || !customerForm.email || !customerForm.password) {
+    // Validate form data using schema
+    const formDataWithTerms = {
+      ...customerForm,
+      acceptTerms: acceptedTerms,
+      acceptPrivacy: acceptedPrivacy
+    };
+    
+    const validation = validateFormData(customerSignupSchema, formDataWithTerms);
+    
+    if (!validation.success) {
+      const firstError = validation.errors?.[0] || 'Please check your input';
       toast({
-        title: "Missing Information",
-        description: "Please fill in all required fields.",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    if (customerForm.password.length < 6) {
-      toast({
-        title: "Password Too Short",
-        description: "Password must be at least 6 characters long.",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    // Validate terms and privacy acceptance before proceeding
-    if (!acceptedTerms || !acceptedPrivacy) {
-      toast({
-        title: "Terms and Privacy Required",
-        description: "Please accept the Terms of Service and Privacy Policy to continue.",
+        title: "Validation Error",
+        description: firstError,
         variant: "destructive"
       });
       return;
@@ -237,7 +237,7 @@ const CustomerSignupModal: React.FC<CustomerSignupModalProps> = ({ isOpen, onClo
       
       // Create user wallet
       const { error: walletError } = await supabase
-        .from('user_wallets')
+        .from('user_solana_wallets')
         .insert({
           user_id: authData.user.id,
           address: walletAddress,
@@ -465,7 +465,14 @@ const CustomerSignupModal: React.FC<CustomerSignupModalProps> = ({ isOpen, onClo
                   placeholder="Enter your full name"
                   required
                   disabled={loading}
+                  className={nameValidation.error ? 'border-red-500 focus:border-red-500' : ''}
                 />
+                {nameValidation.error && (
+                  <div className="flex items-center gap-1 text-xs text-red-600">
+                    <AlertCircle className="h-3 w-3" />
+                    {nameValidation.error}
+                  </div>
+                )}
               </div>
               
               <div className="space-y-2">
@@ -479,7 +486,14 @@ const CustomerSignupModal: React.FC<CustomerSignupModalProps> = ({ isOpen, onClo
                   placeholder="Enter your email address"
                   required
                   disabled={loading}
+                  className={emailValidation.error ? 'border-red-500 focus:border-red-500' : ''}
                 />
+                {emailValidation.error && (
+                  <div className="flex items-center gap-1 text-xs text-red-600">
+                    <AlertCircle className="h-3 w-3" />
+                    {emailValidation.error}
+                  </div>
+                )}
               </div>
               
               <div className="space-y-2">
@@ -490,11 +504,18 @@ const CustomerSignupModal: React.FC<CustomerSignupModalProps> = ({ isOpen, onClo
                   type="password"
                   value={customerForm.password}
                   onChange={handleInputChange}
-                  placeholder="Create a password (min. 6 characters)"
+                  placeholder="Create a password (min. 8 characters, uppercase, lowercase, number, special char)"
                   required
-                  minLength={6}
+                  minLength={8}
                   disabled={loading}
+                  className={passwordValidation.error ? 'border-red-500 focus:border-red-500' : ''}
                 />
+                {passwordValidation.error && (
+                  <div className="flex items-center gap-1 text-xs text-red-600">
+                    <AlertCircle className="h-3 w-3" />
+                    {passwordValidation.error}
+                  </div>
+                )}
               </div>
               
               <div className="space-y-2">
@@ -505,9 +526,16 @@ const CustomerSignupModal: React.FC<CustomerSignupModalProps> = ({ isOpen, onClo
                   type="tel"
                   value={customerForm.phone}
                   onChange={handleInputChange}
-                  placeholder="Enter your phone number"
+                  placeholder="Enter your phone number (e.g., +1234567890)"
                   disabled={loading}
+                  className={phoneValidation.error ? 'border-red-500 focus:border-red-500' : ''}
                 />
+                {phoneValidation.error && (
+                  <div className="flex items-center gap-1 text-xs text-red-600">
+                    <AlertCircle className="h-3 w-3" />
+                    {phoneValidation.error}
+                  </div>
+                )}
               </div>
               
               {/* ✅ IMPLEMENT REQUIREMENT: Referral code field in signup */}
@@ -517,10 +545,17 @@ const CustomerSignupModal: React.FC<CustomerSignupModalProps> = ({ isOpen, onClo
                   id="referralCode"
                   name="referralCode"
                   value={customerForm.referralCode}
-                  onChange={handleInputChange}
+                  onChange={(e) => handleInputChange({ ...e, target: { ...e.target, value: e.target.value.toUpperCase() } })}
                   placeholder="Enter referral code if you have one"
                   disabled={loading}
+                  className={referralValidation.error ? 'border-red-500 focus:border-red-500' : ''}
                 />
+                {referralValidation.error && (
+                  <div className="flex items-center gap-1 text-xs text-red-600">
+                    <AlertCircle className="h-3 w-3" />
+                    {referralValidation.error}
+                  </div>
+                )}
                 <p className="text-xs text-muted-foreground">
                   Have a referral code? Enter it to earn bonus points for both you and your referrer!
                 </p>
@@ -537,7 +572,14 @@ const CustomerSignupModal: React.FC<CustomerSignupModalProps> = ({ isOpen, onClo
                   disabled={loading}
                   onFocus={() => customerForm.city.length > 2 && setShowCityDropdown(true)}
                   onBlur={() => setTimeout(() => setShowCityDropdown(false), 200)}
+                  className={cityValidation.error ? 'border-red-500 focus:border-red-500' : ''}
                 />
+                {cityValidation.error && (
+                  <div className="flex items-center gap-1 text-xs text-red-600">
+                    <AlertCircle className="h-3 w-3" />
+                    {cityValidation.error}
+                  </div>
+                )}
                 {showCityDropdown && cityResults.length > 0 && (
                   <div className="absolute top-full left-0 right-0 bg-card border border-border rounded-md shadow-lg z-10 max-h-40 overflow-y-auto">
                     {cityResults.map((city: any, index) => (

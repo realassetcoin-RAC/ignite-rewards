@@ -46,6 +46,17 @@ The RAC Rewards Platform is a comprehensive Web3-native loyalty and investment e
 - ✅ **Session Management**: 5-minute inactivity logout
 - ✅ **MFA System**: TOTP-based multi-factor authentication with backup codes
 
+#### **Solana Custodial Wallet System**
+- ✅ **Automatic Wallet Creation**: Unique Solana custodial wallet automatically created for ALL users (email + Google)
+- ✅ **Unique Seed Phrases**: Each user gets a unique 12-word BIP39 seed phrase for their wallet
+- ✅ **Universal Access**: Both email and Google users receive Solana wallets by default
+- ✅ **Seed Phrase Backup**: Users can backup their seed phrases through the dashboard
+- ✅ **Seed Phrase Login**: Users can login using their seed phrases instead of email/Google
+- ✅ **Auth Method Control**: Users can disable email/Google authentication and use only seed phrases
+- ✅ **Wallet Management**: Complete wallet creation, backup, and recovery system
+- ✅ **Database Integration**: Standardized `user_solana_wallets` table for all wallet operations
+- ✅ **Security Features**: Encrypted seed phrase storage with secure backup options
+
 #### **Loyalty NFT Management**
 - ✅ **One NFT Limit**: Maximum one loyalty NFT per account
 - ✅ **NFT Upgrade**: Upgrade feature with payment gateway integration
@@ -268,12 +279,25 @@ The RAC Rewards Platform is a comprehensive Web3-native loyalty and investment e
 - ✅ **Multi-Sig Wallets**: Secure asset management
 - ✅ **DEX Integration**: Decentralized exchange support
 
+### **Solana Custodial Wallet Implementation**
+- ✅ **Automatic Wallet Creation**: `SolanaWalletService.createWalletForUser()` creates wallets during signup
+- ✅ **BIP39 Seed Generation**: Unique 12-word seed phrases using industry-standard BIP39
+- ✅ **Database Storage**: Standardized `user_solana_wallets` table with encrypted seed phrases
+- ✅ **Auth Integration**: `AuthCallback.tsx` automatically creates wallets for all users
+- ✅ **Seed Phrase Backup**: `SeedPhraseBackup.tsx` component for secure backup management
+- ✅ **Seed Phrase Login**: `SeedPhraseLoginModal.tsx` with database authentication function
+- ✅ **Auth Control**: `SeedPhraseManager.tsx` allows disabling email/Google authentication
+- ✅ **Database Function**: `authenticate_with_seed_phrase()` function for secure login
+- ✅ **Universal Access**: Both email and Google users receive Solana wallets automatically
+- ✅ **Security Features**: Encrypted storage, secure backup, and recovery options
+
 ---
 
 ## 📊 **Implementation Status**
 
 ### **✅ Completed Features**
 - [x] **User Authentication**: Email, Google OAuth, seed phrase login
+- [x] **Solana Custodial Wallet System**: Automatic wallet creation, seed phrase management, auth control
 - [x] **Loyalty NFT System**: Complete NFT management and upgrades
 - [x] **Merchant Dashboard**: Full merchant management system
 - [x] **Referral System**: Complete referral campaign management
@@ -302,13 +326,15 @@ The RAC Rewards Platform is a comprehensive Web3-native loyalty and investment e
 ## 🎯 **Key Differentiators**
 
 1. **Web3-Native**: Built from the ground up for Web3 integration
-2. **Dual User Experience**: Seamless custodial and non-custodial support
-3. **Impact Investment**: Direct investment in meaningful initiatives
-4. **NFT-Based Loyalty**: Unique loyalty system with upgradeable benefits
-5. **Global Consistency**: GMT timezone enforcement for worldwide users
-6. **Security-First**: Comprehensive security and compliance implementation
-7. **Merchant-Focused**: Complete merchant dashboard and management tools
-8. **Scalable Architecture**: Built to handle millions of users and transactions
+2. **Universal Solana Wallets**: Automatic Solana custodial wallet creation for ALL users (email + Google)
+3. **Dual User Experience**: Seamless custodial and non-custodial support
+4. **Seed Phrase Authentication**: Users can login with seed phrases and disable traditional auth
+5. **Impact Investment**: Direct investment in meaningful initiatives
+6. **NFT-Based Loyalty**: Unique loyalty system with upgradeable benefits
+7. **Global Consistency**: GMT timezone enforcement for worldwide users
+8. **Security-First**: Comprehensive security and compliance implementation
+9. **Merchant-Focused**: Complete merchant dashboard and management tools
+10. **Scalable Architecture**: Built to handle millions of users and transactions
 
 ---
 
@@ -324,3 +350,23 @@ The RAC Rewards Platform is a comprehensive Web3-native loyalty and investment e
 ---
 
 *This document serves as the comprehensive specification for the RAC Rewards Platform. All features listed are either implemented, in progress, or planned for future development.*
+
+---
+
+## 📅 **Recent Updates**
+
+### **January 28, 2025 - Solana Custodial Wallet System Implementation**
+- ✅ **Complete Implementation**: Automatic Solana wallet creation for ALL users (email + Google)
+- ✅ **Seed Phrase Management**: Full backup, login, and recovery system
+- ✅ **Auth Control**: Users can disable email/Google authentication and use only seed phrases
+- ✅ **Database Standardization**: Unified `user_solana_wallets` table across all components
+- ✅ **Security Features**: BIP39 seed generation, encrypted storage, secure authentication
+- ✅ **Universal Access**: Both email and Google users receive Solana wallets automatically
+
+**Implementation Files:**
+- `src/pages/AuthCallback.tsx` - Automatic wallet creation during signup
+- `src/lib/solanaWalletService.ts` - Wallet management service
+- `src/components/SeedPhraseBackup.tsx` - Seed phrase backup interface
+- `src/components/SeedPhraseLoginModal.tsx` - Seed phrase login functionality
+- `src/components/SeedPhraseManager.tsx` - Auth control and management
+- Database function: `authenticate_with_seed_phrase()` for secure login

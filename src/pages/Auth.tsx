@@ -10,7 +10,13 @@ const Auth = () => {
 
   useEffect(() => {
     setIsLoaded(true);
-  }, []);
+    // Auto-redirect to home page after a short delay
+    const timer = setTimeout(() => {
+      navigate('/', { replace: true });
+    }, 3000);
+    
+    return () => clearTimeout(timer);
+  }, [navigate]);
 
   useEffect(() => {
     // If not loading and user is authenticated, redirect to /user
@@ -65,12 +71,12 @@ const Auth = () => {
         <h1 className={`text-2xl font-bold mb-4 ${
           isLoaded ? 'animate-fade-in-up animation-delay-200' : 'opacity-0'
         }`}>
-          Access Denied
+          Authentication Required
         </h1>
         <p className={`mb-6 ${
           isLoaded ? 'animate-fade-in-up animation-delay-400' : 'opacity-0'
         }`}>
-          This page is no longer available. Please use the authentication modal on the main page instead.
+          Please sign in to access your account. You can use the sign-in button on the main page.
         </p>
         <button 
           onClick={() => navigate('/', { replace: true })}
@@ -80,6 +86,11 @@ const Auth = () => {
         >
           Go to Home Page
         </button>
+        <p className={`text-sm mt-4 ${
+          isLoaded ? 'animate-fade-in-up animation-delay-800' : 'opacity-0'
+        }`}>
+          Redirecting automatically in 3 seconds...
+        </p>
       </div>
     </div>
   );

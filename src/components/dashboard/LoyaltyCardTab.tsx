@@ -57,49 +57,36 @@ const LoyaltyCardTab = () => {
 
   const loadLoyaltyCard = async () => {
     try {
-      // Try to load from user_loyalty_cards with API schema focus
+      setLoading(true);
+      
+      // Add timeout to prevent infinite loading
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Request timeout')), 10000)
+      );
+
+      // Try to load from user_loyalty_cards with public schema focus
       let loyaltyData = null;
       let loadError = null;
       
-      // Based on our testing, focus on API schema first
       try {
         console.log('Loading from user_loyalty_cards (public schema)...');
-        const { data, error } = await supabase
+        const fetchPromise = supabase
           .from('user_loyalty_cards')
           .select('*')
           .eq('user_id', user?.id)
           .maybeSingle();
+          
+        const { data, error } = await Promise.race([fetchPromise, timeoutPromise]) as any;
           
         if (error && error.code !== 'PGRST116') {
           throw error;
         }
         
         loyaltyData = data;
-        console.log('Loaded from configured schema:', data);
+        console.log('Loaded from public schema:', data);
       } catch (primaryError) {
         console.warn('Primary schema load failed:', primaryError);
         loadError = primaryError;
-        
-        // Try explicit API schema reference
-        try {
-          console.log('Loading with explicit api schema reference...');
-          const { data, error } = await supabase
-            .schema('api')
-            .from('user_loyalty_cards')
-            .select('*')
-            .eq('user_id', user?.id)
-            .maybeSingle();
-            
-          if (error && error.code !== 'PGRST116') {
-            throw error;
-          }
-          
-          loyaltyData = data;
-          console.log('Loaded with explicit api schema:', data);
-        } catch (secondaryError) {
-          console.error('All load attempts failed:', secondaryError);
-          loadError = secondaryError;
-        }
       }
       
       // Handle loading errors more gracefully
@@ -107,10 +94,10 @@ const LoyaltyCardTab = () => {
         console.error('Error loading loyalty card:', loadError);
         
         // If it's a permission error, don't prevent card creation - just continue with no card
-        if (loadError.code !== '42501' && !loadError.message?.includes('permission denied')) {
+        if (loadError.code !== '42501' && !loadError.message?.includes('permission denied') && !loadError.message?.includes('timeout')) {
           return;
         } else {
-          console.log('Permission denied for loading - continuing with card creation option');
+          console.log('Permission denied or timeout for loading - continuing with card creation option');
         }
       }
 

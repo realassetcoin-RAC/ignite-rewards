@@ -41,7 +41,9 @@ const UserDashboardWithBackgrounds = () => {
 
   const handleSignOut = async () => {
     try {
-      await supabase.auth.signOut();
+      await supabase.auth.signOut({
+        scope: 'local' // This prevents redirect and keeps the sign out local
+      });
       toast({
         title: "Signed Out",
         description: "You have been successfully signed out.",

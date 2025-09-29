@@ -31,7 +31,8 @@ import {
   Shield,
   Zap,
   Target,
-  Wallet
+  Wallet,
+  QrCode
 } from "lucide-react";
 
 // Import existing components
@@ -40,7 +41,7 @@ import ReferralsTabImproved from "@/components/dashboard/ReferralsTabImproved";
 import RewardsTrackerImproved from "@/components/solana/RewardsTrackerImproved";
 import LoyaltyAccountLinkingFixed from "@/components/LoyaltyAccountLinkingFixed";
 import PointConversionSystem from "@/components/PointConversionSystem";
-import MarketplaceMainFixed from "@/components/marketplace/MarketplaceMainFixed";
+import MarketplaceMain from "@/components/marketplace/MarketplaceMain";
 import UserNFTManager from "@/components/UserNFTManager";
 import LoyaltyCardHeader from "@/components/LoyaltyCardHeader";
 import NFTManagementPanel from "@/components/nft/NFTManagementPanel";
@@ -48,8 +49,9 @@ import DAOGovernancePanel from "@/components/dao/DAOGovernancePanel";
 import { AssetInitiativeSelector } from "@/components/AssetInitiativeSelector";
 import { AssetWalletSystem } from "@/components/AssetWalletSystem";
 import { WalletAddressDisplay } from "@/components/WalletAddressDisplay";
-import { SeedPhraseManager } from "@/components/SeedPhraseManager";
+import SeedPhraseBackup from "@/components/SeedPhraseBackup";
 import { ReferralStats } from "@/components/ReferralStats";
+import { QRScanner } from "@/components/QRScanner";
 
 interface DashboardStats {
   totalPoints: number;
@@ -83,6 +85,7 @@ const UserDashboard = () => {
   const [activeSection, setActiveSection] = useState('dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
+  const [showQRScanner, setShowQRScanner] = useState(false);
   const [stats] = useState<DashboardStats>({
     totalPoints: 850,
     totalEarned: 2450,
@@ -180,7 +183,7 @@ const UserDashboard = () => {
     {
       id: 'referrals',
       title: 'Referral Program',
-      description: 'Invite friends and earn bonus rewards',
+      description: 'Invite Friends, Refer Merchants & Earn Bonus Rewards',
       icon: Users,
       gradient: 'from-blue-500 to-cyan-500',
       shadowColor: 'shadow-blue-500/25',
@@ -240,7 +243,7 @@ const UserDashboard = () => {
           </div>
         );
       case 'marketplace':
-        return <MarketplaceMainFixed />;
+        return <MarketplaceMain embedded={true} />;
       case 'loyalty-networks':
   return (
           <div className="space-y-8">
@@ -254,30 +257,41 @@ const UserDashboard = () => {
       default:
         return (
           <div className="space-y-8">
-            {/* Welcome Banner */}
-            <Card className="bg-gradient-to-br from-purple-600/20 via-blue-600/20 to-emerald-600/20 backdrop-blur-xl border-white/10 overflow-hidden">
-              <CardContent className="p-8">
-          <div className="flex items-center justify-between">
-                <div>
-                    <h2 className="text-3xl font-bold text-white mb-2">
-                      Welcome back, {profile?.full_name || user.email?.split('@')[0] || 'User'}! 👋
-                    </h2>
-                    <p className="text-lg text-gray-300">
-                      You have {stats.totalPoints} points ready to use and {stats.activeRewards} new rewards available.
-                    </p>
-                </div>
-                  <div className="hidden md:flex items-center space-x-4">
-                <div className="text-right">
-                      <p className="text-sm text-gray-300">Loyalty Level</p>
-                      <div className="flex items-center space-x-2">
-                        <Crown className="w-5 h-5 text-yellow-400" />
-                        <span className="text-xl font-bold text-white">Gold</span>
+            {/* Your Loyalty Card Section */}
+            <div>
+              <h3 className="text-2xl font-bold text-white mb-6 flex items-center">
+                <CreditCard className="w-6 h-6 mr-3 text-purple-400" />
+                Your Loyalty Card
+              </h3>
+              <LoyaltyCardHeader />
             </div>
-          </div>
-        </div>
-              </div>
-            </CardContent>
-          </Card>
+
+            {/* QR Scan Section */}
+            <div>
+              <h3 className="text-2xl font-bold text-white mb-6 flex items-center">
+                <QrCode className="w-6 h-6 mr-3 text-blue-400" />
+                Over-the-Counter Transactions
+              </h3>
+              <Card className="bg-white/5 backdrop-blur-xl border-white/10">
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h4 className="text-lg font-semibold text-white mb-2">Scan QR Code</h4>
+                      <p className="text-white/70 text-sm">
+                        Scan QR codes from merchants for instant point redemption and transactions
+                      </p>
+                    </div>
+                    <Button
+                      onClick={() => setShowQRScanner(true)}
+                      className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600"
+                    >
+                      <QrCode className="h-4 w-4 mr-2" />
+                      Scan QR Code
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
 
             {/* Stats Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -342,14 +356,6 @@ const UserDashboard = () => {
           </Card>
             </div>
 
-            {/* Loyalty Card Section */}
-            <div>
-              <h3 className="text-2xl font-bold text-white mb-6 flex items-center">
-                <CreditCard className="w-6 h-6 mr-3 text-purple-400" />
-                Your Loyalty Card
-              </h3>
-              <LoyaltyCardHeader />
-            </div>
 
             {/* Quick Actions */}
             <div>
@@ -414,9 +420,7 @@ const UserDashboard = () => {
                     <WalletAddressDisplay 
                       userId={user.id}
                     />
-                    <SeedPhraseManager 
-                      userId={user.id}
-                    />
+                    <SeedPhraseBackup />
                   </>
                 )}
                 </div>
@@ -590,6 +594,20 @@ const UserDashboard = () => {
           </div>
       </main>
       </div>
+
+      {/* QR Scanner Modal */}
+      <QRScanner
+        isOpen={showQRScanner}
+        onClose={() => setShowQRScanner(false)}
+        onScanSuccess={(data) => {
+          console.log('QR Code scanned:', data);
+          toast({
+            title: "QR Code Scanned",
+            description: "Transaction data processed successfully!",
+          });
+          setShowQRScanner(false);
+        }}
+      />
     </div>
   );
 };

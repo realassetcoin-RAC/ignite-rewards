@@ -46,20 +46,40 @@ const NFTManagementPanel: React.FC<NFTManagementPanelProps> = ({ className = '' 
       setLoading(true);
       
       // Load loyalty card
-      const card = await LoyaltyNFTService.getUserLoyaltyCard(user?.id);
-      setLoyaltyCard(card);
+      try {
+        const cards = await LoyaltyNFTService.getUserNFTs(user?.id);
+        setLoyaltyCard(cards && cards.length > 0 ? cards[0] : null);
+      } catch (error) {
+        console.warn('Failed to load user NFTs, using mock data:', error);
+        setLoyaltyCard(null);
+      }
       
       // Load auto-staking config
-      const stakingConfig = await AutoStakingService.getAutoStakingConfig(user?.id);
-      setAutoStakingConfig(stakingConfig);
+      try {
+        const stakingConfig = await AutoStakingService.getAutoStakingConfig(user?.id);
+        setAutoStakingConfig(stakingConfig);
+      } catch (error) {
+        console.warn('Failed to load auto-staking config:', error);
+        setAutoStakingConfig(null);
+      }
       
       // Load evolution stats
-      const evolution = await NFTEvolutionService.getEvolutionStats(user?.id);
-      setEvolutionStats(evolution);
+      try {
+        const evolution = await NFTEvolutionService.getEvolutionStats(user?.id);
+        setEvolutionStats(evolution);
+      } catch (error) {
+        console.warn('Failed to load evolution stats:', error);
+        setEvolutionStats(null);
+      }
       
       // Load fractional investment stats
-      const fractional = await FractionalInvestmentService.getFractionalInvestmentStats(user?.id);
-      setFractionalStats(fractional);
+      try {
+        const fractional = await FractionalInvestmentService.getFractionalInvestmentStats(user?.id);
+        setFractionalStats(fractional);
+      } catch (error) {
+        console.warn('Failed to load fractional stats:', error);
+        setFractionalStats(null);
+      }
       
     } catch (error) {
       console.error('Error loading NFT data:', error);

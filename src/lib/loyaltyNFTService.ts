@@ -117,7 +117,6 @@ export class LoyaltyNFTService {
       .from('nft_types')
       .select('*')
       .eq('is_active', true)
-      .order('is_custodial', { ascending: false })
       .order('buy_price_usdt', { ascending: true });
 
     if (error) throw error;

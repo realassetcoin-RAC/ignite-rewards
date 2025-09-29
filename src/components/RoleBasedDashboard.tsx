@@ -1,7 +1,6 @@
 import { memo } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useSecureAuth } from '@/hooks/useSecureAuth';
-import EmailVerificationGuard from './EmailVerificationGuard';
 
 /**
  * RoleBasedDashboard component that redirects users to the appropriate dashboard
@@ -79,12 +78,7 @@ const RoleBasedDashboard = memo(() => {
     }
   };
 
-  // Wrap with email verification guard
-  return (
-    <EmailVerificationGuard userRole={userRole}>
-      {renderNavigation()}
-    </EmailVerificationGuard>
-  );
+  return renderNavigation();
 });
 
 RoleBasedDashboard.displayName = 'RoleBasedDashboard';

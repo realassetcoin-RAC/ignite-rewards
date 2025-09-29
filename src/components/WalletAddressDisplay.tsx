@@ -34,7 +34,7 @@ export const WalletAddressDisplay: React.FC<WalletAddressDisplayProps> = ({ user
   const fetchWallet = async () => {
     try {
       const { data, error } = await supabase
-        .from('user_wallets')
+        .from('user_solana_wallets')
         .select('*')
         .eq('user_id', userId)
         .single();

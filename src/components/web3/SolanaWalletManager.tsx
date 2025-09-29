@@ -48,7 +48,7 @@ const SolanaWalletManager = () => {
   const loadUserWallet = async () => {
     try {
       const { data, error } = await supabase
-        .from('user_wallets')
+        .from('user_solana_wallets')
         .select('*')
         .eq('user_id', user?.id)
         .eq('is_active', true)
@@ -93,7 +93,7 @@ const SolanaWalletManager = () => {
       const encryptedSeed = btoa(mnemonic); // Base64 encoding as basic encryption
       
       const { data, error } = await supabase
-        .from('user_wallets')
+        .from('user_solana_wallets')
         .insert({
           user_id: user?.id,
           solana_address: keypair.publicKey.toString(),
@@ -170,7 +170,7 @@ const SolanaWalletManager = () => {
       const encryptedSeed = btoa(importSeedPhrase.trim());
       
       const { data, error } = await supabase
-        .from('user_wallets')
+        .from('user_solana_wallets')
         .insert({
           user_id: user?.id,
           solana_address: keypair.publicKey.toString(),

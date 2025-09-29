@@ -10,7 +10,8 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Edit2, DollarSign, CheckCircle2 } from "lucide-react";
+import { Plus, Edit2, DollarSign, CheckCircle2, AlertCircle } from "lucide-react";
+import { subscriptionPlanSchema, validateFormData } from '@/utils/validation';
 
 interface Plan {
   id: string;
@@ -403,8 +404,12 @@ const SubscriptionPlanManager = () => {
 
   const onSubmit = async (values: any) => {
     try {
-      if (!values.name?.trim()) {
-        toast({ title: 'Missing Information', description: 'Plan name is required.', variant: 'destructive' });
+      // Validate form data using schema
+      const validation = validateFormData(subscriptionPlanSchema, values);
+      
+      if (!validation.success) {
+        const firstError = validation.errors?.[0] || 'Please check your input';
+        toast({ title: 'Validation Error', description: firstError, variant: 'destructive' });
         return;
       }
 

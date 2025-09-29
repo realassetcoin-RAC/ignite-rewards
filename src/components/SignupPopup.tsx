@@ -12,7 +12,8 @@ import { useSecureAuth } from '@/hooks/useSecureAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { useTermsPrivacy } from '@/hooks/useTermsPrivacy';
 import { ReferralService } from '@/lib/referralService';
-import { Loader2, CheckCircle, Key, Gift, Wallet } from 'lucide-react';
+import { Loader2, CheckCircle, Key, Gift, Wallet, AlertCircle } from 'lucide-react';
+import { signupFormSchema, validateFormData, useFieldValidation, emailSchema, passwordSchema, nameSchema, referralCodeSchema } from '@/utils/validation';
 
 interface SignupPopupProps {
   isOpen: boolean;
@@ -44,6 +45,13 @@ export const SignupPopup: React.FC<SignupPopupProps> = ({
   const { refreshAuth } = useSecureAuth();
   const { saveAcceptance } = useTermsPrivacy();
 
+  // Real-time validation
+  const emailValidation = useFieldValidation(emailSchema, formData.email);
+  const passwordValidation = useFieldValidation(passwordSchema, formData.password);
+  const firstNameValidation = useFieldValidation(nameSchema, formData.firstName);
+  const lastNameValidation = useFieldValidation(nameSchema, formData.lastName);
+  const referralValidation = useFieldValidation(referralCodeSchema, formData.referralCode);
+
   const handleInputChange = (field: string, value: string | boolean) => {
     setFormData(prev => ({
       ...prev,
@@ -52,37 +60,13 @@ export const SignupPopup: React.FC<SignupPopupProps> = ({
   };
 
   const validateForm = () => {
-    if (!formData.email || !formData.password || !formData.firstName || !formData.lastName) {
+    const validation = validateFormData(signupFormSchema, formData);
+    
+    if (!validation.success) {
+      const firstError = validation.errors?.[0] || 'Please check your input';
       toast({
-        title: "Missing Information",
-        description: "Please fill in all required fields.",
-        variant: "destructive"
-      });
-      return false;
-    }
-
-    if (formData.password !== formData.confirmPassword) {
-      toast({
-        title: "Password Mismatch",
-        description: "Passwords do not match. Please try again.",
-        variant: "destructive"
-      });
-      return false;
-    }
-
-    if (formData.password.length < 8) {
-      toast({
-        title: "Weak Password",
-        description: "Password must be at least 8 characters long.",
-        variant: "destructive"
-      });
-      return false;
-    }
-
-    if (!formData.acceptTerms || !formData.acceptPrivacy) {
-      toast({
-        title: "Terms Required",
-        description: "Please accept the Terms of Use and Privacy Policy.",
+        title: "Validation Error",
+        description: firstError,
         variant: "destructive"
       });
       return false;
@@ -180,7 +164,8 @@ export const SignupPopup: React.FC<SignupPopupProps> = ({
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/auth/callback`
+          redirectTo: `${window.location.origin}/auth/popup-callback`,
+          skipBrowserRedirect: true // This enables popup mode
         }
       });
 
@@ -188,7 +173,60 @@ export const SignupPopup: React.FC<SignupPopupProps> = ({
         throw error;
       }
 
-      // OAuth redirect will handle the rest
+      if (data?.url) {
+        // Open OAuth in popup window
+        const popup = window.open(
+          data.url,
+          'google-oauth',
+          'width=500,height=600,scrollbars=yes,resizable=yes'
+        );
+
+        if (!popup) {
+          throw new Error('Popup blocked. Please allow popups for this site.');
+        }
+
+        // Listen for messages from the popup
+        const handleMessage = (event: MessageEvent) => {
+          if (event.origin !== window.location.origin) return;
+          
+          if (event.data.type === 'OAUTH_SUCCESS') {
+            toast({
+              title: "Sign Up Successful",
+              description: "Welcome to RAC Rewards! Your account has been created with Google.",
+            });
+            onClose();
+            window.removeEventListener('message', handleMessage);
+          } else if (event.data.type === 'OAUTH_ERROR') {
+            toast({
+              title: "Sign Up Failed",
+              description: event.data.error || "Google sign-up failed. Please try again.",
+              variant: "destructive"
+            });
+            window.removeEventListener('message', handleMessage);
+          }
+        };
+
+        window.addEventListener('message', handleMessage);
+
+        // Fallback: check if popup is closed without completing auth
+        const checkClosed = setInterval(() => {
+          if (popup.closed) {
+            clearInterval(checkClosed);
+            window.removeEventListener('message', handleMessage);
+            // Only show error if no success message was received
+            setTimeout(() => {
+              if (!popup.closed) return; // Check again in case it reopened
+              toast({
+                title: "Sign Up Cancelled",
+                description: "Google sign-up was cancelled or failed.",
+                variant: "destructive"
+              });
+            }, 100);
+          }
+        }, 1000);
+      } else {
+        throw new Error('No OAuth URL received');
+      }
     } catch (error) {
       console.error('Google OAuth error:', error);
       toast({
@@ -321,8 +359,14 @@ export const SignupPopup: React.FC<SignupPopupProps> = ({
                       onChange={(e) => handleInputChange('firstName', e.target.value)}
                       placeholder="First name"
                       disabled={loading}
-                      className="h-9"
+                      className={`h-9 ${firstNameValidation.error ? 'border-red-500 focus:border-red-500' : ''}`}
                     />
+                    {firstNameValidation.error && (
+                      <div className="flex items-center gap-1 text-xs text-red-600">
+                        <AlertCircle className="h-3 w-3" />
+                        {firstNameValidation.error}
+                      </div>
+                    )}
                   </div>
                   <div className="space-y-1">
                     <Label htmlFor="lastName" className="block text-sm text-gray-900 font-medium">
@@ -337,8 +381,14 @@ export const SignupPopup: React.FC<SignupPopupProps> = ({
                       onChange={(e) => handleInputChange('lastName', e.target.value)}
                       placeholder="Last name"
                       disabled={loading}
-                      className="h-9"
+                      className={`h-9 ${lastNameValidation.error ? 'border-red-500 focus:border-red-500' : ''}`}
                     />
+                    {lastNameValidation.error && (
+                      <div className="flex items-center gap-1 text-xs text-red-600">
+                        <AlertCircle className="h-3 w-3" />
+                        {lastNameValidation.error}
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -355,8 +405,14 @@ export const SignupPopup: React.FC<SignupPopupProps> = ({
                     onChange={(e) => handleInputChange('email', e.target.value)}
                     placeholder="Enter your email"
                     disabled={loading}
-                    className="h-9"
+                    className={`h-9 ${emailValidation.error ? 'border-red-500 focus:border-red-500' : ''}`}
                   />
+                  {emailValidation.error && (
+                    <div className="flex items-center gap-1 text-xs text-red-600">
+                      <AlertCircle className="h-3 w-3" />
+                      {emailValidation.error}
+                    </div>
+                  )}
                 </div>
 
                 <div className="space-y-1">
@@ -370,10 +426,16 @@ export const SignupPopup: React.FC<SignupPopupProps> = ({
                     id="password"
                     value={formData.password}
                     onChange={(e) => handleInputChange('password', e.target.value)}
-                    placeholder="Create a password (min. 8 characters)"
+                    placeholder="Create a password (min. 8 characters, uppercase, lowercase, number, special char)"
                     disabled={loading}
-                    className="h-9"
+                    className={`h-9 ${passwordValidation.error ? 'border-red-500 focus:border-red-500' : ''}`}
                   />
+                  {passwordValidation.error && (
+                    <div className="flex items-center gap-1 text-xs text-red-600">
+                      <AlertCircle className="h-3 w-3" />
+                      {passwordValidation.error}
+                    </div>
+                  )}
                 </div>
 
                 <div className="space-y-1">
@@ -389,8 +451,14 @@ export const SignupPopup: React.FC<SignupPopupProps> = ({
                     onChange={(e) => handleInputChange('confirmPassword', e.target.value)}
                     placeholder="Confirm your password"
                     disabled={loading}
-                    className="h-9"
+                    className={`h-9 ${formData.confirmPassword && formData.password !== formData.confirmPassword ? 'border-red-500 focus:border-red-500' : ''}`}
                   />
+                  {formData.confirmPassword && formData.password !== formData.confirmPassword && (
+                    <div className="flex items-center gap-1 text-xs text-red-600">
+                      <AlertCircle className="h-3 w-3" />
+                      Passwords don't match
+                    </div>
+                  )}
                 </div>
 
                 <div className="space-y-1">
@@ -406,8 +474,14 @@ export const SignupPopup: React.FC<SignupPopupProps> = ({
                     onChange={(e) => handleInputChange('referralCode', e.target.value.toUpperCase())}
                     placeholder="Enter referral code"
                     disabled={loading}
-                    className="h-9"
+                    className={`h-9 ${referralValidation.error ? 'border-red-500 focus:border-red-500' : ''}`}
                   />
+                  {referralValidation.error && (
+                    <div className="flex items-center gap-1 text-xs text-red-600">
+                      <AlertCircle className="h-3 w-3" />
+                      {referralValidation.error}
+                    </div>
+                  )}
                 </div>
 
                 <div className="space-y-2">

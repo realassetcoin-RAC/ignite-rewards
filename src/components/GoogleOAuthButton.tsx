@@ -26,17 +26,16 @@ const GoogleOAuthButton: React.FC<GoogleOAuthButtonProps> = ({
   const [loading, setLoading] = useState(false);
 
   const handleGoogleSignIn = async () => {
-    logger.info('Starting Google OAuth sign in');
+    logger.info('Starting Google OAuth sign in with popup');
     setLoading(true);
 
     try {
-
-      // Construct redirect URL
-      const redirectUrl = `${window.location.origin}/auth/callback`;
-      logger.info('OAuth redirect URL:', redirectUrl);
+      // Construct popup callback URL
+      const redirectUrl = `${window.location.origin}/auth/popup-callback`;
+      logger.info('OAuth popup callback URL:', redirectUrl);
 
       // Attempt real Google OAuth directly, bypassing the database adapter
-      logger.info('Attempting real Google OAuth (bypassing database adapter)...');
+      logger.info('Attempting real Google OAuth with popup (bypassing database adapter)...');
       
       // Create a direct Supabase client instance to bypass the database adapter
       const { createClient } = await import('@supabase/supabase-js');
@@ -49,9 +48,10 @@ const GoogleOAuthButton: React.FC<GoogleOAuthButtonProps> = ({
         provider: 'google',
         options: {
           redirectTo: redirectUrl,
+          skipBrowserRedirect: true, // Enable popup mode
           queryParams: {
             access_type: 'offline',
-            prompt: 'consent',
+            prompt: 'select_account',  // Force account selection screen
           }
         }
       });
@@ -76,14 +76,71 @@ const GoogleOAuthButton: React.FC<GoogleOAuthButtonProps> = ({
       logger.info('Real Google OAuth initiated successfully:', data);
       
       if (data?.url) {
-        logger.info('Redirecting to Google OAuth URL:', data.url);
-        toast({
-          title: "Redirecting to Google",
-          description: "Please complete authentication with Google.",
-        });
+        logger.info('Opening Google OAuth popup:', data.url);
         
-        // Redirect to the real Google OAuth URL
-        window.location.href = data.url;
+        // Open OAuth in popup window
+        const popup = window.open(
+          data.url,
+          'google-oauth',
+          'width=500,height=600,scrollbars=yes,resizable=yes'
+        );
+
+        if (!popup) {
+          throw new Error('Popup blocked. Please allow popups for this site.');
+        }
+
+        // Listen for messages from the popup
+        const handleMessage = (event: MessageEvent) => {
+          if (event.origin !== window.location.origin) return;
+          
+          if (event.data.type === 'OAUTH_SUCCESS') {
+            logger.info('OAuth popup success:', event.data.session);
+            toast({
+              title: "Sign In Successful",
+              description: "Welcome back! You've successfully signed in with Google.",
+            });
+            
+            if (onSuccess) {
+              onSuccess();
+            }
+            window.removeEventListener('message', handleMessage);
+          } else if (event.data.type === 'OAUTH_ERROR') {
+            logger.error('OAuth popup error:', event.data.error);
+            toast({
+              title: "Sign In Failed",
+              description: event.data.error || "Google sign-in failed. Please try again.",
+              variant: "destructive"
+            });
+            
+            if (onError) {
+              onError(event.data.error || 'OAuth failed');
+            }
+            window.removeEventListener('message', handleMessage);
+          }
+        };
+
+        window.addEventListener('message', handleMessage);
+
+        // Fallback: check if popup is closed without completing auth
+        const checkClosed = setInterval(() => {
+          if (popup.closed) {
+            clearInterval(checkClosed);
+            window.removeEventListener('message', handleMessage);
+            // Only show error if no success message was received
+            setTimeout(() => {
+              if (!popup.closed) return; // Check again in case it reopened
+              toast({
+                title: "Sign In Cancelled",
+                description: "Google sign-in was cancelled or failed.",
+                variant: "destructive"
+              });
+              
+              if (onError) {
+                onError('Sign-in cancelled');
+              }
+            }, 100);
+          }
+        }, 1000);
       } else {
         logger.error('No OAuth URL received from Google');
         toast({
@@ -97,10 +154,6 @@ const GoogleOAuthButton: React.FC<GoogleOAuthButtonProps> = ({
         }
         setLoading(false);
         return;
-      }
-
-      if (onSuccess) {
-        onSuccess();
       }
 
     } catch (error) {
@@ -123,10 +176,12 @@ const GoogleOAuthButton: React.FC<GoogleOAuthButtonProps> = ({
   };
 
 
+
   return (
     <>
       <div>
         <Button
+          type="button"
           onClick={handleGoogleSignIn}
           disabled={loading}
           variant={variant}

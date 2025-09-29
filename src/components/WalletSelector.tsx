@@ -188,7 +188,7 @@ const WalletSelector: React.FC<WalletSelectorProps> = ({
       if (phantomPublicKey) {
         // Check if this wallet is associated with a user
         const { data: walletData } = await supabase
-          .from('user_wallets')
+          .from('user_solana_wallets')
           .select('user_id')
           .eq('wallet_address', phantomPublicKey)
           .single();
@@ -252,7 +252,7 @@ const WalletSelector: React.FC<WalletSelectorProps> = ({
               
               // Check if this wallet is associated with a user
               const { data: walletData } = await supabase
-                .from('user_wallets')
+                .from('user_solana_wallets')
                 .select('user_id')
                 .eq('wallet_address', walletAddress)
                 .single();
@@ -316,7 +316,7 @@ const WalletSelector: React.FC<WalletSelectorProps> = ({
       if (metaMaskAccount) {
         // Check if this wallet is associated with a user
         const { data: walletData } = await supabase
-          .from('user_wallets')
+          .from('user_solana_wallets')
           .select('user_id')
           .eq('wallet_address', metaMaskAccount.toLowerCase())
           .single();

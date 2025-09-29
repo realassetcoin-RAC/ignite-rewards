@@ -426,7 +426,7 @@ const LoyaltyAccountLinking = ({ onLinkAdded }: LoyaltyAccountLinkingProps) => {
           <DialogHeader>
             <DialogTitle>Link {selectedNetwork?.display_name} Account</DialogTitle>
             <DialogDescription>
-              Enter your mobile number associated with your {selectedNetwork?.display_name} account
+              Enter the mobile number linked to your {selectedNetwork?.display_name} account
             </DialogDescription>
           </DialogHeader>
           

@@ -9,9 +9,10 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Edit2, Calendar, Gift, CheckCircle2 } from "lucide-react";
+import { Plus, Edit2, Calendar, Gift, CheckCircle2, AlertCircle } from "lucide-react";
 import { DateTimePickerGMT } from "@/components/ui/date-time-picker-gmt";
 import { ensureGMT, formatDateGMT, validateCampaignDates, formatForAPIGMT } from "@/utils/gmtUtils";
+import { referralCampaignSchema, validateFormData } from '@/utils/validation';
 
 interface ReferralCampaign {
   id: string;
@@ -109,10 +110,15 @@ const ReferralCampaignManager = () => {
 
   const onSubmit = async (values: any) => {
     try {
-      if (!values.name || !values.start_date || !values.end_date) {
-        toast({ title: 'Missing fields', description: 'Name, start and end dates are required.', variant: 'destructive' });
+      // Validate form data using schema
+      const validation = validateFormData(referralCampaignSchema, values);
+      
+      if (!validation.success) {
+        const firstError = validation.errors?.[0] || 'Please check your input';
+        toast({ title: 'Validation Error', description: firstError, variant: 'destructive' });
         return;
       }
+
       // Validate campaign dates using GMT utilities
       const dateValidation = validateCampaignDates(values.start_date, values.end_date);
       if (!dateValidation.isValid) {

@@ -153,7 +153,7 @@ export const useSecureAuthRobust = () => {
       // Fetch user data with timeout and retry logic
       const fetchUserData = async (): Promise<[UserProfile | null, boolean, { isWalletUser: boolean; canUseMFA: boolean; mfaEnabled: boolean }]> => {
         const timeoutPromise = new Promise<never>((_, reject) => 
-          setTimeout(() => reject(new Error('Auth fetch timeout')), 5000)
+          setTimeout(() => reject(new Error('Auth fetch timeout')), 10000)
         );
 
         const fetchPromise = Promise.all([
@@ -329,8 +329,10 @@ export const useSecureAuthRobust = () => {
         logger.warn('Could not clear localStorage:', error);
       }
       
-      // Call database adapter signOut (which clears mock user data)
-      const { error } = await databaseAdapter.signOut();
+      // Call supabase auth signOut directly
+      const { error } = await databaseAdapter.supabaseClient.auth.signOut({
+        scope: 'local' // This prevents redirect and keeps the sign out local
+      });
       if (error) {
         logger.error('Supabase signOut error:', error);
         // Don't throw error since we've already cleared local state

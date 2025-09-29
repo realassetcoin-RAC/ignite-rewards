@@ -59,13 +59,34 @@ const EnhancedHeroSection = () => {
   }, []);
 
   // Check for signup parameter in URL to auto-open signup modal
+  // Also clean up any unwanted URL parameters (like email/password from browser extensions)
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
+    
+    // Check for signup parameter
     if (urlParams.get('signup') === 'true') {
       setLoginModalOpen(true);
-      // Clean up the URL parameter
-      const newUrl = window.location.pathname;
+    }
+    
+    // Clean up unwanted URL parameters (security measure)
+    const unwantedParams = ['email', 'password', 'referral'];
+    let hasUnwantedParams = false;
+    
+    unwantedParams.forEach(param => {
+      if (urlParams.has(param)) {
+        hasUnwantedParams = true;
+        urlParams.delete(param);
+      }
+    });
+    
+    // Clean up the URL if there are unwanted parameters
+    if (hasUnwantedParams || urlParams.get('signup') === 'true') {
+      const newUrl = window.location.pathname + (urlParams.toString() ? '?' + urlParams.toString() : '');
       window.history.replaceState({}, '', newUrl);
+      
+      if (hasUnwantedParams) {
+        console.warn('Removed unwanted URL parameters for security');
+      }
     }
   }, []);
 
@@ -76,10 +97,8 @@ const EnhancedHeroSection = () => {
         title: "Signed out",
         description: "You have been successfully signed out.",
       });
-      // Use React Router navigation to prevent page reload
-      setTimeout(() => {
-        navigate('/', { replace: true });
-      }, 1000);
+      // Navigate to home page immediately after signout
+      navigate('/', { replace: true });
     } catch (error) {
       console.error("Sign out error:", error);
       toast({
@@ -251,10 +270,7 @@ const EnhancedHeroSection = () => {
                   </Button>
                   <Button 
                     variant="outline" 
-                    onClick={() => {
-                      console.log('Sign In button clicked');
-                      setLoginModalOpen(true);
-                    }}
+                    onClick={() => setLoginModalOpen(true)}
                     className="pointer-events-auto cursor-pointer"
                   >
                     Sign In

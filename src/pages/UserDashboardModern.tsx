@@ -50,9 +50,10 @@ import UserNFTManager from "@/components/UserNFTManager";
 import LoyaltyCardHeader from "@/components/LoyaltyCardHeader";
 import NFTManagementPanel from "@/components/nft/NFTManagementPanel";
 import DAOGovernancePanel from "@/components/dao/DAOGovernancePanel";
+import NotificationBell from "@/components/NotificationBell";
 import { AssetInitiativeSelector } from "@/components/AssetInitiativeSelector";
 import { WalletAddressDisplay } from "@/components/WalletAddressDisplay";
-import { SeedPhraseManager } from "@/components/SeedPhraseManager";
+import SeedPhraseBackup from "@/components/SeedPhraseBackup";
 import { ReferralStats } from "@/components/ReferralStats";
 
 interface DashboardStats {
@@ -184,7 +185,7 @@ const UserDashboardModern = () => {
     {
       id: 'referrals',
       title: 'Referral Program',
-      description: 'Invite friends and earn bonus rewards',
+      description: 'Invite Friends, Refer Merchants & Earn Bonus Rewards',
       icon: Users,
       gradient: 'from-blue-500 to-cyan-500',
       shadowColor: 'shadow-blue-500/25',
@@ -244,7 +245,7 @@ const UserDashboardModern = () => {
           </div>
         );
       case 'marketplace':
-        return <MarketplaceMain />;
+        return <MarketplaceMain embedded={true} />;
       case 'loyalty-networks':
         return (
           <div className="space-y-8">
@@ -258,30 +259,14 @@ const UserDashboardModern = () => {
       default:
         return (
           <div className="space-y-8">
-            {/* Welcome Banner */}
-            <Card className="bg-gradient-to-br from-purple-600/20 via-blue-600/20 to-emerald-600/20 backdrop-blur-xl border-white/10 overflow-hidden">
-              <CardContent className="p-8">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h2 className="text-3xl font-bold text-white mb-2">
-                      Welcome back, {profile?.full_name || user.email?.split('@')[0] || 'User'}! 👋
-                    </h2>
-                    <p className="text-lg text-gray-300">
-                      You have {stats.totalPoints} points ready to use and {stats.activeRewards} new rewards available.
-                    </p>
-                  </div>
-                  <div className="hidden md:flex items-center space-x-4">
-                    <div className="text-right">
-                      <p className="text-sm text-gray-300">Loyalty Level</p>
-                      <div className="flex items-center space-x-2">
-                        <Crown className="w-5 h-5 text-yellow-400" />
-                        <span className="text-xl font-bold text-white">Gold</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+            {/* Your Loyalty Card Section */}
+            <div>
+              <h3 className="text-2xl font-bold text-white mb-6 flex items-center">
+                <CreditCard className="w-6 h-6 mr-3 text-purple-400" />
+                Your Loyalty Card
+              </h3>
+              <LoyaltyCardHeader />
+            </div>
 
             {/* Stats Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -346,14 +331,6 @@ const UserDashboardModern = () => {
               </Card>
             </div>
 
-            {/* Loyalty Card Section */}
-            <div>
-              <h3 className="text-2xl font-bold text-white mb-6 flex items-center">
-                <CreditCard className="w-6 h-6 mr-3 text-purple-400" />
-                Your Loyalty Card
-              </h3>
-              <LoyaltyCardHeader />
-            </div>
 
             {/* Quick Actions */}
             <div>
@@ -419,10 +396,7 @@ const UserDashboardModern = () => {
                       userId={user.id}
                       className="bg-white/5 backdrop-blur-xl border-white/10"
                     />
-                    <SeedPhraseManager 
-                      userId={user.id}
-                      className="bg-white/5 backdrop-blur-xl border-white/10"
-                    />
+                    <SeedPhraseBackup />
                   </>
                 )}
               </div>
@@ -561,10 +535,7 @@ const UserDashboardModern = () => {
             </div>
             
             <div className="flex items-center space-x-3">
-              <Button variant="ghost" size="sm" className="text-gray-400 hover:text-white relative">
-                <Bell className="w-5 h-5" />
-                <span className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full" />
-              </Button>
+              <NotificationBell />
               <Button variant="ghost" size="sm" className="text-gray-400 hover:text-white">
                 <Search className="w-5 h-5" />
               </Button>

@@ -186,13 +186,19 @@ export interface CreateListingRequest {
   // Asset/Initiative specific details
   asset_type?: AssetType;
   expected_return_rate?: number;
+  expected_return_period?: number;
   risk_level: RiskLevel;
   minimum_investment: number;
   maximum_investment?: number;
   
+  // Database required fields
+  category?: string;
+  status?: string;
+  is_featured?: boolean;
+  is_verified?: boolean;
+  
   // Metadata
   tags?: string[];
-  is_featured?: boolean;
 }
 
 export interface UpdateListingRequest extends Partial<CreateListingRequest> {

@@ -90,7 +90,7 @@ const MarketplaceListingCard: React.FC<MarketplaceListingCardProps> = ({
         {/* Status Badges */}
         <div className="absolute top-4 left-4 flex flex-col gap-2">
           <Badge className={`${getStatusColor(status)} border backdrop-blur-sm`}>
-            {status.charAt(0).toUpperCase() + status.slice(1)}
+            {status ? status.charAt(0).toUpperCase() + status.slice(1) : 'Unknown'}
           </Badge>
           {is_featured && (
             <Badge className="bg-gradient-to-r from-yellow-500/20 to-orange-500/20 text-yellow-400 border-yellow-500/30 backdrop-blur-sm">
@@ -109,7 +109,7 @@ const MarketplaceListingCard: React.FC<MarketplaceListingCardProps> = ({
         {/* Type Badge */}
         <div className="absolute top-4 right-4">
           <Badge className="bg-gradient-to-r from-purple-500/20 to-pink-500/20 text-purple-400 border-purple-500/30 backdrop-blur-sm">
-            {listing_type.charAt(0).toUpperCase() + listing_type.slice(1)}
+            {listing_type ? listing_type.charAt(0).toUpperCase() + listing_type.slice(1) : 'Unknown'}
           </Badge>
         </div>
       </div>
@@ -143,7 +143,7 @@ const MarketplaceListingCard: React.FC<MarketplaceListingCardProps> = ({
             <div>
               <p className="text-xs text-gray-400">Risk Level</p>
               <Badge className={`${getRiskColor(risk_level)} text-xs border`}>
-                {risk_level.charAt(0).toUpperCase() + risk_level.slice(1)}
+                {risk_level ? risk_level.charAt(0).toUpperCase() + risk_level.slice(1) : 'Unknown'}
               </Badge>
             </div>
           </div>

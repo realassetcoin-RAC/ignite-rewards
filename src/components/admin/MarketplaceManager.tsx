@@ -59,7 +59,13 @@ const MarketplaceManager: React.FC<MarketplaceManagerProps> = ({ onStatsUpdate }
     expected_return_rate: 0,
     risk_level: 'medium',
     minimum_investment: 100,
+    maximum_investment: undefined,
     asset_type: 'other',
+    category: 'Other',
+    expected_return_period: 365,
+    status: 'draft',
+    is_featured: false,
+    is_verified: false,
     tags: []
   });
 
@@ -251,7 +257,13 @@ const MarketplaceManager: React.FC<MarketplaceManagerProps> = ({ onStatsUpdate }
       expected_return_rate: 0,
       risk_level: 'medium',
       minimum_investment: 100,
+      maximum_investment: undefined,
       asset_type: 'other',
+      category: 'Other',
+      expected_return_period: 365,
+      status: 'draft',
+      is_featured: false,
+      is_verified: false,
       tags: []
     });
   };
@@ -875,6 +887,99 @@ const CreateListingForm: React.FC<CreateListingFormProps> = ({
               <SelectItem value="time_bound">Time Bound</SelectItem>
             </SelectContent>
           </Select>
+        </div>
+      </div>
+
+      {/* Additional Required Fields */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div>
+          <Label className="text-white">Category *</Label>
+          <Select value={formData.category} onValueChange={(value: any) => updateField('category', value)}>
+            <SelectTrigger className="bg-slate-700 border-slate-600 text-white">
+              <SelectValue placeholder="Select category" />
+            </SelectTrigger>
+            <SelectContent className="bg-slate-800 border-slate-700">
+              <SelectItem value="Real Estate">Real Estate</SelectItem>
+              <SelectItem value="Startup Equity">Startup Equity</SelectItem>
+              <SelectItem value="Commodities">Commodities</SelectItem>
+              <SelectItem value="Cryptocurrency">Cryptocurrency</SelectItem>
+              <SelectItem value="Bonds">Bonds</SelectItem>
+              <SelectItem value="REIT">REIT</SelectItem>
+              <SelectItem value="Energy">Energy</SelectItem>
+              <SelectItem value="Technology">Technology</SelectItem>
+              <SelectItem value="Healthcare">Healthcare</SelectItem>
+              <SelectItem value="Other">Other</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div>
+          <Label className="text-white">Maximum Investment</Label>
+          <Input
+            type="number"
+            value={formData.maximum_investment || ''}
+            onChange={(e) => {
+              const value = e.target.value;
+              updateField('maximum_investment', value === '' ? undefined : parseFloat(value));
+            }}
+            placeholder="No limit"
+            className="bg-slate-700 border-slate-600 text-white"
+            min="0"
+            step="1"
+          />
+        </div>
+        <div>
+          <Label className="text-white">Expected Return Period (Days)</Label>
+          <Input
+            type="number"
+            value={formData.expected_return_period || ''}
+            onChange={(e) => {
+              const value = e.target.value;
+              updateField('expected_return_period', value === '' ? 365 : parseInt(value));
+            }}
+            placeholder="365"
+            className="bg-slate-700 border-slate-600 text-white"
+            min="1"
+            step="1"
+          />
+        </div>
+      </div>
+
+      {/* Status and Verification Fields */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div>
+          <Label className="text-white">Status</Label>
+          <Select value={formData.status} onValueChange={(value: any) => updateField('status', value)}>
+            <SelectTrigger className="bg-slate-700 border-slate-600 text-white">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent className="bg-slate-800 border-slate-700">
+              <SelectItem value="draft">Draft</SelectItem>
+              <SelectItem value="active">Active</SelectItem>
+              <SelectItem value="paused">Paused</SelectItem>
+              <SelectItem value="completed">Completed</SelectItem>
+              <SelectItem value="cancelled">Cancelled</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="flex items-center space-x-2">
+          <input
+            type="checkbox"
+            id="is_featured"
+            checked={formData.is_featured || false}
+            onChange={(e) => updateField('is_featured', e.target.checked)}
+            className="rounded border-slate-600 bg-slate-700 text-purple-500"
+          />
+          <Label htmlFor="is_featured" className="text-white">Featured Listing</Label>
+        </div>
+        <div className="flex items-center space-x-2">
+          <input
+            type="checkbox"
+            id="is_verified"
+            checked={formData.is_verified || false}
+            onChange={(e) => updateField('is_verified', e.target.checked)}
+            className="rounded border-slate-600 bg-slate-700 text-purple-500"
+          />
+          <Label htmlFor="is_verified" className="text-white">Verified Listing</Label>
         </div>
       </div>
 

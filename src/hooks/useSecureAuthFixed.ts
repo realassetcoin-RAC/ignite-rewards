@@ -146,7 +146,7 @@ export const useSecureAuthFixed = () => {
       ]);
 
       const timeoutPromise = new Promise<never>((_, reject) => 
-        setTimeout(() => reject(new Error('Auth fetch timeout')), 8000)
+        setTimeout(() => reject(new Error('Auth fetch timeout')), 30000)
       );
 
       try {
@@ -300,8 +300,10 @@ export const useSecureAuthFixed = () => {
         logger.warn('Could not clear localStorage:', error);
       }
       
-      // Call Supabase signOut
-      const { error } = await supabase.auth.signOut();
+      // Call Supabase signOut with local scope to prevent redirect
+      const { error } = await supabase.auth.signOut({
+        scope: 'local' // This prevents redirect and keeps the sign out local
+      });
       if (error) {
         logger.error('Supabase signOut error:', error);
         // Don't throw error since we've already cleared local state

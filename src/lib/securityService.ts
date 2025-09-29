@@ -60,7 +60,6 @@ export class SecurityService {
         .from('merchants')
         .select('id')
         .eq('user_id', user.id)
-        .eq('is_active', true)
         .single();
 
       const userRole = profile?.app_role || 'user';
@@ -574,7 +573,7 @@ export class SecurityService {
       ] = await Promise.all([
         supabase.from('profiles').select('id', { count: 'exact' }),
         supabase.from('profiles').select('id', { count: 'exact' }).gte('last_sign_in_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()),
-        supabase.from('security_audit_logs').select('id', { count: 'exact' }).eq('action', 'login_attempt').eq('success', false).gte('created_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()),
+        supabase.from('security_audit_logs').select('id', { count: 'exact' }).eq('action', 'login_attempt').gte('created_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()),
         supabase.from('security_audit_logs').select('id', { count: 'exact' }).eq('action', 'suspicious_activity_detected').gte('created_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString())
       ]);
 

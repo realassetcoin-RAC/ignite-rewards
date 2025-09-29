@@ -80,7 +80,7 @@ export const useSecureAuth = () => {
   //       // Add a timeout to the RPC call to prevent hanging
   //       const rpcPromise = supabase.rpc('is_admin');
   //       const timeoutPromise = new Promise((_, reject) => 
-  //         setTimeout(() => reject(new Error('is_admin RPC call timeout after 5 seconds')), 5000)
+  //         setTimeout(() => reject(new Error('is_admin RPC call timeout after 5 seconds')), 15000)
   //       );
   //       
   //       const { data, error } = await Promise.race([rpcPromise, timeoutPromise]) as any;
@@ -104,7 +104,7 @@ export const useSecureAuth = () => {
   //       // Add a timeout to the RPC call to prevent hanging
   //       const rpcPromise = supabase.rpc('check_admin_access');
   //       const timeoutPromise = new Promise((_, reject) => 
-  //         setTimeout(() => reject(new Error('Admin RPC call timeout after 5 seconds')), 5000)
+  //         setTimeout(() => reject(new Error('Admin RPC call timeout after 5 seconds')), 15000)
   //       );
   //       
   //       const { data, error } = await Promise.race([rpcPromise, timeoutPromise]) as any;
@@ -170,7 +170,7 @@ export const useSecureAuth = () => {
         // Add a timeout to the RPC call to prevent hanging
         const rpcPromise = supabase.rpc('get_current_user_profile');
         const timeoutPromise = new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('RPC call timeout after 5 seconds')), 5000)
+          setTimeout(() => reject(new Error('RPC call timeout after 5 seconds')), 15000)
         );
         
         const { data, error } = await Promise.race([rpcPromise, timeoutPromise]) as any;
@@ -198,7 +198,7 @@ export const useSecureAuth = () => {
           logger.debug('🔄 No user passed, getting from auth...');
           const getUserPromise = supabase.auth.getUser();
           const getUserTimeoutPromise = new Promise((_, reject) => 
-            setTimeout(() => reject(new Error('getUser timeout after 5 seconds')), 5000)
+            setTimeout(() => reject(new Error('getUser timeout after 5 seconds')), 15000)
           );
           
           const { data: { user: authUser } } = await Promise.race([getUserPromise, getUserTimeoutPromise]) as any;
@@ -231,7 +231,7 @@ export const useSecureAuth = () => {
           .single();
         
         const profileTimeoutPromise = new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Direct profile query timeout after 5 seconds')), 5000)
+          setTimeout(() => reject(new Error('Direct profile query timeout after 5 seconds')), 15000)
         );
         
         const { data: profile, error: profileError } = await Promise.race([profilePromise, profileTimeoutPromise]) as any;
@@ -305,7 +305,7 @@ export const useSecureAuth = () => {
       // Add timeout to canUserUseMFA call
       const canUsePromise = canUserUseMFA(userId);
       const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('User type check timeout after 5 seconds')), 5000)
+        setTimeout(() => reject(new Error('User type check timeout after 5 seconds')), 15000)
       );
       
       const canUse = await Promise.race([canUsePromise, timeoutPromise]) as boolean;
@@ -481,7 +481,7 @@ export const useSecureAuth = () => {
         
         // Smart auth updates - allow updates but prevent excessive refreshes
         const shouldUpdate = 
-          timeSinceLastUpdate > 5000 || // 5 seconds debounce
+          timeSinceLastUpdate > 15000 || // 5 seconds debounce
           ['SIGNED_IN', 'SIGNED_OUT', 'TOKEN_REFRESHED'].includes(event);
 
         if (shouldUpdate) {
@@ -581,8 +581,10 @@ export const useSecureAuth = () => {
         logger.warn('Could not clear DOM form fields:', error);
       }
       
-      // Then call Supabase signOut
-      const { error } = await supabase.auth.signOut();
+      // Then call Supabase signOut with proper redirect URL
+      const { error } = await supabase.auth.signOut({
+        scope: 'local' // This prevents redirect and keeps the sign out local
+      });
       if (error) {
         logger.error('Supabase signOut error:', error);
         // Even if Supabase signOut fails, we've already cleared the local state

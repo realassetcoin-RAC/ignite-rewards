@@ -21,6 +21,7 @@ export const SeedPhraseManager: React.FC<SeedPhraseManagerProps> = ({ userId, on
   const [seedPhrase, setSeedPhrase] = useState('');
   const [loading, setLoading] = useState(false);
   const [googleAuthEnabled, setGoogleAuthEnabled] = useState(true);
+  const [emailAuthEnabled, setEmailAuthEnabled] = useState(true);
   const [showSeedPhrase, setShowSeedPhrase] = useState(false);
   const [verificationStep, setVerificationStep] = useState<'input' | 'verifying' | 'success' | 'error'>('input');
 
@@ -40,9 +41,9 @@ export const SeedPhraseManager: React.FC<SeedPhraseManagerProps> = ({ userId, on
     try {
       // Get user's wallet from seed phrase
       const { data: wallet, error: walletError } = await supabase
-        .from('user_wallets')
-        .select('user_id, seed_phrase')
-        .eq('seed_phrase', seedPhrase.trim())
+        .from('user_solana_wallets')
+        .select('user_id, seed_phrase_encrypted')
+        .eq('seed_phrase_encrypted', seedPhrase.trim())
         .single();
 
       if (walletError || !wallet) {
@@ -129,6 +130,42 @@ export const SeedPhraseManager: React.FC<SeedPhraseManagerProps> = ({ userId, on
     }
   };
 
+  const handleDisableEmailAuth = async () => {
+    setLoading(true);
+
+    try {
+      // Update user profile to disable email auth
+      const { error } = await supabase
+        .from('profiles')
+        .update({ 
+          email_auth_enabled: false,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', userId);
+
+      if (error) {
+        throw error;
+      }
+
+      setEmailAuthEnabled(false);
+      toast({
+        title: "Email Auth Disabled",
+        description: "Email authentication has been disabled. You can now only login with your seed phrase.",
+      });
+
+      setShowDisableDialog(false);
+    } catch (error) {
+      console.error('Error disabling email auth:', error);
+      toast({
+        title: "Error",
+        description: "Failed to disable email authentication.",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const resetDialog = () => {
     setSeedPhrase('');
     setVerificationStep('input');
@@ -188,14 +225,39 @@ export const SeedPhraseManager: React.FC<SeedPhraseManagerProps> = ({ userId, on
                 </span>
               </div>
             </div>
-          </div>
+            </div>
 
-          {!googleAuthEnabled && (
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="font-medium">Email Authentication</p>
+                <p className="text-sm text-muted-foreground">
+                  {emailAuthEnabled 
+                    ? "Currently enabled - you can login with email or seed phrase"
+                    : "Disabled - you can only login with seed phrase"
+                  }
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <Switch
+                  checked={emailAuthEnabled}
+                  onCheckedChange={(checked) => {
+                    if (!checked) {
+                      setShowDisableDialog(true);
+                    }
+                  }}
+                />
+                <span className="text-sm text-muted-foreground">
+                  {emailAuthEnabled ? 'Enabled' : 'Disabled'}
+                </span>
+              </div>
+            </div>
+
+            {(!googleAuthEnabled || !emailAuthEnabled) && (
             <div className="bg-destructive/10 border border-destructive/20 p-3 rounded-lg">
               <div className="flex items-start gap-2">
                 <AlertTriangle className="h-4 w-4 text-destructive mt-0.5" />
                 <div className="text-sm">
-                  <p className="font-medium text-destructive">Google Auth Disabled</p>
+                  <p className="font-medium text-destructive">Authentication Disabled</p>
                   <p className="text-destructive/80">
                     You can only login using your seed phrase. Make sure you have it backed up safely.
                   </p>
@@ -316,16 +378,16 @@ export const SeedPhraseManager: React.FC<SeedPhraseManagerProps> = ({ userId, on
         </DialogContent>
       </Dialog>
 
-      {/* Disable Google Auth Dialog */}
+      {/* Disable Auth Dialog */}
       <Dialog open={showDisableDialog} onOpenChange={setShowDisableDialog}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Shield className="h-5 w-5" />
-              Disable Google Authentication
+              Disable Authentication
             </DialogTitle>
             <DialogDescription>
-              This will disable Google authentication for your account. You will only be able to login using your seed phrase.
+              This will disable the selected authentication method for your account. You will only be able to login using your seed phrase.
             </DialogDescription>
           </DialogHeader>
 
@@ -355,11 +417,18 @@ export const SeedPhraseManager: React.FC<SeedPhraseManagerProps> = ({ userId, on
               </Button>
               <Button
                 variant="destructive"
-                onClick={handleDisableGoogleAuth}
+                onClick={() => {
+                  // Determine which auth to disable based on current state
+                  if (!googleAuthEnabled) {
+                    handleDisableEmailAuth();
+                  } else {
+                    handleDisableGoogleAuth();
+                  }
+                }}
                 disabled={loading}
                 className="flex-1"
               >
-                {loading ? 'Disabling...' : 'Disable Google Auth'}
+                {loading ? 'Disabling...' : 'Disable Authentication'}
               </Button>
             </div>
           </div>

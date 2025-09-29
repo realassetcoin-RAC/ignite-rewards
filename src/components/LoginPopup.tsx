@@ -115,10 +115,18 @@ export const LoginPopup: React.FC<LoginPopupProps> = ({
         sessionStorage.setItem('pending_referral_code', referralCode.trim());
       }
       
-      const { data, error } = await supabase.auth.signInWithOAuth({
+      // Use the shared Supabase client to avoid multiple instances
+      const { supabase: directSupabase } = await import('@/integrations/supabase/client');
+      
+      const { data, error } = await directSupabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/auth/callback`
+          redirectTo: `${window.location.origin}/auth/popup-callback`,
+          skipBrowserRedirect: true, // Enable popup mode
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'select_account',  // Force account selection screen
+          }
         }
       });
 
@@ -126,7 +134,60 @@ export const LoginPopup: React.FC<LoginPopupProps> = ({
         throw error;
       }
 
-      // OAuth redirect will handle the rest
+      if (data?.url) {
+        // Open OAuth in popup window
+        const popup = window.open(
+          data.url,
+          'google-oauth',
+          'width=500,height=600,scrollbars=yes,resizable=yes'
+        );
+
+        if (!popup) {
+          throw new Error('Popup blocked. Please allow popups for this site.');
+        }
+
+        // Listen for messages from the popup
+        const handleMessage = (event: MessageEvent) => {
+          if (event.origin !== window.location.origin) return;
+          
+          if (event.data.type === 'OAUTH_SUCCESS') {
+            toast({
+              title: "Sign In Successful",
+              description: "Welcome back! You've successfully signed in with Google.",
+            });
+            onClose();
+            window.removeEventListener('message', handleMessage);
+          } else if (event.data.type === 'OAUTH_ERROR') {
+            toast({
+              title: "Sign In Failed",
+              description: event.data.error || "Google sign-in failed. Please try again.",
+              variant: "destructive"
+            });
+            window.removeEventListener('message', handleMessage);
+          }
+        };
+
+        window.addEventListener('message', handleMessage);
+
+        // Fallback: check if popup is closed without completing auth
+        const checkClosed = setInterval(() => {
+          if (popup.closed) {
+            clearInterval(checkClosed);
+            window.removeEventListener('message', handleMessage);
+            // Only show error if no success message was received
+            setTimeout(() => {
+              if (!popup.closed) return; // Check again in case it reopened
+              toast({
+                title: "Sign In Cancelled",
+                description: "Google sign-in was cancelled or failed.",
+                variant: "destructive"
+              });
+            }, 100);
+          }
+        }, 1000);
+      } else {
+        throw new Error('No OAuth URL received');
+      }
     } catch (error) {
       console.error('Google OAuth error:', error);
       toast({

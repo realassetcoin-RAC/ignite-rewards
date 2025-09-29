@@ -22,7 +22,7 @@ export const useSessionPersistence = () => {
       lastSessionCheck.current = now;
       
       try {
-        // Add timeout to prevent hanging
+        // Add timeout to prevent hanging (reduced to 5 seconds)
         const sessionPromise = supabase.auth.getSession();
         const timeoutPromise = new Promise((_, reject) => 
           setTimeout(() => reject(new Error('Session check timeout')), 5000)

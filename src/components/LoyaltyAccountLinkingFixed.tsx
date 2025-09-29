@@ -406,7 +406,7 @@ const LoyaltyAccountLinkingFixed = ({ onLinkAdded }: LoyaltyAccountLinkingProps)
           <DialogHeader>
             <DialogTitle className="text-white">Link Loyalty Account</DialogTitle>
             <DialogDescription className="text-gray-300">
-              Enter your mobile number to link your loyalty account
+              Enter the mobile number linked to your loyalty account
             </DialogDescription>
           </DialogHeader>
           <Form {...linkingForm}>

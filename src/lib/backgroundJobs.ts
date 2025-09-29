@@ -116,6 +116,13 @@ export class BackgroundJobService {
   }
 
   /**
+   * Check if background jobs are running
+   */
+  static isRunning(): boolean {
+    return this.isRunning;
+  }
+
+  /**
    * Stop all background jobs
    */
   static stopAllJobs(): void {
@@ -216,10 +223,19 @@ export class BackgroundJobService {
     };
   }
 
+  private static isInitialized = false;
+
   /**
    * Initialize background jobs (call this in your main app)
    */
   static initialize(): void {
+    if (this.isInitialized) {
+      logger.info('Background jobs already initialized');
+      return;
+    }
+
+    this.isInitialized = true;
+    
     // Start jobs in development and production
     if (typeof window === 'undefined') {
       // Server-side only

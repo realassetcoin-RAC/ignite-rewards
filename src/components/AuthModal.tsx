@@ -28,6 +28,7 @@ interface AuthModalProps {
 const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
   const logger = createModuleLogger('AuthModal');
   
+  
   // Form state management
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");

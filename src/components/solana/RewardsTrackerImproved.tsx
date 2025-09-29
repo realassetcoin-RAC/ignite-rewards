@@ -149,7 +149,7 @@ const RewardsTrackerImproved: React.FC<RewardsTrackerProps> = ({ userId }) => {
                 <TrendingUp className="h-5 w-5 text-primary mr-2" />
                 <span className="text-sm font-medium text-primary">Earned This Month</span>
               </div>
-              <div className="text-2xl font-bold text-primary">{formatAmount(currentMonthEarned)} RAC</div>
+              <div className="text-2xl font-bold text-primary">{formatAmount(currentMonthEarned)}</div>
             </div>
             
             <div className="text-center p-4 bg-green-500/10 rounded-lg border border-green-500/20">
@@ -157,7 +157,7 @@ const RewardsTrackerImproved: React.FC<RewardsTrackerProps> = ({ userId }) => {
                 <Wallet className="h-5 w-5 text-green-500 mr-2" />
                 <span className="text-sm font-medium text-green-500">Available to Claim</span>
               </div>
-              <div className="text-2xl font-bold text-green-500">{formatAmount(totalClaimable)} RAC</div>
+              <div className="text-2xl font-bold text-green-500">{formatAmount(totalClaimable)}</div>
             </div>
             
             <div className="text-center p-4 bg-yellow-500/10 rounded-lg border border-yellow-500/20">
@@ -165,7 +165,7 @@ const RewardsTrackerImproved: React.FC<RewardsTrackerProps> = ({ userId }) => {
                 <Clock className="h-5 w-5 text-yellow-500 mr-2" />
                 <span className="text-sm font-medium text-yellow-500">Currently Vesting</span>
               </div>
-              <div className="text-2xl font-bold text-yellow-500">{formatAmount(totalVesting)} RAC</div>
+              <div className="text-2xl font-bold text-yellow-500">{formatAmount(totalVesting)}</div>
             </div>
             
             <div className="text-center p-4 bg-blue-500/10 rounded-lg border border-blue-500/20">
@@ -173,7 +173,7 @@ const RewardsTrackerImproved: React.FC<RewardsTrackerProps> = ({ userId }) => {
                 <Gift className="h-5 w-5 text-blue-500 mr-2" />
                 <span className="text-sm font-medium text-blue-500">Total Claimed</span>
               </div>
-              <div className="text-2xl font-bold text-blue-500">{formatAmount(totalClaimed)} RAC</div>
+              <div className="text-2xl font-bold text-blue-500">{formatAmount(totalClaimed)}</div>
             </div>
           </div>
           
@@ -184,7 +184,7 @@ const RewardsTrackerImproved: React.FC<RewardsTrackerProps> = ({ userId }) => {
               className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700"
             >
               <Wallet className="h-4 w-4 mr-2" />
-              Claim {formatAmount(totalClaimable)} RAC
+              Claim {formatAmount(totalClaimable)}
             </Button>
           </div>
         </CardContent>

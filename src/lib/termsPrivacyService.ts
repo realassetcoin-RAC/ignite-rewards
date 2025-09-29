@@ -26,13 +26,15 @@ export class TermsPrivacyService {
         .limit(1)
         .single();
 
-      if (error && error.code !== 'PGRST116') { // PGRST116 is "not found"
-        console.error('Error fetching user acceptance:', error);
-        // If table doesn't exist, return null instead of throwing
-        if (error.code === 'PGRST116' || error.message.includes('relation') || error.message.includes('does not exist')) {
+      if (error) {
+        // If table doesn't exist (PGRST205) or no rows found (PGRST116), return null
+        if (error.code === 'PGRST205' || error.code === 'PGRST116' || 
+            error.message.includes('relation') || error.message.includes('does not exist') ||
+            error.message.includes('schema cache')) {
           console.warn('Terms privacy acceptance table does not exist yet, returning null');
           return null;
         }
+        console.error('Error fetching user acceptance:', error);
         throw error;
       }
 

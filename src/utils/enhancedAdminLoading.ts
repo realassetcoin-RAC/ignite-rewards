@@ -384,16 +384,16 @@ export async function loadUserReferrals(): Promise<LoadingResult<any[]>> {
         .order('created_at', { ascending: false });
 
       if (!error && data !== null) {
-        console.log('✅ User referrals loaded from api.user_referrals');
+        console.log('✅ User referrals loaded from public.user_referrals');
         return {
           success: true,
           data: data,
           message: 'User referrals loaded successfully',
-          source: 'api.user_referrals'
+          source: 'public.user_referrals'
         };
       }
     } catch (error) {
-      console.warn('Failed to load from api.user_referrals:', error);
+      console.warn('Failed to load from public.user_referrals:', error);
     }
 
     // Method 3: Return empty array as fallback

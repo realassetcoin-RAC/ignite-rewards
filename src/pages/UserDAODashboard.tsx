@@ -458,7 +458,7 @@ const UserDAODashboard = () => {
               Please sign in to access the RAC Rewards DAO.
             </p>
             <Button 
-              onClick={() => navigate('/auth')}
+              onClick={() => navigate('/')}
               className="bg-gradient-to-r from-primary to-purple-500 hover:from-primary/90 hover:to-purple-500/90"
             >
               Sign In
@@ -557,7 +557,7 @@ const UserDAODashboard = () => {
                 <Button 
                   variant="outline" 
                   size="sm"
-                  onClick={() => navigate('/auth')}
+                  onClick={() => navigate('/')}
                   className="bg-background/60 backdrop-blur-md hover:bg-background/80 border-primary/30 hover:border-primary/50 flex-shrink-0"
                 >
                   <User className="w-4 h-4 sm:mr-2" />

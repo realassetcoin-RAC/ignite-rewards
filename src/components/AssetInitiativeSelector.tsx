@@ -75,21 +75,26 @@ export const AssetInitiativeSelector: React.FC<AssetInitiativeSelectorProps> = (
     try {
       const { data, error } = await supabase
         .from('user_asset_selections')
-        .select(`
-          *,
-          asset_initiatives (*)
-        `)
+        .select('*')
         .eq('user_id', userId)
-        .eq('is_active', true)
         .single();
 
       if (error && error.code !== 'PGRST116') {
         throw error;
       }
 
-      if (data) {
-        setSelectedAsset(data.asset_initiatives);
-        onSelectionChange(data.asset_initiatives);
+      if (data && data.asset_initiative_id) {
+        // Load the asset initiative details separately
+        const { data: assetData } = await supabase
+          .from('asset_initiatives')
+          .select('*')
+          .eq('id', data.asset_initiative_id)
+          .single();
+        
+        if (assetData) {
+          setSelectedAsset(assetData);
+          onSelectionChange(assetData);
+        }
       }
     } catch (error) {
       console.error('Error loading user selection:', error);

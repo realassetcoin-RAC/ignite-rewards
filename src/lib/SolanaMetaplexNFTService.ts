@@ -410,7 +410,7 @@ export class SolanaMetaplexNFTService {
       name: `${cardType} Loyalty Card`,
       symbol: 'RAC',
       description: `RAC Rewards ${cardType} loyalty card with ${rarity} rarity`,
-      image: `https://rac-rewards.com/nft-images/${cardType.toLowerCase().replace(' ', '-')}.png`,
+      image: `/images/loyalty-cards/${cardType.toLowerCase().replace(' ', '-')}.png`,
       attributes: [
         {
           trait_type: 'Card Type',
@@ -432,7 +432,7 @@ export class SolanaMetaplexNFTService {
       properties: {
         files: [
           {
-            uri: `https://rac-rewards.com/nft-images/${cardType.toLowerCase().replace(' ', '-')}.png`,
+            uri: `/images/loyalty-cards/${cardType.toLowerCase().replace(' ', '-')}.png`,
             type: 'image/png',
           },
         ],

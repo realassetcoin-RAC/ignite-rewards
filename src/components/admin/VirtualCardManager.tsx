@@ -11,9 +11,10 @@ import { Switch } from "@/components/ui/switch";
 import { useForm } from "react-hook-form";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Edit2, Trash2, CreditCard, ArrowLeft, Save } from "lucide-react";
+import { Plus, Edit2, Trash2, CreditCard, ArrowLeft, Save, AlertCircle } from "lucide-react";
 import CustomTooltip from "@/components/ui/custom-tooltip";
 import EvolutionPreview from "./EvolutionPreview"; // ✅ Evolution system preview
+import { virtualCardSchema, validateFormData, useFieldValidation, imageUrlSchema, positiveNumberSchema, decimalSchema } from '@/utils/validation';
 
 interface VirtualCard {
   id: string;
@@ -251,12 +252,14 @@ const VirtualCardManager = ({ onStatsUpdate }: VirtualCardManagerProps) => {
 
   const handleSubmit = async (data: any) => {
     try {
-      // ✅ IMPLEMENT REQUIREMENT: Validate image file formats
-      const validationErrors = validateImageUrls(data);
-      if (validationErrors.length > 0) {
+      // Validate form data using schema
+      const validation = validateFormData(virtualCardSchema, data);
+      
+      if (!validation.success) {
+        const firstError = validation.errors?.[0] || 'Please check your input';
         toast({
-          title: "Invalid Image Format",
-          description: validationErrors.join('. '),
+          title: "Validation Error",
+          description: firstError,
           variant: "destructive",
         });
         return;

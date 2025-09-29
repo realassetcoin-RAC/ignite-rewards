@@ -42,6 +42,7 @@ import { LoyaltyNFTService } from '@/lib/loyaltyNFTService';
 
 interface MarketplaceMainProps {
   className?: string;
+  embedded?: boolean; // When true, shows only listings without full page branding
 }
 
 // Real data will be loaded from the database
@@ -57,7 +58,7 @@ const mockStats: MarketplaceStats = {
   recent_investments: []
 };
 
-const MarketplaceMain: React.FC<MarketplaceMainProps> = ({ className = '' }) => {
+const MarketplaceMain: React.FC<MarketplaceMainProps> = ({ className = '', embedded = false }) => {
   // All hooks must be called at the top level, before any conditional returns
   const { user, loading: authLoading } = useSecureAuth();
   const { toast } = useToast();
@@ -67,6 +68,8 @@ const MarketplaceMain: React.FC<MarketplaceMainProps> = ({ className = '' }) => 
   const [displayedListings, setDisplayedListings] = useState<MarketplaceListing[]>([]);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState<MarketplaceStats | null>(null);
+  const [retryCount, setRetryCount] = useState(0);
+  const [isRetrying, setIsRetrying] = useState(false);
   const [selectedListing, setSelectedListing] = useState<MarketplaceListing | null>(null);
   const [showInvestmentModal, setShowInvestmentModal] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
@@ -75,6 +78,7 @@ const MarketplaceMain: React.FC<MarketplaceMainProps> = ({ className = '' }) => 
     field: 'created_at',
     direction: 'desc'
   });
+  const [sortBy, setSortBy] = useState<string>('newest');
   const [pagination, setPagination] = useState({
     page: 1,
     limit: 12,
@@ -92,7 +96,8 @@ const MarketplaceMain: React.FC<MarketplaceMainProps> = ({ className = '' }) => 
     
     try {
       // Load user's loyalty card
-      const card = await LoyaltyNFTService.getUserLoyaltyCard(user.id);
+      const cards = await LoyaltyNFTService.getUserNFTs(user.id);
+      const card = cards.length > 0 ? cards[0] : null;
       setLoyaltyCard(card);
       
       // Get NFT multiplier
@@ -100,6 +105,9 @@ const MarketplaceMain: React.FC<MarketplaceMainProps> = ({ className = '' }) => 
       setNftMultiplier(multiplier);
     } catch (error) {
       console.error('Failed to load NFT data:', error);
+      // Set default values to prevent UI breaking
+      setLoyaltyCard(null);
+      setNftMultiplier(1.0);
     }
   }, [user?.id]);
 
@@ -108,18 +116,23 @@ const MarketplaceMain: React.FC<MarketplaceMainProps> = ({ className = '' }) => 
     try {
       const data = await MarketplaceService.getListings();
       setListings(data);
+      setRetryCount(0); // Reset retry count on success
     } catch (error) {
       console.error('Failed to load listings:', error);
       setListings([]);
-      toast({
-        title: "Error",
-        description: "Failed to load marketplace listings. Please try again later.",
-        variant: "destructive",
-      });
+      
+      // Only show error toast if we haven't exceeded retry limit
+      if (retryCount < 3) {
+        toast({
+          title: "Loading Issue",
+          description: "Having trouble loading marketplace data. Retrying...",
+          variant: "destructive",
+        });
+      }
     } finally {
       setLoading(false);
     }
-  }, [toast]);
+  }, [toast, retryCount]);
 
   const loadStats = useCallback(async () => {
     try {
@@ -130,6 +143,19 @@ const MarketplaceMain: React.FC<MarketplaceMainProps> = ({ className = '' }) => 
       setStats(mockStats);
     }
   }, []);
+
+  const retryLoadData = useCallback(async () => {
+    if (isRetrying || retryCount >= 3) return;
+    
+    setIsRetrying(true);
+    setRetryCount(prev => prev + 1);
+    
+    try {
+      await Promise.all([loadListings(), loadStats()]);
+    } finally {
+      setIsRetrying(false);
+    }
+  }, [isRetrying, retryCount, loadListings, loadStats]);
 
   const handleInvest = useCallback((listing: MarketplaceListing) => {
     setSelectedListing(listing);
@@ -209,6 +235,158 @@ const MarketplaceMain: React.FC<MarketplaceMainProps> = ({ className = '' }) => 
   // if (!user) {
   //   return <Navigate to="/" replace />;
   // }
+
+  // If embedded mode, return only the listings without full page branding
+  if (embedded) {
+    return (
+      <div className={`space-y-6 ${className}`}>
+        {/* Embedded Marketplace Header */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-xl font-semibold text-white">Marketplace Listings</h2>
+            <p className="text-sm text-gray-400">Discover and invest in premium assets</p>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={loadListings}
+            disabled={loading}
+            className="bg-white/5 border-white/10 hover:bg-white/10"
+          >
+            <RefreshCw className="w-4 h-4" />
+          </Button>
+        </div>
+
+        {/* Stats Cards */}
+        {stats && (
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <Card className="bg-white/5 backdrop-blur-xl border-white/10">
+              <CardContent className="p-4">
+                <div className="flex items-center space-x-2">
+                  <TrendingUp className="w-5 h-5 text-orange-500" />
+                  <div>
+                    <p className="text-sm text-gray-400">Total Listings</p>
+                    <p className="text-lg font-semibold text-white">{stats.total_listings}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            <Card className="bg-white/5 backdrop-blur-xl border-white/10">
+              <CardContent className="p-4">
+                <div className="flex items-center space-x-2">
+                  <DollarSign className="w-5 h-5 text-green-500" />
+                  <div>
+                    <p className="text-sm text-gray-400">Total Volume</p>
+                    <p className="text-lg font-semibold text-white">{formatCurrency(stats.total_volume)}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            <Card className="bg-white/5 backdrop-blur-xl border-white/10">
+              <CardContent className="p-4">
+                <div className="flex items-center space-x-2">
+                  <Users className="w-5 h-5 text-blue-500" />
+                  <div>
+                    <p className="text-sm text-gray-400">Active Investors</p>
+                    <p className="text-lg font-semibold text-white">{stats.active_investors}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            <Card className="bg-white/5 backdrop-blur-xl border-white/10">
+              <CardContent className="p-4">
+                <div className="flex items-center space-x-2">
+                  <Target className="w-5 h-5 text-purple-500" />
+                  <div>
+                    <p className="text-sm text-gray-400">Success Rate</p>
+                    <p className="text-lg font-semibold text-white">{stats.success_rate}%</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {/* Filters */}
+        <MarketplaceFilters
+          filters={filters}
+          onFiltersChange={setFilters}
+          onSortChange={setSortBy}
+          sortBy={sortBy}
+        />
+
+        {/* Listings Grid */}
+        {loading ? (
+          <div className="flex flex-col justify-center items-center py-12 space-y-4">
+            <RefreshCw className={`w-8 h-8 text-orange-500 ${isRetrying ? 'animate-spin' : ''}`} />
+            <p className="text-gray-400">
+              {isRetrying ? `Retrying... (${retryCount}/3)` : 'Loading marketplace listings...'}
+            </p>
+            {retryCount > 0 && retryCount < 3 && (
+              <Button 
+                onClick={retryLoadData} 
+                disabled={isRetrying}
+                variant="outline" 
+                size="sm"
+                className="text-orange-500 border-orange-500/20 hover:bg-orange-500/10"
+              >
+                {isRetrying ? 'Retrying...' : 'Retry'}
+              </Button>
+            )}
+          </div>
+        ) : displayedListings.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {displayedListings.map((listing) => (
+              <MarketplaceListingCard
+                key={listing.id}
+                listing={listing}
+                onInvest={() => {
+                  setSelectedListing(listing);
+                  setShowInvestmentModal(true);
+                }}
+                userBalance={userBalance}
+              />
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-12">
+            <div className="w-16 h-16 bg-orange-500/10 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Sparkles className="w-8 h-8 text-orange-500" />
+            </div>
+            <h3 className="text-lg font-semibold text-white mb-2">No listings found</h3>
+            <p className="text-gray-400 mb-4">Try adjusting your filters or check back later for new opportunities.</p>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setFilters({
+                  category: 'all',
+                  minAmount: 0,
+                  maxAmount: 1000000,
+                  status: 'all',
+                  featured: false
+                });
+                setSortBy('newest');
+              }}
+              className="bg-white/5 border-white/10 hover:bg-white/10"
+            >
+              Clear Filters
+            </Button>
+          </div>
+        )}
+
+        {/* Investment Modal */}
+        {selectedListing && (
+          <InvestmentModal
+            listing={selectedListing}
+            userBalance={userBalance}
+            isOpen={showInvestmentModal}
+            onClose={() => setShowInvestmentModal(false)}
+            onSuccess={handleInvestmentSuccess}
+          />
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className={`min-h-screen bg-gradient-to-br from-slate-950 via-blue-950 to-slate-950 relative overflow-hidden ${className}`}>
@@ -375,6 +553,16 @@ const MarketplaceMain: React.FC<MarketplaceMainProps> = ({ className = '' }) => 
           {/* Controls */}
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div className="flex items-center space-x-4">
+              <Button
+                onClick={retryLoadData}
+                disabled={isRetrying || loading}
+                variant="outline"
+                size="sm"
+                className="text-orange-500 border-orange-500/20 hover:bg-orange-500/10"
+              >
+                <RefreshCw className={`w-4 h-4 mr-2 ${isRetrying ? 'animate-spin' : ''}`} />
+                {isRetrying ? 'Refreshing...' : 'Refresh'}
+              </Button>
               <Select value={`${sort.field}-${sort.direction}`} onValueChange={(value) => {
                 const [field, direction] = value.split('-');
                 handleSortChange(field, direction as 'asc' | 'desc');
@@ -429,8 +617,22 @@ const MarketplaceMain: React.FC<MarketplaceMainProps> = ({ className = '' }) => 
 
         {/* Listings Grid */}
         {loading ? (
-          <div className="flex justify-center items-center py-12">
-             <RefreshCw className="w-8 h-8 animate-spin text-orange-500" />
+          <div className="flex flex-col justify-center items-center py-12 space-y-4">
+            <RefreshCw className={`w-8 h-8 text-orange-500 ${isRetrying ? 'animate-spin' : ''}`} />
+            <p className="text-gray-400">
+              {isRetrying ? `Retrying... (${retryCount}/3)` : 'Loading marketplace listings...'}
+            </p>
+            {retryCount > 0 && retryCount < 3 && (
+              <Button 
+                onClick={retryLoadData} 
+                disabled={isRetrying}
+                variant="outline" 
+                size="sm"
+                className="text-orange-500 border-orange-500/20 hover:bg-orange-500/10"
+              >
+                {isRetrying ? 'Retrying...' : 'Retry'}
+              </Button>
+            )}
           </div>
         ) : displayedListings.length > 0 ? (
           <div className={`grid gap-6 ${

@@ -49,7 +49,7 @@ Based on the console errors, the Google OAuth issue is caused by:
    - Go to Authentication → Providers
    - Enable Google provider
    - Add redirect URLs:
-     - `http://localhost:8085/auth/callback` (for development)
+     - `http://localhost:8084/auth/callback` (for development)
      - `https://yourdomain.com/auth/callback` (for production)
 
 3. **Get Google OAuth Credentials**
@@ -58,7 +58,7 @@ Based on the console errors, the Google OAuth issue is caused by:
    - Enable Google+ API
    - Create OAuth 2.0 credentials
    - Add authorized origins:
-     - `http://localhost:8085`
+     - `http://localhost:8084`
      - `https://yourdomain.com`
 
 ### 2. Environment Variables
@@ -166,7 +166,7 @@ If issues persist:
 To test the OAuth fixes:
 
 1. Start the development server: `npm run dev`
-2. Open the application: http://localhost:8085
+2. Open the application: http://localhost:8084
 3. Click "Sign In" or "Sign Up"
 4. Try Google OAuth with debug information
 5. Check console for any remaining errors

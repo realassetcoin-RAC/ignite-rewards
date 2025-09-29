@@ -33,7 +33,7 @@ export const useSolanaWallet = (userId?: string) => {
       setError(null);
 
       const { data: walletData, error: walletError } = await supabase
-        .from('user_wallets')
+        .from('user_solana_wallets')
         .select('*')
         .eq('user_id', userId)
         .eq('is_active', true)
@@ -82,7 +82,7 @@ export const useSolanaWallet = (userId?: string) => {
       const mockSeedPhrase = 'mock seed phrase for demonstration purposes only';
 
       const { data: walletData, error: walletError } = await supabase
-        .from('user_wallets')
+        .from('user_solana_wallets')
         .insert({
           user_id: userId,
           solana_address: mockAddress,
@@ -125,13 +125,13 @@ export const useSolanaWallet = (userId?: string) => {
       // Deactivate existing wallet if any
       if (wallet) {
         await supabase
-          .from('user_wallets')
+          .from('user_solana_wallets')
           .update({ is_active: false })
           .eq('user_id', userId);
       }
 
       const { data: walletData, error: walletError } = await supabase
-        .from('user_wallets')
+        .from('user_solana_wallets')
         .insert({
           user_id: userId,
           solana_address: address,
@@ -172,7 +172,7 @@ export const useSolanaWallet = (userId?: string) => {
       setLoading(true);
 
       const { error: updateError } = await supabase
-        .from('user_wallets')
+        .from('user_solana_wallets')
         .update({ is_active: false })
         .eq('id', wallet.id);
 

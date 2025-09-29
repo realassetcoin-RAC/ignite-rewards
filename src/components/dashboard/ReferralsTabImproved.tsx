@@ -12,15 +12,18 @@ import { Share2, Copy, Users, Gift, TrendingUp, Calendar, ExternalLink, MessageS
 
 interface Referral {
   id: string;
+  referrer_id: string;
   referral_code: string;
-  referred_email: string;
-  referred_user_id: string;
-  merchant_id: string;
+  referred_email: string | null;
+  referred_user_id: string | null;
+  merchant_id: string | null;
+  campaign_id: string | null;
   status: string;
   reward_points: number;
-  completed_at: string;
-  rewarded_at: string;
+  completed_at: string | null;
+  rewarded_at: string | null;
   created_at: string;
+  updated_at: string;
 }
 
 interface ReferralStats {
@@ -61,57 +64,60 @@ const ReferralsTabImproved = () => {
         return;
       }
 
-      // Generate a unique referral code for the user
-      const referralCode = `REF${user.id.slice(-8).toUpperCase()}${Date.now().toString().slice(-4)}`;
-      setMyReferralCode(referralCode);
+      // Get user's referral code from database
+      const { data: userReferral, error: referralError } = await supabase
+        .from('user_referrals')
+        .select('referral_code')
+        .eq('referrer_id', user.id)
+        .single();
 
-      // Load user's referrals (using mock data for now)
-      const mockReferrals: Referral[] = [
-        {
-          id: '1',
-          referral_code: referralCode,
-          referred_email: 'john@example.com',
-          referred_user_id: 'user1',
-          merchant_id: 'merchant1',
-          status: 'completed',
-          reward_points: 10,
-          completed_at: new Date(Date.now() - 86400000).toISOString(),
-          rewarded_at: new Date(Date.now() - 86400000).toISOString(),
-          created_at: new Date(Date.now() - 172800000).toISOString(),
-        },
-        {
-          id: '2',
-          referral_code: referralCode,
-          referred_email: 'jane@example.com',
-          referred_user_id: 'user2',
-          merchant_id: 'merchant2',
-          status: 'pending',
-          reward_points: 0,
-          completed_at: '',
-          rewarded_at: '',
-          created_at: new Date(Date.now() - 259200000).toISOString(),
-        },
-        {
-          id: '3',
-          referral_code: referralCode,
-          referred_email: 'bob@example.com',
-          referred_user_id: 'user3',
-          merchant_id: 'merchant3',
-          status: 'completed',
-          reward_points: 10,
-          completed_at: new Date(Date.now() - 345600000).toISOString(),
-          rewarded_at: new Date(Date.now() - 345600000).toISOString(),
-          created_at: new Date(Date.now() - 432000000).toISOString(),
-        },
-      ];
+      if (referralError && referralError.code !== 'PGRST116') {
+        console.error('Error fetching referral code:', referralError);
+        // Fallback to generated code if not found
+        const fallbackCode = `REF${user.id.slice(-8).toUpperCase()}${Date.now().toString().slice(-4)}`;
+        setMyReferralCode(fallbackCode);
+      } else if (userReferral) {
+        setMyReferralCode(userReferral.referral_code);
+      }
 
-      setReferrals(mockReferrals);
+      // Load user's referrals from database
+      const { data: referralsData, error: referralsError } = await supabase
+        .from('user_referrals')
+        .select(`
+          id,
+          referrer_id,
+          referral_code,
+          referred_email,
+          referred_user_id,
+          merchant_id,
+          campaign_id,
+          status,
+          reward_points,
+          completed_at,
+          rewarded_at,
+          created_at,
+          updated_at
+        `)
+        .eq('referrer_id', user.id)
+        .order('created_at', { ascending: false });
+
+      if (referralsError) {
+        console.error('Error loading referrals:', referralsError);
+        toast({
+          title: "Error",
+          description: "Failed to load referral data. Please check your connection.",
+          variant: "destructive",
+        });
+        setReferrals([]);
+      } else {
+        setReferrals(referralsData || []);
+      }
 
       // Calculate stats
-      const totalReferrals = mockReferrals.length;
-      const completedReferrals = mockReferrals.filter(r => r.status === 'completed').length;
-      const pendingReferrals = mockReferrals.filter(r => r.status === 'pending').length;
-      const totalRewards = mockReferrals.reduce((sum, r) => sum + (r.reward_points || 0), 0);
+      const totalReferrals = referralsData?.length || 0;
+      const completedReferrals = referralsData?.filter(r => r.status === 'completed').length || 0;
+      const pendingReferrals = referralsData?.filter(r => r.status === 'pending').length || 0;
+      const totalRewards = referralsData?.reduce((sum, r) => sum + (r.reward_points || 0), 0) || 0;
 
       setStats({
         totalReferrals,
@@ -351,7 +357,7 @@ const ReferralsTabImproved = () => {
                       </TableCell>
                       <TableCell>
                         <span className="text-sm font-mono text-white">
-                          {referral.referred_email}
+                          {referral.referred_email || 'N/A'}
                         </span>
                       </TableCell>
                       <TableCell>

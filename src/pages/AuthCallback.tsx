@@ -7,6 +7,7 @@ import { robustAdminCheck } from "@/utils/adminVerification";
 import { TermsPrivacyService } from "@/lib/termsPrivacyService";
 import TermsAcceptanceModal from "@/components/TermsAcceptanceModal";
 import { createModuleLogger } from "@/utils/consoleReplacer";
+import { SolanaWalletService } from "@/lib/solanaWalletService";
 
 /**
  * Auth callback page that handles role-based redirects after OAuth authentication
@@ -68,7 +69,7 @@ const AuthCallback = () => {
             .single();
           
           const profileTimeoutPromise = new Promise((_, reject) => 
-            setTimeout(() => reject(new Error('Profile fetch timeout after 5 seconds')), 5000)
+            setTimeout(() => reject(new Error('Profile fetch timeout after 10 seconds')), 10000)
           );
           
           profileResult = await Promise.race([profilePromise, profileTimeoutPromise]) as any;
@@ -84,6 +85,9 @@ const AuthCallback = () => {
         if (!profile && (profileResult.error?.code === 'PGRST116' || profileResult.error)) {
           logger.warn('Profile not found, creating one for OAuth user');
           
+          // Check if this is a Google OAuth user
+          const isGoogleUser = user.app_metadata?.provider === 'google';
+          
           try {
             const createPromise = supabase
               .from('profiles' as any)
@@ -91,9 +95,11 @@ const AuthCallback = () => {
                 id: user.id,
                 email: user.email,
                 full_name: user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0] || 'User',
-                role: 'user'
+                role: 'user',
+                auth_provider: isGoogleUser ? 'google' : 'email', // Track auth provider
+                has_solana_wallet: true // ALL users get Solana wallets (email and Google)
               } as any)
-              .select('id, email, full_name, role, created_at, updated_at')
+              .select('id, email, full_name, role, auth_provider, has_solana_wallet, created_at, updated_at')
               .single();
             
             const createTimeoutPromise = new Promise((_, reject) => 
@@ -110,6 +116,8 @@ const AuthCallback = () => {
                 email: user.email,
                 full_name: user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0] || 'User',
                 role: 'user',
+                auth_provider: isGoogleUser ? 'google' : 'email',
+                has_solana_wallet: true, // ALL users get Solana wallets
                 created_at: user.created_at,
                 updated_at: user.updated_at || user.created_at
               };
@@ -117,6 +125,20 @@ const AuthCallback = () => {
             } else {
               logger.info('Profile created successfully');
               profile = newProfile;
+            }
+            
+            // ✅ AUTOMATIC WALLET CREATION: Create Solana wallet for ALL users (email and Google)
+            try {
+              logger.info('Creating automatic Solana wallet for user:', user.id);
+              const walletResult = await SolanaWalletService.createWalletForUser(user.id);
+              if (walletResult.success) {
+                logger.info('✅ Automatic Solana wallet created successfully for user:', user.id);
+              } else {
+                logger.warn('Failed to create automatic wallet:', walletResult.error);
+              }
+            } catch (walletError) {
+              logger.warn('Error creating automatic wallet:', walletError);
+              // Don't fail the entire auth process for wallet creation errors
             }
           } catch {
             logger.warn('Profile creation failed, using fallback');
@@ -130,6 +152,19 @@ const AuthCallback = () => {
               updated_at: user.updated_at || user.created_at
             };
             logger.info('Using fallback profile');
+            
+            // ✅ AUTOMATIC WALLET CREATION: Create Solana wallet for fallback profile users too
+            try {
+              logger.info('Creating automatic Solana wallet for fallback user:', user.id);
+              const walletResult = await SolanaWalletService.createWalletForUser(user.id);
+              if (walletResult.success) {
+                logger.info('✅ Automatic Solana wallet created successfully for fallback user:', user.id);
+              } else {
+                logger.warn('Failed to create automatic wallet for fallback user:', walletResult.error);
+              }
+            } catch (walletError) {
+              logger.warn('Error creating automatic wallet for fallback user:', walletError);
+            }
           }
         }
         

@@ -52,7 +52,9 @@ export const useInactivityLogout = (options: UseInactivityLogoutOptions = {}) =>
     // Set logout timer
     timeoutRef.current = setTimeout(async () => {
       try {
-        await supabase.auth.signOut();
+        await supabase.auth.signOut({
+          scope: 'local' // This prevents redirect and keeps the sign out local
+        });
         toast({
           title: "Session Expired",
           description: "You have been logged out due to inactivity.",

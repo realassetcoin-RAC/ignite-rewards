@@ -3,11 +3,12 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
-import { Check, Loader2, Building2, Star, ArrowRight, Zap, Rocket, Cloud } from "lucide-react";
+import { Check, Loader2, Building2, Star, ArrowRight, Zap, Rocket, Cloud, AlertCircle, CheckCircle } from "lucide-react";
 import {
   Carousel,
   CarouselContent,
@@ -19,6 +20,7 @@ import {
 import { supabase } from "@/lib/supabaseClient";
 import { useNavigate } from "react-router-dom";
 import { createModuleLogger } from "@/utils/consoleReplacer";
+import { merchantSignupSchema, validateFormData, useFieldValidation, businessNameSchema, nameSchema, emailSchema, passwordSchema, phoneSchema, urlSchema, industrySchema, citySchema, INDUSTRY_OPTIONS, validateCityWithAPI } from "@/utils/validation";
 
 /**
  * Merchant subscription plan interface
@@ -69,7 +71,8 @@ interface MerchantForm {
   phone: string;
   website: string;
   industry: string;
-  address: string;
+  city: string;
+  country: string;
 }
 
 
@@ -103,8 +106,14 @@ const MerchantSignupModal: React.FC<MerchantSignupModalProps> = ({ isOpen, onClo
     phone: "",
     website: "",
     industry: "",
-    address: ""
+    city: "",
+    country: ""
   });
+  
+  // City suggestions state
+  const [citySuggestions, setCitySuggestions] = useState<any[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [cityInput, setCityInput] = useState("");
   
   // Terms acceptance state
   const [acceptedTerms, setAcceptedTerms] = useState(false);
@@ -112,6 +121,100 @@ const MerchantSignupModal: React.FC<MerchantSignupModalProps> = ({ isOpen, onClo
   
   const { toast } = useToast();
   const navigate = useNavigate();
+
+  // Real-time validation (including industry and city fields)
+  const businessNameValidation = useFieldValidation(businessNameSchema, merchantForm.businessName);
+  const contactNameValidation = useFieldValidation(nameSchema, merchantForm.contactName);
+  const emailValidation = useFieldValidation(emailSchema, merchantForm.email);
+  const passwordValidation = useFieldValidation(passwordSchema, merchantForm.password);
+  const phoneValidation = useFieldValidation(phoneSchema, merchantForm.phone);
+  const websiteValidation = useFieldValidation(urlSchema, merchantForm.website);
+  const industryValidation = useFieldValidation(industrySchema, merchantForm.industry);
+  const cityValidation = useFieldValidation(citySchema, merchantForm.city);
+  
+  // City validation state
+  const [cityValidationState, setCityValidationState] = useState<{
+    isValidating: boolean;
+    error?: string;
+    suggestion?: string;
+  }>({ isValidating: false });
+
+  /**
+   * Search cities with API Ninjas and show suggestions
+   */
+  const searchCities = async (query: string) => {
+    if (!query || query.length < 2) {
+      setCitySuggestions([]);
+      setShowSuggestions(false);
+      return;
+    }
+
+    setCityValidationState({ isValidating: true });
+    
+    try {
+      const apiKey = process.env.REACT_APP_API_NINJAS_KEY || 'mmukoqC1YD+DnoIYT1bUFQ==3yeUixLPT1Y8IxQt';
+      const url = new URL('https://api.api-ninjas.com/v1/city');
+      url.searchParams.append('name', query.trim());
+      url.searchParams.append('limit', '10');
+
+      const response = await fetch(url.toString(), {
+        headers: {
+          'X-Api-Key': apiKey,
+        },
+      });
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          setCityValidationState({ 
+            isValidating: false,
+            error: 'API key not configured. Please contact support.'
+          });
+          return;
+        }
+        setCityValidationState({ 
+          isValidating: false,
+          error: 'Unable to search cities. Please try again.'
+        });
+        return;
+      }
+
+      const data = await response.json();
+      
+      if (data && data.length > 0) {
+        setCitySuggestions(data);
+        setShowSuggestions(true);
+        setCityValidationState({ isValidating: false });
+      } else {
+        setCitySuggestions([]);
+        setShowSuggestions(false);
+        setCityValidationState({ 
+          isValidating: false,
+          error: 'No cities found. Please check your spelling.'
+        });
+      }
+    } catch (error) {
+      console.error('City search error:', error);
+      setCityValidationState({ 
+        isValidating: false,
+        error: 'Unable to search cities. Please try again.'
+      });
+    }
+  };
+
+  /**
+   * Handle city selection from suggestions
+   */
+  const handleCitySelection = (city: any) => {
+    setCityInput(`${city.name}, ${city.country}`);
+    setMerchantForm(prev => ({
+      ...prev,
+      city: city.name,
+      country: city.country
+    }));
+    setShowSuggestions(false);
+    setCitySuggestions([]);
+    setCityValidationState({ isValidating: false });
+  };
 
   /**
    * Load subscription plans from database using the validity-aware function
@@ -309,8 +412,13 @@ const MerchantSignupModal: React.FC<MerchantSignupModalProps> = ({ isOpen, onClo
         phone: "",
         website: "",
         industry: "",
-        address: ""
+        city: "",
+        country: ""
       });
+      setCityInput("");
+      setCitySuggestions([]);
+      setShowSuggestions(false);
+      setCityValidationState({ isValidating: false });
       setAcceptedTerms(false);
       setAcceptedPrivacy(false);
       setLoading(false);
@@ -337,8 +445,13 @@ const MerchantSignupModal: React.FC<MerchantSignupModalProps> = ({ isOpen, onClo
       phone: "",
       website: "",
       industry: "",
-      address: ""
+      city: "",
+      country: ""
     });
+    setCityInput("");
+    setCitySuggestions([]);
+    setShowSuggestions(false);
+    setCityValidationState({ isValidating: false });
     setAcceptedTerms(false);
     setAcceptedPrivacy(false);
     
@@ -381,29 +494,20 @@ const MerchantSignupModal: React.FC<MerchantSignupModalProps> = ({ isOpen, onClo
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!merchantForm.businessName || !merchantForm.contactName || !merchantForm.email || !merchantForm.password) {
+    // Validate form data using schema (including industry field)
+    const formDataWithTerms = {
+      ...merchantForm,
+      acceptTerms: acceptedTerms,
+      acceptPrivacy: acceptedPrivacy
+    };
+    
+    const validation = validateFormData(merchantSignupSchema, formDataWithTerms);
+    
+    if (!validation.success) {
+      const firstError = validation.errors?.[0] || 'Please check your input';
       toast({
-        title: "Missing Information", 
-        description: "Please fill in all required fields.",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    if (merchantForm.password.length < 6) {
-      toast({
-        title: "Password Too Short",
-        description: "Password must be at least 6 characters long.",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    // Validate terms and privacy acceptance before proceeding
-    if (!acceptedTerms || !acceptedPrivacy) {
-      toast({
-        title: "Terms and Privacy Required",
-        description: "Please accept the Terms of Service and Privacy Policy to continue.",
+        title: "Validation Error",
+        description: firstError,
         variant: "destructive"
       });
       return;
@@ -716,7 +820,14 @@ const MerchantSignupModal: React.FC<MerchantSignupModalProps> = ({ isOpen, onClo
                   required
                   disabled={loading}
                   autoComplete="off"
+                  className={businessNameValidation.error ? 'border-red-500 focus:border-red-500' : ''}
                 />
+                {businessNameValidation.error && (
+                  <div className="flex items-center gap-1 text-xs text-red-600">
+                    <AlertCircle className="h-3 w-3" />
+                    {businessNameValidation.error}
+                  </div>
+                )}
               </div>
               
               <div className="space-y-2">
@@ -729,7 +840,14 @@ const MerchantSignupModal: React.FC<MerchantSignupModalProps> = ({ isOpen, onClo
                   placeholder="Enter contact person name"
                   required
                   disabled={loading}
+                  className={contactNameValidation.error ? 'border-red-500 focus:border-red-500' : ''}
                 />
+                {contactNameValidation.error && (
+                  <div className="flex items-center gap-1 text-xs text-red-600">
+                    <AlertCircle className="h-3 w-3" />
+                    {contactNameValidation.error}
+                  </div>
+                )}
               </div>
               
               <div className="space-y-2">
@@ -744,7 +862,14 @@ const MerchantSignupModal: React.FC<MerchantSignupModalProps> = ({ isOpen, onClo
                   required
                   disabled={loading}
                   autoComplete="off"
+                  className={emailValidation.error ? 'border-red-500 focus:border-red-500' : ''}
                 />
+                {emailValidation.error && (
+                  <div className="flex items-center gap-1 text-xs text-red-600">
+                    <AlertCircle className="h-3 w-3" />
+                    {emailValidation.error}
+                  </div>
+                )}
               </div>
               
               <div className="space-y-2">
@@ -755,12 +880,19 @@ const MerchantSignupModal: React.FC<MerchantSignupModalProps> = ({ isOpen, onClo
                   type="password"
                   value={merchantForm.password}
                   onChange={handleInputChange}
-                  placeholder="Create a password (min. 6 characters)"
+                  placeholder="Create a password (min. 8 characters, uppercase, lowercase, number, special char)"
                   required
-                  minLength={6}
+                  minLength={8}
                   disabled={loading}
                   autoComplete="new-password"
+                  className={passwordValidation.error ? 'border-red-500 focus:border-red-500' : ''}
                 />
+                {passwordValidation.error && (
+                  <div className="flex items-center gap-1 text-xs text-red-600">
+                    <AlertCircle className="h-3 w-3" />
+                    {passwordValidation.error}
+                  </div>
+                )}
                   </div>
                 </div>
                 
@@ -773,9 +905,16 @@ const MerchantSignupModal: React.FC<MerchantSignupModalProps> = ({ isOpen, onClo
                   type="tel"
                   value={merchantForm.phone}
                   onChange={handleInputChange}
-                  placeholder="Enter business phone"
+                  placeholder="Enter business phone (e.g., +1234567890)"
                   disabled={loading}
+                  className={phoneValidation.error ? 'border-red-500 focus:border-red-500' : ''}
                 />
+                {phoneValidation.error && (
+                  <div className="flex items-center gap-1 text-xs text-red-600">
+                    <AlertCircle className="h-3 w-3" />
+                    {phoneValidation.error}
+                  </div>
+                )}
               </div>
               
               <div className="space-y-2">
@@ -788,32 +927,116 @@ const MerchantSignupModal: React.FC<MerchantSignupModalProps> = ({ isOpen, onClo
                   onChange={handleInputChange}
                   placeholder="https://your-website.com"
                   disabled={loading}
+                  className={websiteValidation.error ? 'border-red-500 focus:border-red-500' : ''}
                 />
+                {websiteValidation.error && (
+                  <div className="flex items-center gap-1 text-xs text-red-600">
+                    <AlertCircle className="h-3 w-3" />
+                    {websiteValidation.error}
+                  </div>
+                )}
               </div>
               
               <div className="space-y-2">
                 <Label htmlFor="industry">Industry</Label>
-                <Input
-                  id="industry"
-                  name="industry"
+                <Select
                   value={merchantForm.industry}
-                  onChange={handleInputChange}
-                  placeholder="e.g., Retail, Food & Beverage"
+                  onValueChange={(value) => handleInputChange({ target: { name: 'industry', value } })}
                   disabled={loading}
-                />
+                >
+                  <SelectTrigger className={industryValidation.error ? 'border-red-500 focus:border-red-500' : ''}>
+                    <SelectValue placeholder="Select your industry" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {INDUSTRY_OPTIONS.map((industry) => (
+                      <SelectItem key={industry} value={industry}>
+                        {industry}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {industryValidation.error && (
+                  <div className="flex items-center gap-1 text-xs text-red-600">
+                    <AlertCircle className="h-3 w-3" />
+                    {industryValidation.error}
+                  </div>
+                )}
               </div>
               
-              <div className="space-y-2">
-                <Label htmlFor="address">Business Address</Label>
+              <div className="space-y-2 relative">
+                <Label htmlFor="cityCountry">City, Country *</Label>
                 <Input
-                  id="address"
-                  name="address"
-                  value={merchantForm.address}
-                  onChange={handleInputChange}
-                  placeholder="Enter business address"
+                  id="cityCountry"
+                  name="cityCountry"
+                  value={cityInput}
+                  onChange={(e) => {
+                    setCityInput(e.target.value);
+                    // Debounce city search
+                    const timeoutId = setTimeout(() => {
+                      searchCities(e.target.value);
+                    }, 300);
+                    return () => clearTimeout(timeoutId);
+                  }}
+                  onFocus={() => {
+                    if (citySuggestions.length > 0) {
+                      setShowSuggestions(true);
+                    }
+                  }}
+                  onBlur={() => {
+                    // Delay hiding suggestions to allow clicking on them
+                    setTimeout(() => setShowSuggestions(false), 200);
+                  }}
+                  placeholder="Type city name (e.g., New York, London, Tokyo)"
                   disabled={loading}
+                  className={cityValidation.error || cityValidationState.error ? 'border-red-500 focus:border-red-500' : ''}
+                  autoComplete="off"
                 />
+                
+                {/* Loading indicator */}
+                {cityValidationState.isValidating && (
+                  <div className="absolute right-3 top-8 flex items-center gap-1 text-xs text-blue-600">
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                    Searching...
                   </div>
+                )}
+                
+                {/* Error message */}
+                {cityValidationState.error && (
+                  <div className="flex items-center gap-1 text-xs text-red-600">
+                    <AlertCircle className="h-3 w-3" />
+                    {cityValidationState.error}
+                  </div>
+                )}
+                
+                {/* City suggestions dropdown */}
+                {showSuggestions && citySuggestions.length > 0 && (
+                  <div className="absolute top-full left-0 right-0 bg-white border border-gray-200 rounded-md shadow-lg z-50 max-h-60 overflow-y-auto">
+                    {citySuggestions.map((city, index) => (
+                      <div
+                        key={`${city.name}-${city.country}-${index}`}
+                        className="p-3 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0"
+                        onMouseDown={(e) => {
+                          e.preventDefault(); // Prevent input blur
+                          handleCitySelection(city);
+                        }}
+                      >
+                        <div className="font-medium text-gray-900">
+                          {city.name}, {city.country}
+                        </div>
+                        <div className="text-xs text-gray-500">
+                          Population: {city.population?.toLocaleString() || 'N/A'}
+                          {city.is_capital && ' • Capital'}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                
+                {/* Help text */}
+                <p className="text-xs text-muted-foreground">
+                  Start typing to search for cities worldwide. Select from the suggestions.
+                </p>
+              </div>
                 </div>
               </div>
               

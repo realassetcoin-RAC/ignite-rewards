@@ -352,7 +352,7 @@ const AdminPanel = () => {
       // Get merchant location and industry data
       const { data, error } = await supabase
         .from('merchants')
-        .select('country, industry, subscription_plan')
+        .select('country, business_type, subscription_plan')
         .eq('status', 'active');
       
       if (error) {
@@ -402,7 +402,7 @@ const AdminPanel = () => {
       // Process industry data
       const industryMap = new Map<string, number>();
       merchants.forEach((merchant: any) => {
-        const industry = merchant.industry || 'Unknown';
+        const industry = merchant.business_type || 'Unknown';
         industryMap.set(industry, (industryMap.get(industry) || 0) + 1);
       });
       

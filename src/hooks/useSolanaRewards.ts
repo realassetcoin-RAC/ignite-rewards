@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-// import { supabase } from '@/integrations/supabase/client';
+import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
 export interface UserRewards {
@@ -70,58 +70,98 @@ export const useSolanaRewards = (userId?: string) => {
       setLoading(true);
       setError(null);
 
-      // Load user rewards
-      const { data: rewardsData, error: rewardsError } = await supabase
-        .from('user_rewards')
-        .select('*')
-        .eq('user_id', userId)
-        .single();
+      // Load user rewards with graceful error handling
+      try {
+        const { data: rewardsData, error: rewardsError } = await supabase
+          .from('user_rewards')
+          .select('*')
+          .eq('user_id', userId)
+          .single();
 
-      if (rewardsError && rewardsError.code !== 'PGRST116') {
-        throw rewardsError;
+        if (rewardsError && rewardsError.code !== 'PGRST116') {
+          if (rewardsError.code === 'PGRST205') {
+            console.warn('user_rewards table not available, using mock data');
+            setUserRewards(null);
+          } else {
+            throw rewardsError;
+          }
+        } else {
+          setUserRewards(rewardsData);
+        }
+      } catch (rewardsErr) {
+        console.warn('Failed to load user_rewards, using mock data:', rewardsErr);
+        setUserRewards(null);
       }
 
-      setUserRewards(rewardsData);
+      // Load notional earnings with graceful error handling
+      try {
+        const { data: notionalData, error: notionalError } = await supabase
+          .from('notional_earnings')
+          .select('*')
+          .eq('user_id', userId)
+          .order('created_at', { ascending: false });
 
-      // Load notional earnings
-      const { data: notionalData, error: notionalError } = await supabase
-        .from('notional_earnings')
-        .select('*')
-        .eq('user_id', userId)
-        .order('created_at', { ascending: false });
-
-      if (notionalError) {
-        throw notionalError;
+        if (notionalError) {
+          if (notionalError.code === 'PGRST205') {
+            console.warn('notional_earnings table not available, using empty array');
+            setNotionalEarnings([]);
+          } else {
+            throw notionalError;
+          }
+        } else {
+          setNotionalEarnings(notionalData || []);
+        }
+      } catch (notionalErr) {
+        console.warn('Failed to load notional_earnings, using empty array:', notionalErr);
+        setNotionalEarnings([]);
       }
 
-      setNotionalEarnings(notionalData || []);
+      // Load rewards history with graceful error handling
+      try {
+        const { data: historyData, error: historyError } = await supabase
+          .from('rewards_history')
+          .select('*')
+          .eq('user_id', userId)
+          .order('created_at', { ascending: false })
+          .limit(50);
 
-      // Load rewards history
-      const { data: historyData, error: historyError } = await supabase
-        .from('rewards_history')
-        .select('*')
-        .eq('user_id', userId)
-        .order('created_at', { ascending: false })
-        .limit(50);
-
-      if (historyError) {
-        throw historyError;
+        if (historyError) {
+          if (historyError.code === 'PGRST205') {
+            console.warn('rewards_history table not available, using empty array');
+            setRewardsHistory([]);
+          } else {
+            throw historyError;
+          }
+        } else {
+          setRewardsHistory(historyData || []);
+        }
+      } catch (historyErr) {
+        console.warn('Failed to load rewards_history, using empty array:', historyErr);
+        setRewardsHistory([]);
       }
 
-      setRewardsHistory(historyData || []);
+      // Load vesting schedules with graceful error handling
+      try {
+        const { data: vestingData, error: vestingError } = await supabase
+          .from('vesting_schedules')
+          .select('*')
+          .eq('user_id', userId)
+          .order('vesting_end_date', { ascending: true });
 
-      // Load vesting schedules
-      const { data: vestingData, error: vestingError } = await supabase
-        .from('vesting_schedules')
-        .select('*')
-        .eq('user_id', userId)
-        .order('vesting_end_date', { ascending: true });
-
-      if (vestingError) {
-        throw vestingError;
+        if (vestingError) {
+          if (vestingError.code === 'PGRST205') {
+            console.warn('vesting_schedules table not available, using empty array');
+            setVestingSchedules([]);
+          } else {
+            throw vestingError;
+          }
+        } else {
+          setVestingSchedules(vestingData || []);
+        }
+      } catch (vestingErr) {
+        console.warn('Failed to load vesting_schedules, using empty array:', vestingErr);
+        setVestingSchedules([]);
       }
-
-      setVestingSchedules(vestingData || []);
 
     } catch (err) {
       console.error('Error loading Solana rewards:', err);

@@ -1,0 +1,38 @@
+version: '3.8'
+
+services:
+  # RAC Rewards React Application
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: rac-rewards-app
+    ports:
+      - "8084:80"
+    environment:
+      - NODE_ENV=production
+      # Supabase environment variables (set these in .env)
+      - VITE_SUPABASE_URL=${VITE_SUPABASE_URL}
+      - VITE_SUPABASE_ANON_KEY=${VITE_SUPABASE_ANON_KEY}
+    restart: unless-stopped
+    networks:
+      - rac-network
+
+  # Optional: Redis for caching (if you want local caching)
+  redis:
+    image: redis:7-alpine
+    container_name: rac-rewards-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - rac-network
+    restart: unless-stopped
+
+volumes:
+  redis_data:
+
+networks:
+  rac-network:
+    driver: bridge
