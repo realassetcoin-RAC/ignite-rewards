@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 export interface TestDataResult {
   success: boolean;
   message: string;
-  data?: any;
+  data?: Record<string, unknown>;
   error?: string;
 }
 
@@ -27,7 +27,7 @@ export class EnhancedTestDataService {
    */
   static async createComprehensiveTestData(): Promise<TestDataResult> {
     try {
-      console.log('🚀 Creating comprehensive test data with 100+ records...');
+      // Console statement removed
 
       // Step 1: Create DAO tables if they don't exist
       await this.createDAOTables();
@@ -65,7 +65,7 @@ export class EnhancedTestDataService {
       // Get final summary
       const summary = await this.getTestDataSummary();
 
-      console.log('🎉 Comprehensive test data created successfully!');
+      // Console statement removed
       return {
         success: true,
         message: 'Comprehensive test data created successfully',
@@ -79,7 +79,7 @@ export class EnhancedTestDataService {
         }
       };
     } catch (error) {
-      console.error('❌ Error creating comprehensive test data:', error);
+      // Console statement removed
       return {
         success: false,
         message: 'Unexpected error occurred',
@@ -92,7 +92,7 @@ export class EnhancedTestDataService {
    * Create DAO tables if they don't exist
    */
   private static async createDAOTables(): Promise<void> {
-    console.log('🏗️ Creating DAO tables...');
+    // Console statement removed
 
     // Create dao_organizations table
     await supabase.rpc('exec_sql', {
@@ -206,7 +206,7 @@ export class EnhancedTestDataService {
       `
     });
 
-    console.log('✅ DAO tables created successfully');
+    // Console statement removed
   }
 
   /**
@@ -214,7 +214,7 @@ export class EnhancedTestDataService {
    */
   private static async createDAOTestData(): Promise<TestDataResult> {
     try {
-      console.log('🗳️ Creating DAO test data with 100+ records...');
+      // Console statement removed
 
       // Clear existing test data
       await this.clearDAOTestData();
@@ -243,7 +243,7 @@ export class EnhancedTestDataService {
         return votes;
       }
 
-      console.log('✅ DAO test data created successfully');
+      // Console statement removed
       return {
         success: true,
         message: 'DAO test data created successfully',
@@ -255,7 +255,7 @@ export class EnhancedTestDataService {
         }
       };
     } catch (error) {
-      console.error('❌ Error creating DAO test data:', error);
+      // Console statement removed
       return {
         success: false,
         message: 'Failed to create DAO test data',
@@ -349,7 +349,7 @@ export class EnhancedTestDataService {
   /**
    * Create 50 DAO members across all organizations
    */
-  private static async createDAOMembers(organizations: any[]): Promise<TestDataResult> {
+  private static async createDAOMembers(organizations: Record<string, unknown>[]): Promise<TestDataResult> {
     const members = [];
     const roles = ['admin', 'moderator', 'member'];
     // const categories = ['governance', 'treasury', 'technical', 'community', 'partnership', 'marketing', 'general'];
@@ -393,7 +393,7 @@ export class EnhancedTestDataService {
   /**
    * Create 100 DAO proposals across all organizations
    */
-  private static async createDAOProposals(organizations: any[], members: any[]): Promise<TestDataResult> {
+  private static async createDAOProposals(organizations: Record<string, unknown>[], members: Record<string, unknown>[]): Promise<TestDataResult> {
     const proposals = [];
     const categories = ['governance', 'treasury', 'technical', 'community', 'partnership', 'marketing', 'general'];
     const votingTypes = ['simple_majority', 'super_majority', 'unanimous', 'weighted', 'quadratic'];
@@ -474,7 +474,7 @@ export class EnhancedTestDataService {
   /**
    * Create 200 DAO votes across all proposals
    */
-  private static async createDAOVotes(proposals: any[], members: any[]): Promise<TestDataResult> {
+  private static async createDAOVotes(proposals: Record<string, unknown>[], members: Record<string, unknown>[]): Promise<TestDataResult> {
     const votes = [];
     const choices = ['yes', 'no', 'abstain'];
     const reasons = [
@@ -538,148 +538,114 @@ export class EnhancedTestDataService {
    */
   private static async createMerchantSubscriptionPlans(): Promise<TestDataResult> {
     try {
-      console.log('💳 Creating merchant subscription plans...');
+      // Console statement removed
 
       const plans = [
         {
-          name: 'Free Trial',
-          description: 'Experience our platform with full access to all features for 14 days',
-          price_monthly: 0.00,
-          price_yearly: 0.00,
+          name: 'StartUp',
+          description: 'Perfect for small businesses getting started',
+          price_monthly: 20.00,
+          price_yearly: 150.00,
           monthly_points: 100,
-          monthly_transactions: 10,
-          features: [
-            'Full platform access for 14 days',
-            'Up to 10 transactions',
-            'Basic customer management',
-            'Email support',
-            'Basic analytics dashboard',
-            'QR code generation',
-            'Mobile app access'
-          ],
-          trial_days: 14,
-          is_active: true,
-          popular: false,
-          plan_number: 0
-        },
-        {
-          name: 'Starter',
-          description: 'Perfect for small businesses and startups looking to build customer loyalty',
-          price_monthly: 29.99,
-          price_yearly: 299.99,
-          monthly_points: 1000,
           monthly_transactions: 100,
-          features: [
-            'Basic loyalty program setup',
-            'Up to 100 transactions per month',
-            'Customer database management',
-            'Email support (24-48 hour response)',
-            'Basic analytics and reporting',
-            'QR code generation',
-            'Mobile app for customers',
-            'Basic email marketing tools',
-            'Social media integration',
-            'Up to 2 staff accounts'
-          ],
+          features: {
+            support: "email_chat",
+            analytics: "standard",
+            points_limit: 100,
+            max_merchants: 1,
+            email_accounts: 1,
+            max_transactions: 100,
+            transactions_limit: 100,
+          },
           trial_days: 14,
           is_active: true,
           popular: false,
           plan_number: 1
         },
         {
-          name: 'Growth',
-          description: 'Ideal for growing businesses that need more advanced features and higher limits',
-          price_monthly: 79.99,
-          price_yearly: 799.99,
-          monthly_points: 5000,
-          monthly_transactions: 500,
-          features: [
-            'Advanced loyalty program features',
-            'Up to 500 transactions per month',
-            'Advanced customer segmentation',
-            'Priority email support (12-24 hour response)',
-            'Advanced analytics and reporting',
-            'Custom branding options',
-            'API access for integrations',
-            'Referral system',
-            'Multi-location support',
-            'Advanced email marketing',
-            'Social media management',
-            'Up to 5 staff accounts',
-            'Custom reward rules',
-            'A/B testing for campaigns'
-          ],
+          name: 'Momentum',
+          description: 'Ideal for growing businesses',
+          price_monthly: 50.00,
+          price_yearly: 500.00,
+          monthly_points: 300,
+          monthly_transactions: 300,
+          features: {
+            support: "email_chat",
+            analytics: "standard",
+            points_limit: 300,
+            max_merchants: 2,
+            email_accounts: 2,
+            max_transactions: 300,
+            transactions_limit: 300,
+          },
           trial_days: 14,
           is_active: true,
-          popular: true,
+          popular: false,
           plan_number: 2
         },
         {
-          name: 'Professional',
-          description: 'For established businesses requiring enterprise-level features and support',
-          price_monthly: 199.99,
-          price_yearly: 1999.99,
-          monthly_points: 15000,
-          monthly_transactions: 1500,
-          features: [
-            'Enterprise loyalty program features',
-            'Up to 1500 transactions per month',
-            'Advanced customer analytics',
-            '24/7 phone and email support',
-            'Real-time analytics dashboard',
-            'White-label solution options',
-            'Full API access with documentation',
-            'Advanced referral system',
-            'Multi-location management',
-            'Custom integrations',
-            'Dedicated account manager',
-            'Advanced email marketing automation',
-            'Social media management suite',
-            'Up to 15 staff accounts',
-            'Custom reward algorithms',
-            'Advanced A/B testing',
-            'Priority feature requests',
-            'Custom reporting'
-          ],
-          trial_days: 30,
+          name: 'Energizer',
+          description: 'For established businesses with high volume',
+          price_monthly: 100.00,
+          price_yearly: 1000.00,
+          monthly_points: 600,
+          monthly_transactions: 600,
+          features: {
+            support: "email_chat",
+            analytics: "advanced",
+            points_limit: 600,
+            max_merchants: 3,
+            email_accounts: 3,
+            max_transactions: 600,
+            transactions_limit: 600,
+          },
+          trial_days: 14,
           is_active: true,
-          popular: false,
+          popular: true,
           plan_number: 3
         },
         {
-          name: 'Enterprise',
-          description: 'For large businesses and enterprises requiring unlimited features and dedicated support',
-          price_monthly: 499.99,
-          price_yearly: 4999.99,
-          monthly_points: 50000,
-          monthly_transactions: 5000,
-          features: [
-            'Unlimited loyalty program features',
-            'Up to 5000 transactions per month',
-            'Enterprise-grade customer analytics',
-            '24/7 dedicated support team',
-            'Real-time analytics with custom dashboards',
-            'Full white-label solution',
-            'Unlimited API access',
-            'Advanced referral and affiliate system',
-            'Unlimited multi-location support',
-            'Custom integrations and development',
-            'Dedicated success manager',
-            'Advanced email marketing automation',
-            'Enterprise social media management',
-            'Unlimited staff accounts',
-            'Custom reward algorithms and AI',
-            'Advanced A/B testing and optimization',
-            'Priority feature development',
-            'Custom reporting and analytics',
-            'SLA guarantees',
-            'Onboarding and training',
-            'Custom contract terms'
-          ],
-          trial_days: 30,
+          name: 'Cloud9',
+          description: 'Premium plan for large enterprises',
+          price_monthly: 250.00,
+          price_yearly: 2500.00,
+          monthly_points: 1800,
+          monthly_transactions: 1800,
+          features: {
+            support: "priority_24_7",
+            analytics: "advanced",
+            points_limit: 1800,
+            max_merchants: 5,
+            email_accounts: 5,
+            max_transactions: 1800,
+            transactions_limit: 1800,
+          },
+          trial_days: 14,
           is_active: true,
           popular: false,
           plan_number: 4
+        },
+        {
+          name: 'Super',
+          description: 'Ultimate plan with unlimited features',
+          price_monthly: 500.00,
+          price_yearly: 5000.00,
+          monthly_points: 4000,
+          monthly_transactions: 4000,
+          features: {
+            support: "dedicated_manager_24_7",
+            analytics: "custom",
+            points_limit: 4000,
+            max_merchants: -1,
+            email_accounts: -1,
+            max_transactions: 4000,
+            transactions_limit: 4000,
+            dedicated_account_manager: true,
+          },
+          trial_days: 14,
+          is_active: true,
+          popular: false,
+          plan_number: 5
         }
       ];
 
@@ -715,7 +681,7 @@ export class EnhancedTestDataService {
    */
   private static async createMerchantTestData(): Promise<TestDataResult> {
     try {
-      console.log('🏪 Creating merchant test data...');
+      // Console statement removed
 
       const merchants = [];
       const businessTypes = ['Retail', 'Restaurant', 'Service', 'E-commerce', 'Entertainment'];
@@ -767,7 +733,7 @@ export class EnhancedTestDataService {
    */
   private static async createTransactionTestData(): Promise<TestDataResult> {
     try {
-      console.log('💳 Creating transaction test data...');
+      // Console statement removed
 
       const transactions = [];
       const statuses = ['completed', 'pending', 'failed', 'cancelled'];
@@ -818,7 +784,7 @@ export class EnhancedTestDataService {
    */
   private static async createMarketplaceTestData(): Promise<TestDataResult> {
     try {
-      console.log('🛒 Creating marketplace test data...');
+      // Console statement removed
 
       const listings = [];
       const assetTypes = ['NFT', 'Token', 'Service', 'Product'];
@@ -870,7 +836,7 @@ export class EnhancedTestDataService {
    * Clear DAO test data
    */
   private static async clearDAOTestData(): Promise<void> {
-    console.log('🧹 Clearing existing DAO test data...');
+    // Console statement removed
 
     // Clear in order due to foreign key constraints
     await supabase.from('dao_votes').delete().neq('id', '00000000-0000-0000-0000-000000000000');
@@ -884,7 +850,7 @@ export class EnhancedTestDataService {
    */
   static async getTestDataSummary(): Promise<TestDataResult> {
     try {
-      console.log('📊 Getting test data summary...');
+      // Console statement removed
 
       // Get counts from all tables
       const [orgsResult, membersResult, proposalsResult, votesResult, subscriptionPlansResult, merchantsResult, transactionsResult, listingsResult] = await Promise.all([
@@ -911,14 +877,14 @@ export class EnhancedTestDataService {
         listings: listingsResult.count || 0
       };
 
-      console.log('📊 Test data summary:', summary);
+      // Console statement removed
       return {
         success: true,
         message: 'Test data summary retrieved successfully',
         data: summary
       };
     } catch (error) {
-      console.error('❌ Error getting test data summary:', error);
+      // Console statement removed
       return {
         success: false,
         message: 'Failed to get test data summary',
@@ -932,7 +898,7 @@ export class EnhancedTestDataService {
    */
   static async clearAllTestData(): Promise<TestDataResult> {
     try {
-      console.log('🧹 Clearing all test data...');
+      // Console statement removed
 
       // Clear DAO data
       await this.clearDAOTestData();
@@ -942,13 +908,13 @@ export class EnhancedTestDataService {
       await supabase.from('merchants').delete().like('id', 'merchant-%');
       await supabase.from('marketplace_listings').delete().like('id', 'listing-%');
 
-      console.log('✅ All test data cleared successfully');
+      // Console statement removed
       return {
         success: true,
         message: 'All test data cleared successfully'
       };
     } catch (error) {
-      console.error('❌ Error clearing test data:', error);
+      // Console statement removed
       return {
         success: false,
         message: 'Failed to clear test data',

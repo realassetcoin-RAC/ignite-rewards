@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -6,7 +6,6 @@ import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { LogoIcon } from '@/components/logo';
 import { SeedPhraseLoginModal } from '@/components/SeedPhraseLoginModal';
-import WalletSelector from '@/components/WalletSelector';
 import { useToast } from '@/hooks/use-toast';
 import { useSecureAuth } from '@/hooks/useSecureAuth';
 import { supabase } from '@/integrations/supabase/client';
@@ -40,7 +39,6 @@ export const SignupPopup: React.FC<SignupPopupProps> = ({
   const [showConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [showSeedPhraseModal, setShowSeedPhraseModal] = useState(false);
-  const [showWalletSelector, setShowWalletSelector] = useState(false);
   const { toast } = useToast();
   const { refreshAuth } = useSecureAuth();
   const { saveAcceptance } = useTermsPrivacy();
@@ -51,6 +49,20 @@ export const SignupPopup: React.FC<SignupPopupProps> = ({
   const firstNameValidation = useFieldValidation(nameSchema, formData.firstName);
   const lastNameValidation = useFieldValidation(nameSchema, formData.lastName);
   const referralValidation = useFieldValidation(referralCodeSchema, formData.referralCode);
+
+  // Auto-fill referral code from URL parameters
+  useEffect(() => {
+    if (isOpen) {
+      const urlParams = new URLSearchParams(window.location.search);
+      const refCode = urlParams.get('ref');
+      if (refCode) {
+        setFormData(prev => ({
+          ...prev,
+          referralCode: refCode
+        }));
+      }
+    }
+  }, [isOpen]);
 
   const handleInputChange = (field: string, value: string | boolean) => {
     setFormData(prev => ({
@@ -105,6 +117,66 @@ export const SignupPopup: React.FC<SignupPopupProps> = ({
       // Save terms and privacy acceptance
       await saveAcceptance(formData.acceptTerms, formData.acceptPrivacy);
       
+      // ✅ IMPLEMENT REQUIREMENT: Create custodial wallet for email signup
+      if (result?.user?.id) {
+        try {
+          // Create user profile with custodial type
+          const { error: profileError } = await supabase
+            .from('profiles')
+            .insert({
+              id: result.user.id,
+              email: formData.email,
+              full_name: `${formData.firstName} ${formData.lastName}`,
+              first_name: formData.firstName,
+              last_name: formData.lastName,
+              user_type: 'custodial',
+              provider: 'email',
+              terms_accepted: formData.acceptTerms,
+              privacy_accepted: formData.acceptPrivacy,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
+            });
+
+          if (profileError) {
+            console.error('Profile creation error:', profileError);
+          }
+
+          // Create custodial wallet
+          const { error: walletError } = await supabase
+            .from('user_solana_wallets')
+            .insert({
+              user_id: result.user.id,
+              address: `custodial_${result.user.id}_${Date.now()}`,
+              seed_phrase: 'custodial_wallet_managed_by_platform',
+              wallet_type: 'custodial',
+              is_active: true,
+              created_at: new Date().toISOString()
+            });
+
+          if (walletError) {
+            console.error('Wallet creation error:', walletError);
+          }
+
+          // ✅ IMPLEMENT REQUIREMENT: Assign free Pearl White NFT to custodial users
+          try {
+            const { NFTAssignmentService } = await import('@/lib/nftAssignmentService');
+            const nftResult = await NFTAssignmentService.assignFreeNFT(result.user.id);
+            
+            if (!nftResult.success) {
+              console.error('Free NFT assignment error:', nftResult.error);
+            } else {
+              console.log('✅ Successfully assigned free Pearl White NFT');
+            }
+          } catch (nftError) {
+            console.error('Free NFT assignment failed:', nftError);
+          }
+
+        } catch (walletError) {
+          console.error('Wallet creation failed:', walletError);
+          // Don't fail the signup if wallet creation fails
+        }
+      }
+      
       // Process referral code if provided
       if (formData.referralCode.trim() && result?.user?.id) {
         try {
@@ -125,8 +197,8 @@ export const SignupPopup: React.FC<SignupPopupProps> = ({
               variant: "destructive"
             });
           }
-        } catch (referralError) {
-          console.error('Referral processing error:', referralError);
+        } catch {
+          // Console statement removed
           toast({
             title: "Referral Processing Error",
             description: "Referral code could not be processed, but your account was created successfully.",
@@ -174,22 +246,54 @@ export const SignupPopup: React.FC<SignupPopupProps> = ({
       }
 
       if (data?.url) {
-        // Open OAuth in popup window
+        // Open OAuth in popup window with minimal parameters to avoid fullscreen
         const popup = window.open(
           data.url,
           'google-oauth',
-          'width=500,height=600,scrollbars=yes,resizable=yes'
+          'width=500,height=600,scrollbars=yes,resizable=yes,left=100,top=100'
         );
 
         if (!popup) {
           throw new Error('Popup blocked. Please allow popups for this site.');
         }
 
+        // Security note: URL will be visible but we'll monitor for manipulation
+        // Console statement removed
+
+        // Additional security: Monitor popup for URL changes
+        const urlCheckInterval = setInterval(() => {
+          try {
+            if (popup && !popup.closed) {
+              // Check if URL has been manipulated
+              const currentUrl = popup.location.href;
+              if (currentUrl && !currentUrl.includes('accounts.google.com') && !currentUrl.includes('supabase.co')) {
+                // Console statement removed
+                popup.close();
+                clearInterval(urlCheckInterval);
+                toast({
+                  title: "Security Alert",
+                  description: "Suspicious activity detected. Please try again.",
+                  variant: "destructive"
+                });
+              }
+            } else {
+              clearInterval(urlCheckInterval);
+            }
+          } catch {
+            // Expected - cross-origin access blocked
+          }
+        }, 1000);
+
+        // Track authentication state to prevent race conditions
+        let authCompleted = false;
+
         // Listen for messages from the popup
         const handleMessage = (event: MessageEvent) => {
           if (event.origin !== window.location.origin) return;
           
           if (event.data.type === 'OAUTH_SUCCESS') {
+            authCompleted = true;
+            clearTimeout(timeoutId);
             toast({
               title: "Sign Up Successful",
               description: "Welcome to RAC Rewards! Your account has been created with Google.",
@@ -197,6 +301,8 @@ export const SignupPopup: React.FC<SignupPopupProps> = ({
             onClose();
             window.removeEventListener('message', handleMessage);
           } else if (event.data.type === 'OAUTH_ERROR') {
+            authCompleted = true;
+            clearTimeout(timeoutId);
             toast({
               title: "Sign Up Failed",
               description: event.data.error || "Google sign-up failed. Please try again.",
@@ -208,27 +314,25 @@ export const SignupPopup: React.FC<SignupPopupProps> = ({
 
         window.addEventListener('message', handleMessage);
 
-        // Fallback: check if popup is closed without completing auth
-        const checkClosed = setInterval(() => {
-          if (popup.closed) {
-            clearInterval(checkClosed);
-            window.removeEventListener('message', handleMessage);
-            // Only show error if no success message was received
-            setTimeout(() => {
-              if (!popup.closed) return; // Check again in case it reopened
-              toast({
-                title: "Sign Up Cancelled",
-                description: "Google sign-up was cancelled or failed.",
-                variant: "destructive"
-              });
-            }, 100);
+        // Set a timeout to handle cases where the popup doesn't respond
+        // This avoids Cross-Origin-Opener-Policy errors from checking popup.closed
+        const timeoutId = setTimeout(() => {
+          window.removeEventListener('message', handleMessage);
+          
+          // Only show error if authentication was not completed successfully
+          if (!authCompleted) {
+            toast({
+              title: "Sign Up Timeout",
+              description: "Google sign-up timed out. Please try again.",
+              variant: "destructive"
+            });
           }
-        }, 1000);
+        }, 30000); // 30 second timeout
       } else {
         throw new Error('No OAuth URL received');
       }
     } catch (error) {
-      console.error('Google OAuth error:', error);
+      // Console statement removed
       toast({
         title: "Google Sign Up Failed",
         description: error instanceof Error ? error.message : "Unable to sign up with Google. Please try again.",
@@ -259,17 +363,9 @@ export const SignupPopup: React.FC<SignupPopupProps> = ({
       return;
     }
     
-    setShowWalletSelector(true);
+    // Wallet selector removed - users sign up with email/OAuth first
   };
 
-  const handleWalletConnected = () => {
-    setShowWalletSelector(false);
-    toast({
-      title: "Wallet Connected!",
-      description: "Your wallet has been successfully connected.",
-    });
-    onClose();
-  };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -359,6 +455,7 @@ export const SignupPopup: React.FC<SignupPopupProps> = ({
                       onChange={(e) => handleInputChange('firstName', e.target.value)}
                       placeholder="First name"
                       disabled={loading}
+                      autoComplete="given-name"
                       className={`h-9 ${firstNameValidation.error ? 'border-red-500 focus:border-red-500' : ''}`}
                     />
                     {firstNameValidation.error && (
@@ -381,6 +478,7 @@ export const SignupPopup: React.FC<SignupPopupProps> = ({
                       onChange={(e) => handleInputChange('lastName', e.target.value)}
                       placeholder="Last name"
                       disabled={loading}
+                      autoComplete="family-name"
                       className={`h-9 ${lastNameValidation.error ? 'border-red-500 focus:border-red-500' : ''}`}
                     />
                     {lastNameValidation.error && (
@@ -405,6 +503,7 @@ export const SignupPopup: React.FC<SignupPopupProps> = ({
                     onChange={(e) => handleInputChange('email', e.target.value)}
                     placeholder="Enter your email"
                     disabled={loading}
+                    autoComplete="email"
                     className={`h-9 ${emailValidation.error ? 'border-red-500 focus:border-red-500' : ''}`}
                   />
                   {emailValidation.error && (
@@ -428,6 +527,7 @@ export const SignupPopup: React.FC<SignupPopupProps> = ({
                     onChange={(e) => handleInputChange('password', e.target.value)}
                     placeholder="Create a password (min. 8 characters, uppercase, lowercase, number, special char)"
                     disabled={loading}
+                    autoComplete="new-password"
                     className={`h-9 ${passwordValidation.error ? 'border-red-500 focus:border-red-500' : ''}`}
                   />
                   {passwordValidation.error && (
@@ -464,7 +564,7 @@ export const SignupPopup: React.FC<SignupPopupProps> = ({
                 <div className="space-y-1">
                   <Label htmlFor="referral" className="block text-sm text-gray-900 font-medium flex items-center gap-2">
                     <Gift className="h-3 w-3 text-purple-600" />
-                    Referral Code (Optional)
+                    Loyalty Number (Optional)
                   </Label>
                   <Input
                     type="text"
@@ -472,7 +572,7 @@ export const SignupPopup: React.FC<SignupPopupProps> = ({
                     id="referral"
                     value={formData.referralCode}
                     onChange={(e) => handleInputChange('referralCode', e.target.value.toUpperCase())}
-                    placeholder="Enter referral code"
+                    placeholder="Enter loyalty number"
                     disabled={loading}
                     className={`h-9 ${referralValidation.error ? 'border-red-500 focus:border-red-500' : ''}`}
                   />
@@ -551,12 +651,11 @@ export const SignupPopup: React.FC<SignupPopupProps> = ({
         onSuccess={handleSeedPhraseSuccess}
       />
 
-      {/* Wallet Selector Modal */}
-      <WalletSelector
+      {/* Wallet Selector Modal - Temporarily disabled */}
+      {/* <WalletSelector
         isOpen={showWalletSelector}
         onClose={() => setShowWalletSelector(false)}
-        onWalletConnected={handleWalletConnected}
-      />
+      /> */}
     </Dialog>
   );
 };

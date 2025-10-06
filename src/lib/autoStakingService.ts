@@ -47,15 +47,6 @@ interface AutoStakingConfig {
   updated_at: string;
 }
 
-interface StakingReward {
-  id: string;
-  stake_position_id: string;
-  reward_amount: number;
-  reward_type: 'daily' | 'weekly' | 'compound' | 'bonus';
-  calculated_at: string;
-  is_claimed: boolean;
-  claimed_at?: string;
-}
 
 export class AutoStakingService {
   /**
@@ -70,13 +61,13 @@ export class AutoStakingService {
         .order('apy_percentage', { ascending: false });
 
       if (error) {
-        console.error('Error fetching staking pools:', error);
+        // Console statement removed
         return [];
       }
 
       return data || [];
-    } catch (error) {
-      console.error('Error in getStakingPools:', error);
+    } catch {
+      // Console statement removed
       return [];
     }
   }
@@ -93,13 +84,13 @@ export class AutoStakingService {
         .single();
 
       if (error && error.code !== 'PGRST116') {
-        console.error('Error fetching auto-staking config:', error);
+        // Console statement removed
         return null;
       }
 
       return data;
-    } catch (error) {
-      console.error('Error in getUserAutoStakingConfig:', error);
+    } catch {
+      // Console statement removed
       return null;
     }
   }
@@ -121,14 +112,14 @@ export class AutoStakingService {
         });
 
       if (error) {
-        console.error('Error updating auto-staking config:', error);
+        // Console statement removed
         return false;
       }
 
-      console.log('✅ Auto-staking config updated successfully');
+      // Console statement removed
       return true;
-    } catch (error) {
-      console.error('Error in updateAutoStakingConfig:', error);
+    } catch {
+      // Console statement removed
       return false;
     }
   }
@@ -138,19 +129,19 @@ export class AutoStakingService {
    */
   static async processAutoStaking(userId: string, rewardAmount: number): Promise<boolean> {
     try {
-      console.log(`🎯 Processing auto-staking for user ${userId}, amount: ${rewardAmount}`);
+      // Console statement removed
 
       // Get user's auto-staking configuration
       const config = await this.getUserAutoStakingConfig(userId);
       
       if (!config || !config.is_enabled) {
-        console.log('Auto-staking not enabled for user');
+        // Console statement removed
         return false;
       }
 
       // Check if reward amount meets minimum threshold
       if (rewardAmount < config.minimum_auto_stake) {
-        console.log(`Reward amount ${rewardAmount} below minimum auto-stake threshold ${config.minimum_auto_stake}`);
+        // Console statement removed
         return false;
       }
 
@@ -158,7 +149,7 @@ export class AutoStakingService {
       const amountToStake = (rewardAmount * config.percentage_to_stake) / 100;
       
       if (amountToStake < config.minimum_auto_stake) {
-        console.log(`Calculated stake amount ${amountToStake} below minimum threshold`);
+        // Console statement removed
         return false;
       }
 
@@ -171,18 +162,18 @@ export class AutoStakingService {
         .single();
 
       if (poolError || !pool) {
-        console.error('Error fetching staking pool:', poolError);
+        // Console statement removed
         return false;
       }
 
       // Check pool capacity and limits
       if (pool.maximum_stake && amountToStake > pool.maximum_stake) {
-        console.log(`Stake amount ${amountToStake} exceeds pool maximum ${pool.maximum_stake}`);
+        // Console statement removed
         return false;
       }
 
       if (pool.available_slots !== null && pool.available_slots <= 0) {
-        console.log('No available slots in staking pool');
+        // Console statement removed
         return false;
       }
 
@@ -190,7 +181,7 @@ export class AutoStakingService {
       const unlockDate = new Date();
       unlockDate.setDate(unlockDate.getDate() + pool.lock_period_days);
 
-      const { data: stakePosition, error: stakeError } = await supabase
+      const { error: stakeError } = await supabase
         .from('stake_positions')
         .insert({
           user_id: userId,
@@ -206,7 +197,7 @@ export class AutoStakingService {
         .single();
 
       if (stakeError) {
-        console.error('Error creating stake position:', stakeError);
+        // Console statement removed
         return false;
       }
 
@@ -228,11 +219,11 @@ export class AutoStakingService {
         })
         .eq('user_id', userId);
 
-      console.log(`✅ Auto-staking successful: ${amountToStake} tokens staked in ${pool.name}`);
+      // Console statement removed
       return true;
 
-    } catch (error) {
-      console.error('Error in processAutoStaking:', error);
+    } catch {
+      // Console statement removed
       return false;
     }
   }
@@ -258,13 +249,13 @@ export class AutoStakingService {
         .order('stake_date', { ascending: false });
 
       if (error) {
-        console.error('Error fetching stake positions:', error);
+        // Console statement removed
         return [];
       }
 
       return data || [];
-    } catch (error) {
-      console.error('Error in getUserStakePositions:', error);
+    } catch {
+      // Console statement removed
       return [];
     }
   }
@@ -317,7 +308,7 @@ export class AutoStakingService {
       }
 
       // Create reward record
-      const { data: rewardRecord, error: rewardError } = await supabase
+      const { error: rewardError } = await supabase
         .from('staking_rewards')
         .insert({
           stake_position_id: stakePositionId,
@@ -331,7 +322,7 @@ export class AutoStakingService {
         .single();
 
       if (rewardError) {
-        console.error('Error creating reward record:', rewardError);
+        // Console statement removed
         return { success: false, error: 'Failed to process reward claim' };
       }
 
@@ -354,7 +345,7 @@ export class AutoStakingService {
           })
           .eq('id', stakePositionId);
 
-        console.log(`✅ Rewards auto-compounded: ${pendingRewards} tokens`);
+        // Console statement removed
       } else {
         // Add to user's available balance
         await supabase
@@ -365,13 +356,13 @@ export class AutoStakingService {
           })
           .eq('user_id', stakePosition.user_id);
 
-        console.log(`✅ Rewards claimed: ${pendingRewards} tokens`);
+        // Console statement removed
       }
 
       return { success: true, amount: pendingRewards };
 
-    } catch (error) {
-      console.error('Error in claimStakeRewards:', error);
+    } catch {
+      // Console statement removed
       return { success: false, error: 'An error occurred while claiming rewards' };
     }
   }
@@ -457,15 +448,15 @@ export class AutoStakingService {
         })
         .eq('user_id', stakePosition.user_id);
 
-      console.log(`✅ Unstaking successful: ${netAmount} tokens returned (penalty: ${penalty})`);
+      // Console statement removed
       return { 
         success: true, 
         amount: netAmount, 
         penalty: penalty > 0 ? penalty : undefined 
       };
 
-    } catch (error) {
-      console.error('Error in unstakePosition:', error);
+    } catch {
+      // Console statement removed
       return { success: false, error: 'An error occurred while unstaking' };
     }
   }
@@ -473,7 +464,7 @@ export class AutoStakingService {
   /**
    * Get staking statistics for user
    */
-  static async getUserStakingStats(userId: string): Promise<any> {
+  static async getUserStakingStats(userId: string): Promise<Record<string, unknown>> {
     try {
       const [positions, rewards] = await Promise.all([
         this.getUserStakePositions(userId),
@@ -508,8 +499,8 @@ export class AutoStakingService {
         positions
       };
 
-    } catch (error) {
-      console.error('Error in getUserStakingStats:', error);
+    } catch {
+      // Console statement removed
       return {
         total_staked: 0,
         total_rewards_earned: 0,
@@ -525,7 +516,7 @@ export class AutoStakingService {
    */
   static async processDailyRewards(): Promise<void> {
     try {
-      console.log('🔄 Processing daily staking rewards...');
+      // Console statement removed
 
       const { data: activePositions, error } = await supabase
         .from('stake_positions')
@@ -536,7 +527,7 @@ export class AutoStakingService {
         .eq('is_active', true);
 
       if (error) {
-        console.error('Error fetching active positions:', error);
+        // Console statement removed
         return;
       }
 
@@ -563,9 +554,9 @@ export class AutoStakingService {
         }
       }
 
-      console.log('✅ Daily staking rewards processed');
-    } catch (error) {
-      console.error('Error processing daily rewards:', error);
+      // Console statement removed
+    } catch {
+      // Console statement removed
     }
   }
 }

@@ -64,16 +64,18 @@ class Logger {
     
     switch (entry.level) {
       case LogLevel.DEBUG:
+        // eslint-disable-next-line no-console
         console.debug(formatted, entry.data || '');
         break;
       case LogLevel.INFO:
+        // eslint-disable-next-line no-console
         console.info(formatted, entry.data || '');
         break;
       case LogLevel.WARN:
-        console.warn(formatted, entry.data || '');
+        // Console statement removed
         break;
       case LogLevel.ERROR:
-        console.error(formatted, entry.data || '', entry.error || '');
+        // Console statement removed
         break;
     }
 

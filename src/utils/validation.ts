@@ -17,7 +17,7 @@ export const passwordSchema = z.string()
   .min(8, 'Password must be at least 8 characters')
   .max(128, 'Password is too long')
   .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/, 'Password must contain at least one uppercase letter, one lowercase letter, and one number')
-  .regex(/^(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?])/, 'Password must contain at least one special character');
+  .regex(/^(?=.*[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?])/, 'Password must contain at least one special character');
 
 export const phoneSchema = z.string()
   .min(1, 'Phone number is required')
@@ -43,12 +43,12 @@ export const imageUrlSchema = z.string()
 export const nameSchema = z.string()
   .min(1, 'Name is required')
   .max(100, 'Name is too long')
-  .regex(/^[a-zA-Z\s\-'\.]+$/, 'Name can only contain letters, spaces, hyphens, apostrophes, and periods');
+  .regex(/^[a-zA-Z\s\-'.]+$/, 'Name can only contain letters, spaces, hyphens, apostrophes, and periods');
 
 export const businessNameSchema = z.string()
   .min(1, 'Business name is required')
   .max(100, 'Business name is too long')
-  .regex(/^[a-zA-Z0-9\s\-'\.&,()]+$/, 'Business name contains invalid characters');
+  .regex(/^[a-zA-Z0-9\s\-'.&,()]+$/, 'Business name contains invalid characters');
 
 // Predefined industry list
 export const INDUSTRY_OPTIONS = [
@@ -85,23 +85,27 @@ export const industrySchema = z.enum(INDUSTRY_OPTIONS, {
 export const citySchema = z.string()
   .min(1, 'City is required')
   .max(50, 'City name is too long')
-  .regex(/^[a-zA-Z\s\-'\.]+$/, 'City name can only contain letters, spaces, hyphens, apostrophes, and periods')
+  .regex(/^[a-zA-Z\s\-'.]+$/, 'City name can only contain letters, spaces, hyphens, apostrophes, and periods')
   .optional();
 
 // City validation with API Ninjas
-export const validateCityWithAPI = async (cityName: string, countryCode?: string): Promise<{ isValid: boolean; error?: string; data?: any }> => {
+export const validateCityWithAPI = async (cityName: string, countryCode?: string): Promise<{ isValid: boolean; error?: string; data?: Record<string, unknown> }> => {
   try {
     if (!cityName || cityName.trim().length < 2) {
       return { isValid: false, error: 'City name must be at least 2 characters' };
     }
 
-    const apiKey = process.env.REACT_APP_API_NINJAS_KEY || 'mmukoqC1YD+DnoIYT1bUFQ==3yeUixLPT1Y8IxQt';
+    const apiKey = import.meta.env.VITE_API_NINJAS_KEY;
     const url = new URL('https://api.api-ninjas.com/v1/city');
     url.searchParams.append('name', cityName.trim());
     if (countryCode) {
       url.searchParams.append('country', countryCode);
     }
     url.searchParams.append('limit', '5');
+
+    if (!apiKey) {
+      return { isValid: false, error: 'API Ninjas key not configured' };
+    }
 
     const response = await fetch(url.toString(), {
       headers: {
@@ -123,7 +127,7 @@ export const validateCityWithAPI = async (cityName: string, countryCode?: string
     }
 
     // Check if the city name matches closely
-    const exactMatch = data.find((city: any) => 
+    const exactMatch = data.find((city: Record<string, unknown>) => 
       city.name.toLowerCase() === cityName.toLowerCase()
     );
     
@@ -148,8 +152,8 @@ export const validateCityWithAPI = async (cityName: string, countryCode?: string
       data: closestMatch
     };
 
-  } catch (error) {
-    console.error('City validation error:', error);
+  } catch {
+    // Console statement removed
     return { isValid: false, error: 'Unable to validate city. Please try again.' };
   }
 };
@@ -224,9 +228,21 @@ export const virtualCardSchema = z.object({
   evolution_image_url: imageUrlSchema,
   subscription_plan: z.enum(['basic', 'professional', 'enterprise']).optional(),
   pricing_type: z.enum(['free', 'one_time', 'monthly', 'annual']),
-  one_time_fee: positiveNumberSchema.optional(),
-  monthly_fee: positiveNumberSchema.optional(),
-  annual_fee: positiveNumberSchema.optional(),
+  one_time_fee: z.union([z.string(), z.number()]).transform((val) => {
+    const num = typeof val === 'string' ? parseFloat(val) : val;
+    if (isNaN(num)) throw new Error('Invalid number format');
+    return num;
+  }).pipe(positiveNumberSchema).optional(),
+  monthly_fee: z.union([z.string(), z.number()]).transform((val) => {
+    const num = typeof val === 'string' ? parseFloat(val) : val;
+    if (isNaN(num)) throw new Error('Invalid number format');
+    return num;
+  }).pipe(positiveNumberSchema).optional(),
+  annual_fee: z.union([z.string(), z.number()]).transform((val) => {
+    const num = typeof val === 'string' ? parseFloat(val) : val;
+    if (isNaN(num)) throw new Error('Invalid number format');
+    return num;
+  }).pipe(positiveNumberSchema).optional(),
   features: z.string().optional(),
   is_active: z.boolean().optional(),
   // NFT-specific fields
@@ -247,17 +263,45 @@ export const virtualCardSchema = z.object({
 export const subscriptionPlanSchema = z.object({
   name: z.string().min(1, 'Plan name is required').max(100, 'Plan name too long'),
   description: z.string().max(500, 'Description too long').optional(),
-  price_monthly: positiveNumberSchema,
-  price_yearly: positiveNumberSchema,
-  monthly_points: z.number().int().min(0, 'Monthly points cannot be negative'),
-  monthly_transactions: z.number().int().min(0, 'Monthly transactions cannot be negative'),
+  price_monthly: z.union([z.string(), z.number()]).transform((val) => {
+    const num = typeof val === 'string' ? parseFloat(val) : val;
+    if (isNaN(num)) throw new Error('Invalid number format');
+    return num;
+  }).pipe(positiveNumberSchema),
+  price_yearly: z.union([z.string(), z.number()]).transform((val) => {
+    const num = typeof val === 'string' ? parseFloat(val) : val;
+    if (isNaN(num)) throw new Error('Invalid number format');
+    return num;
+  }).pipe(positiveNumberSchema),
+  monthly_points: z.union([z.string(), z.number()]).transform((val) => {
+    const num = typeof val === 'string' ? parseInt(val) : val;
+    if (isNaN(num)) throw new Error('Invalid number format');
+    return num;
+  }).pipe(z.number().int().min(0, 'Monthly points cannot be negative')),
+  monthly_transactions: z.union([z.string(), z.number()]).transform((val) => {
+    const num = typeof val === 'string' ? parseInt(val) : val;
+    if (isNaN(num)) throw new Error('Invalid number format');
+    return num;
+  }).pipe(z.number().int().min(0, 'Monthly transactions cannot be negative')),
   features: z.string().optional(),
-  trial_days: z.number().int().min(0, 'Trial days cannot be negative').max(365, 'Trial days cannot exceed 365'),
+  trial_days: z.union([z.string(), z.number()]).transform((val) => {
+    const num = typeof val === 'string' ? parseInt(val) : val;
+    if (isNaN(num)) throw new Error('Invalid number format');
+    return num;
+  }).pipe(z.number().int().min(0, 'Trial days cannot be negative').max(365, 'Trial days cannot exceed 365')),
   is_active: z.boolean(),
   popular: z.boolean(),
-  plan_number: z.number().int().min(1, 'Plan number must be at least 1'),
-  valid_from: z.string().datetime().optional(),
-  valid_until: z.string().datetime().optional()
+  plan_number: z.number().int().min(1, 'Plan number must be at least 1').optional(),
+  valid_from: z.string().nullable().optional().refine((val) => {
+    if (!val || val === null || val.trim() === '') return true;
+    const date = new Date(val);
+    return !isNaN(date.getTime());
+  }, 'Invalid datetime format'),
+  valid_until: z.string().nullable().optional().refine((val) => {
+    if (!val || val === null || val.trim() === '') return true;
+    const date = new Date(val);
+    return !isNaN(date.getTime());
+  }, 'Invalid datetime format')
 });
 
 export const referralCampaignSchema = z.object({
@@ -357,7 +401,7 @@ export const validateFormData = <T>(schema: z.ZodSchema<T>, data: unknown): { su
   try {
     const validatedData = schema.parse(data);
     return { success: true, data: validatedData };
-  } catch (error) {
+  } catch {
     if (error instanceof z.ZodError) {
       return { 
         success: false, 
@@ -368,11 +412,11 @@ export const validateFormData = <T>(schema: z.ZodSchema<T>, data: unknown): { su
   }
 };
 
-export const validateField = (schema: z.ZodSchema, value: any): { isValid: boolean; error?: string } => {
+export const validateField = (schema: z.ZodSchema, value: unknown): { isValid: boolean; error?: string } => {
   try {
     schema.parse(value);
     return { isValid: true };
-  } catch (error) {
+  } catch {
     if (error instanceof z.ZodError) {
       return { isValid: false, error: error.errors[0]?.message || 'Invalid input' };
     }
@@ -433,7 +477,7 @@ export const sanitizeErrorMessage = (error: unknown): string => {
 };
 
 // Real-time validation hook
-export const useFieldValidation = (schema: z.ZodSchema, value: any, debounceMs: number = 300) => {
+export const useFieldValidation = (schema: z.ZodSchema, value: unknown, debounceMs: number = 300) => {
   const [error, setError] = useState<string | null>(null);
   const [isValidating, setIsValidating] = useState(false);
   

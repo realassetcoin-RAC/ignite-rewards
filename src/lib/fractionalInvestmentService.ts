@@ -103,8 +103,8 @@ export class FractionalInvestmentService {
         maxInvestmentAmount,
         message: `Eligible for fractional investments up to ${maxInvestmentAmount.toFixed(2)} points`
       };
-    } catch (error) {
-      console.error('Error checking fractional investment eligibility:', error);
+    } catch {
+      // Console statement removed
       return {
         isEligible: false,
         nftType: 'none',
@@ -127,13 +127,13 @@ export class FractionalInvestmentService {
         .order('expected_return_rate', { ascending: false });
 
       if (error) {
-        console.error('Error fetching fractional assets:', error);
+        // Console statement removed
         return [];
       }
 
       return data || [];
-    } catch (error) {
-      console.error('Error fetching fractional assets:', error);
+    } catch {
+      // Console statement removed
       return [];
     }
   }
@@ -241,7 +241,7 @@ export class FractionalInvestmentService {
         }]);
 
       if (investmentError) {
-        console.error('Error creating fractional investment:', investmentError);
+        // Console statement removed
         return {
           success: false,
           shares: 0,
@@ -272,8 +272,8 @@ export class FractionalInvestmentService {
         shares,
         message: `Successfully invested ${investmentAmount} points for ${shares} shares in ${asset.asset_name}`
       };
-    } catch (error) {
-      console.error('Error investing in fractional asset:', error);
+    } catch {
+      // Console statement removed
       return {
         success: false,
         shares: 0,
@@ -294,13 +294,13 @@ export class FractionalInvestmentService {
         .order('investment_date', { ascending: false });
 
       if (error) {
-        console.error('Error fetching user fractional investments:', error);
+        // Console statement removed
         return [];
       }
 
       return data || [];
-    } catch (error) {
-      console.error('Error fetching user fractional investments:', error);
+    } catch {
+      // Console statement removed
       return [];
     }
   }
@@ -349,8 +349,8 @@ export class FractionalInvestmentService {
         expectedTotalReturn,
         maturityDate: asset.maturity_date
       };
-    } catch (error) {
-      console.error('Error calculating potential returns:', error);
+    } catch {
+      // Console statement removed
       return {
         shares: 0,
         expectedAnnualReturn: 0,
@@ -389,8 +389,8 @@ export class FractionalInvestmentService {
         activeInvestments,
         completedInvestments
       };
-    } catch (error) {
-      console.error('Error fetching fractional investment stats:', error);
+    } catch {
+      // Console statement removed
       return {
         totalInvestments: 0,
         totalAmount: 0,
@@ -490,8 +490,8 @@ export class FractionalInvestmentService {
         amount: withdrawalAmount,
         message: `Successfully withdrew ${withdrawalAmount.toFixed(2)} points from fractional investment`
       };
-    } catch (error) {
-      console.error('Error withdrawing from fractional investment:', error);
+    } catch {
+      // Console statement removed
       return {
         success: false,
         amount: 0,

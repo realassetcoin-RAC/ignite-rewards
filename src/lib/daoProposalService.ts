@@ -7,7 +7,7 @@ export interface ProposalRequest {
   proposal_type: 'marketplace_config' | 'nft_config' | 'rewards_config' | 'governance';
   target_contract?: string;
   target_function?: string;
-  parameters?: Record<string, any>;
+  parameters?: Record<string, unknown>;
   created_by: string;
 }
 
@@ -24,7 +24,7 @@ export class DAOProposalService {
   static async createMarketplaceProposal(
     title: string,
     description: string,
-    changes: Record<string, any>,
+    changes: Record<string, unknown>,
     createdBy: string
   ): Promise<ProposalResponse> {
     try {
@@ -49,7 +49,7 @@ export class DAOProposalService {
         .single();
 
       if (error) {
-        console.error('Error creating marketplace proposal:', error);
+        // Console statement removed
         return { success: false, message: 'Failed to create proposal' };
       }
 
@@ -58,8 +58,8 @@ export class DAOProposalService {
         proposal_id: data.id, 
         message: 'Marketplace configuration proposal created successfully' 
       };
-    } catch (error) {
-      console.error('Error creating marketplace proposal:', error);
+    } catch {
+      // Console statement removed
       return { success: false, message: 'Failed to create proposal' };
     }
   }
@@ -70,7 +70,7 @@ export class DAOProposalService {
   static async createNFTProposal(
     title: string,
     description: string,
-    nftChanges: Record<string, any>,
+    nftChanges: Record<string, unknown>,
     createdBy: string
   ): Promise<ProposalResponse> {
     try {
@@ -95,7 +95,7 @@ export class DAOProposalService {
         .single();
 
       if (error) {
-        console.error('Error creating NFT proposal:', error);
+        // Console statement removed
         return { success: false, message: 'Failed to create proposal' };
       }
 
@@ -104,8 +104,8 @@ export class DAOProposalService {
         proposal_id: data.id, 
         message: 'NFT configuration proposal created successfully' 
       };
-    } catch (error) {
-      console.error('Error creating NFT proposal:', error);
+    } catch {
+      // Console statement removed
       return { success: false, message: 'Failed to create proposal' };
     }
   }
@@ -116,7 +116,7 @@ export class DAOProposalService {
   static async createRewardsProposal(
     title: string,
     description: string,
-    rewardsChanges: Record<string, any>,
+    rewardsChanges: Record<string, unknown>,
     createdBy: string
   ): Promise<ProposalResponse> {
     try {
@@ -141,7 +141,7 @@ export class DAOProposalService {
         .single();
 
       if (error) {
-        console.error('Error creating rewards proposal:', error);
+        // Console statement removed
         return { success: false, message: 'Failed to create proposal' };
       }
 
@@ -150,8 +150,8 @@ export class DAOProposalService {
         proposal_id: data.id, 
         message: 'Rewards configuration proposal created successfully' 
       };
-    } catch (error) {
-      console.error('Error creating rewards proposal:', error);
+    } catch {
+      // Console statement removed
       return { success: false, message: 'Failed to create proposal' };
     }
   }
@@ -190,13 +190,13 @@ export class DAOProposalService {
         }]);
 
       if (error) {
-        console.error('Error voting on proposal:', error);
+        // Console statement removed
         return { success: false, message: 'Failed to cast vote' };
       }
 
       return { success: true, message: 'Vote cast successfully' };
-    } catch (error) {
-      console.error('Error voting on proposal:', error);
+    } catch {
+      // Console statement removed
       return { success: false, message: 'Failed to cast vote' };
     }
   }
@@ -246,8 +246,8 @@ export class DAOProposalService {
         .eq('id', proposalId);
 
       return { success: true, message: 'Proposal executed successfully' };
-    } catch (error) {
-      console.error('Error executing proposal:', error);
+    } catch {
+      // Console statement removed
       return { success: false, message: 'Failed to execute proposal' };
     }
   }
@@ -255,7 +255,7 @@ export class DAOProposalService {
   /**
    * Execute marketplace configuration changes
    */
-  private static async executeMarketplaceConfig(parameters: Record<string, any>): Promise<void> {
+  private static async executeMarketplaceConfig(parameters: Record<string, unknown>): Promise<void> {
     // Update marketplace configuration in database
     if (parameters.nft_multiplier_cap) {
       await supabase
@@ -281,7 +281,7 @@ export class DAOProposalService {
   /**
    * Execute NFT configuration changes
    */
-  private static async executeNFTConfig(parameters: Record<string, any>): Promise<void> {
+  private static async executeNFTConfig(parameters: Record<string, unknown>): Promise<void> {
     // Update NFT types in database
     if (parameters.nft_types) {
       for (const nftType of parameters.nft_types) {
@@ -304,7 +304,7 @@ export class DAOProposalService {
   /**
    * Execute rewards configuration changes
    */
-  private static async executeRewardsConfig(parameters: Record<string, any>): Promise<void> {
+  private static async executeRewardsConfig(parameters: Record<string, unknown>): Promise<void> {
     // Update rewards configuration in database
     if (parameters.distribution_interval) {
       await supabase
@@ -330,7 +330,7 @@ export class DAOProposalService {
   /**
    * Get all pending proposals
    */
-  static async getPendingProposals(): Promise<any[]> {
+  static async getPendingProposals(): Promise<Record<string, unknown>[]> {
     try {
       const { data, error } = await supabase
         .from('dao_proposals')
@@ -339,13 +339,13 @@ export class DAOProposalService {
         .order('created_at', { ascending: false });
 
       if (error) {
-        console.error('Error fetching pending proposals:', error);
+        // Console statement removed
         return [];
       }
 
       return data || [];
-    } catch (error) {
-      console.error('Error fetching pending proposals:', error);
+    } catch {
+      // Console statement removed
       return [];
     }
   }
@@ -353,7 +353,7 @@ export class DAOProposalService {
   /**
    * Get proposal voting results
    */
-  static async getProposalResults(proposalId: string): Promise<any> {
+  static async getProposalResults(proposalId: string): Promise<Record<string, unknown>> {
     try {
       const { data: votes, error } = await supabase
         .from('dao_votes')
@@ -361,7 +361,7 @@ export class DAOProposalService {
         .eq('proposal_id', proposalId);
 
       if (error) {
-        console.error('Error fetching proposal results:', error);
+        // Console statement removed
         return null;
       }
 
@@ -376,8 +376,8 @@ export class DAOProposalService {
       };
 
       return results;
-    } catch (error) {
-      console.error('Error fetching proposal results:', error);
+    } catch {
+      // Console statement removed
       return null;
     }
   }

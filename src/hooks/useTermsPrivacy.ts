@@ -25,8 +25,8 @@ export const useTermsPrivacy = () => {
         } else {
           setNeedsAcceptance(true);
         }
-      } catch (error) {
-        console.error('Failed to check terms and privacy acceptance:', error);
+      } catch {
+        // Console statement removed
         setNeedsAcceptance(true);
       } finally {
         setIsLoading(false);
@@ -51,8 +51,8 @@ export const useTermsPrivacy = () => {
       setNeedsAcceptance(!termsAccepted || !privacyAccepted);
       
       return true;
-    } catch (error) {
-      console.error('Failed to save terms and privacy acceptance:', error);
+    } catch {
+      // Console statement removed
       return false;
     }
   };

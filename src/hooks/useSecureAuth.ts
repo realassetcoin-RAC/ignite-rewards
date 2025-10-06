@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
+import { databaseAdapter } from '@/lib/databaseAdapter';
 import { canUserUseMFA } from '@/lib/mfa';
 import { robustAdminCheck } from '@/utils/adminVerification';
 import { createModuleLogger } from '@/utils/consoleReplacer';
@@ -168,12 +169,12 @@ export const useSecureAuth = () => {
         logger.debug('🔄 Attempting RPC call: get_current_user_profile');
         
         // Add a timeout to the RPC call to prevent hanging
-        const rpcPromise = supabase.rpc('get_current_user_profile');
+        const rpcPromise = databaseAdapter.rpc('get_current_user_profile');
         const timeoutPromise = new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('RPC call timeout after 5 seconds')), 15000)
+          setTimeout(() => reject(new Error('Auth fetch timeout')), 5000)
         );
         
-        const { data, error } = await Promise.race([rpcPromise, timeoutPromise]) as any;
+        const { data, error } = await Promise.race([rpcPromise, timeoutPromise]) as { data: unknown; error: unknown };
         logger.debug('📊 RPC response received');
         
         if (!error && data && data.length > 0) {
@@ -196,12 +197,12 @@ export const useSecureAuth = () => {
         currentUser = user;
         if (!currentUser) {
           logger.debug('🔄 No user passed, getting from auth...');
-          const getUserPromise = supabase.auth.getUser();
+          const getUserPromise = databaseAdapter.supabase.auth.getUser();
           const getUserTimeoutPromise = new Promise((_, reject) => 
             setTimeout(() => reject(new Error('getUser timeout after 5 seconds')), 15000)
           );
           
-          const { data: { user: authUser } } = await Promise.race([getUserPromise, getUserTimeoutPromise]) as any;
+          const { data: { user: authUser } } = await Promise.race([getUserPromise, getUserTimeoutPromise]) as { data: { user: unknown } };
           currentUser = authUser;
         }
         
@@ -214,7 +215,7 @@ export const useSecureAuth = () => {
         
         // Try to get profile from profiles table with timeout
         const profilePromise = supabase
-          .from('profiles' as any)
+          .from('profiles')
           .select(`
             id,
             email,
@@ -234,7 +235,7 @@ export const useSecureAuth = () => {
           setTimeout(() => reject(new Error('Direct profile query timeout after 5 seconds')), 15000)
         );
         
-        const { data: profile, error: profileError } = await Promise.race([profilePromise, profileTimeoutPromise]) as any;
+        const { data: profile, error: profileError } = await Promise.race([profilePromise, profileTimeoutPromise]) as { data: unknown; error: unknown };
         logger.debug('📊 Direct query completed');
         
         if (!profileError && profile) {
@@ -383,7 +384,7 @@ export const useSecureAuth = () => {
       );
       
       try {
-        const [profile, isAdmin, userType] = await Promise.race([parallelFetchPromise, parallelTimeoutPromise]) as any;
+        const [profile, isAdmin, userType] = await Promise.race([parallelFetchPromise, parallelTimeoutPromise]) as [unknown, boolean, { isWalletUser: boolean; canUseMFA: boolean; mfaEnabled: boolean }];
 
         logger.debug('✅ All parallel fetches completed!');
         logger.debug('🔍 Auth state results:', {
@@ -466,6 +467,7 @@ export const useSecureAuth = () => {
         error: errorMessage,
       }));
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Remove dependencies to prevent infinite loop
 
   useEffect(() => {
@@ -474,7 +476,7 @@ export const useSecureAuth = () => {
     // We'll use a simple flag that gets updated by the refresh prevention hook
 
     // Set up auth state listener with smart update logic
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+    const { data: { subscription } } = databaseAdapter.supabase.auth.onAuthStateChange(
       (event, session) => {
         const now = Date.now();
         const timeSinceLastUpdate = now - lastAuthUpdate.current;
@@ -517,13 +519,14 @@ export const useSecureAuth = () => {
     );
 
     // Check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    databaseAdapter.supabase.auth.getSession().then(({ data: { session } }) => {
       updateAuthState(session, true); // Force update on initial load
     });
 
     return () => {
       subscription.unsubscribe();
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Remove updateAuthState from dependencies to prevent infinite loop
 
   const signOut = async () => {
@@ -569,7 +572,7 @@ export const useSecureAuth = () => {
       try {
         setTimeout(() => {
           const authInputs = document.querySelectorAll('input[type="email"], input[type="password"]');
-          authInputs.forEach((input: any) => {
+          authInputs.forEach((input: HTMLInputElement) => {
             if (input.id && (input.id.includes('email') || input.id.includes('password'))) {
               input.value = '';
               input.setAttribute('value', '');
@@ -582,7 +585,7 @@ export const useSecureAuth = () => {
       }
       
       // Then call Supabase signOut with proper redirect URL
-      const { error } = await supabase.auth.signOut({
+      const { error } = await databaseAdapter.supabase.auth.signOut({
         scope: 'local' // This prevents redirect and keeps the sign out local
       });
       if (error) {
@@ -601,7 +604,7 @@ export const useSecureAuth = () => {
   };
 
   const refreshAuth = () => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    databaseAdapter.supabase.auth.getSession().then(({ data: { session } }) => {
       updateAuthState(session);
     });
   };

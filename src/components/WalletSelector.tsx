@@ -1,17 +1,32 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { Loader2, Wallet } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-// import { supabase } from "@/integrations/supabase/client";
-import { usePhantom } from "@/components/PhantomWalletProvider";
+import { supabase } from "@/integrations/supabase/client";
+import { usePhantom } from "@/components/PhantomContext";
 import { useMetaMask } from "@/components/MetaMaskProvider";
+
+interface EthereumProvider {
+  isMetaMask?: boolean;
+  request: (args: { method: string; params?: unknown[] }) => Promise<unknown>;
+  on: (event: string, handler: (...args: unknown[]) => void) => void;
+  removeListener: (event: string, handler: (...args: unknown[]) => void) => void;
+}
+
+interface SolflareProvider {
+  isSolflare?: boolean;
+  connect: () => Promise<{ publicKey: { toString: () => string } }>;
+  disconnect: () => Promise<void>;
+  isConnected: boolean;
+  publicKey: { toString: () => string } | null;
+}
 
 declare global {
   interface Window {
-    ethereum?: any;
+    ethereum?: EthereumProvider;
     phantom?: {
       solana?: {
         isPhantom?: boolean;
@@ -21,7 +36,7 @@ declare global {
         publicKey: { toString: () => string } | null;
       };
     };
-    solflare?: any;
+    solflare?: SolflareProvider;
   }
 }
 
@@ -47,10 +62,16 @@ const WalletSelector: React.FC<WalletSelectorProps> = ({
   const [connecting, setConnecting] = useState<string | null>(null);
   const [availableWallets, setAvailableWallets] = useState<WalletOption[]>([]);
   const { toast } = useToast();
-  const { connect, publicKey, wallets, select } = useWallet();
-  const { phantom, connect: phantomConnect, publicKey: phantomPublicKey } = usePhantom();
-  const { ethereum, connect: metaMaskConnect, currentAccount: metaMaskAccount } = useMetaMask();
   const navigate = useNavigate();
+  
+  // Use hooks with safe defaults - they may not be available if providers are disabled
+  const walletContext = useWallet();
+  const phantomContext = usePhantom();
+  const metaMaskContext = useMetaMask();
+  
+  const { connect, publicKey, wallets, select } = walletContext;
+  const { phantom, connect: phantomConnect, publicKey: phantomPublicKey } = phantomContext;
+  const { ethereum, connect: metaMaskConnect, currentAccount: metaMaskAccount } = metaMaskContext;
 
   // Wallet icon components
   const getWalletIcon = (iconType: string, size = 32) => {
@@ -141,7 +162,7 @@ const WalletSelector: React.FC<WalletSelectorProps> = ({
     }
   };
 
-  const walletOptions: WalletOption[] = [
+  const walletOptions: WalletOption[] = useMemo(() => [
     {
       name: "Phantom",
       icon: "phantom",
@@ -162,7 +183,7 @@ const WalletSelector: React.FC<WalletSelectorProps> = ({
       type: "ethereum", 
       detectFunction: () => !!(ethereum?.isMetaMask)
     }
-  ];
+  ], [phantom, ethereum]);
 
   useEffect(() => {
     // Check which wallets are available
@@ -173,7 +194,7 @@ const WalletSelector: React.FC<WalletSelectorProps> = ({
       return true; // Show all wallets by default
     });
     setAvailableWallets(available);
-  }, [phantom, ethereum]);
+  }, [phantom, ethereum, walletOptions]);
 
   const handlePhantomConnect = async () => {
     setConnecting("Phantom");
@@ -242,58 +263,64 @@ const WalletSelector: React.FC<WalletSelectorProps> = ({
       
       // Wait a moment for wallet selection
       setTimeout(async () => {
-        try {
-          await connect();
-          
-          // Wait for connection to establish
-          setTimeout(async () => {
-            if (publicKey) {
-              const walletAddress = publicKey.toBase58();
-              
-              // Check if this wallet is associated with a user
-              const { data: walletData } = await supabase
-                .from('user_solana_wallets')
-                .select('user_id')
-                .eq('wallet_address', walletAddress)
+        await connect();
+        
+        // Wait for connection to establish
+        setTimeout(async () => {
+          if (publicKey) {
+            const walletAddress = publicKey.toBase58();
+            
+            // Check if this wallet is associated with a user
+            const { data: walletData } = await supabase
+              .from('user_solana_wallets')
+              .select('user_id')
+              .eq('wallet_address', walletAddress)
+              .single();
+            
+            let redirectPath = '/user';
+            
+            if (walletData?.user_id) {
+              // Get user role
+              const { data: profile } = await supabase
+                .from('profiles')
+                .select('role')
+                .eq('id', walletData.user_id)
                 .single();
               
-              let redirectPath = '/user';
+              // ✅ IMPLEMENT REQUIREMENT: Mark user as non-custodial when connecting external wallet
+              await supabase
+                .from('profiles')
+                .update({
+                  user_type: 'non_custodial',
+                  wallet_address: walletAddress,
+                  network: 'solana',
+                  provider: 'wallet',
+                  updated_at: new Date().toISOString()
+                })
+                .eq('id', walletData.user_id);
               
-              if (walletData?.user_id) {
-                // Get user role
-                const { data: profile } = await supabase
-                  .from('profiles')
-                  .select('role')
-                  .eq('id', walletData.user_id)
-                  .single();
-                
-                if (profile?.role === 'admin') {
-                  redirectPath = '/admin';
-                } else if (profile?.role === 'merchant') {
-                  redirectPath = '/merchant';
-                }
+              if (profile?.role === 'admin') {
+                redirectPath = '/admin';
+              } else if (profile?.role === 'merchant') {
+                redirectPath = '/merchant';
               }
-              
-              toast({ 
-                title: "Wallet Connected", 
-                description: `${walletName} connected: ${walletAddress.slice(0,6)}...` 
-              });
-              
-              onWalletConnected?.();
-              onClose();
-              navigate(redirectPath);
-            } else {
-              throw new Error("Failed to get wallet address");
             }
-          }, 1500);
-        } catch (error) {
-          console.error('Connection error:', error);
-          throw error;
-        }
+            
+            toast({ 
+              title: "Wallet Connected", 
+              description: `${walletName} connected: ${walletAddress.slice(0,6)}...` 
+            });
+            
+            onWalletConnected?.();
+            onClose();
+            navigate(redirectPath);
+          } else {
+            throw new Error("Failed to get wallet address");
+          }
+        }, 1500);
       }, 500);
       
     } catch (error) {
-      console.error(`${walletName} connection error:`, error);
       toast({ 
         title: "Connection Failed", 
         description: error instanceof Error ? error.message : `Failed to connect ${walletName}`, 
@@ -330,6 +357,18 @@ const WalletSelector: React.FC<WalletSelectorProps> = ({
             .select('role')
             .eq('id', walletData.user_id)
             .single();
+          
+          // ✅ IMPLEMENT REQUIREMENT: Mark user as non-custodial when connecting external wallet
+          await supabase
+            .from('profiles')
+            .update({
+              user_type: 'non_custodial',
+              wallet_address: metaMaskAccount.toLowerCase(),
+              network: 'ethereum',
+              provider: 'wallet',
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', walletData.user_id);
           
           if (profile?.role === 'admin') {
             redirectPath = '/admin';

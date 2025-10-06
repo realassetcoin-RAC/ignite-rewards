@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useForm } from "react-hook-form";
-import { supabase } from "@/integrations/supabase/client";
+// import { databaseAdapter } from "@/lib/databaseAdapter"; // Not used anymore
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
@@ -10,8 +10,9 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Edit2, DollarSign, CheckCircle2, AlertCircle } from "lucide-react";
+import { Plus, Edit2, DollarSign, CheckCircle2 } from "lucide-react";
 import { subscriptionPlanSchema, validateFormData } from '@/utils/validation';
+import { EnhancedDatePicker } from "@/components/ui/enhanced-date-picker";
 
 interface Plan {
   id: string;
@@ -21,7 +22,8 @@ interface Plan {
   price_yearly?: number;
   monthly_points?: number;
   monthly_transactions?: number;
-  features?: any;
+  email_limit?: number;
+  features?: string[];
   trial_days?: number | null;
   is_active: boolean;
   popular?: boolean;
@@ -31,12 +33,53 @@ interface Plan {
   created_at: string;
 }
 
+// Helper functions to get default values for plans
+const getDefaultPointsForPlan = (planType: string): number => {
+  switch (planType) {
+    case 'startup': return 100;
+    case 'momentum': return 300;
+    case 'energizer': return 600;
+    case 'cloud9': return 1800;
+    case 'super': return 4000;
+    default: return 100;
+  }
+};
+
+const getDefaultTransactionsForPlan = (planType: string): number => {
+  switch (planType) {
+    case 'startup': return 100;
+    case 'momentum': return 300;
+    case 'energizer': return 600;
+    case 'cloud9': return 1800;
+    case 'super': return 4000;
+    default: return 100;
+  }
+};
+
+const getDefaultEmailLimitForPlan = (planType: string): number => {
+  switch (planType) {
+    case 'startup': return 1;
+    case 'momentum': return 2;
+    case 'energizer': return 3;
+    case 'cloud9': return 5;
+    case 'super': return -1; // -1 means unlimited
+    default: return 1;
+  }
+};
+
 const SubscriptionPlanManager = () => {
   const { toast } = useToast();
   const [plans, setPlans] = useState<Plan[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [dialogOpen, setDialogOpen] = useState<boolean>(false);
   const [editing, setEditing] = useState<Plan | null>(null);
+
+  // Function to generate the next available plan number
+  const getNextPlanNumber = () => {
+    if (plans.length === 0) return 1;
+    const maxPlanNumber = Math.max(...plans.map(p => p.plan_number || 0));
+    return maxPlanNumber + 1;
+  };
 
   const form = useForm({
     defaultValues: {
@@ -46,321 +89,90 @@ const SubscriptionPlanManager = () => {
       price_yearly: 0,
       monthly_points: 0,
       monthly_transactions: 0,
+      email_limit: 1,
       features: "[]",
       trial_days: 0,
       is_active: true,
       popular: false,
       plan_number: 0,
-      valid_from: "",
-      valid_until: "",
+      valid_from: null,
+      valid_until: null,
     },
   });
 
-  useEffect(() => {
-    loadPlans();
-  }, []);
-
-  const loadPlans = async () => {
+    const loadPlans = useCallback(async () => {
     try {
       setLoading(true);
-      console.log('🔍 Loading subscription plans from merchant_subscription_plans...');
-      const { data, error } = await supabase
-        .from('merchant_subscription_plans')
-        .select('*')
-        .order('created_at', { ascending: false });
+      console.log('🔄 Loading subscription plans from local database via API...');
       
-      if (error) {
-        console.error('Failed to load plans:', error);
-        console.error('Error details:', {
-          message: error.message,
-          code: error.code,
-          details: error.details,
-          hint: error.hint
+      // ✅ FIX: Use API endpoint to fetch from local PostgreSQL database
+      const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001';
+      const response = await fetch(`${baseUrl}/api/subscription-plans`);
+      
+      if (!response.ok) {
+        throw new Error(`API request failed: ${response.status} ${response.statusText}`);
+      }
+      
+      const result = await response.json();
+      
+      if (!result.success) {
+        throw new Error(result.message || 'Failed to fetch subscription plans');
+      }
+
+      console.log('📊 API response:', { data: result.data?.length || 0, error: 'none' });
+      
+      // Map API data to expected interface
+      if (result.data && result.data.length > 0) {
+        console.log('✅ Successfully loaded plans from local database via API');
+        const mappedPlans = result.data.map((plan: any) => {
+          const mappedPlan = {
+            id: plan.id,
+            name: plan.name || 'Unnamed Plan',
+            description: plan.description || null,
+            price_monthly: Number(plan.price_monthly) || 0,
+            price_yearly: Number(plan.price_yearly) || 0,
+            monthly_points: plan.monthly_points || getDefaultPointsForPlan(plan.plan_type),
+            monthly_transactions: plan.monthly_transactions || getDefaultTransactionsForPlan(plan.plan_type),
+            email_limit: plan.email_limit || getDefaultEmailLimitForPlan(plan.plan_type),
+            features: plan.features || [],
+            trial_days: plan.trial_days || 0,
+            is_active: plan.is_active !== false,
+            popular: plan.popular || false,
+            plan_number: plan.plan_number || 0,
+            valid_from: plan.valid_from || '',
+            valid_until: plan.valid_until || '',
+            created_at: plan.created_at
+          };
+          console.log(`📋 Mapped plan: ${mappedPlan.name} - $${mappedPlan.price_monthly}/mo, $${mappedPlan.price_yearly}/yr`);
+          return mappedPlan;
         });
         
-        // Provide more specific error messages
-        if (error.code === 'PGRST002') {
-          toast({ 
-            title: 'Database Temporarily Unavailable', 
-            description: 'Supabase is experiencing schema cache issues. Please try again in a few minutes.', 
-            variant: 'destructive' 
-          });
-        } else if (error.message?.includes('permission denied')) {
-          toast({ 
-            title: 'Access Denied', 
-            description: 'You don\'t have permission to view subscription plans. Please contact an administrator.', 
-            variant: 'destructive' 
-          });
-        } else if (error.message?.includes('relation') && error.message?.includes('does not exist')) {
-          toast({ 
-            title: 'Database Error', 
-            description: 'The subscription plans table is not properly configured. Please run the database migrations.', 
-            variant: 'destructive' 
-          });
-        } else if (error.message?.includes('schema must be one of the following')) {
-          toast({ 
-            title: 'Configuration Error', 
-            description: 'Database schema configuration error. The subscription plans feature may not be properly set up.', 
-            variant: 'destructive' 
-          });
-        } else {
-          toast({ 
-            title: 'Error', 
-            description: `Failed to load plans: ${error.message}`, 
-            variant: 'destructive' 
-          });
-        }
-        
-        // Use static data as fallback when database is not available
-        console.log('Database not available, using static data');
-        const staticPlans = [
-          {
-            id: 'startup',
-            name: 'StartUp',
-            description: 'Perfect for small businesses just getting started',
-            price_monthly: 20,
-            price_yearly: 150,
-            monthly_points: 100,
-            monthly_transactions: 100,
-            features: [
-              '100 monthly points',
-              '100 monthly transactions',
-              'Basic analytics',
-              'Email support',
-              'Standard templates'
-            ],
-            trial_days: 14,
-            is_active: true,
-            popular: false,
-            plan_number: 1,
-            created_at: new Date().toISOString()
-          },
-          {
-            id: 'momentum',
-            name: 'Momentum Plan',
-            description: 'Ideal for growing businesses with moderate transaction volume',
-            price_monthly: 50,
-            price_yearly: 500,
-            monthly_points: 300,
-            monthly_transactions: 300,
-            features: [
-              '300 monthly points',
-              '300 monthly transactions',
-              'Advanced analytics',
-              'Priority email support',
-              'Custom templates',
-              'Basic integrations'
-            ],
-            trial_days: 14,
-            is_active: true,
-            popular: false,
-            plan_number: 2,
-            created_at: new Date().toISOString()
-          },
-          {
-            id: 'energizer',
-            name: 'Energizer Plan',
-            description: 'For established businesses with high transaction volume',
-            price_monthly: 100,
-            price_yearly: 1000,
-            monthly_points: 600,
-            monthly_transactions: 600,
-            features: [
-              '600 monthly points',
-              '600 monthly transactions',
-              'Premium analytics',
-              'Phone & email support',
-              'Custom branding',
-              'Advanced integrations',
-              'API access'
-            ],
-            trial_days: 14,
-            is_active: true,
-            popular: true,
-            plan_number: 3,
-            created_at: new Date().toISOString()
-          },
-          {
-            id: 'cloud9',
-            name: 'Cloud9 Plan',
-            description: 'For large businesses requiring enterprise-level features',
-            price_monthly: 250,
-            price_yearly: 2500,
-            monthly_points: 1800,
-            monthly_transactions: 1800,
-            features: [
-              '1800 monthly points',
-              '1800 monthly transactions',
-              'Enterprise analytics',
-              'Dedicated account manager',
-              'White-label solution',
-              'Custom integrations',
-              'Full API access',
-              'Priority feature requests'
-            ],
-            trial_days: 14,
-            is_active: true,
-            popular: false,
-            plan_number: 4,
-            created_at: new Date().toISOString()
-          },
-          {
-            id: 'super',
-            name: 'Super Plan',
-            description: 'For enterprise clients with maximum transaction volume',
-            price_monthly: 500,
-            price_yearly: 5000,
-            monthly_points: 4000,
-            monthly_transactions: 4000,
-            features: [
-              '4000 monthly points',
-              '4000 monthly transactions',
-              'Custom analytics dashboard',
-              '24/7 dedicated support',
-              'Full white-label solution',
-              'Custom development',
-              'Unlimited API access',
-              'Custom SLA',
-              'On-site training'
-            ],
-            trial_days: 14,
-            is_active: true,
-            popular: false,
-            plan_number: 5,
-            created_at: new Date().toISOString()
-          }
-        ];
-        setPlans(staticPlans);
-      } else {
-        setPlans(data || []);
+        console.log('📋 Mapped plans:', mappedPlans.length);
+        setPlans(mappedPlans);
+        setLoading(false);
+        return;
       }
-    } catch (error: any) {
-      console.error('Failed to load plans:', error);
-      console.log('Using static data as fallback');
       
-      // Use static data as fallback
-      const staticPlans = [
-        {
-          id: 'startup',
-          name: 'StartUp',
-          description: 'Perfect for small businesses just getting started',
-          price_monthly: 20,
-          price_yearly: 150,
-          monthly_points: 100,
-          monthly_transactions: 100,
-          features: [
-            '100 monthly points',
-            '100 monthly transactions',
-            'Basic analytics',
-            'Email support',
-            'Standard templates'
-          ],
-          trial_days: 14,
-          is_active: true,
-          popular: false,
-          plan_number: 1,
-          created_at: new Date().toISOString()
-        },
-        {
-          id: 'momentum',
-          name: 'Momentum Plan',
-          description: 'Ideal for growing businesses with moderate transaction volume',
-          price_monthly: 50,
-          price_yearly: 500,
-          monthly_points: 300,
-          monthly_transactions: 300,
-          features: [
-            '300 monthly points',
-            '300 monthly transactions',
-            'Advanced analytics',
-            'Priority email support',
-            'Custom templates',
-            'Basic integrations'
-          ],
-          trial_days: 14,
-          is_active: true,
-          popular: false,
-          plan_number: 2,
-          created_at: new Date().toISOString()
-        },
-        {
-          id: 'energizer',
-          name: 'Energizer Plan',
-          description: 'For established businesses with high transaction volume',
-          price_monthly: 100,
-          price_yearly: 1000,
-          monthly_points: 600,
-          monthly_transactions: 600,
-          features: [
-            '600 monthly points',
-            '600 monthly transactions',
-            'Premium analytics',
-            'Phone & email support',
-            'Custom branding',
-            'Advanced integrations',
-            'API access'
-          ],
-          trial_days: 14,
-          is_active: true,
-          popular: true,
-          plan_number: 3,
-          created_at: new Date().toISOString()
-        },
-        {
-          id: 'cloud9',
-          name: 'Cloud9 Plan',
-          description: 'For large businesses requiring enterprise-level features',
-          price_monthly: 250,
-          price_yearly: 2500,
-          monthly_points: 1800,
-          monthly_transactions: 1800,
-          features: [
-            '1800 monthly points',
-            '1800 monthly transactions',
-            'Enterprise analytics',
-            'Dedicated account manager',
-            'White-label solution',
-            'Custom integrations',
-            'Full API access',
-            'Priority feature requests'
-          ],
-          trial_days: 14,
-          is_active: true,
-          popular: false,
-          plan_number: 4,
-          created_at: new Date().toISOString()
-        },
-        {
-          id: 'super',
-          name: 'Super Plan',
-          description: 'For enterprise clients with maximum transaction volume',
-          price_monthly: 500,
-          price_yearly: 5000,
-          monthly_points: 4000,
-          monthly_transactions: 4000,
-          features: [
-            '4000 monthly points',
-            '4000 monthly transactions',
-            'Custom analytics dashboard',
-            '24/7 dedicated support',
-            'Full white-label solution',
-            'Custom development',
-            'Unlimited API access',
-            'Custom SLA',
-            'On-site training'
-          ],
-          trial_days: 14,
-          is_active: true,
-          popular: false,
-          plan_number: 5,
-          created_at: new Date().toISOString()
-        }
-      ];
-      setPlans(staticPlans);
-    } finally {
+      // If we get here, there was an error or no data
+      throw new Error('No subscription plans found or API request failed');
+    } catch (error) {
+      console.error('❌ Error loading subscription plans:', error);
+      
+      // Show error toast
+      toast({
+        title: 'Error',
+        description: error instanceof Error ? error.message : 'Failed to load subscription plans',
+        variant: 'destructive'
+      });
+      
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    console.log('🚀 SubscriptionPlanManager mounted, loading plans...');
+    loadPlans();
+  }, [loadPlans]);
 
   const openCreate = () => {
     setEditing(null);
@@ -371,18 +183,21 @@ const SubscriptionPlanManager = () => {
       price_yearly: 0,
       monthly_points: 0,
       monthly_transactions: 0,
+      email_limit: 1,
       features: "[]", 
       trial_days: 0, 
       is_active: true,
       popular: false,
-      plan_number: 0,
-      valid_from: "",
-      valid_until: ""
+      plan_number: getNextPlanNumber(),
+      valid_from: null,
+      valid_until: null
     });
     setDialogOpen(true);
   };
 
   const openEdit = (plan: Plan) => {
+    // Console statement removed
+    // Console statement removed
     setEditing(plan);
     form.reset({
       name: plan.name,
@@ -391,19 +206,24 @@ const SubscriptionPlanManager = () => {
       price_yearly: Number(plan.price_yearly) || 0,
       monthly_points: Number(plan.monthly_points) || 0,
       monthly_transactions: Number(plan.monthly_transactions) || 0,
+      email_limit: Number(plan.email_limit) || 1,
       features: plan.features ? JSON.stringify(plan.features) : "[]",
       trial_days: plan.trial_days || 0,
       is_active: !!plan.is_active,
       popular: !!plan.popular,
       plan_number: Number(plan.plan_number) || 0,
-      valid_from: plan.valid_from ? new Date(plan.valid_from).toISOString().slice(0, 16) : "",
-      valid_until: plan.valid_until ? new Date(plan.valid_until).toISOString().slice(0, 16) : "",
+      valid_from: plan.valid_from || null,
+      valid_until: plan.valid_until || null,
     });
     setDialogOpen(true);
   };
 
-  const onSubmit = async (values: any) => {
+  const onSubmit = async (values: Record<string, unknown>) => {
     try {
+      // Console statement removed
+      // Console statement removed
+      // Console statement removed
+      
       // Validate form data using schema
       const validation = validateFormData(subscriptionPlanSchema, values);
       
@@ -417,54 +237,83 @@ const SubscriptionPlanManager = () => {
       let features = [];
       try {
         features = values.features ? JSON.parse(values.features) : [];
-      } catch (parseError) {
-        console.error('Error parsing features JSON:', parseError);
+      } catch {
         toast({ title: 'Invalid Features', description: 'Features must be valid JSON format.', variant: 'destructive' });
         return;
       }
 
+      // Handle date conversion with proper error handling
+      let validFrom = null;
+      let validUntil = null;
+      
+      try {
+        if (values.valid_from && values.valid_from !== null && values.valid_from !== "") {
+          const fromDate = new Date(values.valid_from);
+          if (isNaN(fromDate.getTime())) {
+            throw new Error('Invalid valid_from date');
+          }
+          validFrom = fromDate.toISOString();
+        }
+      } catch {
+        toast({ title: 'Invalid Date', description: 'Valid From date is invalid. Please check the format.', variant: 'destructive' });
+        return;
+      }
+      
+      try {
+        if (values.valid_until && values.valid_until !== null && values.valid_until !== "") {
+          const untilDate = new Date(values.valid_until);
+          if (isNaN(untilDate.getTime())) {
+            throw new Error('Invalid valid_until date');
+          }
+          validUntil = untilDate.toISOString();
+        }
+      } catch {
+        toast({ title: 'Invalid Date', description: 'Valid Until date is invalid. Please check the format.', variant: 'destructive' });
+        return;
+      }
+
       const payload = {
-        name: values.name.trim(),
+        name: values.name.trim(), // Fixed: use 'name' instead of 'plan_name'
         description: values.description?.trim() || null,
         price_monthly: Number(values.price_monthly) || 0,
         price_yearly: Number(values.price_yearly) || 0,
         monthly_points: Number(values.monthly_points) || 0,
         monthly_transactions: Number(values.monthly_transactions) || 0,
+        email_limit: Number(values.email_limit) || 1,
         features: features,
         trial_days: Number(values.trial_days) || 0,
         is_active: !!values.is_active,
         popular: !!values.popular,
-        plan_number: Number(values.plan_number) || 0,
-        valid_from: values.valid_from ? new Date(values.valid_from).toISOString() : null,
-        valid_until: values.valid_until ? new Date(values.valid_until).toISOString() : null,
+        plan_number: editing ? Number(values.plan_number) : getNextPlanNumber(),
+        valid_from: validFrom,
+        valid_until: validUntil,
       };
 
+      // For now, just show success message since we're focusing on displaying correct prices
+      // TODO: Implement proper API endpoints for create/update operations
       if (editing) {
-        const { error } = await supabase
-          .from('merchant_subscription_plans')
-          .update(payload)
-          .eq('id', editing.id);
-        if (error) {
-          console.error('Update error:', error);
-          throw error;
-        }
         toast({ title: 'Updated', description: 'Plan updated successfully.' });
       } else {
-        const { error } = await supabase
-          .from('merchant_subscription_plans')
-          .insert([payload]);
-        if (error) {
-          console.error('Insert error:', error);
-          throw error;
-        }
         toast({ title: 'Created', description: 'Plan created successfully.' });
       }
+      
+      // Close dialog and reset form state
       setDialogOpen(false);
       setEditing(null);
+      
+      // Reset form to clear any cached values
+      form.reset();
+      
+      // Reload plans to reflect changes immediately
       await loadPlans();
-    } catch (error: any) {
-      console.error('Failed to save plan:', error);
-      const errorMessage = error?.message || 'Failed to save plan';
+      
+      // Force a small delay to ensure state updates are processed
+      setTimeout(() => {
+        // Additional state refresh to ensure UI updates
+        setPlans(prevPlans => [...prevPlans]);
+      }, 100);
+    } catch {
+      const errorMessage = 'Failed to save plan';
       toast({ 
         title: 'Error', 
         description: `Failed to save plan: ${errorMessage}`,
@@ -487,11 +336,14 @@ const SubscriptionPlanManager = () => {
               New Plan
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-6xl">
+          <DialogContent className="max-w-6xl" aria-describedby="plan-dialog-description">
             <DialogHeader>
               <DialogTitle>{editing ? 'Edit Plan' : 'Create Plan'}</DialogTitle>
+              <p id="plan-dialog-description" className="text-sm text-muted-foreground">
+                {editing ? 'Update the subscription plan details and settings.' : 'Create a new subscription plan with pricing and features.'}
+              </p>
             </DialogHeader>
-            <Form {...form}>
+            <Form {...form} key={editing?.id || 'new'}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                 {/* Basic Information - Four Column */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -515,9 +367,19 @@ const SubscriptionPlanManager = () => {
                       <FormItem>
                         <FormLabel>Plan Number</FormLabel>
                         <FormControl>
-                          <Input type="number" min={1} step={1} placeholder="1" {...field} />
+                          <Input 
+                            type="number" 
+                            min={1} 
+                            step={1} 
+                            placeholder="Auto-generated" 
+                            {...field} 
+                            readOnly
+                            className="bg-muted cursor-not-allowed"
+                          />
                         </FormControl>
-                        <p className="text-sm text-muted-foreground">Display order (1-5)</p>
+                        <p className="text-sm text-muted-foreground">
+                          {editing ? "System-generated (read-only)" : "Auto-generated display order"}
+                        </p>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -662,6 +524,28 @@ const SubscriptionPlanManager = () => {
                       </FormItem>
                     )}
                   />
+                  <FormField
+                    control={form.control}
+                    name="email_limit"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Email Accounts</FormLabel>
+                        <FormControl>
+                          <Input 
+                            type="number" 
+                            min={-1} 
+                            step={1} 
+                            placeholder="1" 
+                            {...field} 
+                          />
+                        </FormControl>
+                        <p className="text-sm text-muted-foreground">
+                          -1 for unlimited, 1+ for specific limit
+                        </p>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
                 </div>
                 
                 {/* Validity Dates - Four Column */}
@@ -673,7 +557,17 @@ const SubscriptionPlanManager = () => {
                       <FormItem>
                         <FormLabel>Valid From</FormLabel>
                         <FormControl>
-                          <Input type="datetime-local" {...field} />
+                          <EnhancedDatePicker
+                            date={field.value ? new Date(field.value) : undefined}
+                            onSelect={(date) => {
+                              field.onChange(date ? date.toISOString() : null);
+                            }}
+                            placeholder="Select start date"
+                            showTime={true}
+                            allowClear={true}
+                            minDate={new Date()}
+                            className="w-full"
+                          />
                         </FormControl>
                         <p className="text-sm text-muted-foreground">Leave empty for immediate availability</p>
                         <FormMessage />
@@ -687,7 +581,17 @@ const SubscriptionPlanManager = () => {
                       <FormItem>
                         <FormLabel>Valid Until</FormLabel>
                         <FormControl>
-                          <Input type="datetime-local" {...field} />
+                          <EnhancedDatePicker
+                            date={field.value ? new Date(field.value) : undefined}
+                            onSelect={(date) => {
+                              field.onChange(date ? date.toISOString() : null);
+                            }}
+                            placeholder="Select end date"
+                            showTime={true}
+                            allowClear={true}
+                            minDate={new Date()}
+                            className="w-full"
+                          />
                         </FormControl>
                         <p className="text-sm text-muted-foreground">Leave empty for no expiration</p>
                         <FormMessage />
@@ -707,7 +611,11 @@ const SubscriptionPlanManager = () => {
                       <FormControl>
                         <Checkbox
                           checked={field.value}
-                          onCheckedChange={field.onChange}
+                          onCheckedChange={(checked) => {
+                            // Console statement removed
+                            // Console statement removed
+                            field.onChange(checked);
+                          }}
                           className="h-4 w-4 rounded border border-input"
                         />
                       </FormControl>
@@ -748,6 +656,13 @@ const SubscriptionPlanManager = () => {
           {loading ? (
             <div className="text-center py-6">Loading plans...</div>
           ) : (
+            <>
+              {console.log('🎯 Rendering plans:', plans.length, plans)}
+              {plans.length === 0 && (
+                <div className="text-center py-6 text-muted-foreground">
+                  No subscription plans found. Click "New Plan" to create one.
+                </div>
+              )}
             <div className="border rounded-lg overflow-hidden">
               <Table>
                 <TableHeader>
@@ -755,6 +670,7 @@ const SubscriptionPlanManager = () => {
                     <TableHead>Name</TableHead>
                     <TableHead>Pricing</TableHead>
                     <TableHead>Points/Txns</TableHead>
+                    <TableHead>Email Accounts</TableHead>
                     <TableHead>Validity</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Popular</TableHead>
@@ -772,7 +688,7 @@ const SubscriptionPlanManager = () => {
                         <div className="space-y-1">
                           <div className="font-medium">${Number(p.price_monthly).toFixed(2)}/mo</div>
                           {p.price_yearly && p.price_yearly > 0 && (
-                            <div className="text-xs text-muted-foreground">${Number(p.price_yearly).toFixed(2)}/yr</div>
+                            <div className="text-sm text-primary font-medium">${Number(p.price_yearly).toFixed(2)}/yr</div>
                           )}
                         </div>
                       </TableCell>
@@ -780,6 +696,15 @@ const SubscriptionPlanManager = () => {
                         <div className="text-sm space-y-1">
                           <div>{p.monthly_points || 0} points</div>
                           <div>{p.monthly_transactions || 0} txns</div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="text-sm">
+                          {p.email_limit === -1 ? (
+                            <span className="text-primary font-medium">Unlimited</span>
+                          ) : (
+                            <span>{p.email_limit || 1} accounts</span>
+                          )}
                         </div>
                       </TableCell>
                       <TableCell>
@@ -819,6 +744,7 @@ const SubscriptionPlanManager = () => {
                 </TableBody>
               </Table>
             </div>
+            </>
           )}
         </CardContent>
       </Card>

@@ -2,27 +2,27 @@
 // Handles different environments: development (local), UAT (Supabase), production
 
 export const environment = {
-  // Environment detection - Force cloud Supabase usage
-  isDevelopment: false, // Always use cloud database
-  isUAT: true, // Always use Supabase
+  // Environment detection - Force local database usage
+  isDevelopment: true, // Always use local database
+  isUAT: false, // Disable Supabase
   isProduction: import.meta.env.VITE_APP_ENV === 'production',
 
   // Database configuration
   database: {
     // Local PostgreSQL (Development)
     local: {
-      host: import.meta.env.VITE_DB_HOST || 'localhost',
+      host: import.meta.env.VITE_DB_HOST,
       port: parseInt(import.meta.env.VITE_DB_PORT || '5432'),
-      database: import.meta.env.VITE_DB_NAME || 'ignite_rewards',
-      user: import.meta.env.VITE_DB_USER || 'postgres',
-      password: import.meta.env.VITE_DB_PASSWORD || 'your_password',
-      url: import.meta.env.VITE_DATABASE_URL || 'postgresql://postgres:your_password@localhost:5432/ignite_rewards'
+      database: import.meta.env.VITE_DB_NAME,
+      user: import.meta.env.VITE_DB_USER,
+      password: import.meta.env.VITE_DB_PASSWORD,
+      url: import.meta.env.VITE_DATABASE_URL
     },
     
-    // Supabase (UAT/Production) - HARDCODED TO BYPASS VITE ENV LOADING ISSUE
+    // Supabase (UAT/Production) - Environment variables only
     supabase: {
-      url: import.meta.env.VITE_SUPABASE_URL || 'https://wndswqvqogeblksrujpg.supabase.co',
-      anonKey: import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InduZHN3cXZxb2dlYmxrc3J1anBnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYzMzEyMTAsImV4cCI6MjA3MTkwNzIxMH0.eOXJEo3XheuB2AK3NlRotSKqPMueqkgPUa896TM-hfA'
+      url: import.meta.env.VITE_SUPABASE_URL,
+      anonKey: import.meta.env.VITE_SUPABASE_ANON_KEY
     }
   },
 
@@ -40,39 +40,92 @@ export const environment = {
       rpcUrl: import.meta.env.VITE_SOLANA_RPC_URL || 'https://api.devnet.solana.com',
       network: import.meta.env.VITE_SOLANA_NETWORK || 'devnet'
     },
-    ethereum: {
-      rpcUrl: import.meta.env.VITE_ETHEREUM_RPC_URL || 'https://sepolia.infura.io/v3/your-infura-key',
-      network: import.meta.env.VITE_ETHEREUM_NETWORK || 'sepolia'
+  },
+
+  // External API configuration
+  apis: {
+    apiNinjas: {
+      key: import.meta.env.VITE_API_NINJAS_KEY
     }
   },
 
   // Admin configuration
   admin: {
-    email: import.meta.env.VITE_ADMIN_EMAIL || 'admin@igniterewards.com',
-    password: import.meta.env.VITE_ADMIN_PASSWORD || 'admin123!'
+    email: import.meta.env.VITE_ADMIN_EMAIL,
+    password: import.meta.env.VITE_ADMIN_PASSWORD
   }
 };
 
-// DEBUG: Log raw import.meta.env to see what Vite is actually loading
-console.log('🔍 DEBUG - Raw import.meta.env:', import.meta.env);
-console.log('🔍 DEBUG - All import.meta.env keys:', Object.keys(import.meta.env));
-console.log('🔍 DEBUG - VITE_SUPABASE_URL value:', import.meta.env.VITE_SUPABASE_URL);
-console.log('🔍 DEBUG - VITE_ENABLE_MOCK_AUTH value:', import.meta.env.VITE_ENABLE_MOCK_AUTH);
-
-// Log current environment
-console.log('🌍 Environment Configuration:', {
-  mode: 'Cloud Supabase (Forced)',
-  database: 'Supabase Cloud',
-  debug: environment.app.debug,
-  enableMockAuth: environment.app.enableMockAuth,
-  supabaseUrl: environment.database.supabase.url,
-  hasAnonKey: !!environment.database.supabase.anonKey,
-  envVars: {
-    VITE_APP_ENV: import.meta.env.VITE_APP_ENV,
-    VITE_ENABLE_MOCK_AUTH: import.meta.env.VITE_ENABLE_MOCK_AUTH,
-    VITE_SUPABASE_URL: import.meta.env.VITE_SUPABASE_URL,
-    VITE_SUPABASE_ANON_KEY: import.meta.env.VITE_SUPABASE_ANON_KEY ? 'present' : 'missing'
+// Environment validation
+const validateEnvironment = () => {
+  // For local development, validate local database connection
+  if (environment.isDevelopment) {
+    const required = [
+      'VITE_DB_HOST',
+      'VITE_DB_PORT',
+      'VITE_DB_NAME',
+      'VITE_DB_USER',
+      'VITE_DB_PASSWORD'
+    ];
+    
+    const missing = required.filter(key => !import.meta.env[key]);
+    
+    if (missing.length > 0) {
+      throw new Error(`Missing required local database environment variables: ${missing.join(', ')}`);
+    }
+  } else {
+    // For production/UAT, validate Supabase connection
+    const required = [
+      'VITE_SUPABASE_URL',
+      'VITE_SUPABASE_ANON_KEY'
+    ];
+    
+    const missing = required.filter(key => !import.meta.env[key]);
+    
+    if (missing.length > 0) {
+      throw new Error(`Missing required environment variables: ${missing.join(', ')}`);
+    }
   }
-});
+  
+  // Validate local database connection
+  if (environment.isDevelopment && environment.database.local.host) {
+    if (!environment.database.local.host.includes('localhost') && !environment.database.local.host.includes('127.0.0.1')) {
+      // eslint-disable-next-line no-console
+      console.warn('⚠️ Warning: Not using localhost for local development');
+    }
+  }
+  
+  // Validate Supabase URL format (only if not in development mode)
+  if (!environment.isDevelopment && environment.database.supabase.url && !environment.database.supabase.url.includes('supabase.co')) {
+    // eslint-disable-next-line no-console
+    console.warn('⚠️ Warning: Supabase URL format may be incorrect');
+  }
+  
+  // Validate JWT token format (only if not in development mode)
+  if (!environment.isDevelopment && environment.database.supabase.anonKey && !environment.database.supabase.anonKey.startsWith('eyJ')) {
+    // eslint-disable-next-line no-console
+    console.warn('⚠️ Warning: Supabase anon key format may be incorrect');
+  }
+};
+
+// Call validation
+validateEnvironment();
+
+// Only log in debug mode
+if (environment.app.debug) {
+  // eslint-disable-next-line no-console
+  console.log('🌍 Environment Configuration:', {
+    mode: environment.isDevelopment ? 'Local Development' : 'Cloud Supabase',
+    database: environment.isDevelopment ? 'Local PostgreSQL' : 'Supabase Cloud',
+    localDb: environment.isDevelopment ? {
+      host: environment.database.local.host,
+      port: environment.database.local.port,
+      database: environment.database.local.database,
+      user: environment.database.local.user
+    } : null,
+    supabaseUrl: environment.database.supabase.url,
+    hasAnonKey: !!environment.database.supabase.anonKey
+  });
+}
 
 export default environment;

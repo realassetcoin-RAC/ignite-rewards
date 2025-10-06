@@ -38,7 +38,7 @@ export const useInactivityTimeout = (timeoutMinutes: number = 5) => {
 
     // Auto logout after specified minutes
     timeoutRef.current = setTimeout(() => {
-      console.log('🔒 Auto-logout due to inactivity');
+      // Console statement removed
       toast({
         title: "Session Expired",
         description: "You have been logged out due to inactivity.",

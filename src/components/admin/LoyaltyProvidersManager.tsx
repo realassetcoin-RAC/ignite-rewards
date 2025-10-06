@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useForm } from "react-hook-form";
-// import { supabase } from "@/integrations/supabase/client";
+import { databaseAdapter } from "@/lib/databaseAdapter";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -31,7 +31,7 @@ interface LoyaltyProvider {
 
 const LoyaltyProvidersManager = () => {
   const { toast } = useToast();
-  // const [providers, setProviders] = useState<LoyaltyProvider[]>([]);
+  const [, setProviders] = useState<LoyaltyProvider[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [dialogOpen, setDialogOpen] = useState<boolean>(false);
   const [editing, setEditing] = useState<LoyaltyProvider | null>(null);
@@ -100,39 +100,47 @@ const LoyaltyProvidersManager = () => {
     }
   ];
 
-  useEffect(() => {
-    loadProviders();
-  }, []);
-
-  const loadProviders = async () => {
+  const loadProviders = useCallback(async () => {
     try {
       setLoading(true);
       
       // Load from real database
-      const { data, error } = await supabase
+      const { data, error } = await databaseAdapter
         .from('loyalty_providers')
         .select('*')
         .order('created_at', { ascending: false });
       
       if (error) {
-        console.error('Error loading loyalty providers:', error);
+        // Console statement removed
+        // Console statement removed
         setProviders([]);
+        toast({ 
+          title: 'Error', 
+          description: 'Failed to load loyalty providers from local database', 
+          variant: 'destructive' 
+        });
       } else {
         setProviders(data || []);
       }
       
-      console.log('✅ Loyalty providers loaded successfully');
-    } catch (error) {
-      console.error('Failed to load loyalty providers:', error);
+      // Console statement removed
+    } catch {
+      // Console statement removed
+      // Console statement removed
+      setProviders([]);
       toast({ 
         title: 'Error', 
-        description: 'Failed to load loyalty providers', 
+        description: 'Failed to load loyalty providers from local database', 
         variant: 'destructive' 
       });
     } finally {
       setLoading(false);
     }
-  };
+  }, [toast]);
+
+  useEffect(() => {
+    loadProviders();
+  }, [loadProviders]);
 
   const openCreate = () => {
     setEditing(null);
@@ -168,7 +176,7 @@ const LoyaltyProvidersManager = () => {
     setDialogOpen(true);
   };
 
-  const onSubmit = async (values: any) => {
+  const onSubmit = async (values: Record<string, unknown>) => {
     try {
       if (!values.provider_name || values.conversion_rate <= 0) {
         toast({ 
@@ -225,8 +233,8 @@ const LoyaltyProvidersManager = () => {
       
       setDialogOpen(false);
       setEditing(null);
-    } catch (error: any) {
-      console.error('Failed to save loyalty provider:', error);
+    } catch {
+      // Console statement removed
       toast({ 
         title: 'Error', 
         description: 'Failed to save loyalty provider',

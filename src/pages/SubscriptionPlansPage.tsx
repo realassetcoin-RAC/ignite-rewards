@@ -1,11 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, CheckCircle, Star, Zap, Cloud, Rocket } from 'lucide-react';
 import { SubscriptionPlans } from '@/components/subscription/SubscriptionPlans';
-import { SUBSCRIPTION_PLANS, calculateYearlySavings } from '@/data/subscriptionPlans';
+import { getSubscriptionPlans } from '@/api/subscriptionPlans';
+import { calculateYearlySavings } from '@/data/subscriptionPlans';
 import { SubscriptionPlan } from '@/types/subscription';
 import { useSecureAuth } from '@/hooks/useSecureAuth';
 import { createModuleLogger } from '@/utils/consoleReplacer';
@@ -17,6 +18,8 @@ const SubscriptionPlansPage: React.FC = () => {
   const [selectedPlan, setSelectedPlan] = useState<SubscriptionPlan | null>(null);
   const [showComparison, setShowComparison] = useState(false);
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('yearly');
+  const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
+  const [loading, setLoading] = useState(true);
 
   const handleSelectPlan = (plan: SubscriptionPlan) => {
     setSelectedPlan(plan);
@@ -33,6 +36,39 @@ const SubscriptionPlansPage: React.FC = () => {
       navigate('/');
     }
   };
+
+  // Load subscription plans from API
+  useEffect(() => {
+    const loadPlans = async () => {
+      try {
+        setLoading(true);
+        const apiPlans = await getSubscriptionPlans();
+        
+        // Transform API plans to match the expected format
+        const transformedPlans: SubscriptionPlan[] = apiPlans.map(plan => ({
+          id: plan.id,
+          name: plan.name,
+          planNumber: plan.plan_number,
+          monthlyPrice: plan.price_monthly,
+          yearlyPrice: plan.price_yearly,
+          monthlyPoints: plan.monthly_points,
+          monthlyTransactions: plan.monthly_transactions,
+          features: Array.isArray(plan.features) ? plan.features : Object.values(plan.features || {}),
+          description: plan.description || '',
+          popular: plan.popular
+        }));
+        
+        setPlans(transformedPlans);
+        logger.info('Loaded subscription plans from API:', transformedPlans.length);
+      } catch (error) {
+        logger.error('Failed to load subscription plans:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadPlans();
+  }, [logger]);
 
   const planIcons = {
     startup: <Zap className="h-8 w-8 text-blue-500" />,
@@ -101,7 +137,7 @@ const SubscriptionPlansPage: React.FC = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {SUBSCRIPTION_PLANS.map((plan) => {
+                    {plans.map((plan) => {
                       const { savings, percentage } = calculateYearlySavings(plan);
                       return (
                         <tr key={plan.id} className="border-b hover:bg-muted/50">
@@ -143,6 +179,8 @@ const SubscriptionPlansPage: React.FC = () => {
 
         {/* Main Plans Display */}
         <SubscriptionPlans 
+          plans={plans}
+          loading={loading}
           onSelectPlan={handleSelectPlan}
           currentPlanId={selectedPlan?.id || undefined}
           showYearly={true}

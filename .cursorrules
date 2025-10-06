@@ -15,35 +15,47 @@
 - NFT ownership verification
 
 ## Database Rules
-- **CRITICAL: ONLY use Supabase Cloud Database** - Never connect to local databases
+- **HYBRID DATABASE ARCHITECTURE: Local PostgreSQL for Data + Supabase for Authentication**
+  - **Data Operations**: Use local PostgreSQL database for all data storage and retrieval
+  - **Authentication**: Use Supabase Cloud for user authentication and session management only
 - Always use `public` schema for tables (not `api`)
 - Use UUID for primary keys with `gen_random_uuid()`
 - Follow existing enum patterns: `app_role`, `merchant_status`, `subscription_plan`
 - Use `WHERE NOT EXISTS` instead of `ON CONFLICT` for safe insertions
 - Loyalty card numbers: 8 characters, first character is user's initial (e.g., J0000001)
-- All database operations must use the cloud Supabase instance at `wndswqvqogeblksrujpg.supabase.co`
 
 ## Database Connection Requirements
-- **MANDATORY: Use Supabase Cloud Database Only**
-  - URL: `https://wndswqvqogeblksrujpg.supabase.co`
-  - Anon Key: `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InduZHN3cXZxb2dlYmxrc3J1anBnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYzMzEyMTAsImV4cCI6MjA3MTkwNzIxMH0.eOXJEo3XheuB2AK3NlRotSKqPMueqkgPUa896TM-hfA`
-- **NEVER use local PostgreSQL connections**
-- **NEVER use localhost database connections**
-- All SQL scripts and database operations must target the cloud instance
-- When creating tables, functions, or policies, use Supabase migrations or direct cloud connection
+- **MANDATORY: Hybrid Database Configuration**
+  - **Local PostgreSQL for Data Operations**:
+    - Host: `localhost` (or `127.0.0.1`)
+    - Port: `5432`
+    - Database: `ignite_rewards`
+    - User: `postgres`
+    - Password: From environment variables
+    - URL: `postgresql://postgres:password@localhost:5432/ignite_rewards`
+  - **Supabase Cloud for Authentication Only**:
+    - URL: `https://wndswqvqogeblksrujpg.supabase.co`
+    - Anon Key: `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InduZHN3cXZxb2dlYmxrc3J1anBnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYzMzEyMTAsImV4cCI6MjA3MTkwNzIxMH0.eOXJEo3XheuB2AK3NlRotSKqPMueqkgPUa896TM-hfA`
+- **Data Operations**: All CRUD operations, queries, and data storage must use local PostgreSQL
+- **Authentication Operations**: User login, registration, session management use Supabase
+- **NEVER mix data operations with authentication operations**
 
-## Supabase CLI Usage Rules
-- **MANDATORY: Use Supabase CLI for Database Operations**
+## Database Management Rules
+- **Local PostgreSQL Management:**
+  - Use direct PostgreSQL connections for data operations
+  - Apply SQL scripts directly to local database using `psql` or database client
+  - Use environment variables for database credentials
+  - Always backup local database before major changes
+- **Supabase Authentication Management:**
+  - Use Supabase CLI only for authentication-related operations
   - Install Supabase CLI: `npm install -g supabase`
-  - Initialize project: `supabase init`
   - Link to cloud project: `supabase link --project-ref wndswqvqogeblksrujpg`
-  - Apply migrations: `supabase db push`
-  - Execute SQL scripts: `supabase db reset` or `supabase db push`
-- **Database Migration Workflow:**
-  1. Create migration files in `supabase/migrations/`
-  2. Use `supabase db push` to apply to cloud database
-  3. Verify changes with `supabase db diff`
-  4. Always test migrations before applying to production
+  - Use Supabase for user management, OAuth, and session handling
+- **Migration Workflow:**
+  1. For data schema changes: Apply directly to local PostgreSQL
+  2. For authentication changes: Use Supabase CLI and cloud instance
+  3. Always test changes in development environment first
+  4. Document all database changes with clear migration scripts
 - **Project Reference:** `wndswqvqogeblksrujpg` (from Supabase URL)
 - **Migration File Naming:** `YYYYMMDD_description.sql`
 - **Always backup before major migrations**
@@ -150,15 +162,40 @@
   - Implement request timeouts and size limits
 
 ### Database Security
-- **CRITICAL: ONLY use Supabase Cloud Database** - Never connect to local databases
-- Use Row Level Security (RLS) policies for all tables
-- All database operations must use the cloud Supabase instance
+- **HYBRID DATABASE SECURITY: Local PostgreSQL + Supabase Authentication**
+  - **Local PostgreSQL Security**: Implement proper access controls and encryption
+  - **Supabase Authentication Security**: Use cloud authentication with proper session management
+- Use Row Level Security (RLS) policies for all local PostgreSQL tables
+- **Data Operations**: All CRUD operations must use local PostgreSQL with proper security
+- **Authentication Operations**: Use Supabase cloud for secure user authentication
 - Never hardcode sensitive data in scripts or code
-- Use environment variables for all configuration
-- Implement database connection encryption
-- Use parameterized queries exclusively
+- Use environment variables for all database configuration
+- Implement database connection encryption for local PostgreSQL
+- Use parameterized queries exclusively for both databases
 - Regular database security audits and updates
-- Implement database access logging and monitoring
+- Implement database access logging and monitoring for local PostgreSQL
+- **NEVER store authentication data in local database**
+- **NEVER store business data in Supabase cloud database**
+
+## Hybrid Database Architecture Guidelines
+
+### Data Flow Separation
+- **Authentication Flow**: User login → Supabase Auth → Session token → Local app
+- **Data Flow**: App operations → Local PostgreSQL → Data storage/retrieval
+- **User Profile Sync**: Supabase user ID → Local PostgreSQL user records
+
+### Implementation Rules
+- **DatabaseAdapter Pattern**: Use the existing DatabaseAdapter class for proper separation
+- **Authentication**: Always use `databaseAdapter.auth` for user authentication
+- **Data Operations**: Always use `databaseAdapter.from(table)` for data operations
+- **Environment Configuration**: Maintain separate configs for local DB and Supabase
+- **Error Handling**: Handle authentication errors separately from data errors
+
+### Security Boundaries
+- **Authentication Boundary**: Supabase handles all user authentication and session management
+- **Data Boundary**: Local PostgreSQL handles all business data and application state
+- **Cross-Boundary Operations**: Use user ID from Supabase auth to link with local data
+- **No Data Mixing**: Never store business data in Supabase or auth data in local PostgreSQL
 
 ### Application Security
 - Implement Content Security Policy (CSP) headers
@@ -239,3 +276,43 @@
 - Test data: comprehensive and realistic
 - Fixes: include rollback instructions when possible
 
+MANDATORY: Pre-Development Checklist
+BEFORE STARTING ANY WORK: Run npm run lint to see current state
+BEFORE COMMITTING: Run npm run lint --fix to auto-fix issues
+BEFORE PUSHING: Ensure ZERO linting errors
+DAILY: Clean up any accumulated linting issues
+WEEKLY: Run comprehensive linting audit
+Code Quality Rules
+NEVER: Use any types - always specify proper TypeScript interfaces
+NEVER: Leave console.log statements in production code
+NEVER: Commit unused imports or variables
+NEVER: Use direct hasOwnProperty access - use Object.prototype.hasOwnProperty.call()
+NEVER: Include unnecessary escape characters in regex patterns
+ALWAYS: Use proper TypeScript types for all function parameters
+ALWAYS: Remove debug code before committing
+ALWAYS: Clean up template code and unused variables
+AI Code Generation Guidelines
+NEVER: Include console.log statements in generated code
+NEVER: Use any types - always specify proper interfaces
+ALWAYS: Remove unused imports after code generation
+ALWAYS: Use proper TypeScript types for all parameters
+ALWAYS: Clean up template code and remove unused variables
+ALWAYS: Review and clean up generated code before committing
+Development Workflow Rules
+Start of Day: Run npm run lint to see current state
+Before Coding: Fix any existing linting issues
+During Coding: Use Cursor's real-time linting features
+Before Commit: Run npm run lint:fix to auto-fix issues
+End of Day: Clean up any accumulated issues
+Code Review: Check for unused imports, console statements, and any types
+Linting Error Prevention
+Unused Variables/Imports: Remove immediately when identified
+TypeScript any Types: Replace with proper interfaces
+Console Statements: Remove before committing (except in test files)
+Regex Escape Issues: Use proper regex patterns without unnecessary escapes
+Prototype Access: Use Object.prototype.hasOwnProperty.call() instead of direct access
+Emergency Cleanup Rules
+If Linting Issues Accumulate: Stop feature development and clean up first
+Priority Order: Fix errors first, then warnings
+Batch Processing: Fix similar issues together (all console statements, all unused imports)
+Verification: Run npm run build after cleanup to ensure no build errors

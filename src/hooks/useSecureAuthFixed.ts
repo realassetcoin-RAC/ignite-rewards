@@ -199,6 +199,7 @@ export const useSecureAuthFixed = () => {
     } finally {
       isUpdating.current = false;
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Empty dependency array to prevent loops
 
   useEffect(() => {
@@ -265,6 +266,7 @@ export const useSecureAuthFixed = () => {
       clearTimeout(timer);
       subscription.unsubscribe();
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Empty dependency array
 
   const signOut = async () => {

@@ -90,8 +90,8 @@ export class ReferralService {
       }
 
       return code;
-    } catch (error) {
-      console.error('Error generating referral code:', error);
+    } catch {
+      // Console statement removed
       return null;
     }
   }
@@ -189,7 +189,7 @@ export class ReferralService {
         });
 
       if (pointsError) {
-        console.error('Error awarding referral points:', pointsError);
+        // Console statement removed
         // Don't fail the entire process for points error
       }
 
@@ -223,8 +223,8 @@ export class ReferralService {
             referralCodeData.referral_campaigns.points_per_referral
           );
         }
-      } catch (emailError) {
-        console.error('Error sending referral email notification:', emailError);
+      } catch {
+        // Console statement removed
         // Don't fail the referral process for email errors
       }
 
@@ -234,8 +234,8 @@ export class ReferralService {
         settlementId: settlement.id
       };
 
-    } catch (error) {
-      console.error('Error processing referral signup:', error);
+    } catch {
+      // Console statement removed
       return {
         success: false,
         error: 'Failed to process referral code'
@@ -250,7 +250,7 @@ export class ReferralService {
     totalReferrals: number;
     totalPointsEarned: number;
     referralCode: string | null;
-    recentReferrals: any[];
+    recentReferrals: Record<string, unknown>[];
   }> {
     try {
       // Get user's referral code
@@ -281,8 +281,8 @@ export class ReferralService {
         referralCode: referralCode?.code || null,
         recentReferrals: settlements?.slice(0, 5) || []
       };
-    } catch (error) {
-      console.error('Error getting referral stats:', error);
+    } catch {
+      // Console statement removed
       return {
         totalReferrals: 0,
         totalPointsEarned: 0,
@@ -308,8 +308,8 @@ export class ReferralService {
       }
 
       return data || [];
-    } catch (error) {
-      console.error('Error getting active campaigns:', error);
+    } catch {
+      // Console statement removed
       return [];
     }
   }

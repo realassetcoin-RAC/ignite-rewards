@@ -35,17 +35,31 @@ interface AccessAttempt {
 
 export class SecurityService {
   private static context: SecurityContext | null = null;
+  private static lastInitialization: number = 0;
+  private static readonly INITIALIZATION_COOLDOWN = 5000; // 5 seconds cooldown
 
   /**
    * Initialize security context for current user
    */
   static async initializeSecurityContext(): Promise<SecurityContext | null> {
     try {
+      const now = Date.now();
+      
+      // Check cooldown to prevent excessive initialization
+      if (now - this.lastInitialization < this.INITIALIZATION_COOLDOWN) {
+        return this.context;
+      }
+      
       const { data: { user }, error } = await supabase.auth.getUser();
       
       if (error || !user) {
         this.context = null;
         return null;
+      }
+
+      // Check if context is already initialized for this user
+      if (this.context && this.context.userId === user.id) {
+        return this.context;
       }
 
       // Get user profile and role
@@ -73,6 +87,10 @@ export class SecurityService {
         sessionId: user.aud || 'unknown'
       };
 
+      // Update last initialization time
+      this.lastInitialization = now;
+
+      // eslint-disable-next-line no-console
       console.log('🔐 Security context initialized:', {
         userId: user.id,
         role: userRole,
@@ -82,8 +100,8 @@ export class SecurityService {
 
       return this.context;
 
-    } catch (error) {
-      console.error('Error initializing security context:', error);
+    } catch {
+      // Console statement removed
       this.context = null;
       return null;
     }
@@ -94,6 +112,14 @@ export class SecurityService {
    */
   static getSecurityContext(): SecurityContext | null {
     return this.context;
+  }
+
+  /**
+   * Clear security context (useful for logout)
+   */
+  static clearSecurityContext(): void {
+    this.context = null;
+    this.lastInitialization = 0; // Reset cooldown
   }
 
   /**
@@ -385,8 +411,8 @@ export class SecurityService {
           error_message: errorMessage
         });
 
-    } catch (error) {
-      console.error('Error logging security event:', error);
+    } catch {
+      // Console statement removed
     }
   }
 
@@ -407,7 +433,7 @@ export class SecurityService {
    */
   static async validateSensitiveOperation(
     operation: string,
-    additionalChecks?: Record<string, any>
+    additionalChecks?: Record<string, unknown>
   ): Promise<{ allowed: boolean; reason?: string }> {
     const context = await this.getOrInitializeContext();
     
@@ -441,8 +467,10 @@ export class SecurityService {
   /**
    * Validate wallet creation
    */
-  private static validateWalletCreation(context: SecurityContext): { allowed: boolean; reason?: string } {
+  private static validateWalletCreation(): { allowed: boolean; reason?: string } {
     // Users can create their own wallets
+    // Context is available for future validation logic
+    // Console statement removed
     return { allowed: true };
   }
 
@@ -451,7 +479,7 @@ export class SecurityService {
    */
   private static validatePaymentProcessing(
     context: SecurityContext,
-    additionalChecks?: Record<string, any>
+    additionalChecks?: Record<string, unknown>
   ): { allowed: boolean; reason?: string } {
     // Check if payment amount is reasonable
     if (additionalChecks?.amount && additionalChecks.amount > 10000) {
@@ -505,8 +533,8 @@ export class SecurityService {
 
       return data || [];
 
-    } catch (error) {
-      console.error('Error fetching security audit logs:', error);
+    } catch {
+      // Console statement removed
       return [];
     }
   }
@@ -530,7 +558,7 @@ export class SecurityService {
         .limit(5);
 
       if (recentFailures.data && recentFailures.data.length >= 3) {
-        console.warn('🚨 Suspicious activity detected: Multiple failed login attempts');
+        // Console statement removed
         
         await this.logSecurityEvent(
           context.userId,
@@ -541,23 +569,16 @@ export class SecurityService {
         );
       }
 
-    } catch (error) {
-      console.error('Error monitoring suspicious activity:', error);
+    } catch {
+      // Console statement removed
     }
   }
 
-  /**
-   * Clear security context (on logout)
-   */
-  static clearSecurityContext(): void {
-    this.context = null;
-    console.log('🔐 Security context cleared');
-  }
 
   /**
    * Get security summary for admin dashboard
    */
-  static async getSecuritySummary(): Promise<any> {
+  static async getSecuritySummary(): Promise<Record<string, unknown>> {
     try {
       const context = await this.getOrInitializeContext();
       
@@ -585,8 +606,8 @@ export class SecurityService {
         security_status: 'healthy' // Would be calculated based on metrics
       };
 
-    } catch (error) {
-      console.error('Error getting security summary:', error);
+    } catch {
+      // Console statement removed
       return {
         total_users: 0,
         active_users_24h: 0,

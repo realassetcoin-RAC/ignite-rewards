@@ -1,6 +1,7 @@
-import { supabase } from '@/integrations/supabase/client';
+import { databaseAdapter } from './databaseAdapter';
 import { MarketplaceListing, CreateListingRequest, UpdateListingRequest } from '@/types/marketplace';
 import { LoyaltyNFTService } from './loyaltyNFTService';
+import { supabase } from '@/integrations/supabase/client';
 
 export class MarketplaceService {
   /**
@@ -9,22 +10,23 @@ export class MarketplaceService {
   static async getListings(): Promise<MarketplaceListing[]> {
     try {
       // Add timeout to prevent hanging
-      const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Request timeout')), 8000)
+      const timeoutPromise = new Promise<never>((_, reject) => 
+        setTimeout(() => reject(new Error('Request timeout')), 5000)
       );
 
-      const fetchPromise = supabase
+      const fetchPromise = databaseAdapter.supabase
         .from('marketplace_listings')
         .select('*')
         .order('created_at', { ascending: false });
 
-      const { data, error } = await Promise.race([fetchPromise, timeoutPromise]) as any;
+      const result = await Promise.race([fetchPromise, timeoutPromise]);
+      const { data, error } = result as { data: MarketplaceListing[] | null; error: { code?: string; message?: string } | null };
 
       if (error) {
-        console.error('Error fetching listings:', error);
+        // Error fetching listings
         // If table doesn't exist, return mock data instead of empty array
-        if (error.code === 'PGRST116' || error.message.includes('relation') || error.message.includes('does not exist') || error.message.includes('timeout')) {
-          console.warn('Marketplace listings table does not exist or timeout, returning mock listings');
+        if (error.code === 'PGRST116' || (error.message && (error.message.includes('relation') || error.message.includes('does not exist') || error.message.includes('timeout')))) {
+          // Marketplace listings table does not exist or timeout, returning mock listings
           return this.getMockListings();
         }
         throw error;
@@ -32,8 +34,8 @@ export class MarketplaceService {
 
       return data || [];
     } catch (error) {
-      console.error('Failed to fetch listings:', error);
-      // Return mock data instead of empty array to prevent app crashes
+      // Failed to fetch listings - return mock data instead of throwing
+      console.warn('MarketplaceService: Failed to fetch listings, using mock data:', error);
       return this.getMockListings();
     }
   }
@@ -42,23 +44,18 @@ export class MarketplaceService {
    * Get a single marketplace listing by ID
    */
   static async getListingById(id: string): Promise<MarketplaceListing | null> {
-    try {
-      const { data, error } = await supabase
-        .from('marketplace_listings')
-        .select('*')
-        .eq('id', id)
-        .single();
+    const { data, error } = await databaseAdapter.supabase
+      .from('marketplace_listings')
+      .select('*')
+      .eq('id', id)
+      .single();
 
-      if (error) {
-        console.error('Error fetching listing:', error);
-        throw error;
-      }
-
-      return data;
-    } catch (error) {
-      console.error('Failed to fetch listing:', error);
+    if (error) {
+      // Error fetching listing
       throw error;
     }
+
+    return data;
   }
 
   /**
@@ -88,17 +85,17 @@ export class MarketplaceService {
         tags: listingData.tags || []
       };
 
-      const { data, error } = await supabase
+      const { data, error } = await databaseAdapter.supabase
         .from('marketplace_listings')
-        .insert([listingPayload])
+        .insert(listingPayload)
         .select()
         .single();
 
       if (error) {
-        console.error('Error creating listing:', error);
+        // Error creating listing
         // If table doesn't exist, create a mock listing for development
         if (error.code === 'PGRST116' || error.message.includes('relation') || error.message.includes('does not exist')) {
-          console.warn('Marketplace listings table does not exist yet, returning mock listing');
+          // Marketplace listings table does not exist yet, returning mock listing
           return {
             id: 'mock-' + Date.now(),
             ...listingPayload,
@@ -110,8 +107,9 @@ export class MarketplaceService {
       }
 
       return data;
-    } catch {
-      console.error('Failed to create listing');
+    } catch (error) {
+      // Failed to create listing
+      console.warn('MarketplaceService: Failed to create listing:', error);
       throw error;
     }
   }
@@ -120,45 +118,35 @@ export class MarketplaceService {
    * Update an existing marketplace listing
    */
   static async updateListing(listingData: UpdateListingRequest): Promise<MarketplaceListing> {
-    try {
-      const { data, error } = await supabase
-        .from('marketplace_listings')
-        .update({
-          ...listingData,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', listingData.id)
-        .select()
-        .single();
+    const { data, error } = await databaseAdapter.supabase
+      .from('marketplace_listings')
+      .update({
+        ...listingData,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', listingData.id)
+      .select()
+      .single();
 
-      if (error) {
-        console.error('Error updating listing:', error);
-        throw error;
-      }
-
-      return data;
-    } catch (error) {
-      console.error('Failed to update listing:', error);
+    if (error) {
+      // Error updating listing
       throw error;
     }
+
+    return data;
   }
 
   /**
    * Delete a marketplace listing
    */
   static async deleteListing(id: string): Promise<void> {
-    try {
-      const { error } = await supabase
-        .from('marketplace_listings')
-        .delete()
-        .eq('id', id);
+    const { error } = await databaseAdapter.supabase
+      .from('marketplace_listings')
+      .delete()
+      .eq('id', id);
 
-      if (error) {
-        console.error('Error deleting listing:', error);
-        throw error;
-      }
-    } catch (error) {
-      console.error('Failed to delete listing:', error);
+    if (error) {
+      // Error deleting listing
       throw error;
     }
   }
@@ -167,62 +155,60 @@ export class MarketplaceService {
    * Update listing status
    */
   static async updateListingStatus(id: string, status: string): Promise<MarketplaceListing> {
-    try {
-      const { data, error } = await supabase
-        .from('marketplace_listings')
-        .update({
-          status,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', id)
-        .select()
-        .single();
+    const { data, error } = await databaseAdapter.supabase
+      .from('marketplace_listings')
+      .update({
+        status,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', id)
+      .select()
+      .single();
 
-      if (error) {
-        console.error('Error updating listing status:', error);
-        throw error;
-      }
-
-      return data;
-    } catch (error) {
-      console.error('Failed to update listing status:', error);
+    if (error) {
+      // Error updating listing status
       throw error;
     }
+
+    return data;
   }
 
   /**
    * Get marketplace statistics
    */
-  static async getMarketplaceStats(): Promise<any> {
+  static async getMarketplaceStats(): Promise<Record<string, unknown>> {
     try {
       // Add timeout to prevent hanging
-      const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Request timeout')), 8000)
+      const timeoutPromise = new Promise<never>((_, reject) => 
+        setTimeout(() => reject(new Error('Request timeout')), 5000)
       );
 
       const fetchPromise = Promise.all([
-        supabase.from('marketplace_listings').select('status, funding_goal'),
-        supabase.from('marketplace_investments').select('amount')
+        databaseAdapter.supabase.from('marketplace_listings').select('status, total_funding_goal'),
+        databaseAdapter.supabase.from('marketplace_investments').select('amount')
       ]);
 
-      const [listingsResult, investmentsResult] = await Promise.race([fetchPromise, timeoutPromise]) as any;
+      const [listingsResult, investmentsResult] = await Promise.race([fetchPromise, timeoutPromise]) as [
+        { data: MarketplaceListing[] | null; error: any },
+        { data: { amount: number }[] | null; error: any }
+      ];
 
       const listings = listingsResult.data || [];
       const investments = investmentsResult.data || [];
 
       const stats = {
         total_listings: listings.length,
-        active_listings: listings.filter((l: any) => l.status === 'active').length,
-        total_funding_goal: listings.reduce((sum: number, l: any) => sum + (l.funding_goal || 0), 0),
-        total_funding_raised: investments.reduce((sum: number, i: any) => sum + (i.amount || 0), 0),
+        active_listings: listings.filter((l: MarketplaceListing) => l.status === 'active').length,
+        total_funding_goal: listings.reduce((sum: number, l: MarketplaceListing) => sum + (l.total_funding_goal || 0), 0),
+        total_funding_raised: investments.reduce((sum: number, i: { amount?: number }) => sum + (i.amount || 0), 0),
         total_investments: investments.length,
-        total_investment_amount: investments.reduce((sum: number, i: any) => sum + (i.amount || 0), 0)
+        total_investment_amount: investments.reduce((sum: number, i: { amount?: number }) => sum + (i.amount || 0), 0)
       };
 
       return stats;
     } catch (error) {
-      console.error('Failed to fetch marketplace stats:', error);
-      // Return mock stats instead of empty stats to prevent app crashes
+      // Failed to fetch marketplace stats - return mock stats instead of throwing
+      console.warn('MarketplaceService: Failed to fetch marketplace stats, using mock data:', error);
       return this.getMockStats();
     }
   }
@@ -230,7 +216,14 @@ export class MarketplaceService {
   /**
    * Get mock stats when the database is unavailable
    */
-  static getMockStats(): any {
+  static getMockStats(): {
+    total_listings: number;
+    active_listings: number;
+    total_funding_goal: number;
+    total_funding_raised: number;
+    total_investments: number;
+    total_investment_amount: number;
+  } {
     return {
       total_listings: 3,
       active_listings: 3,
@@ -259,22 +252,19 @@ export class MarketplaceService {
       // Calculate multiplier based on NFT tier and features
       let multiplier = 1.0;
       
-      // Base multiplier from NFT tier
-      switch (nftType.tier_level?.toLowerCase()) {
-        case 'bronze':
+      // Base multiplier from NFT rarity
+      switch (nftType.rarity) {
+        case 'Common':
           multiplier = 1.0;
           break;
-        case 'silver':
+        case 'Less Common':
           multiplier = 1.1;
           break;
-        case 'gold':
+        case 'Rare':
           multiplier = 1.25;
           break;
-        case 'platinum':
+        case 'Very Rare':
           multiplier = 1.5;
-          break;
-        case 'diamond':
-          multiplier = 1.75;
           break;
         default:
           multiplier = 1.0;
@@ -292,7 +282,8 @@ export class MarketplaceService {
 
       return Math.min(multiplier, 2.0); // Cap at 2.0x multiplier
     } catch (error) {
-      console.error('Error getting NFT multiplier:', error);
+      // Error getting NFT multiplier
+      console.warn('MarketplaceService: Failed to get NFT multiplier:', error);
       return 1.0; // Default multiplier on error
     }
   }
@@ -322,7 +313,7 @@ export class MarketplaceService {
       }
 
       // Check if investment exceeds remaining funding goal
-      const remainingGoal = (listing.funding_goal || 0) - (effectiveAmount || 0);
+      const remainingGoal = (listing.total_funding_goal || 0) - (effectiveAmount || 0);
       if (effectiveAmount > remainingGoal) {
         return { 
           success: false, 
@@ -333,7 +324,7 @@ export class MarketplaceService {
       }
 
       // Create investment record
-      const { error } = await supabase
+      const { error } = await databaseAdapter.supabase
         .from('marketplace_investments')
         .insert([{
           listing_id: listingId,
@@ -345,7 +336,7 @@ export class MarketplaceService {
         .single();
 
       if (error) {
-        console.error('Error creating investment:', error);
+        // Error creating investment
         return { success: false, effectiveAmount: 0, multiplier, message: 'Failed to create investment' };
       }
 
@@ -359,7 +350,8 @@ export class MarketplaceService {
         message: `Investment successful! ${multiplier}x multiplier applied.` 
       };
     } catch (error) {
-      console.error('Error investing with NFT multiplier:', error);
+      // Error investing with NFT multiplier
+      console.warn('MarketplaceService: Failed to invest with NFT multiplier:', error);
       return { success: false, effectiveAmount: 0, multiplier: 1.0, message: 'Investment failed' };
     }
   }
@@ -367,9 +359,9 @@ export class MarketplaceService {
   /**
    * Get user's investment history with NFT multipliers
    */
-  static async getUserInvestments(userId: string): Promise<any[]> {
+  static async getUserInvestments(userId: string): Promise<Record<string, unknown>[]> {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await databaseAdapter.supabase
         .from('marketplace_investments')
         .select(`
           *,
@@ -384,13 +376,14 @@ export class MarketplaceService {
         .order('created_at', { ascending: false });
 
       if (error) {
-        console.error('Error fetching user investments:', error);
+        // Error fetching user investments
         return [];
       }
 
       return data || [];
     } catch (error) {
-      console.error('Error fetching user investments:', error);
+      // Error fetching user investments
+      console.warn('MarketplaceService: Failed to fetch user investments:', error);
       return [];
     }
   }
@@ -398,19 +391,19 @@ export class MarketplaceService {
   /**
    * Get marketplace categories
    */
-  static async getCategories(): Promise<any[]> {
+  static async getCategories(): Promise<Record<string, unknown>[]> {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await databaseAdapter.supabase
         .from('marketplace_categories')
         .select('*')
         .eq('is_active', true)
         .order('sort_order', { ascending: true });
 
       if (error) {
-        console.error('Error fetching categories:', error);
+        // Error fetching categories
         // If table doesn't exist, return mock categories
         if (error.code === 'PGRST116' || error.code === 'PGRST205' || error.message.includes('relation') || error.message.includes('does not exist')) {
-          console.warn('Marketplace categories table does not exist yet, returning mock categories');
+          // Marketplace categories table does not exist yet, returning mock categories
           return this.getMockCategories();
         }
         throw error;
@@ -418,7 +411,8 @@ export class MarketplaceService {
 
       return data || [];
     } catch (error) {
-      console.error('Failed to fetch categories:', error);
+      // Failed to fetch categories
+      console.warn('MarketplaceService: Failed to fetch categories, using mock data:', error);
       // Return mock categories instead of throwing to prevent app crashes
       return this.getMockCategories();
     }
@@ -427,79 +421,47 @@ export class MarketplaceService {
   /**
    * Get mock categories when the table doesn't exist
    */
-  static getMockCategories(): any[] {
+  static getMockCategories(): { id: string; name: string; description: string }[] {
     return [
       {
         id: 'mock-tech',
         name: 'Technology',
-        description: 'Tech startups and innovative solutions',
-        icon: 'laptop',
-        color: '#3B82F6',
-        is_active: true,
-        sort_order: 1
+        description: 'Tech startups and innovative solutions'
       },
       {
         id: 'mock-real-estate',
         name: 'Real Estate',
-        description: 'Property investments and development',
-        icon: 'home',
-        color: '#10B981',
-        is_active: true,
-        sort_order: 2
+        description: 'Property investments and development'
       },
       {
         id: 'mock-healthcare',
         name: 'Healthcare',
-        description: 'Medical and wellness investments',
-        icon: 'heart',
-        color: '#EF4444',
-        is_active: true,
-        sort_order: 3
+        description: 'Medical and wellness investments'
       },
       {
         id: 'mock-education',
         name: 'Education',
-        description: 'Educational technology and services',
-        icon: 'book',
-        color: '#8B5CF6',
-        is_active: true,
-        sort_order: 4
+        description: 'Educational technology and services'
       },
       {
         id: 'mock-environment',
         name: 'Environment',
-        description: 'Green energy and sustainability',
-        icon: 'leaf',
-        color: '#059669',
-        is_active: true,
-        sort_order: 5
+        description: 'Green energy and sustainability'
       },
       {
         id: 'mock-finance',
         name: 'Finance',
-        description: 'Financial services and fintech',
-        icon: 'dollar-sign',
-        color: '#F59E0B',
-        is_active: true,
-        sort_order: 6
+        description: 'Financial services and fintech'
       },
       {
         id: 'mock-entertainment',
         name: 'Entertainment',
-        description: 'Media, gaming, and entertainment',
-        icon: 'play',
-        color: '#EC4899',
-        is_active: true,
-        sort_order: 7
+        description: 'Media, gaming, and entertainment'
       },
       {
         id: 'mock-other',
         name: 'Other',
-        description: 'Other investment opportunities',
-        icon: 'more-horizontal',
-        color: '#6B7280',
-        is_active: true,
-        sort_order: 8
+        description: 'Other investment opportunities'
       }
     ];
   }
@@ -514,45 +476,72 @@ export class MarketplaceService {
         title: 'Green Energy Solar Farm',
         description: 'Invest in a large-scale solar energy project that will power 10,000 homes. This project offers stable returns and contributes to environmental sustainability.',
         image_url: 'https://images.unsplash.com/photo-1466611653911-95081537e5b7?w=400',
-        funding_goal: 5000000,
-        min_investment: 1000,
-        max_investment: 100000,
-        start_time: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
-        end_time: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-        token_ticker: 'SOLAR',
-        token_supply: 1000000,
+        listing_type: 'asset',
         status: 'active',
-        created_at: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
+        total_funding_goal: 5000000,
+        current_funding_amount: 2500000,
+        current_investor_count: 45,
+        campaign_type: 'time_bound',
+        start_date: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
+        end_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+        token_symbol: 'SOLAR',
+        total_token_supply: 1000000,
+        risk_level: 'medium',
+        minimum_investment: 1000,
+        maximum_investment: 100000,
+        is_featured: true,
+        is_verified: true,
+        created_by: 'mock-user-1',
+        created_at: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
+        updated_at: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
       },
       {
         id: 'mock-listing-2',
         title: 'AI Healthcare Platform',
         description: 'Revolutionary AI-powered healthcare platform that helps doctors diagnose diseases faster and more accurately. Join the future of medical technology.',
         image_url: 'https://images.unsplash.com/photo-1559757148-5c350d0d3c56?w=400',
-        funding_goal: 2000000,
-        min_investment: 500,
-        max_investment: 50000,
-        start_time: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString(),
-        end_time: new Date(Date.now() + 45 * 24 * 60 * 60 * 1000).toISOString(),
-        token_ticker: 'AIHC',
-        token_supply: 500000,
+        listing_type: 'asset',
         status: 'active',
-        created_at: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString()
+        total_funding_goal: 2000000,
+        current_funding_amount: 1200000,
+        current_investor_count: 28,
+        campaign_type: 'time_bound',
+        start_date: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString(),
+        end_date: new Date(Date.now() + 45 * 24 * 60 * 60 * 1000).toISOString(),
+        token_symbol: 'AIHC',
+        total_token_supply: 500000,
+        risk_level: 'high',
+        minimum_investment: 500,
+        maximum_investment: 50000,
+        is_featured: false,
+        is_verified: true,
+        created_by: 'mock-user-2',
+        created_at: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString(),
+        updated_at: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString()
       },
       {
         id: 'mock-listing-3',
         title: 'Luxury Real Estate Development',
         description: 'Premium residential complex in downtown with modern amenities, smart home features, and sustainable design. High-end investment opportunity.',
         image_url: 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=400',
-        funding_goal: 8000000,
-        min_investment: 2500,
-        max_investment: 200000,
-        start_time: new Date(Date.now() - 21 * 24 * 60 * 60 * 1000).toISOString(),
-        end_time: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000).toISOString(),
-        token_ticker: 'REAL',
-        token_supply: 2000000,
+        listing_type: 'asset',
         status: 'active',
-        created_at: new Date(Date.now() - 21 * 24 * 60 * 60 * 1000).toISOString()
+        total_funding_goal: 8000000,
+        current_funding_amount: 4800000,
+        current_investor_count: 67,
+        campaign_type: 'time_bound',
+        start_date: new Date(Date.now() - 21 * 24 * 60 * 60 * 1000).toISOString(),
+        end_date: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000).toISOString(),
+        token_symbol: 'REAL',
+        total_token_supply: 2000000,
+        risk_level: 'low',
+        minimum_investment: 2500,
+        maximum_investment: 200000,
+        is_featured: true,
+        is_verified: true,
+        created_by: 'mock-user-3',
+        created_at: new Date(Date.now() - 21 * 24 * 60 * 60 * 1000).toISOString(),
+        updated_at: new Date(Date.now() - 21 * 24 * 60 * 60 * 1000).toISOString()
       }
     ];
   }

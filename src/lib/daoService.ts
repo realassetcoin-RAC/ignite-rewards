@@ -16,14 +16,14 @@ export class DAOService {
       if (error) {
         // If table doesn't exist, return empty array instead of throwing
         if (error.message.includes('relation') || error.message.includes('does not exist')) {
-          console.log('DAO organizations table does not exist yet, returning empty array');
+          // Console statement removed
           return [];
         }
         throw error;
       }
       return data || [];
-    } catch (error) {
-      console.error('Error loading DAO organizations:', error);
+    } catch {
+      // Console statement removed
       // Return empty array instead of throwing to prevent app crashes
       return [];
     }
@@ -46,14 +46,14 @@ export class DAOService {
       if (error) {
         // If table doesn't exist, return empty array instead of throwing
         if (error.message.includes('relation') || error.message.includes('does not exist')) {
-          console.log('DAO proposals table does not exist yet, returning empty array');
+          // Console statement removed
           return [];
         }
         throw error;
       }
 
       // Map database data to DAOProposal interface
-      const proposals: DAOProposal[] = (data || []).map((proposal: any) => ({
+      const proposals: DAOProposal[] = (data || []).map((proposal: Record<string, unknown>) => ({
         id: proposal.id,
         dao_id: proposal.dao_id,
         proposer_id: proposal.proposer_id,
@@ -85,8 +85,8 @@ export class DAOService {
       }));
 
       return proposals;
-    } catch (error) {
-      console.error('Error loading DAO proposals:', error);
+    } catch {
+      // Console statement removed
       // Return empty array instead of throwing to prevent app crashes
       return [];
     }
@@ -110,14 +110,14 @@ export class DAOService {
       if (error) {
         // If table doesn't exist, return empty array instead of throwing
         if (error.message.includes('relation') || error.message.includes('does not exist')) {
-          console.log('DAO members table does not exist yet, returning empty array');
+          // Console statement removed
           return [];
         }
         throw error;
       }
 
       // Map database data to DAOMember interface
-      const members: DAOMember[] = (data || []).map((member: any) => ({
+      const members: DAOMember[] = (data || []).map((member: Record<string, unknown>) => ({
         id: member.id,
         dao_id: member.dao_id,
         user_id: member.user_id,
@@ -133,8 +133,8 @@ export class DAOService {
       }));
 
       return members;
-    } catch (error) {
-      console.error('Error loading DAO members:', error);
+    } catch {
+      // Console statement removed
       // Return empty array instead of throwing to prevent app crashes
       return [];
     }
@@ -171,8 +171,8 @@ export class DAOService {
         user_email: data.user_email,
         user_full_name: data.user_full_name
       };
-    } catch (error) {
-      console.error('Error loading user membership:', error);
+    } catch {
+      // Console statement removed
       return null;
     }
   }
@@ -181,155 +181,150 @@ export class DAOService {
    * Cast a vote on a proposal
    */
   static async castVote(proposalId: string, userId: string, choice: 'yes' | 'no' | 'abstain', votingPower: number, reason?: string): Promise<void> {
-    try {
-      console.log('🗳️ Casting vote:', { proposalId, userId, choice, votingPower, reason });
+    // Console statement removed
 
-      // Validate inputs
-      if (!proposalId || !userId || !choice) {
-        throw new Error('Missing required parameters: proposalId, userId, and choice are required');
-      }
-
-      if (!['yes', 'no', 'abstain'].includes(choice)) {
-        throw new Error('Invalid vote choice. Must be "yes", "no", or "abstain"');
-      }
-
-      if (votingPower <= 0) {
-        throw new Error('Voting power must be greater than 0');
-      }
-
-      // Validate UUID format for proposalId
-      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-      if (!uuidRegex.test(proposalId)) {
-        throw new Error(`Invalid proposal ID format: ${proposalId}. Expected a valid UUID.`);
-      }
-
-      // Validate UUID format for userId
-      if (!uuidRegex.test(userId)) {
-        throw new Error(`Invalid user ID format: ${userId}. Expected a valid UUID.`);
-      }
-
-      // First, verify the proposal exists and is active
-      const { data: proposal, error: proposalError } = await supabase
-        .from('dao_proposals')
-        .select('id, status, end_time, dao_id')
-        .eq('id', proposalId)
-        .single();
-
-      if (proposalError) {
-        if (proposalError.message.includes('relation') || proposalError.message.includes('does not exist')) {
-          throw new Error('DAO voting system is not set up yet. Please contact an administrator.');
-        }
-        throw new Error(`Failed to fetch proposal: ${proposalError.message}`);
-      }
-
-      if (!proposal) {
-        throw new Error(`Proposal not found: ${proposalId}`);
-      }
-
-      if (proposal.status !== 'active') {
-        throw new Error(`Proposal is not active for voting. Current status: ${proposal.status}`);
-      }
-
-      // Check if voting period has ended
-      if (proposal.end_time && new Date(proposal.end_time) < new Date()) {
-        throw new Error('Voting period has ended for this proposal');
-      }
-
-      // Verify user is a member of the DAO
-      const { data: membership, error: membershipError } = await supabase
-        .from('dao_members')
-        .select('id, voting_power, is_active')
-        .eq('dao_id', proposal.dao_id)
-        .eq('user_id', userId)
-        .eq('is_active', true)
-        .single();
-
-      if (membershipError && membershipError.code !== 'PGRST116') {
-        throw new Error(`Failed to verify DAO membership: ${membershipError.message}`);
-      }
-
-      if (!membership) {
-        throw new Error('You must be a member of this DAO to vote');
-      }
-
-      // Check if user already voted
-      const { data: existingVote, error: checkError } = await supabase
-        .from('dao_votes')
-        .select('id')
-        .eq('proposal_id', proposalId)
-        .eq('voter_id', userId)
-        .single();
-
-      if (checkError && checkError.code !== 'PGRST116') { // PGRST116 = no rows returned
-        console.error('Error checking existing vote:', checkError);
-        throw new Error(`Failed to check existing vote: ${checkError.message}`);
-      }
-
-      if (existingVote) {
-        throw new Error('You have already voted on this proposal');
-      }
-
-      // Cast the vote
-      const { error: voteError } = await supabase
-        .from('dao_votes')
-        .insert({
-          proposal_id: proposalId,
-          voter_id: userId,
-          choice: choice,
-          voting_power: votingPower,
-          reason: reason || null
-        });
-
-      if (voteError) {
-        console.error('Error inserting vote:', voteError);
-        if (voteError.message.includes('relation') || voteError.message.includes('does not exist')) {
-          throw new Error('DAO voting system is not set up yet. Please contact an administrator.');
-        }
-        throw new Error(`Failed to cast vote: ${voteError.message}`);
-      }
-
-      // Update proposal vote counts
-      const { data: currentProposal, error: fetchError } = await supabase
-        .from('dao_proposals')
-        .select('total_votes, yes_votes, no_votes, abstain_votes')
-        .eq('id', proposalId)
-        .single();
-
-      if (fetchError) {
-        console.error('Error fetching current proposal counts:', fetchError);
-        throw new Error(`Failed to fetch proposal counts: ${fetchError.message}`);
-      }
-
-      // Calculate new vote counts
-      const newTotalVotes = (currentProposal.total_votes || 0) + 1;
-      const newYesVotes = choice === 'yes' ? (currentProposal.yes_votes || 0) + 1 : (currentProposal.yes_votes || 0);
-      const newNoVotes = choice === 'no' ? (currentProposal.no_votes || 0) + 1 : (currentProposal.no_votes || 0);
-      const newAbstainVotes = choice === 'abstain' ? (currentProposal.abstain_votes || 0) + 1 : (currentProposal.abstain_votes || 0);
-
-      const { error: updateError } = await supabase
-        .from('dao_proposals')
-        .update({
-          total_votes: newTotalVotes,
-          yes_votes: newYesVotes,
-          no_votes: newNoVotes,
-          abstain_votes: newAbstainVotes
-        })
-        .eq('id', proposalId);
-
-      if (updateError) {
-        console.error('Error updating proposal vote counts:', updateError);
-        if (updateError.message.includes('relation') || updateError.message.includes('does not exist')) {
-          throw new Error('DAO voting system is not set up yet. Please contact an administrator.');
-        }
-        throw new Error(`Failed to update vote counts: ${updateError.message}`);
-      }
-
-      console.log('✅ Vote cast successfully');
-
-    } catch (error) {
-      console.error('Error casting vote:', error);
-      throw error;
+    // Validate inputs
+    if (!proposalId || !userId || !choice) {
+      throw new Error('Missing required parameters: proposalId, userId, and choice are required');
     }
+
+    if (!['yes', 'no', 'abstain'].includes(choice)) {
+      throw new Error('Invalid vote choice. Must be "yes", "no", or "abstain"');
+    }
+
+    if (votingPower <= 0) {
+      throw new Error('Voting power must be greater than 0');
+    }
+
+    // Validate UUID format for proposalId
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(proposalId)) {
+      throw new Error(`Invalid proposal ID format: ${proposalId}. Expected a valid UUID.`);
+    }
+
+    // Validate UUID format for userId
+    if (!uuidRegex.test(userId)) {
+      throw new Error(`Invalid user ID format: ${userId}. Expected a valid UUID.`);
+    }
+
+    // First, verify the proposal exists and is active
+    const { data: proposal, error: proposalError } = await supabase
+      .from('dao_proposals')
+      .select('id, status, end_time, dao_id')
+      .eq('id', proposalId)
+      .single();
+
+    if (proposalError) {
+      if (proposalError.message.includes('relation') || proposalError.message.includes('does not exist')) {
+        throw new Error('DAO voting system is not set up yet. Please contact an administrator.');
+      }
+      throw new Error(`Failed to fetch proposal: ${proposalError.message}`);
+    }
+
+    if (!proposal) {
+      throw new Error(`Proposal not found: ${proposalId}`);
+    }
+
+    if (proposal.status !== 'active') {
+      throw new Error(`Proposal is not active for voting. Current status: ${proposal.status}`);
+    }
+
+    // Check if voting period has ended
+    if (proposal.end_time && new Date(proposal.end_time) < new Date()) {
+      throw new Error('Voting period has ended for this proposal');
+    }
+
+    // Verify user is a member of the DAO
+    const { data: membership, error: membershipError } = await supabase
+      .from('dao_members')
+      .select('id, voting_power, is_active')
+      .eq('dao_id', proposal.dao_id)
+      .eq('user_id', userId)
+      .eq('is_active', true)
+      .single();
+
+    if (membershipError && membershipError.code !== 'PGRST116') {
+      throw new Error(`Failed to verify DAO membership: ${membershipError.message}`);
+    }
+
+    if (!membership) {
+      throw new Error('You must be a member of this DAO to vote');
+    }
+
+    // Check if user already voted
+    const { data: existingVote, error: checkError } = await supabase
+      .from('dao_votes')
+      .select('id')
+      .eq('proposal_id', proposalId)
+      .eq('voter_id', userId)
+      .single();
+
+    if (checkError && checkError.code !== 'PGRST116') { // PGRST116 = no rows returned
+      // Console statement removed
+      throw new Error(`Failed to check existing vote: ${checkError.message}`);
+    }
+
+    if (existingVote) {
+      throw new Error('You have already voted on this proposal');
+    }
+
+    // Cast the vote
+    const { error: voteError } = await supabase
+      .from('dao_votes')
+      .insert({
+        proposal_id: proposalId,
+        voter_id: userId,
+        choice: choice,
+        voting_power: votingPower,
+        reason: reason || null
+      });
+
+    if (voteError) {
+      // Console statement removed
+      if (voteError.message.includes('relation') || voteError.message.includes('does not exist')) {
+        throw new Error('DAO voting system is not set up yet. Please contact an administrator.');
+      }
+      throw new Error(`Failed to cast vote: ${voteError.message}`);
+    }
+
+    // Update proposal vote counts
+    const { data: currentProposal, error: fetchError } = await supabase
+      .from('dao_proposals')
+      .select('total_votes, yes_votes, no_votes, abstain_votes')
+      .eq('id', proposalId)
+      .single();
+
+    if (fetchError) {
+      // Console statement removed
+      throw new Error(`Failed to fetch proposal counts: ${fetchError.message}`);
+    }
+
+    // Calculate new vote counts
+    const newTotalVotes = (currentProposal.total_votes || 0) + 1;
+    const newYesVotes = choice === 'yes' ? (currentProposal.yes_votes || 0) + 1 : (currentProposal.yes_votes || 0);
+    const newNoVotes = choice === 'no' ? (currentProposal.no_votes || 0) + 1 : (currentProposal.no_votes || 0);
+    const newAbstainVotes = choice === 'abstain' ? (currentProposal.abstain_votes || 0) + 1 : (currentProposal.abstain_votes || 0);
+
+    const { error: updateError } = await supabase
+      .from('dao_proposals')
+      .update({
+        total_votes: newTotalVotes,
+        yes_votes: newYesVotes,
+        no_votes: newNoVotes,
+        abstain_votes: newAbstainVotes
+      })
+      .eq('id', proposalId);
+
+    if (updateError) {
+      // Console statement removed
+      if (updateError.message.includes('relation') || updateError.message.includes('does not exist')) {
+        throw new Error('DAO voting system is not set up yet. Please contact an administrator.');
+      }
+      throw new Error(`Failed to update vote counts: ${updateError.message}`);
+    }
+
+    // Console statement removed
+
   }
 
   /**
@@ -347,8 +342,8 @@ export class DAOService {
       if (error && error.code !== 'PGRST116') throw error; // PGRST116 = no rows returned
       
       return data?.choice || null;
-    } catch (error) {
-      console.error('Error getting user vote:', error);
+    } catch {
+      // Console statement removed
       return null;
     }
   }
@@ -357,44 +352,34 @@ export class DAOService {
    * Start a proposal (change status from draft to active)
    */
   static async startProposal(proposalId: string): Promise<void> {
-    try {
-      const now = new Date();
-      const endTime = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000); // 7 days from now
+    const now = new Date();
+    const endTime = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000); // 7 days from now
 
-      const { error } = await supabase
-        .from('dao_proposals')
-        .update({
-          status: 'active',
-          start_time: now.toISOString(),
-          end_time: endTime.toISOString()
-        })
-        .eq('id', proposalId);
+    const { error } = await supabase
+      .from('dao_proposals')
+      .update({
+        status: 'active',
+        start_time: now.toISOString(),
+        end_time: endTime.toISOString()
+      })
+      .eq('id', proposalId);
 
-      if (error) throw error;
-    } catch (error) {
-      console.error('Error starting proposal:', error);
-      throw error;
-    }
+    if (error) throw error;
   }
 
   /**
    * Execute a passed proposal
    */
   static async executeProposal(proposalId: string): Promise<void> {
-    try {
-      const { error } = await supabase
-        .from('dao_proposals')
-        .update({
-          status: 'executed',
-          execution_time: new Date().toISOString()
-        })
-        .eq('id', proposalId);
+    const { error } = await supabase
+      .from('dao_proposals')
+      .update({
+        status: 'executed',
+        execution_time: new Date().toISOString()
+      })
+      .eq('id', proposalId);
 
-      if (error) throw error;
-    } catch (error) {
-      console.error('Error executing proposal:', error);
-      throw error;
-    }
+    if (error) throw error;
   }
 
   /**
@@ -409,61 +394,55 @@ export class DAOService {
     category: string;
     voting_type: 'simple_majority' | 'super_majority';
   }): Promise<DAOProposal> {
-    try {
-      const { data, error } = await supabase
-        .from('dao_proposals')
-        .insert({
-          ...proposalData,
-          status: 'draft'
-        })
-        .select()
-        .single();
+    const { data, error } = await supabase
+      .from('dao_proposals')
+      .insert({
+        ...proposalData,
+        status: 'draft'
+      })
+      .select()
+      .single();
 
-      if (error) throw error;
+    if (error) throw error;
 
-      return {
-        id: data.id,
-        dao_id: data.dao_id,
-        proposer_id: data.proposer_id,
-        title: data.title,
-        description: data.description,
-        full_description: data.full_description,
-        category: data.category,
-        voting_type: data.voting_type,
-        status: data.status,
-        start_time: data.start_time,
-        end_time: data.end_time,
-        execution_time: data.execution_time,
-        total_votes: data.total_votes || 0,
-        yes_votes: data.yes_votes || 0,
-        no_votes: data.no_votes || 0,
-        abstain_votes: data.abstain_votes || 0,
-        participation_rate: data.participation_rate || 0,
-        treasury_impact_amount: data.treasury_impact_amount || 0,
-        treasury_impact_currency: data.treasury_impact_currency || 'SOL',
-        tags: data.tags || [],
-        created_at: data.created_at,
-        updated_at: data.updated_at,
-        dao_name: 'RAC Rewards DAO',
-        proposer_email: 'unknown@example.com',
-        proposer_tokens: 0,
-        voting_status: 'inactive',
-        can_vote: false,
-        can_execute: false
-      };
-    } catch (error) {
-      console.error('Error creating proposal:', error);
-      throw error;
-    }
+    return {
+      id: data.id,
+      dao_id: data.dao_id,
+      proposer_id: data.proposer_id,
+      title: data.title,
+      description: data.description,
+      full_description: data.full_description,
+      category: data.category,
+      voting_type: data.voting_type,
+      status: data.status,
+      start_time: data.start_time,
+      end_time: data.end_time,
+      execution_time: data.execution_time,
+      total_votes: data.total_votes || 0,
+      yes_votes: data.yes_votes || 0,
+      no_votes: data.no_votes || 0,
+      abstain_votes: data.abstain_votes || 0,
+      participation_rate: data.participation_rate || 0,
+      treasury_impact_amount: data.treasury_impact_amount || 0,
+      treasury_impact_currency: data.treasury_impact_currency || 'SOL',
+      tags: data.tags || [],
+      created_at: data.created_at,
+      updated_at: data.updated_at,
+      dao_name: 'RAC Rewards DAO',
+      proposer_email: 'unknown@example.com',
+      proposer_tokens: 0,
+      voting_status: 'inactive',
+      can_vote: false,
+      can_execute: false
+    };
   }
 
   /**
    * Get DAO statistics
    */
   static async getDAOStats(daoId: string): Promise<DAOStats> {
-    try {
-      // Get member count
-      const { count: totalMembers } = await supabase
+    // Get member count
+    const { count: totalMembers } = await supabase
         .from('dao_members')
         .select('*', { count: 'exact', head: true })
         .eq('dao_id', daoId)
@@ -471,7 +450,7 @@ export class DAOService {
 
       // Get active member count (members active in last 30 days)
       const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
-      const { count: activeMembers } = await supabase
+    const { count: activeMembers } = await supabase
         .from('dao_members')
         .select('*', { count: 'exact', head: true })
         .eq('dao_id', daoId)
@@ -479,19 +458,19 @@ export class DAOService {
         .gte('last_active_at', thirtyDaysAgo);
 
       // Get proposal counts
-      const { count: totalProposals } = await supabase
+    const { count: totalProposals } = await supabase
         .from('dao_proposals')
         .select('*', { count: 'exact', head: true })
         .eq('dao_id', daoId);
 
-      const { count: activeProposals } = await supabase
+    const { count: activeProposals } = await supabase
         .from('dao_proposals')
         .select('*', { count: 'exact', head: true })
         .eq('dao_id', daoId)
         .eq('status', 'active');
 
       // Calculate participation rate
-      const { data: recentProposals } = await supabase
+    const { data: recentProposals } = await supabase
         .from('dao_proposals')
         .select('participation_rate')
         .eq('dao_id', daoId)
@@ -504,7 +483,7 @@ export class DAOService {
         : 0;
 
       // Calculate average voting power
-      const { data: members } = await supabase
+    const { data: members } = await supabase
         .from('dao_members')
         .select('voting_power')
         .eq('dao_id', daoId)
@@ -524,20 +503,15 @@ export class DAOService {
         participation_rate: avgParticipation,
         average_voting_power: avgVotingPower
       };
-    } catch (error) {
-      console.error('Error loading DAO stats:', error);
-      throw error;
-    }
   }
 
   /**
    * Join a DAO (create membership)
    */
   static async joinDAO(daoId: string, userId: string, userEmail: string, userFullName: string): Promise<DAOMember> {
-    try {
-      // Check if user is already a member
-      const existingMember = await this.getUserMembership(daoId, userId);
-      if (existingMember) {
+    // Check if user is already a member
+    const existingMember = await this.getUserMembership(daoId, userId);
+    if (existingMember) {
         throw new Error('User is already a member of this DAO');
       }
 
@@ -556,7 +530,7 @@ export class DAOService {
         .select()
         .single();
 
-      if (error) throw error;
+    if (error) throw error;
 
       return {
         id: data.id,
@@ -572,9 +546,5 @@ export class DAOService {
         user_email: data.user_email,
         user_full_name: data.user_full_name
       };
-    } catch (error) {
-      console.error('Error joining DAO:', error);
-      throw error;
-    }
   }
 }
