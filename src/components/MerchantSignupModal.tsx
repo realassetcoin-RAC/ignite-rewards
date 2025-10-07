@@ -8,7 +8,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
-import { Check, Loader2, Building2, Star, ArrowRight, Zap, Rocket, Cloud, AlertCircle, CheckCircle } from "lucide-react";
+import { Check, Loader2, Building2, Star, ArrowRight, Zap, Rocket, Cloud, AlertCircle } from "lucide-react";
 import {
   Carousel,
   CarouselContent,
@@ -17,10 +17,10 @@ import {
   CarouselPrevious,
   type CarouselApi,
 } from "@/components/ui/carousel";
-import { supabase } from "@/lib/supabaseClient";
+import { databaseAdapter } from "@/lib/databaseAdapter";
 import { useNavigate } from "react-router-dom";
 import { createModuleLogger } from "@/utils/consoleReplacer";
-import { merchantSignupSchema, validateFormData, useFieldValidation, businessNameSchema, nameSchema, emailSchema, passwordSchema, phoneSchema, urlSchema, industrySchema, citySchema, INDUSTRY_OPTIONS, validateCityWithAPI } from "@/utils/validation";
+import { merchantSignupSchema, validateFormData, useFieldValidation, businessNameSchema, nameSchema, emailSchema, passwordSchema, phoneSchema, urlSchema, industrySchema, citySchema, INDUSTRY_OPTIONS } from "@/utils/validation";
 
 /**
  * Merchant subscription plan interface
@@ -73,6 +73,7 @@ interface MerchantForm {
   industry: string;
   city: string;
   country: string;
+  address?: string;
 }
 
 
@@ -224,102 +225,47 @@ const MerchantSignupModal: React.FC<MerchantSignupModalProps> = ({ isOpen, onClo
       setPlansLoading(true);
       logger.debug('Starting to load subscription plans');
       
-      // Use the new function that filters by validity dates
-      const { data, error } = await (supabase as any)
-        .rpc('get_valid_subscription_plans');
+      // Query public.merchant_subscription_plans directly (Docker Postgres)
+      const { data, error } = await databaseAdapter
+        .from('merchant_subscription_plans')
+        .select('*')
+        .eq('is_active', true)
+        .order('plan_number', { ascending: true });
       
-      logger.debug('RPC call result', { data, error });
+      logger.debug('Plans query result', { data, error });
       
       if (error) {
-        logger.error('RPC function failed', error);
-        logger.debug('Trying fallback to direct table query');
-        
-        // Fallback to direct table query if function doesn't exist yet
-        const { data: fallbackData, error: fallbackError } = await supabase
-          .from('merchant_subscription_plans')
-          .select('*')
-          .eq('is_active', true)
-          .order('plan_number', { ascending: true });
-        
-        logger.debug('Fallback query result', { fallbackData, fallbackError });
-        
-        if (fallbackError) {
-          logger.error('Fallback query also failed', fallbackError);
-          toast({
-            title: "Error",
-            description: "Could not load subscription plans. Please try again later or contact support.",
-            variant: "destructive"
-          });
-          setMerchantPlans([]);
-          return;
-        }
-        
-        if (fallbackData && fallbackData.length > 0) {
-          logger.info('Fallback data received', { count: fallbackData.length, plans: 'plans' });
-          const convertedPlans: MerchantPlan[] = fallbackData.map((plan: any) => ({
-            id: plan.id,
-            name: plan.name,
-            price: plan.price_monthly || 0,
-            priceYearly: plan.price_yearly || 0,
-            period: "month",
-            popular: plan.popular || false,
-            features: Array.isArray(plan.features) ? plan.features : [],
-            monthlyPoints: plan.monthly_points || 0,
-            monthlyTransactions: plan.monthly_transactions || 0,
-            planNumber: plan.plan_number || 0,
-            validFrom: plan.valid_from,
-            validUntil: plan.valid_until
-          }));
-          
-          logger.debug('Converted plans', convertedPlans);
-          setMerchantPlans(convertedPlans);
-          logger.info('Loaded subscription plans (fallback)', { count: convertedPlans.length });
-        } else {
-          logger.warn('No fallback data received');
-        }
+        logger.error('Plans query failed', error);
+        toast({
+          title: "Error",
+          description: "Could not load subscription plans. Please try again later or contact support.",
+          variant: "destructive"
+        });
+        setMerchantPlans([]);
         return;
       }
 
       if (data && Array.isArray(data) && data.length > 0) {
-        logger.info('RPC data received', { count: data.length, plans: 'plans' });
-        logger.debug('RPC data', data);
+        logger.info('Plans loaded', { count: data.length, plans: 'plans' });
+        logger.debug('Plans data', data);
         
         // Convert to MerchantPlan format
         const convertedPlans: MerchantPlan[] = data.map((plan: any) => {
-          // Convert features object to array of strings
+          // Use features directly from database
           let featuresArray: string[] = [];
-          if (plan.features && typeof plan.features === 'object') {
+          logger.debug('Processing plan features', { planName: plan.name, features: plan.features, featuresType: typeof plan.features });
+          
+          if (Array.isArray(plan.features)) {
+            featuresArray = plan.features;
+          } else if (plan.features && typeof plan.features === 'object') {
             featuresArray = Object.entries(plan.features)
               .filter(([, value]) => value === true)
               .map(([key]) => key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()));
-          } else if (Array.isArray(plan.features)) {
-            featuresArray = plan.features;
           }
           
-          // Add default features based on plan
-          const defaultFeatures = [
-            'Loyalty Program Management',
-            'Customer Analytics',
-            'Email Marketing',
-            'QR Code Generation'
-          ];
+          logger.debug('Processed features array', { planName: plan.name, featuresArray });
           
-          // Add plan-specific features
-          if (plan.plan_number >= 2) {
-            featuresArray.push('Custom Branding');
-          }
-          if (plan.plan_number >= 3) {
-            featuresArray.push('Priority Support');
-          }
-          if (plan.plan_number >= 4) {
-            featuresArray.push('API Access');
-          }
-          if (plan.plan_number >= 5) {
-            featuresArray.push('White Label Solution');
-          }
-          
-          // Combine with default features
-          featuresArray = [...new Set([...defaultFeatures, ...featuresArray])];
+          // Use only the features from the database - no hardcoded overrides
           
           return {
             id: plan.id,
@@ -337,7 +283,7 @@ const MerchantSignupModal: React.FC<MerchantSignupModalProps> = ({ isOpen, onClo
           };
         });
         
-        logger.debug('Converted plans from RPC', convertedPlans);
+        logger.debug('Converted plans', convertedPlans);
         setMerchantPlans(convertedPlans);
         logger.info('Set merchant plans state', { count: convertedPlans.length, plans: 'plans' });
       } else {
@@ -532,7 +478,7 @@ const MerchantSignupModal: React.FC<MerchantSignupModalProps> = ({ isOpen, onClo
     
     try {
       // Create merchant account with Supabase Auth
-      const { data, error } = await supabase.auth.signUp({
+      const { data, error } = await databaseAdapter.supabase.auth.signUp({
         email: merchantForm.email,
         password: merchantForm.password
       });
@@ -724,12 +670,22 @@ const MerchantSignupModal: React.FC<MerchantSignupModalProps> = ({ isOpen, onClo
                                   {/* Features List */}
                                   <div className="flex-1 mb-6 flex justify-center">
                                     <div className="space-y-2 w-full max-w-xs">
-                                      {plan.features?.slice(0, 7).map((feature, featureIndex) => (
-                                        <div key={featureIndex} className="flex items-center text-xs text-slate-200 bg-white/5 rounded-md px-2 py-1 border border-white/10">
-                                          <Check className="w-3 h-3 text-emerald-400 mr-2 flex-shrink-0" />
-                                          <span className="font-medium">{feature}</span>
+                                      {(() => {
+                                        console.log('Rendering features for plan:', plan.name, 'features:', plan.features);
+                                        return null;
+                                      })()}
+                                      {plan.features && plan.features.length > 0 ? (
+                                        plan.features.slice(0, 7).map((feature, featureIndex) => (
+                                          <div key={featureIndex} className="flex items-center text-xs text-slate-200 bg-white/5 rounded-md px-2 py-1 border border-white/10">
+                                            <Check className="w-3 h-3 text-emerald-400 mr-2 flex-shrink-0" />
+                                            <span className="font-medium">{feature}</span>
+                                          </div>
+                                        ))
+                                      ) : (
+                                        <div className="text-xs text-slate-400 text-center">
+                                          No features available
                                         </div>
-                                      ))}
+                                      )}
                                     </div>
                                   </div>
                                   
@@ -941,7 +897,7 @@ const MerchantSignupModal: React.FC<MerchantSignupModalProps> = ({ isOpen, onClo
                 <Label htmlFor="industry">Industry</Label>
                 <Select
                   value={merchantForm.industry}
-                  onValueChange={(value) => handleInputChange({ target: { name: 'industry', value } })}
+                  onValueChange={(value) => setMerchantForm(prev => ({ ...prev, industry: value }))}
                   disabled={loading}
                 >
                   <SelectTrigger className={industryValidation.error ? 'border-red-500 focus:border-red-500' : ''}>

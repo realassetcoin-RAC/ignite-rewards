@@ -21,7 +21,6 @@ import {
   LogOut, 
   User, 
   Settings, 
-  Sparkles, 
   Shield, 
   ArrowRight,
   Play,
@@ -164,9 +163,11 @@ const EnhancedHeroSection = () => {
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2">
-              <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-                <Sparkles className="h-5 w-5 text-primary-foreground" />
-              </div>
+              <img 
+                src="/pointbridge-logo.jpg" 
+                alt="PointBridge Logo" 
+                className="w-8 h-8 rounded-lg object-contain"
+              />
               <h1 className="text-xl font-bold text-foreground">PointBridge</h1>
             </div>
             
