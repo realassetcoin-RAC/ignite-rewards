@@ -1,7 +1,6 @@
 // NFT Wallet Service - Handles both Custodial and Non-Custodial NFTs
 // Supports Web3 wallet integration (Phantom, MetaMask, etc.)
 
-// import { supabase } from '@/integrations/supabase/client';
 
 // Types for wallet integration
 export interface WalletConnection {

@@ -11,8 +11,7 @@ import {
   Shield, 
   Users, 
   Zap,
-  ArrowLeft,
-  Sparkles
+  ArrowLeft
 } from "lucide-react";
 import { Link } from "react-router-dom";
 
@@ -56,9 +55,11 @@ const ContactUs = () => {
             <div className="flex items-center space-x-4">
               <div className="flex items-center space-x-3">
                 <div className="relative">
-                  <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-blue-500 rounded-xl flex items-center justify-center shadow-lg shadow-purple-500/25">
-                    <Sparkles className="h-6 w-6 text-white" />
-                  </div>
+              <img
+                src="/bridgepoint-logo.jpg"
+                alt="BridgePoint Logo"
+                className="w-16 h-16 rounded-xl object-contain shadow-lg"
+              />
                   <div className="absolute -top-1 -right-1 w-4 h-4 bg-gradient-to-r from-pink-500 to-red-500 rounded-full animate-pulse"></div>
                 </div>
                 <div>

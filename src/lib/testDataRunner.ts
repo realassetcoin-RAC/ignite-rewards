@@ -1,6 +1,5 @@
 import { ComprehensiveTestDataService } from './comprehensiveTestDataService';
 import { DAOService } from './daoService';
-// import { supabase } from '@/integrations/supabase/client';
 
 export interface TestResult {
   test: string;

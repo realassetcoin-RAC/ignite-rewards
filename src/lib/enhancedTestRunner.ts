@@ -1,6 +1,6 @@
 import { EnhancedTestDataService } from './enhancedTestDataService';
 import { DAOService } from './daoService';
-import { supabase } from '@/integrations/supabase/client';
+import { databaseAdapter } from '@/lib/databaseAdapter';
 
 export interface TestResult {
   test: string;

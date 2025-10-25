@@ -1,10 +1,10 @@
-import { supabase } from '@/integrations/supabase/client';
+import { databaseAdapter } from '@/lib/databaseAdapter';
 // import { DAOProposal, DAOMember, DAOOrganization } from '@/types/dao';
 
 export interface TestDataResult {
   success: boolean;
   message: string;
-  data?: Record<string, unknown>;
+  data?: any;
   error?: string;
 }
 
@@ -27,7 +27,7 @@ export class EnhancedTestDataService {
    */
   static async createComprehensiveTestData(): Promise<TestDataResult> {
     try {
-      // Console statement removed
+      console.log('🚀 Creating comprehensive test data with 100+ records...');
 
       // Step 1: Create DAO tables if they don't exist
       await this.createDAOTables();
@@ -65,7 +65,7 @@ export class EnhancedTestDataService {
       // Get final summary
       const summary = await this.getTestDataSummary();
 
-      // Console statement removed
+      console.log('🎉 Comprehensive test data created successfully!');
       return {
         success: true,
         message: 'Comprehensive test data created successfully',
@@ -79,7 +79,7 @@ export class EnhancedTestDataService {
         }
       };
     } catch (error) {
-      // Console statement removed
+      console.error('❌ Error creating comprehensive test data:', error);
       return {
         success: false,
         message: 'Unexpected error occurred',
@@ -92,10 +92,10 @@ export class EnhancedTestDataService {
    * Create DAO tables if they don't exist
    */
   private static async createDAOTables(): Promise<void> {
-    // Console statement removed
+    console.log('🏗️ Creating DAO tables...');
 
     // Create dao_organizations table
-    await supabase.rpc('exec_sql', {
+    await databaseAdapter.supabase.rpc('exec_sql', {
       sql: `
         CREATE TABLE IF NOT EXISTS public.dao_organizations (
           id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -124,7 +124,7 @@ export class EnhancedTestDataService {
     });
 
     // Create dao_members table
-    await supabase.rpc('exec_sql', {
+    await databaseAdapter.supabase.rpc('exec_sql', {
       sql: `
         CREATE TABLE IF NOT EXISTS public.dao_members (
           id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -145,7 +145,7 @@ export class EnhancedTestDataService {
     });
 
     // Create dao_proposals table
-    await supabase.rpc('exec_sql', {
+    await databaseAdapter.supabase.rpc('exec_sql', {
       sql: `
         CREATE TABLE IF NOT EXISTS public.dao_proposals (
           id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -178,7 +178,7 @@ export class EnhancedTestDataService {
     });
 
     // Create dao_votes table
-    await supabase.rpc('exec_sql', {
+    await databaseAdapter.supabase.rpc('exec_sql', {
       sql: `
         CREATE TABLE IF NOT EXISTS public.dao_votes (
           id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -197,7 +197,7 @@ export class EnhancedTestDataService {
     });
 
     // Enable RLS and create policies
-    await supabase.rpc('exec_sql', {
+    await databaseAdapter.supabase.rpc('exec_sql', {
       sql: `
         ALTER TABLE public.dao_organizations ENABLE ROW LEVEL SECURITY;
         ALTER TABLE public.dao_members ENABLE ROW LEVEL SECURITY;
@@ -206,7 +206,7 @@ export class EnhancedTestDataService {
       `
     });
 
-    // Console statement removed
+    console.log('✅ DAO tables created successfully');
   }
 
   /**
@@ -214,7 +214,7 @@ export class EnhancedTestDataService {
    */
   private static async createDAOTestData(): Promise<TestDataResult> {
     try {
-      // Console statement removed
+      console.log('🗳️ Creating DAO test data with 100+ records...');
 
       // Clear existing test data
       await this.clearDAOTestData();
@@ -243,7 +243,7 @@ export class EnhancedTestDataService {
         return votes;
       }
 
-      // Console statement removed
+      console.log('✅ DAO test data created successfully');
       return {
         success: true,
         message: 'DAO test data created successfully',
@@ -255,7 +255,7 @@ export class EnhancedTestDataService {
         }
       };
     } catch (error) {
-      // Console statement removed
+      console.error('❌ Error creating DAO test data:', error);
       return {
         success: false,
         message: 'Failed to create DAO test data',
@@ -349,7 +349,7 @@ export class EnhancedTestDataService {
   /**
    * Create 50 DAO members across all organizations
    */
-  private static async createDAOMembers(organizations: Record<string, unknown>[]): Promise<TestDataResult> {
+  private static async createDAOMembers(organizations: any[]): Promise<TestDataResult> {
     const members = [];
     const roles = ['admin', 'moderator', 'member'];
     // const categories = ['governance', 'treasury', 'technical', 'community', 'partnership', 'marketing', 'general'];
@@ -393,7 +393,7 @@ export class EnhancedTestDataService {
   /**
    * Create 100 DAO proposals across all organizations
    */
-  private static async createDAOProposals(organizations: Record<string, unknown>[], members: Record<string, unknown>[]): Promise<TestDataResult> {
+  private static async createDAOProposals(organizations: any[], members: any[]): Promise<TestDataResult> {
     const proposals = [];
     const categories = ['governance', 'treasury', 'technical', 'community', 'partnership', 'marketing', 'general'];
     const votingTypes = ['simple_majority', 'super_majority', 'unanimous', 'weighted', 'quadratic'];
@@ -474,7 +474,7 @@ export class EnhancedTestDataService {
   /**
    * Create 200 DAO votes across all proposals
    */
-  private static async createDAOVotes(proposals: Record<string, unknown>[], members: Record<string, unknown>[]): Promise<TestDataResult> {
+  private static async createDAOVotes(proposals: any[], members: any[]): Promise<TestDataResult> {
     const votes = [];
     const choices = ['yes', 'no', 'abstain'];
     const reasons = [
@@ -538,114 +538,148 @@ export class EnhancedTestDataService {
    */
   private static async createMerchantSubscriptionPlans(): Promise<TestDataResult> {
     try {
-      // Console statement removed
+      console.log('💳 Creating merchant subscription plans...');
 
       const plans = [
         {
-          name: 'StartUp',
-          description: 'Perfect for small businesses getting started',
-          price_monthly: 20.00,
-          price_yearly: 150.00,
+          name: 'Free Trial',
+          description: 'Experience our platform with full access to all features for 14 days',
+          price_monthly: 0.00,
+          price_yearly: 0.00,
           monthly_points: 100,
+          monthly_transactions: 10,
+          features: [
+            'Full platform access for 14 days',
+            'Up to 10 transactions',
+            'Basic customer management',
+            'Email support',
+            'Basic analytics dashboard',
+            'QR code generation',
+            'Mobile app access'
+          ],
+          trial_days: 14,
+          is_active: true,
+          popular: false,
+          plan_number: 0
+        },
+        {
+          name: 'Starter',
+          description: 'Perfect for small businesses and startups looking to build customer loyalty',
+          price_monthly: 29.99,
+          price_yearly: 299.99,
+          monthly_points: 1000,
           monthly_transactions: 100,
-          features: {
-            support: "email_chat",
-            analytics: "standard",
-            points_limit: 100,
-            max_merchants: 1,
-            email_accounts: 1,
-            max_transactions: 100,
-            transactions_limit: 100,
-          },
+          features: [
+            'Basic loyalty program setup',
+            'Up to 100 transactions per month',
+            'Customer database management',
+            'Email support (24-48 hour response)',
+            'Basic analytics and reporting',
+            'QR code generation',
+            'Mobile app for customers',
+            'Basic email marketing tools',
+            'Social media integration',
+            'Up to 2 staff accounts'
+          ],
           trial_days: 14,
           is_active: true,
           popular: false,
           plan_number: 1
         },
         {
-          name: 'Momentum',
-          description: 'Ideal for growing businesses',
-          price_monthly: 50.00,
-          price_yearly: 500.00,
-          monthly_points: 300,
-          monthly_transactions: 300,
-          features: {
-            support: "email_chat",
-            analytics: "standard",
-            points_limit: 300,
-            max_merchants: 2,
-            email_accounts: 2,
-            max_transactions: 300,
-            transactions_limit: 300,
-          },
-          trial_days: 14,
-          is_active: true,
-          popular: false,
-          plan_number: 2
-        },
-        {
-          name: 'Energizer',
-          description: 'For established businesses with high volume',
-          price_monthly: 100.00,
-          price_yearly: 1000.00,
-          monthly_points: 600,
-          monthly_transactions: 600,
-          features: {
-            support: "email_chat",
-            analytics: "advanced",
-            points_limit: 600,
-            max_merchants: 3,
-            email_accounts: 3,
-            max_transactions: 600,
-            transactions_limit: 600,
-          },
+          name: 'Growth',
+          description: 'Ideal for growing businesses that need more advanced features and higher limits',
+          price_monthly: 79.99,
+          price_yearly: 799.99,
+          monthly_points: 5000,
+          monthly_transactions: 500,
+          features: [
+            'Advanced loyalty program features',
+            'Up to 500 transactions per month',
+            'Advanced customer segmentation',
+            'Priority email support (12-24 hour response)',
+            'Advanced analytics and reporting',
+            'Custom branding options',
+            'API access for integrations',
+            'Referral system',
+            'Multi-location support',
+            'Advanced email marketing',
+            'Social media management',
+            'Up to 5 staff accounts',
+            'Custom reward rules',
+            'A/B testing for campaigns'
+          ],
           trial_days: 14,
           is_active: true,
           popular: true,
+          plan_number: 2
+        },
+        {
+          name: 'Professional',
+          description: 'For established businesses requiring enterprise-level features and support',
+          price_monthly: 199.99,
+          price_yearly: 1999.99,
+          monthly_points: 15000,
+          monthly_transactions: 1500,
+          features: [
+            'Enterprise loyalty program features',
+            'Up to 1500 transactions per month',
+            'Advanced customer analytics',
+            '24/7 phone and email support',
+            'Real-time analytics dashboard',
+            'White-label solution options',
+            'Full API access with documentation',
+            'Advanced referral system',
+            'Multi-location management',
+            'Custom integrations',
+            'Dedicated account manager',
+            'Advanced email marketing automation',
+            'Social media management suite',
+            'Up to 15 staff accounts',
+            'Custom reward algorithms',
+            'Advanced A/B testing',
+            'Priority feature requests',
+            'Custom reporting'
+          ],
+          trial_days: 30,
+          is_active: true,
+          popular: false,
           plan_number: 3
         },
         {
-          name: 'Cloud9',
-          description: 'Premium plan for large enterprises',
-          price_monthly: 250.00,
-          price_yearly: 2500.00,
-          monthly_points: 1800,
-          monthly_transactions: 1800,
-          features: {
-            support: "priority_24_7",
-            analytics: "advanced",
-            points_limit: 1800,
-            max_merchants: 5,
-            email_accounts: 5,
-            max_transactions: 1800,
-            transactions_limit: 1800,
-          },
-          trial_days: 14,
+          name: 'Enterprise',
+          description: 'For large businesses and enterprises requiring unlimited features and dedicated support',
+          price_monthly: 499.99,
+          price_yearly: 4999.99,
+          monthly_points: 50000,
+          monthly_transactions: 5000,
+          features: [
+            'Unlimited loyalty program features',
+            'Up to 5000 transactions per month',
+            'Enterprise-grade customer analytics',
+            '24/7 dedicated support team',
+            'Real-time analytics with custom dashboards',
+            'Full white-label solution',
+            'Unlimited API access',
+            'Advanced referral and affiliate system',
+            'Unlimited multi-location support',
+            'Custom integrations and development',
+            'Dedicated success manager',
+            'Advanced email marketing automation',
+            'Enterprise social media management',
+            'Unlimited staff accounts',
+            'Custom reward algorithms and AI',
+            'Advanced A/B testing and optimization',
+            'Priority feature development',
+            'Custom reporting and analytics',
+            'SLA guarantees',
+            'Onboarding and training',
+            'Custom contract terms'
+          ],
+          trial_days: 30,
           is_active: true,
           popular: false,
           plan_number: 4
-        },
-        {
-          name: 'Super',
-          description: 'Ultimate plan with unlimited features',
-          price_monthly: 500.00,
-          price_yearly: 5000.00,
-          monthly_points: 4000,
-          monthly_transactions: 4000,
-          features: {
-            support: "dedicated_manager_24_7",
-            analytics: "custom",
-            points_limit: 4000,
-            max_merchants: -1,
-            email_accounts: -1,
-            max_transactions: 4000,
-            transactions_limit: 4000,
-            dedicated_account_manager: true,
-          },
-          trial_days: 14,
-          is_active: true,
-          popular: false,
-          plan_number: 5
         }
       ];
 
@@ -681,7 +715,7 @@ export class EnhancedTestDataService {
    */
   private static async createMerchantTestData(): Promise<TestDataResult> {
     try {
-      // Console statement removed
+      console.log('🏪 Creating merchant test data...');
 
       const merchants = [];
       const businessTypes = ['Retail', 'Restaurant', 'Service', 'E-commerce', 'Entertainment'];
@@ -733,7 +767,7 @@ export class EnhancedTestDataService {
    */
   private static async createTransactionTestData(): Promise<TestDataResult> {
     try {
-      // Console statement removed
+      console.log('💳 Creating transaction test data...');
 
       const transactions = [];
       const statuses = ['completed', 'pending', 'failed', 'cancelled'];
@@ -784,7 +818,7 @@ export class EnhancedTestDataService {
    */
   private static async createMarketplaceTestData(): Promise<TestDataResult> {
     try {
-      // Console statement removed
+      console.log('🛒 Creating marketplace test data...');
 
       const listings = [];
       const assetTypes = ['NFT', 'Token', 'Service', 'Product'];
@@ -836,13 +870,13 @@ export class EnhancedTestDataService {
    * Clear DAO test data
    */
   private static async clearDAOTestData(): Promise<void> {
-    // Console statement removed
+    console.log('🧹 Clearing existing DAO test data...');
 
     // Clear in order due to foreign key constraints
-    await supabase.from('dao_votes').delete().neq('id', '00000000-0000-0000-0000-000000000000');
-    await supabase.from('dao_proposals').delete().neq('id', '00000000-0000-0000-0000-000000000000');
-    await supabase.from('dao_members').delete().neq('id', '00000000-0000-0000-0000-000000000000');
-    await supabase.from('dao_organizations').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+    await databaseAdapter.supabase.from('dao_votes').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+    await databaseAdapter.supabase.from('dao_proposals').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+    await databaseAdapter.supabase.from('dao_members').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+    await databaseAdapter.supabase.from('dao_organizations').delete().neq('id', '00000000-0000-0000-0000-000000000000');
   }
 
   /**
@@ -850,18 +884,18 @@ export class EnhancedTestDataService {
    */
   static async getTestDataSummary(): Promise<TestDataResult> {
     try {
-      // Console statement removed
+      console.log('📊 Getting test data summary...');
 
       // Get counts from all tables
       const [orgsResult, membersResult, proposalsResult, votesResult, subscriptionPlansResult, merchantsResult, transactionsResult, listingsResult] = await Promise.all([
-        supabase.from('dao_organizations').select('id', { count: 'exact', head: true }),
-        supabase.from('dao_members').select('id', { count: 'exact', head: true }),
-        supabase.from('dao_proposals').select('id', { count: 'exact', head: true }),
-        supabase.from('dao_votes').select('id', { count: 'exact', head: true }),
-        supabase.from('merchant_subscription_plans').select('id', { count: 'exact', head: true }),
-        supabase.from('merchants').select('id', { count: 'exact', head: true }),
-        supabase.from('loyalty_transactions').select('id', { count: 'exact', head: true }),
-        supabase.from('marketplace_listings').select('id', { count: 'exact', head: true })
+        databaseAdapter.supabase.from('dao_organizations').select('id', { count: 'exact', head: true }),
+        databaseAdapter.supabase.from('dao_members').select('id', { count: 'exact', head: true }),
+        databaseAdapter.supabase.from('dao_proposals').select('id', { count: 'exact', head: true }),
+        databaseAdapter.supabase.from('dao_votes').select('id', { count: 'exact', head: true }),
+        databaseAdapter.supabase.from('merchant_subscription_plans').select('id', { count: 'exact', head: true }),
+        databaseAdapter.supabase.from('merchants').select('id', { count: 'exact', head: true }),
+        databaseAdapter.supabase.from('loyalty_transactions').select('id', { count: 'exact', head: true }),
+        databaseAdapter.supabase.from('marketplace_listings').select('id', { count: 'exact', head: true })
       ]);
 
       const summary: TestDataSummary = {
@@ -877,14 +911,14 @@ export class EnhancedTestDataService {
         listings: listingsResult.count || 0
       };
 
-      // Console statement removed
+      console.log('📊 Test data summary:', summary);
       return {
         success: true,
         message: 'Test data summary retrieved successfully',
         data: summary
       };
     } catch (error) {
-      // Console statement removed
+      console.error('❌ Error getting test data summary:', error);
       return {
         success: false,
         message: 'Failed to get test data summary',
@@ -898,23 +932,23 @@ export class EnhancedTestDataService {
    */
   static async clearAllTestData(): Promise<TestDataResult> {
     try {
-      // Console statement removed
+      console.log('🧹 Clearing all test data...');
 
       // Clear DAO data
       await this.clearDAOTestData();
 
       // Clear other test data
-      await supabase.from('loyalty_transactions').delete().like('id', 'transaction-%');
-      await supabase.from('merchants').delete().like('id', 'merchant-%');
-      await supabase.from('marketplace_listings').delete().like('id', 'listing-%');
+      await databaseAdapter.supabase.from('loyalty_transactions').delete().like('id', 'transaction-%');
+      await databaseAdapter.supabase.from('merchants').delete().like('id', 'merchant-%');
+      await databaseAdapter.supabase.from('marketplace_listings').delete().like('id', 'listing-%');
 
-      // Console statement removed
+      console.log('✅ All test data cleared successfully');
       return {
         success: true,
         message: 'All test data cleared successfully'
       };
     } catch (error) {
-      // Console statement removed
+      console.error('❌ Error clearing test data:', error);
       return {
         success: false,
         message: 'Failed to clear test data',

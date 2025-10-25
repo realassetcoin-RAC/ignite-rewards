@@ -1,7 +1,6 @@
 // Admin Dashboard Error Fix Utilities
 // This module provides enhanced error handling and debugging for admin dashboard
 
-// import { supabase } from "@/integrations/supabase/client";
 
 // Enhanced error logging
 export const logError = (context: string, error: any) => {

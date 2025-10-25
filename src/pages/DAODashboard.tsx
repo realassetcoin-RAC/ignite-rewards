@@ -27,7 +27,7 @@ import {
   MessageSquare,
   ExternalLink
 } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
+import { databaseAdapter } from '@/lib/databaseAdapter';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { 
@@ -87,7 +87,7 @@ const DAODashboard = () => {
 
   const checkUserMembership = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { user } } = await databaseAdapter.supabase.auth.getUser();
       if (!user) {
         setAuthLoading(false);
         return;

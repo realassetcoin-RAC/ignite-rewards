@@ -4,7 +4,7 @@
 
 import { renderHook } from '@testing-library/react';
 import { useSecureAuth } from '../useSecureAuth';
-import { supabase } from '@/integrations/supabase/client';
+import { databaseAdapter } from '@/lib/databaseAdapter';
 import { vi } from 'vitest';
 
 // Mock Supabase client

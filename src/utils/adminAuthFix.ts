@@ -5,7 +5,6 @@
  * It can be run from the browser console to diagnose and resolve problems.
  */
 
-// import { supabase } from '@/integrations/supabase/client';
 
 interface FixResult {
   success: boolean;

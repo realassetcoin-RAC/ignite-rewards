@@ -1,10 +1,10 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Navigate } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { useSecureAuth } from '@/hooks/useSecureAuth';
-import { databaseAdapter } from '@/lib/databaseAdapter';
 import UserNavigation from '@/components/UserNavigation';
 import HomeNavigation from '@/components/HomeNavigation';
 import BreadcrumbNavigation from '@/components/BreadcrumbNavigation';
@@ -16,11 +16,9 @@ import {
   Grid3X3,
   List,
   RefreshCw,
-  Sparkles,
-  Shield,
-  AlertCircle
+  Sparkles
 } from 'lucide-react';
-import racLogo from '@/assets/rac-logo-exact.jpg';
+import racLogo from '@/assets/rac-logo-exact.svg';
 import MarketplaceListingCard from './MarketplaceListingCard';
 import MarketplaceFilters from './MarketplaceFilters';
 import InvestmentModal from './InvestmentModal';
@@ -88,31 +86,13 @@ const MarketplaceMain: React.FC<MarketplaceMainProps> = ({ className = '', embed
     total_pages: 0
   });
   const [userBalance] = useState(10000);
-  const [userProfile, setUserProfile] = useState<Record<string, unknown> | null>(null);
-
-  // Dropdown fix state management
-  const [forceUpdate, setForceUpdate] = useState(0);
-  const [directSort, setDirectSort] = useState('');
-  const directSortRef = useRef('');
   // const [_nftTier] = useState<NFTCardTier | null>(null);
   const [nftMultiplier, setNftMultiplier] = useState(1.0);
-  const [loyaltyCard, setLoyaltyCard] = useState<Record<string, unknown> | null>(null);
+  const [loyaltyCard, setLoyaltyCard] = useState<any>(null);
 
   // All useCallback hooks
   const loadNFTData = useCallback(async () => {
     if (!user?.id) return;
-    
-    // ✅ IMPLEMENT REQUIREMENT: Load user profile to check user type
-    try {
-      const { data: profile } = await databaseAdapter
-        .from('profiles')
-        .select('*')
-        .eq('id', user.id)
-        .single();
-      setUserProfile(profile);
-    } catch {
-      setUserProfile(null);
-    }
     
     try {
       // Load user's loyalty card
@@ -123,8 +103,8 @@ const MarketplaceMain: React.FC<MarketplaceMainProps> = ({ className = '', embed
       // Get NFT multiplier
       const multiplier = await MarketplaceService.getUserNFTMultiplier(user.id);
       setNftMultiplier(multiplier);
-    } catch {
-      // Console statement removed
+    } catch (error) {
+      console.error('Failed to load NFT data:', error);
       // Set default values to prevent UI breaking
       setLoyaltyCard(null);
       setNftMultiplier(1.0);
@@ -137,8 +117,8 @@ const MarketplaceMain: React.FC<MarketplaceMainProps> = ({ className = '', embed
       const data = await MarketplaceService.getListings();
       setListings(data);
       setRetryCount(0); // Reset retry count on success
-    } catch {
-      // Console statement removed
+    } catch (error) {
+      console.error('Failed to load listings:', error);
       setListings([]);
       
       // Only show error toast if we haven't exceeded retry limit
@@ -158,8 +138,8 @@ const MarketplaceMain: React.FC<MarketplaceMainProps> = ({ className = '', embed
     try {
       const data = await MarketplaceService.getMarketplaceStats();
       setStats(data);
-    } catch {
-      // Console statement removed
+    } catch (error) {
+      console.error('Failed to load stats:', error);
       setStats(mockStats);
     }
   }, []);
@@ -178,19 +158,9 @@ const MarketplaceMain: React.FC<MarketplaceMainProps> = ({ className = '', embed
   }, [isRetrying, retryCount, loadListings, loadStats]);
 
   const handleInvest = useCallback((listing: MarketplaceListing) => {
-    // ✅ IMPLEMENT REQUIREMENT: Only non-custodial users can invest directly
-    if (userProfile?.user_type === 'custodial') {
-      toast({
-        title: "Investment Restricted",
-        description: "Custodial users can only invest through RAC tokens. Direct crypto investments are available for non-custodial users.",
-        variant: "destructive"
-      });
-      return;
-    }
-    
     setSelectedListing(listing);
     setShowInvestmentModal(true);
-  }, [userProfile?.user_type, toast]);
+  }, []);
 
   const handleInvestmentSuccess = useCallback((investment: MarketplaceInvestment) => {
     toast({
@@ -206,7 +176,7 @@ const MarketplaceMain: React.FC<MarketplaceMainProps> = ({ className = '', embed
   }, []);
 
   const handleSortChange = useCallback((field: string, direction: 'asc' | 'desc') => {
-    setSort({ field: field as string, direction });
+    setSort({ field: field as any, direction });
   }, []);
 
   const handleLoadMore = useCallback(() => {
@@ -371,16 +341,6 @@ const MarketplaceMain: React.FC<MarketplaceMainProps> = ({ className = '', embed
                 key={listing.id}
                 listing={listing}
                 onInvest={() => {
-                  // ✅ IMPLEMENT REQUIREMENT: Only non-custodial users can invest directly
-                  if (userProfile?.user_type === 'custodial') {
-                    toast({
-                      title: "Investment Restricted",
-                      description: "Custodial users can only invest through RAC tokens. Direct crypto investments are available for non-custodial users.",
-                      variant: "destructive"
-                    });
-                    return;
-                  }
-                  
                   setSelectedListing(listing);
                   setShowInvestmentModal(true);
                 }}
@@ -499,25 +459,6 @@ const MarketplaceMain: React.FC<MarketplaceMainProps> = ({ className = '', embed
           <p className="text-xl text-gray-300 max-w-3xl mx-auto">
             Invest your $RAC tokens in tokenized assets and initiatives. Earn passive income through fractional ownership in the RAC ecosystem.
           </p>
-          
-          {/* ✅ IMPLEMENT REQUIREMENT: User type notice */}
-          {userProfile?.user_type === 'custodial' && (
-            <div className="max-w-3xl mx-auto">
-              <Card className="bg-gradient-to-r from-blue-500/20 to-purple-500/20 border-blue-500/30 backdrop-blur-md">
-                <CardContent className="p-4">
-                  <div className="flex items-center space-x-3">
-                    <Shield className="w-6 h-6 text-blue-400" />
-                    <div>
-                      <h3 className="text-lg font-semibold text-white">Custodial User</h3>
-                      <p className="text-blue-200">
-                        You can invest using RAC tokens only. Direct crypto investments (USDT, SOL, ETH, BTC) are available for non-custodial users.
-                      </p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          )}
         </div>
 
         {/* Stats Cards */}
@@ -622,17 +563,12 @@ const MarketplaceMain: React.FC<MarketplaceMainProps> = ({ className = '', embed
                 <RefreshCw className={`w-4 h-4 mr-2 ${isRetrying ? 'animate-spin' : ''}`} />
                 {isRetrying ? 'Refreshing...' : 'Refresh'}
               </Button>
-              <Select key={`sort-${forceUpdate}`} value={directSort || directSortRef.current || `${sort.field}-${sort.direction}`} onValueChange={(value) => {
+              <Select value={`${sort.field}-${sort.direction}`} onValueChange={(value) => {
                 const [field, direction] = value.split('-');
                 handleSortChange(field, direction as 'asc' | 'desc');
-                setDirectSort(value);
-                directSortRef.current = value;
-                setForceUpdate(prev => prev + 1);
               }}>
                  <SelectTrigger className="w-48 bg-slate-900/60 backdrop-blur-md border border-orange-500/20">
-                  <SelectValue>
-                    {directSort || directSortRef.current || `${sort.field}-${sort.direction}` || 'Sort by'}
-                  </SelectValue>
+                  <SelectValue placeholder="Sort by" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="created_at-desc">Newest First</SelectItem>

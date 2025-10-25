@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,6 +18,7 @@ import {
   type CarouselApi,
 } from "@/components/ui/carousel";
 import { databaseAdapter } from "@/lib/databaseAdapter";
+import { searchCities } from "@/api/citySearch";
 import { useNavigate } from "react-router-dom";
 import { createModuleLogger } from "@/utils/consoleReplacer";
 import { merchantSignupSchema, validateFormData, useFieldValidation, businessNameSchema, nameSchema, emailSchema, passwordSchema, phoneSchema, urlSchema, industrySchema, citySchema, INDUSTRY_OPTIONS } from "@/utils/validation";
@@ -58,6 +59,10 @@ interface MerchantSignupModalProps {
   isOpen: boolean;
   /** Callback function to close the modal */
   onClose: () => void;
+  /** Pre-selected plan from subscription plans page */
+  preselectedPlan?: any;
+  /** Pre-selected billing cycle from subscription plans page */
+  preselectedBillingCycle?: 'monthly' | 'yearly';
 }
 
 /**
@@ -82,7 +87,12 @@ interface MerchantForm {
  * @param {MerchantSignupModalProps} props - The component props
  * @returns {JSX.Element} The merchant signup modal component
  */
-const MerchantSignupModal: React.FC<MerchantSignupModalProps> = ({ isOpen, onClose }) => {
+const MerchantSignupModal: React.FC<MerchantSignupModalProps> = ({ 
+  isOpen, 
+  onClose, 
+  preselectedPlan, 
+  preselectedBillingCycle 
+}) => {
   const logger = createModuleLogger('MerchantSignupModal');
   
   // State management for form and UI
@@ -115,6 +125,7 @@ const MerchantSignupModal: React.FC<MerchantSignupModalProps> = ({ isOpen, onClo
   const [citySuggestions, setCitySuggestions] = useState<any[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [cityInput, setCityInput] = useState("");
+  const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
   // Terms acceptance state
   const [acceptedTerms, setAcceptedTerms] = useState(false);
@@ -141,9 +152,9 @@ const MerchantSignupModal: React.FC<MerchantSignupModalProps> = ({ isOpen, onClo
   }>({ isValidating: false });
 
   /**
-   * Search cities with API Ninjas and show suggestions
+   * Search cities using direct database communication with caching
    */
-  const searchCities = async (query: string) => {
+  const searchCitiesLocal = async (query: string) => {
     if (!query || query.length < 2) {
       setCitySuggestions([]);
       setShowSuggestions(false);
@@ -153,38 +164,23 @@ const MerchantSignupModal: React.FC<MerchantSignupModalProps> = ({ isOpen, onClo
     setCityValidationState({ isValidating: true });
     
     try {
-      const apiKey = process.env.REACT_APP_API_NINJAS_KEY || 'mmukoqC1YD+DnoIYT1bUFQ==3yeUixLPT1Y8IxQt';
-      const url = new URL('https://api.api-ninjas.com/v1/city');
-      url.searchParams.append('name', query.trim());
-      url.searchParams.append('limit', '10');
-
-      const response = await fetch(url.toString(), {
-        headers: {
-          'X-Api-Key': apiKey,
-        },
-      });
-
-      if (!response.ok) {
-        if (response.status === 401) {
-          setCityValidationState({ 
-            isValidating: false,
-            error: 'API key not configured. Please contact support.'
-          });
-          return;
-        }
-        setCityValidationState({ 
-          isValidating: false,
-          error: 'Unable to search cities. Please try again.'
-        });
-        return;
-      }
-
-      const data = await response.json();
+      console.log('🔍 Searching cities via direct database for:', query);
       
-      if (data && data.length > 0) {
-        setCitySuggestions(data);
+      const cities = await searchCities(query.trim());
+
+      if (cities && cities.length > 0) {
+        // Transform API results to match expected format
+        const transformedData = cities.map((city: any) => ({
+          name: city.name,
+          country: city.country,
+          countryCode: city.country_code,
+          display_name: `${city.name}, ${city.country}`
+        }));
+        
+        setCitySuggestions(transformedData);
         setShowSuggestions(true);
         setCityValidationState({ isValidating: false });
+        console.log('✅ Found cities:', transformedData.length);
       } else {
         setCitySuggestions([]);
         setShowSuggestions(false);
@@ -192,6 +188,7 @@ const MerchantSignupModal: React.FC<MerchantSignupModalProps> = ({ isOpen, onClo
           isValidating: false,
           error: 'No cities found. Please check your spelling.'
         });
+        console.log('❌ No cities found for:', query);
       }
     } catch (error) {
       console.error('City search error:', error);
@@ -210,7 +207,7 @@ const MerchantSignupModal: React.FC<MerchantSignupModalProps> = ({ isOpen, onClo
     setMerchantForm(prev => ({
       ...prev,
       city: city.name,
-      country: city.country
+      country: city.countryCode // Use 2-character country code for validation
     }));
     setShowSuggestions(false);
     setCitySuggestions([]);
@@ -224,13 +221,12 @@ const MerchantSignupModal: React.FC<MerchantSignupModalProps> = ({ isOpen, onClo
     try {
       setPlansLoading(true);
       logger.debug('Starting to load subscription plans');
+      console.log('🔧 MerchantSignupModal: Starting to load plans');
       
-      // Query public.merchant_subscription_plans directly (Docker Postgres)
-      const { data, error } = await databaseAdapter
-        .from('merchant_subscription_plans')
-        .select('*')
-        .eq('is_active', true)
-        .order('plan_number', { ascending: true });
+      // Use the direct method to get subscription plans
+      const { data, error } = await databaseAdapter.getSubscriptionPlans();
+      
+      console.log('🔧 MerchantSignupModal: Plans query completed', { data, error });
       
       logger.debug('Plans query result', { data, error });
       
@@ -315,6 +311,44 @@ const MerchantSignupModal: React.FC<MerchantSignupModalProps> = ({ isOpen, onClo
       loadPlans();
     }
   }, [isOpen]);
+
+  // Handle preselected plan from subscription plans page
+  useEffect(() => {
+    if (isOpen && preselectedPlan && merchantPlans.length > 0) {
+      // Find the matching plan in the loaded plans
+      const matchingPlanIndex = merchantPlans.findIndex(plan => 
+        plan.name.toLowerCase() === preselectedPlan.name.toLowerCase()
+      );
+      
+      if (matchingPlanIndex !== -1) {
+        console.log('🔧 Setting preselected plan:', preselectedPlan.name);
+        setSelectedPlan(matchingPlanIndex);
+        setStep('details'); // Skip plan selection, go directly to details
+      }
+      
+      // Set preselected billing cycle
+      if (preselectedBillingCycle) {
+        setBillingPeriod(preselectedBillingCycle);
+      }
+    }
+  }, [isOpen, preselectedPlan, preselectedBillingCycle, merchantPlans]);
+
+  // Add this new useEffect to handle the case when modal opens with preselected plan
+  useEffect(() => {
+    if (isOpen && preselectedPlan) {
+      console.log('🔧 Modal opened with preselected plan, setting step to details');
+      setStep('details');
+    }
+  }, [isOpen, preselectedPlan]);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+    };
+  }, []);
 
 
   /**
@@ -480,7 +514,14 @@ const MerchantSignupModal: React.FC<MerchantSignupModalProps> = ({ isOpen, onClo
       // Create merchant account with Supabase Auth
       const { data, error } = await databaseAdapter.supabase.auth.signUp({
         email: merchantForm.email,
-        password: merchantForm.password
+        password: merchantForm.password,
+        business_name: merchantForm.businessName,
+        contact_name: merchantForm.contactName,
+        phone: merchantForm.phone,
+        website: merchantForm.website,
+        industry: merchantForm.industry,
+        city: merchantForm.city,
+        country: merchantForm.country
       });
 
       if (error) {
@@ -756,10 +797,15 @@ const MerchantSignupModal: React.FC<MerchantSignupModalProps> = ({ isOpen, onClo
           <div className="space-y-6">
             <div className="text-center">
               <Badge variant="outline" className="mb-2">
-                Selected: {merchantPlans[selectedPlan]?.name} - ${billingPeriod === 'yearly' ? merchantPlans[selectedPlan]?.priceYearly : merchantPlans[selectedPlan]?.price}
+                {preselectedPlan ? 'Plan Selected: ' : 'Selected: '}{merchantPlans[selectedPlan]?.name} - ${billingPeriod === 'yearly' ? merchantPlans[selectedPlan]?.priceYearly : merchantPlans[selectedPlan]?.price}
               </Badge>
               <h3 className="text-xl font-semibold mb-2">Business Information</h3>
-              <p className="text-muted-foreground">Fill in your business details to get started</p>
+              <p className="text-muted-foreground">
+                {preselectedPlan 
+                  ? 'Complete your business details to finalize your subscription' 
+                  : 'Fill in your business details to get started'
+                }
+              </p>
             </div>
 
             <form key={formKey} onSubmit={handleSubmit} className="space-y-4 max-w-2xl mx-auto text-left" autoComplete="off">
@@ -920,7 +966,7 @@ const MerchantSignupModal: React.FC<MerchantSignupModalProps> = ({ isOpen, onClo
               </div>
               
               <div className="space-y-2 relative">
-                <Label htmlFor="cityCountry">City, Country *</Label>
+                <Label htmlFor="cityCountry">City *</Label>
                 <Input
                   id="cityCountry"
                   name="cityCountry"
@@ -928,10 +974,12 @@ const MerchantSignupModal: React.FC<MerchantSignupModalProps> = ({ isOpen, onClo
                   onChange={(e) => {
                     setCityInput(e.target.value);
                     // Debounce city search
-                    const timeoutId = setTimeout(() => {
-                      searchCities(e.target.value);
+                    if (searchTimeoutRef.current) {
+                      clearTimeout(searchTimeoutRef.current);
+                    }
+                    searchTimeoutRef.current = setTimeout(() => {
+                      searchCitiesLocal(e.target.value);
                     }, 300);
-                    return () => clearTimeout(timeoutId);
                   }}
                   onFocus={() => {
                     if (citySuggestions.length > 0) {
@@ -980,8 +1028,7 @@ const MerchantSignupModal: React.FC<MerchantSignupModalProps> = ({ isOpen, onClo
                           {city.name}, {city.country}
                         </div>
                         <div className="text-xs text-gray-500">
-                          Population: {city.population?.toLocaleString() || 'N/A'}
-                          {city.is_capital && ' • Capital'}
+                          {city.is_capital && 'Capital'}
                         </div>
                       </div>
                     ))}
@@ -1050,20 +1097,22 @@ const MerchantSignupModal: React.FC<MerchantSignupModalProps> = ({ isOpen, onClo
               </div>
               
               <div className="flex gap-3 pt-4">
-                <Button 
-                  type="button"
-                  variant="outline"
-                  onClick={() => setStep('select')}
-                  disabled={loading}
-                  className="flex-1 border-primary/40 text-primary bg-primary/10 hover:bg-primary/20 backdrop-blur-sm rounded-none"
-                  style={{ borderRadius: '0px' }}
-                >
-                  Back
-                </Button>
+                {!preselectedPlan && (
+                  <Button 
+                    type="button"
+                    variant="outline"
+                    onClick={() => setStep('select')}
+                    disabled={loading}
+                    className="flex-1 border-primary/40 text-primary bg-primary/10 hover:bg-primary/20 backdrop-blur-sm rounded-none"
+                    style={{ borderRadius: '0px' }}
+                  >
+                    Back
+                  </Button>
+                )}
                 <Button 
                   type="submit"
                   disabled={loading || !acceptedTerms || !acceptedPrivacy}
-                  className="flex-1 border-primary/40 text-primary bg-primary/10 hover:bg-primary/20 backdrop-blur-sm rounded-none"
+                  className={`${preselectedPlan ? 'w-full' : 'flex-1'} border-primary/40 text-primary bg-primary/10 hover:bg-primary/20 backdrop-blur-sm rounded-none`}
                   variant="outline"
                   style={{ borderRadius: '0px' }}
                 >

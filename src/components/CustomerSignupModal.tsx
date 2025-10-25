@@ -198,7 +198,7 @@ const CustomerSignupModal: React.FC<CustomerSignupModalProps> = ({ isOpen, onClo
     
     try {
       // Create customer account with Supabase Auth
-      const { data: authData, error } = await supabase.auth.signUp({
+      const { data: authData, error } = await databaseAdapter.supabase.auth.signUp({
         email: customerForm.email,
         password: customerForm.password,
         options: {
@@ -240,8 +240,8 @@ const CustomerSignupModal: React.FC<CustomerSignupModalProps> = ({ isOpen, onClo
         .from('user_solana_wallets')
         .insert({
           user_id: authData.user.id,
-          address: walletAddress,
-          seed_phrase: seedPhrase, // In production, this should be encrypted
+          public_key: walletAddress,
+          seed_phrase_encrypted: btoa(seedPhrase), // In production, use proper encryption
           wallet_type: 'custodial',
           is_active: true
         });
@@ -557,7 +557,7 @@ const CustomerSignupModal: React.FC<CustomerSignupModalProps> = ({ isOpen, onClo
                   </div>
                 )}
                 <p className="text-xs text-muted-foreground">
-                  Have a referral code? Enter it to earn bonus points for both you and your referrer!
+                  Have a referral code? Enter your referrer’s loyalty number (8 characters) to earn bonus points for both of you.
                 </p>
               </div>
               

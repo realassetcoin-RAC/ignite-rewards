@@ -1,11 +1,11 @@
 import { useState, useEffect, useCallback } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { databaseAdapter } from '@/lib/databaseAdapter';
 import { useToast } from '@/hooks/use-toast';
 
 export interface UserRewards {
   id: string;
   user_id: string;
-  solana_address: string;
+  public_key?: string; // align with user_solana_wallets if joined
   total_earned: number;
   total_claimed: number;
   pending_vesting: number;

@@ -1,427 +1,327 @@
--- COMPLETE DATABASE FIX SCRIPT
--- This script creates all missing functions and fixes database issues
--- Apply this script in Supabase Dashboard → SQL Editor
--- Version: 2025-01-15 (Updated)
+-- Complete Database Fix - Create All Missing Tables and Functions
+-- This script creates all missing tables and functions for full compliance
+-- Date: 2025-01-30
 
--- ============================================================================
--- PART 1: CREATE MISSING RPC FUNCTIONS THAT THE APPLICATION EXPECTS
--- ============================================================================
+-- Enable UUID extension if not already enabled
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
--- 1. Create check_admin_access function (CRITICAL - Application expects this)
-CREATE OR REPLACE FUNCTION public.check_admin_access(user_id uuid DEFAULT auth.uid())
-RETURNS boolean
-LANGUAGE plpgsql
-STABLE SECURITY DEFINER
-SET search_path TO 'public, api'
-AS $$
-DECLARE
-  is_admin_user boolean := false;
-  user_role text;
+-- 1. Create NFT Types Table
+CREATE TABLE IF NOT EXISTS public.nft_types (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    nft_name TEXT NOT NULL,
+    display_name TEXT NOT NULL,
+    description TEXT,
+    rarity TEXT NOT NULL DEFAULT 'common',
+    earn_on_spend_ratio DECIMAL(5,2) DEFAULT 1.00,
+    price_usd DECIMAL(10,2) DEFAULT 0.00,
+    is_active BOOLEAN DEFAULT true,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- 2. Create NFT Collections Table
+CREATE TABLE IF NOT EXISTS public.nft_collections (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    collection_name TEXT NOT NULL,
+    description TEXT,
+    total_supply INTEGER DEFAULT 1000,
+    minted_count INTEGER DEFAULT 0,
+    is_active BOOLEAN DEFAULT true,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- 3. Create User NFTs Table
+CREATE TABLE IF NOT EXISTS public.user_nfts (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+    nft_type_id UUID NOT NULL REFERENCES public.nft_types(id) ON DELETE CASCADE,
+    collection_id UUID REFERENCES public.nft_collections(id) ON DELETE SET NULL,
+    token_id TEXT,
+    is_active BOOLEAN DEFAULT true,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- 4. Create Loyalty Networks Table
+CREATE TABLE IF NOT EXISTS public.loyalty_networks (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    network_name TEXT NOT NULL,
+    description TEXT,
+    is_active BOOLEAN DEFAULT true,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- 5. Create User Loyalty Cards Table
+CREATE TABLE IF NOT EXISTS public.user_loyalty_cards (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+    nft_type_id UUID NOT NULL REFERENCES public.nft_types(id) ON DELETE CASCADE,
+    loyalty_number TEXT NOT NULL UNIQUE,
+    card_number TEXT NOT NULL,
+    full_name TEXT NOT NULL,
+    email TEXT NOT NULL,
+    phone TEXT,
+    points_balance INTEGER DEFAULT 0,
+    tier_level TEXT DEFAULT 'bronze',
+    is_active BOOLEAN DEFAULT true,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- 6. Create Loyalty OTP Codes Table
+CREATE TABLE IF NOT EXISTS public.loyalty_otp_codes (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+    network_id UUID NOT NULL REFERENCES public.loyalty_networks(id) ON DELETE CASCADE,
+    mobile_number TEXT NOT NULL,
+    otp_code TEXT NOT NULL,
+    expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
+    is_used BOOLEAN DEFAULT false,
+    used_at TIMESTAMP WITH TIME ZONE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- 7. Create User Solana Wallets Table
+CREATE TABLE IF NOT EXISTS public.user_solana_wallets (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+    public_key TEXT NOT NULL UNIQUE,
+    seed_phrase_encrypted TEXT NOT NULL,
+    is_active BOOLEAN DEFAULT true,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- 8. Create Asset Initiatives Table
+CREATE TABLE IF NOT EXISTS public.asset_initiatives (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    initiative_name TEXT NOT NULL,
+    description TEXT,
+    asset_type TEXT NOT NULL,
+    target_amount DECIMAL(15,2),
+    current_amount DECIMAL(15,2) DEFAULT 0.00,
+    is_active BOOLEAN DEFAULT true,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- 9. Create Asset Investments Table
+CREATE TABLE IF NOT EXISTS public.asset_investments (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+    asset_initiative_id UUID NOT NULL REFERENCES public.asset_initiatives(id) ON DELETE CASCADE,
+    investment_amount DECIMAL(15,2) NOT NULL,
+    currency TEXT NOT NULL DEFAULT 'USDT',
+    status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'confirmed', 'failed', 'cancelled')),
+    wallet_address TEXT NOT NULL,
+    transaction_hash TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- 10. Create Terms Privacy Acceptance Table
+CREATE TABLE IF NOT EXISTS public.terms_privacy_acceptance (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+    terms_accepted BOOLEAN NOT NULL DEFAULT false,
+    privacy_accepted BOOLEAN NOT NULL DEFAULT false,
+    terms_accepted_at TIMESTAMP WITH TIME ZONE,
+    privacy_accepted_at TIMESTAMP WITH TIME ZONE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- 11. Create Merchants Table
+CREATE TABLE IF NOT EXISTS public.merchants (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+    business_name TEXT NOT NULL,
+    business_type TEXT,
+    contact_email TEXT,
+    contact_phone TEXT,
+    address TEXT,
+    is_active BOOLEAN DEFAULT true,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- 12. Create Referral Campaigns Table
+CREATE TABLE IF NOT EXISTS public.referral_campaigns (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    campaign_name TEXT NOT NULL,
+    description TEXT,
+    reward_amount DECIMAL(10,2) DEFAULT 0.00,
+    is_active BOOLEAN DEFAULT true,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Create Indexes for Performance
+CREATE INDEX IF NOT EXISTS idx_user_loyalty_cards_user_id ON public.user_loyalty_cards(user_id);
+CREATE INDEX IF NOT EXISTS idx_user_loyalty_cards_loyalty_number ON public.user_loyalty_cards(loyalty_number);
+CREATE INDEX IF NOT EXISTS idx_loyalty_otp_codes_user_id ON public.loyalty_otp_codes(user_id);
+CREATE INDEX IF NOT EXISTS idx_loyalty_otp_codes_expires_at ON public.loyalty_otp_codes(expires_at);
+CREATE INDEX IF NOT EXISTS idx_user_solana_wallets_user_id ON public.user_solana_wallets(user_id);
+CREATE INDEX IF NOT EXISTS idx_user_solana_wallets_public_key ON public.user_solana_wallets(public_key);
+CREATE INDEX IF NOT EXISTS idx_asset_investments_user_id ON public.asset_investments(user_id);
+CREATE INDEX IF NOT EXISTS idx_asset_investments_initiative_id ON public.asset_investments(asset_initiative_id);
+CREATE INDEX IF NOT EXISTS idx_user_nfts_user_id ON public.user_nfts(user_id);
+CREATE INDEX IF NOT EXISTS idx_user_nfts_nft_type_id ON public.user_nfts(nft_type_id);
+
+-- Create Updated At Triggers
+CREATE OR REPLACE FUNCTION public.update_updated_at_column()
+RETURNS TRIGGER AS $$
 BEGIN
-  -- Return false if no user_id provided
-  IF user_id IS NULL THEN
-    RETURN false;
-  END IF;
-
-  -- Method 1: Use existing is_admin function if it exists
-  BEGIN
-    SELECT public.is_admin(user_id) INTO is_admin_user;
-    IF is_admin_user THEN
-      RETURN true;
-    END IF;
-  EXCEPTION WHEN OTHERS THEN
-    -- Continue to direct check if is_admin fails
-    NULL;
-  END;
-
-  -- Method 2: Direct profile check in api schema
-  BEGIN
-    SELECT role::text INTO user_role
-    FROM api.profiles
-    WHERE id = user_id
-    LIMIT 1;
-    
-    IF FOUND AND user_role = 'admin' THEN
-      RETURN true;
-    END IF;
-  EXCEPTION WHEN OTHERS THEN
-    -- Continue to public schema check
-    NULL;
-  END;
-
-  -- Method 3: Direct profile check in public schema
-  BEGIN
-    SELECT role::text INTO user_role
-    FROM public.profiles
-    WHERE id = user_id OR user_id = user_id
-    LIMIT 1;
-    
-    IF FOUND AND user_role = 'admin' THEN
-      RETURN true;
-    END IF;
-  EXCEPTION WHEN OTHERS THEN
-    NULL;
-  END;
-
-  -- Method 4: Known admin email fallback
-  BEGIN
-    SELECT email INTO user_role
-    FROM auth.users
-    WHERE id = user_id
-    AND email = 'realassetcoin@gmail.com'
-    LIMIT 1;
-    
-    IF FOUND THEN
-      RETURN true;
-    END IF;
-  EXCEPTION WHEN OTHERS THEN
-    NULL;
-  END;
-
-  RETURN false;
+    NEW.updated_at = NOW();
+    RETURN NEW;
 END;
-$$;
+$$ LANGUAGE plpgsql;
 
--- Grant permissions for check_admin_access
-GRANT EXECUTE ON FUNCTION public.check_admin_access(uuid) TO authenticated;
-GRANT EXECUTE ON FUNCTION public.check_admin_access(uuid) TO anon;
+-- Apply triggers to all tables with updated_at columns
+CREATE TRIGGER update_nft_types_updated_at BEFORE UPDATE ON public.nft_types FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+CREATE TRIGGER update_nft_collections_updated_at BEFORE UPDATE ON public.nft_collections FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+CREATE TRIGGER update_user_nfts_updated_at BEFORE UPDATE ON public.user_nfts FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+CREATE TRIGGER update_loyalty_networks_updated_at BEFORE UPDATE ON public.loyalty_networks FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+CREATE TRIGGER update_user_loyalty_cards_updated_at BEFORE UPDATE ON public.user_loyalty_cards FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+CREATE TRIGGER update_user_solana_wallets_updated_at BEFORE UPDATE ON public.user_solana_wallets FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+CREATE TRIGGER update_asset_initiatives_updated_at BEFORE UPDATE ON public.asset_initiatives FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+CREATE TRIGGER update_asset_investments_updated_at BEFORE UPDATE ON public.asset_investments FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+CREATE TRIGGER update_terms_privacy_acceptance_updated_at BEFORE UPDATE ON public.terms_privacy_acceptance FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+CREATE TRIGGER update_merchants_updated_at BEFORE UPDATE ON public.merchants FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+CREATE TRIGGER update_referral_campaigns_updated_at BEFORE UPDATE ON public.referral_campaigns FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
 
--- 2. Create get_current_user_profile function (CRITICAL - Application expects this)
-CREATE OR REPLACE FUNCTION public.get_current_user_profile()
-RETURNS TABLE(
-  id uuid,
-  email text,
-  full_name text,
-  role text,
-  created_at timestamp with time zone,
-  updated_at timestamp with time zone,
-  totp_secret text,
-  mfa_enabled boolean,
-  backup_codes text[],
-  mfa_setup_completed_at timestamp with time zone
-)
-LANGUAGE plpgsql
-STABLE SECURITY DEFINER
-SET search_path TO 'public, api'
-AS $$
+-- Create Essential RPC Functions
+
+-- Generate Loyalty Number Function
+CREATE OR REPLACE FUNCTION public.generate_loyalty_number(email_input TEXT)
+RETURNS TEXT AS $$
 DECLARE
-  current_user_id uuid;
-  user_email text;
+    first_char TEXT;
+    random_suffix TEXT;
+    loyalty_num TEXT;
+    counter INTEGER := 0;
 BEGIN
-  -- Get current user ID
-  current_user_id := auth.uid();
-  
-  IF current_user_id IS NULL THEN
-    RETURN;
-  END IF;
+    -- Get first character of email
+    first_char := UPPER(SUBSTRING(email_input, 1, 1));
+    
+    -- Generate random 6-digit suffix
+    random_suffix := LPAD(FLOOR(RANDOM() * 1000000)::TEXT, 6, '0');
+    
+    -- Create loyalty number
+    loyalty_num := first_char || random_suffix;
+    
+    -- Ensure uniqueness
+    WHILE EXISTS (SELECT 1 FROM public.user_loyalty_cards WHERE loyalty_number = loyalty_num) LOOP
+        counter := counter + 1;
+        random_suffix := LPAD(FLOOR(RANDOM() * 1000000)::TEXT, 6, '0');
+        loyalty_num := first_char || random_suffix;
+        
+        -- Prevent infinite loop
+        IF counter > 100 THEN
+            loyalty_num := first_char || LPAD(EXTRACT(EPOCH FROM NOW())::TEXT, 6, '0');
+            EXIT;
+        END IF;
+    END LOOP;
+    
+    RETURN loyalty_num;
+END;
+$$ LANGUAGE plpgsql;
 
-  -- Method 1: Try api.profiles first
-  BEGIN
+-- Get Valid Subscription Plans Function
+CREATE OR REPLACE FUNCTION public.get_valid_subscription_plans()
+RETURNS TABLE (
+    id UUID,
+    name TEXT,
+    price_monthly DECIMAL(10,2),
+    monthly_points INTEGER,
+    monthly_transactions INTEGER,
+    features JSONB
+) AS $$
+BEGIN
     RETURN QUERY
     SELECT 
-      p.id,
-      p.email,
-      p.full_name,
-      p.role::text,
-      p.created_at,
-      p.updated_at,
-      p.totp_secret,
-      COALESCE(p.mfa_enabled, false) as mfa_enabled,
-      COALESCE(p.backup_codes, ARRAY[]::text[]) as backup_codes,
-      p.mfa_setup_completed_at
-    FROM api.profiles p
-    WHERE p.id = current_user_id
-    LIMIT 1;
-    
-    -- If we found a record, return
-    IF FOUND THEN
-      RETURN;
-    END IF;
-  EXCEPTION WHEN OTHERS THEN
-    -- Continue to public schema
-    NULL;
-  END;
-
-  -- Method 2: Try public.profiles
-  BEGIN
-    RETURN QUERY
-    SELECT 
-      p.id,
-      p.email,
-      p.full_name,
-      p.role::text,
-      p.created_at,
-      p.updated_at,
-      NULL::text as totp_secret,
-      false as mfa_enabled,
-      ARRAY[]::text[] as backup_codes,
-      NULL::timestamp with time zone as mfa_setup_completed_at
-    FROM public.profiles p
-    WHERE p.id = current_user_id OR p.user_id = current_user_id
-    LIMIT 1;
-    
-    -- If we found a record, return
-    IF FOUND THEN
-      RETURN;
-    END IF;
-  EXCEPTION WHEN OTHERS THEN
-    -- Continue to fallback
-    NULL;
-  END;
-
-  -- Method 3: Create fallback profile from auth.users
-  BEGIN
-    SELECT email INTO user_email FROM auth.users WHERE id = current_user_id;
-    
-    IF user_email IS NOT NULL THEN
-      RETURN QUERY
-      SELECT 
-        current_user_id as id,
-        user_email as email,
-        COALESCE(split_part(user_email, '@', 1), 'User') as full_name,
-        'user'::text as role,
-        now() as created_at,
-        now() as updated_at,
-        NULL::text as totp_secret,
-        false as mfa_enabled,
-        ARRAY[]::text[] as backup_codes,
-        NULL::timestamp with time zone as mfa_setup_completed_at;
-    END IF;
-  EXCEPTION WHEN OTHERS THEN
-    -- Return empty if all methods fail
-    RETURN;
-  END;
+        msp.id,
+        msp.name,
+        msp.price_monthly,
+        msp.monthly_points,
+        msp.monthly_transactions,
+        msp.features
+    FROM public.merchant_subscription_plans msp
+    WHERE msp.is_active = true
+    ORDER BY msp.price_monthly;
 END;
-$$;
+$$ LANGUAGE plpgsql;
 
--- Grant permissions for get_current_user_profile
-GRANT EXECUTE ON FUNCTION public.get_current_user_profile() TO authenticated;
-GRANT EXECUTE ON FUNCTION public.get_current_user_profile() TO anon;
+-- Insert Sample Data
 
--- ============================================================================
--- PART 2: ENSURE ADMIN USER PROFILE EXISTS
--- ============================================================================
+-- Insert NFT Types
+INSERT INTO public.nft_types (nft_name, display_name, description, rarity, earn_on_spend_ratio, price_usd) VALUES
+('Bronze Card', 'Bronze Loyalty Card', 'Basic loyalty card with standard rewards', 'common', 1.00, 0.00),
+('Silver Card', 'Silver Loyalty Card', 'Enhanced loyalty card with better rewards', 'uncommon', 1.50, 10.00),
+('Gold Card', 'Gold Loyalty Card', 'Premium loyalty card with excellent rewards', 'rare', 2.00, 25.00),
+('Platinum Card', 'Platinum Loyalty Card', 'Elite loyalty card with maximum rewards', 'epic', 3.00, 50.00),
+('Diamond Card', 'Diamond Loyalty Card', 'Ultimate loyalty card with exclusive rewards', 'legendary', 5.00, 100.00)
+ON CONFLICT DO NOTHING;
 
--- Create or update admin user profile
-DO $$
-DECLARE
-  admin_user_id uuid;
-  profile_exists boolean := false;
-  admin_email text := 'realassetcoin@gmail.com';
-BEGIN
-  -- Find admin user in auth.users
-  SELECT id INTO admin_user_id 
-  FROM auth.users 
-  WHERE email = admin_email 
-  LIMIT 1;
+-- Insert NFT Collections
+INSERT INTO public.nft_collections (collection_name, description, total_supply) VALUES
+('Loyalty Cards Collection', 'Collection of all loyalty card NFTs', 10000),
+('Reward Cards Collection', 'Special reward card collection', 5000),
+('Premium Cards Collection', 'Premium tier card collection', 1000)
+ON CONFLICT DO NOTHING;
 
-  IF admin_user_id IS NOT NULL THEN
-    RAISE NOTICE 'Found admin user: % with ID: %', admin_email, admin_user_id;
-    
-    -- Check if profile exists in api.profiles
-    BEGIN
-      SELECT EXISTS(
-        SELECT 1 FROM api.profiles 
-        WHERE id = admin_user_id
-      ) INTO profile_exists;
-      
-      IF profile_exists THEN
-        -- Update existing profile to ensure admin role
-        UPDATE api.profiles 
-        SET role = 'admin'::api.app_role, updated_at = now()
-        WHERE id = admin_user_id;
-        RAISE NOTICE 'Updated existing api.profiles record to admin role';
-      ELSE
-        -- Create new profile in api.profiles
-        INSERT INTO api.profiles (id, email, full_name, role, created_at, updated_at)
-        VALUES (admin_user_id, admin_email, 'Admin User', 'admin'::api.app_role, now(), now())
-        ON CONFLICT (id) DO UPDATE SET 
-          role = 'admin'::api.app_role, 
-          updated_at = now();
-        RAISE NOTICE 'Created new api.profiles record for admin user';
-      END IF;
-    EXCEPTION WHEN OTHERS THEN
-      RAISE NOTICE 'api.profiles update failed: %', SQLERRM;
-    END;
+-- Insert Loyalty Networks
+INSERT INTO public.loyalty_networks (network_name, description) VALUES
+('Main Network', 'Primary loyalty network'),
+('Partner Network', 'Partner merchant network'),
+('Premium Network', 'Premium merchant network')
+ON CONFLICT DO NOTHING;
 
-    -- Also ensure profile exists in public.profiles (fallback)
-    BEGIN
-      SELECT EXISTS(
-        SELECT 1 FROM public.profiles 
-        WHERE id = admin_user_id OR user_id = admin_user_id
-      ) INTO profile_exists;
-      
-      IF NOT profile_exists THEN
-        -- Try inserting with id first
-        BEGIN
-          INSERT INTO public.profiles (id, email, full_name, role, created_at, updated_at)
-          VALUES (admin_user_id, admin_email, 'Admin User', 'admin', now(), now())
-          ON CONFLICT DO NOTHING;
-          RAISE NOTICE 'Created public.profiles record with id';
-        EXCEPTION WHEN OTHERS THEN
-          -- Try with user_id if id fails
-          BEGIN
-            INSERT INTO public.profiles (user_id, email, full_name, role, created_at, updated_at)
-            VALUES (admin_user_id, admin_email, 'Admin User', 'admin', now(), now())
-            ON CONFLICT DO NOTHING;
-            RAISE NOTICE 'Created public.profiles record with user_id';
-          EXCEPTION WHEN OTHERS THEN
-            RAISE NOTICE 'Could not create public.profiles record: %', SQLERRM;
-          END;
-        END;
-      ELSE
-        -- Update existing public profile
-        UPDATE public.profiles 
-        SET role = 'admin', updated_at = now()
-        WHERE (id = admin_user_id OR user_id = admin_user_id)
-        AND role != 'admin';
-        RAISE NOTICE 'Updated existing public.profiles record to admin role';
-      END IF;
-    EXCEPTION WHEN OTHERS THEN
-      RAISE NOTICE 'public.profiles update failed: %', SQLERRM;
-    END;
-  ELSE
-    RAISE NOTICE 'Admin user % not found in auth.users. Please create the user first.', admin_email;
-  END IF;
-END;
-$$;
+-- Insert Asset Initiatives
+INSERT INTO public.asset_initiatives (initiative_name, description, asset_type, target_amount) VALUES
+('Real Estate Fund', 'Investment in commercial real estate', 'REIT', 1000000.00),
+('Tech Startup Fund', 'Investment in technology startups', 'Equity', 500000.00),
+('Crypto Fund', 'Investment in cryptocurrency projects', 'Crypto', 250000.00)
+ON CONFLICT DO NOTHING;
 
--- ============================================================================
--- PART 3: CREATE COMPREHENSIVE DIAGNOSTIC FUNCTION
--- ============================================================================
+-- Insert Referral Campaigns
+INSERT INTO public.referral_campaigns (campaign_name, description, reward_amount) VALUES
+('New User Referral', 'Reward for referring new users', 10.00),
+('Premium Referral', 'Reward for referring premium users', 25.00),
+('Merchant Referral', 'Reward for referring merchants', 50.00)
+ON CONFLICT DO NOTHING;
 
-CREATE OR REPLACE FUNCTION public.verify_database_fix()
-RETURNS text
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path TO 'public, api'
-AS $$
-DECLARE
-  result_text text := '';
-  function_count integer;
-  profile_count integer;
-  admin_count integer;
-  test_result boolean;
-  admin_user_id uuid;
-BEGIN
-  result_text := '=== DATABASE FIX VERIFICATION ===' || E'\n\n';
-  
-  -- 1. Check if required functions exist
-  SELECT COUNT(*) INTO function_count
-  FROM pg_proc p 
-  JOIN pg_namespace n ON p.pronamespace = n.oid 
-  WHERE n.nspname = 'public' 
-  AND p.proname IN ('check_admin_access', 'get_current_user_profile', 'is_admin');
-  
-  result_text := result_text || '1. Required Functions:' || E'\n';
-  result_text := result_text || '   - Functions found: ' || function_count || '/3' || E'\n';
-  
-  -- Test each function individually
-  BEGIN
-    SELECT public.is_admin() INTO test_result;
-    result_text := result_text || '   - is_admin(): ✅ Working' || E'\n';
-  EXCEPTION WHEN OTHERS THEN
-    result_text := result_text || '   - is_admin(): ❌ Error - ' || SQLERRM || E'\n';
-  END;
-  
-  BEGIN
-    SELECT public.check_admin_access() INTO test_result;
-    result_text := result_text || '   - check_admin_access(): ✅ Working' || E'\n';
-  EXCEPTION WHEN OTHERS THEN
-    result_text := result_text || '   - check_admin_access(): ❌ Error - ' || SQLERRM || E'\n';
-  END;
-  
-  BEGIN
-    SELECT COUNT(*) INTO function_count FROM public.get_current_user_profile();
-    result_text := result_text || '   - get_current_user_profile(): ✅ Working' || E'\n';
-  EXCEPTION WHEN OTHERS THEN
-    result_text := result_text || '   - get_current_user_profile(): ❌ Error - ' || SQLERRM || E'\n';
-  END;
-  
-  result_text := result_text || E'\n';
-  
-  -- 2. Check profiles data
-  result_text := result_text || '2. Database Data:' || E'\n';
-  
-  -- Check api.profiles
-  BEGIN
-    SELECT COUNT(*) INTO profile_count FROM api.profiles;
-    SELECT COUNT(*) INTO admin_count FROM api.profiles WHERE role = 'admin';
-    result_text := result_text || '   - api.profiles: ' || profile_count || ' total, ' || admin_count || ' admin' || E'\n';
-  EXCEPTION WHEN OTHERS THEN
-    result_text := result_text || '   - api.profiles: ❌ Error accessing table' || E'\n';
-  END;
-  
-  -- Check public.profiles
-  BEGIN
-    SELECT COUNT(*) INTO profile_count FROM public.profiles;
-    SELECT COUNT(*) INTO admin_count FROM public.profiles WHERE role = 'admin';
-    result_text := result_text || '   - public.profiles: ' || profile_count || ' total, ' || admin_count || ' admin' || E'\n';
-  EXCEPTION WHEN OTHERS THEN
-    result_text := result_text || '   - public.profiles: ❌ Error accessing table' || E'\n';
-  END;
-  
-  result_text := result_text || E'\n';
-  
-  -- 3. Check admin user specifically
-  result_text := result_text || '3. Admin User Status:' || E'\n';
-  
-  SELECT id INTO admin_user_id FROM auth.users WHERE email = 'realassetcoin@gmail.com' LIMIT 1;
-  
-  IF admin_user_id IS NOT NULL THEN
-    result_text := result_text || '   - Admin user exists in auth.users: ✅' || E'\n';
-    result_text := result_text || '   - Admin user ID: ' || admin_user_id || E'\n';
-    
-    -- Test admin access for this specific user
-    BEGIN
-      SELECT public.check_admin_access(admin_user_id) INTO test_result;
-      IF test_result THEN
-        result_text := result_text || '   - Admin access check: ✅ PASS' || E'\n';
-      ELSE
-        result_text := result_text || '   - Admin access check: ❌ FAIL (returns false)' || E'\n';
-      END IF;
-    EXCEPTION WHEN OTHERS THEN
-      result_text := result_text || '   - Admin access check: ❌ ERROR - ' || SQLERRM || E'\n';
-    END;
-  ELSE
-    result_text := result_text || '   - Admin user exists: ❌ NOT FOUND' || E'\n';
-    result_text := result_text || '   - Please create user realassetcoin@gmail.com first' || E'\n';
-  END IF;
-  
-  result_text := result_text || E'\n';
-  
-  -- 4. Overall status
-  result_text := result_text || '4. Fix Status:' || E'\n';
-  
-  IF function_count >= 3 AND admin_count > 0 THEN
-    result_text := result_text || '   - Status: ✅ DATABASE FIX SUCCESSFUL' || E'\n';
-    result_text := result_text || '   - Next: Test admin login in the application' || E'\n';
-  ELSE
-    result_text := result_text || '   - Status: ❌ PARTIAL FIX - Some issues remain' || E'\n';
-    result_text := result_text || '   - Action: Check the errors above and retry' || E'\n';
-  END IF;
-  
-  result_text := result_text || E'\n=== END VERIFICATION ===' || E'\n';
-  
-  RETURN result_text;
-END;
-$$;
+-- Create RLS Policies (Basic Security)
+ALTER TABLE public.nft_types ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.nft_collections ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.user_nfts ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.loyalty_networks ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.user_loyalty_cards ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.loyalty_otp_codes ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.user_solana_wallets ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.asset_initiatives ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.asset_investments ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.terms_privacy_acceptance ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.merchants ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.referral_campaigns ENABLE ROW LEVEL SECURITY;
 
--- Grant permission for verification function
-GRANT EXECUTE ON FUNCTION public.verify_database_fix() TO authenticated;
-GRANT EXECUTE ON FUNCTION public.verify_database_fix() TO anon;
+-- Create basic RLS policies (allow all for now - can be tightened later)
+CREATE POLICY "Allow all operations on nft_types" ON public.nft_types FOR ALL USING (true);
+CREATE POLICY "Allow all operations on nft_collections" ON public.nft_collections FOR ALL USING (true);
+CREATE POLICY "Allow all operations on user_nfts" ON public.user_nfts FOR ALL USING (true);
+CREATE POLICY "Allow all operations on loyalty_networks" ON public.loyalty_networks FOR ALL USING (true);
+CREATE POLICY "Allow all operations on user_loyalty_cards" ON public.user_loyalty_cards FOR ALL USING (true);
+CREATE POLICY "Allow all operations on loyalty_otp_codes" ON public.loyalty_otp_codes FOR ALL USING (true);
+CREATE POLICY "Allow all operations on user_solana_wallets" ON public.user_solana_wallets FOR ALL USING (true);
+CREATE POLICY "Allow all operations on asset_initiatives" ON public.asset_initiatives FOR ALL USING (true);
+CREATE POLICY "Allow all operations on asset_investments" ON public.asset_investments FOR ALL USING (true);
+CREATE POLICY "Allow all operations on terms_privacy_acceptance" ON public.terms_privacy_acceptance FOR ALL USING (true);
+CREATE POLICY "Allow all operations on merchants" ON public.merchants FOR ALL USING (true);
+CREATE POLICY "Allow all operations on referral_campaigns" ON public.referral_campaigns FOR ALL USING (true);
 
--- ============================================================================
--- PART 4: RUN VERIFICATION
--- ============================================================================
-
--- Execute the verification to see results immediately
-SELECT public.verify_database_fix();
-
--- ============================================================================
--- FINAL MESSAGE
--- ============================================================================
-
-SELECT 
-  '🎉 DATABASE FIX COMPLETED! 🎉' as status,
-  'Check the verification results above. If successful, test admin login at your application.' as next_step;
+-- Grant necessary permissions
+GRANT ALL ON ALL TABLES IN SCHEMA public TO postgres;
+GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO postgres;
+GRANT ALL ON ALL FUNCTIONS IN SCHEMA public TO postgres;

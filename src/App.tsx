@@ -35,11 +35,15 @@ import ExclusiveBenefitsPage from "./pages/ExclusiveBenefitsPage";
 import UserDAODashboard from "./pages/UserDAODashboard";
 import TestPage from "./pages/TestPage";
 import Marketplace from "./pages/Marketplace";
+import DigitalAssetsPage from "./pages/DigitalAssetsPage";
 import AuthPopupTest from "./pages/AuthPopupTest";
 import { useSessionPersistence } from "./hooks/useSessionPersistence";
 import { useInactivityLogout } from "./hooks/useInactivityLogout";
 import { BackgroundJobService } from "./lib/backgroundJobs";
 import ContactChatbot from "@/components/ContactChatbot";
+import { useToast } from "@/hooks/use-toast";
+import AuthDebugPanel from "@/components/AuthDebugPanel";
+import MockAuthTest from "@/components/MockAuthTest";
 
 // Conditional Chatbot Component
 const ConditionalChatbot = () => {
@@ -135,6 +139,7 @@ const queryClient = new QueryClient({
 
 const App = () => {
   const isDev = import.meta.env.DEV;
+  const { toast } = useToast();
   
   // Clean up unwanted URL parameters on app load (security measure)
   useEffect(() => {
@@ -155,6 +160,37 @@ const App = () => {
       console.warn('Removed unwanted URL parameters for security');
     }
   }, []);
+
+  // Handle OAuth success/error messages
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    
+    if (urlParams.has('oauth_success')) {
+      toast({
+        title: "Sign In Successful!",
+        description: "Welcome! You've successfully signed in with Google.",
+      });
+      
+      // Clean up the URL parameter
+      urlParams.delete('oauth_success');
+      const newUrl = window.location.pathname + (urlParams.toString() ? '?' + urlParams.toString() : '');
+      window.history.replaceState({}, '', newUrl);
+    }
+    
+    if (urlParams.has('oauth_error')) {
+      const error = urlParams.get('oauth_error');
+      toast({
+        title: "Sign In Failed",
+        description: error || "Google sign-in failed. Please try again.",
+        variant: "destructive",
+      });
+      
+      // Clean up the URL parameter
+      urlParams.delete('oauth_error');
+      const newUrl = window.location.pathname + (urlParams.toString() ? '?' + urlParams.toString() : '');
+      window.history.replaceState({}, '', newUrl);
+    }
+  }, [toast]);
   const [isInitialized, setIsInitialized] = useState(false);
 
   // Initialize session persistence to maintain auth state
@@ -240,6 +276,7 @@ const App = () => {
             <Route path="/dao-vote" element={<UserDAODashboard />} />
             <Route path="/dao-governance" element={<Navigate to="/dao-voting" replace />} />
             <Route path="/marketplace" element={<Marketplace />} />
+            <Route path="/digitalasset" element={<DigitalAssetsPage />} />
             <Route path="/test" element={<TestPage />} />
             <Route path="/auth-popup-test" element={<AuthPopupTest />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
@@ -247,6 +284,10 @@ const App = () => {
           </Routes>
           {/* Global chatbot for pre-login routes only */}
           <ConditionalChatbot />
+          {/* Auth Debug Panel - only in development */}
+          {isDev && <AuthDebugPanel />}
+          {/* Mock Auth Test - only in development */}
+          {isDev && <MockAuthTest />}
           </BrowserRouter>
         </TooltipProvider>
       </ThemeProvider>

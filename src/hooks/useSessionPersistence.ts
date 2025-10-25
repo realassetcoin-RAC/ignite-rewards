@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { databaseAdapter } from '@/lib/databaseAdapter';
 
 /**
  * Hook to maintain session persistence and prevent auth state loss
@@ -23,7 +23,7 @@ export const useSessionPersistence = () => {
       
       try {
         // Add timeout to prevent hanging (reduced to 5 seconds)
-        const sessionPromise = supabase.auth.getSession();
+        const sessionPromise = databaseAdapter.supabase.auth.getSession();
         const timeoutPromise = new Promise((_, reject) => 
           setTimeout(() => reject(new Error('Session check timeout')), 5000)
         );
@@ -40,11 +40,21 @@ export const useSessionPersistence = () => {
           const now = Math.floor(Date.now() / 1000);
           const expiresAt = session.expires_at || 0;
           
+          // Check if session is expired
+          if (expiresAt > 0 && expiresAt < now) {
+            console.log('Session expired, clearing...');
+            localStorage.removeItem('auth_session');
+            localStorage.removeItem('auth_user');
+            localStorage.removeItem('google_user');
+            localStorage.removeItem('google_access_token');
+            return;
+          }
+          
           // If session expires in less than 5 minutes, refresh it
           if (expiresAt - now < 300) {
             console.log('Session expiring soon, refreshing...');
             try {
-              await supabase.auth.refreshSession();
+              await databaseAdapter.supabase.auth.refreshSession();
             } catch (refreshError) {
               console.warn('Session refresh failed:', refreshError);
             }
@@ -56,6 +66,28 @@ export const useSessionPersistence = () => {
       }
     };
 
+    // Listen for auth state changes (including OAuth callbacks)
+    const handleAuthStateChange = (event: Event) => {
+      const customEvent = event as CustomEvent;
+      const { event: authEvent, session } = customEvent.detail;
+      
+      console.log('Auth state changed:', authEvent, session ? 'Session exists' : 'No session');
+      
+      // Force a session check when auth state changes
+      lastSessionCheck.current = 0;
+    };
+
+    // Listen for storage events (OAuth callbacks from other tabs)
+    const handleStorageChange = (event: StorageEvent) => {
+      if (event.key === 'auth_session' || event.key === 'auth_user') {
+        console.log('Auth storage changed, checking session...');
+        lastSessionCheck.current = 0;
+      }
+    };
+
+    window.addEventListener('auth-state-change', handleAuthStateChange);
+    window.addEventListener('storage', handleStorageChange);
+
     // Set up periodic session check
     sessionCheckInterval.current = setInterval(checkSession, 30000); // Check every 30 seconds
 
@@ -66,6 +98,8 @@ export const useSessionPersistence = () => {
       if (sessionCheckInterval.current) {
         clearInterval(sessionCheckInterval.current);
       }
+      window.removeEventListener('auth-state-change', handleAuthStateChange);
+      window.removeEventListener('storage', handleStorageChange);
     };
   }, []);
 

@@ -2,7 +2,6 @@
 // This module integrates with the existing loyalty platform's NFT system
 // to check which NFT cards users actually own and calculate investment multipliers
 
-import { databaseAdapter } from './databaseAdapter';
 import { NFTCardTier } from '@/types/marketplace';
 
 export interface UserNFTCardStatus {
@@ -48,7 +47,7 @@ export async function checkUserNFTCardStatus(userId: string): Promise<NFTCardChe
   try {
     // Query the loyalty platform's NFT ownership system
     // This integrates with your existing NFT/loyalty card system
-    const { data: userNfts, error: nftError } = await databaseAdapter
+    const { data: userNfts, error: nftError } = await supabase
       .from('user_loyalty_cards') // Your existing loyalty NFT table
       .select(`
         id,
@@ -129,8 +128,8 @@ export async function checkUserNFTCardStatus(userId: string): Promise<NFTCardChe
       status
     };
 
-  } catch {
-    // Console statement removed
+  } catch (error) {
+    console.error('Error checking NFT card status:', error);
     return {
       success: false,
       error: 'Failed to check NFT card status'
@@ -181,7 +180,7 @@ export function calculateTokensWithMultiplier(
  */
 export function canUserAccessListing(
   userStatus: UserNFTCardStatus,
-  listing: Record<string, unknown>
+  listing: any
 ): { canAccess: boolean; reason?: string } {
   // Check if listing requires premium access
   if (listing.requires_premium_access && !userStatus.canAccessPremiumListings) {
@@ -265,8 +264,8 @@ export async function getUserOwnedNFTs(userId: string): Promise<LoyaltyNFT[]> {
   try {
     const result = await checkUserNFTCardStatus(userId);
     return result.success ? result.status?.ownedNfts || [] : [];
-  } catch {
-    // Console statement removed
+  } catch (error) {
+    console.error('Error getting user owned NFTs:', error);
     return [];
   }
 }
@@ -278,8 +277,8 @@ export async function userOwnsNFTTier(userId: string, tier: string): Promise<boo
   try {
     const ownedNfts = await getUserOwnedNFTs(userId);
     return ownedNfts.some(nft => nft.tier === tier);
-  } catch {
-    // Console statement removed
+  } catch (error) {
+    console.error('Error checking NFT tier ownership:', error);
     return false;
   }
 }
@@ -294,8 +293,8 @@ export async function getUserHighestNFTTier(userId: string): Promise<LoyaltyNFT 
 
     // Sort by multiplier (highest first)
     return ownedNfts.sort((a, b) => b.multiplier - a.multiplier)[0];
-  } catch {
-    // Console statement removed
+  } catch (error) {
+    console.error('Error getting highest NFT tier:', error);
     return null;
   }
 }
@@ -305,20 +304,20 @@ export async function getUserHighestNFTTier(userId: string): Promise<LoyaltyNFT 
  */
 export async function getMarketplaceBenefitsForTier(tierName: string): Promise<NFTCardTier | null> {
   try {
-    const { data, error } = await databaseAdapter
+    const { data, error } = await supabase
       .from('nft_card_tiers')
       .select('*')
       .eq('tier_name', tierName)
       .single();
 
     if (error) {
-      // Console statement removed
+      console.error('Error fetching marketplace benefits:', error);
       return null;
     }
 
     return data;
-  } catch {
-    // Console statement removed
+  } catch (error) {
+    console.error('Error getting marketplace benefits:', error);
     return null;
   }
 }
@@ -330,7 +329,7 @@ export async function getMarketplaceBenefitsForTier(tierName: string): Promise<N
 export async function syncLoyaltyNFTsWithMarketplace(): Promise<{ success: boolean; message: string }> {
   try {
     // Get all unique NFT tiers from the loyalty platform
-    const { data: loyaltyTiers, error: loyaltyError } = await databaseAdapter
+    const { data: loyaltyTiers, error: loyaltyError } = await supabase
       .from('user_loyalty_cards')
       .select('DISTINCT card_type, tier')
       .eq('is_active', true);
@@ -343,7 +342,7 @@ export async function syncLoyaltyNFTsWithMarketplace(): Promise<{ success: boole
     }
 
     // Get existing marketplace benefits
-    const { data: marketplaceTiers, error: marketplaceError } = await databaseAdapter
+    const { data: marketplaceTiers, error: marketplaceError } = await supabase
       .from('nft_card_tiers')
       .select('tier_name');
 
@@ -372,8 +371,8 @@ export async function syncLoyaltyNFTsWithMarketplace(): Promise<{ success: boole
       message: 'Loyalty NFT tiers are properly synced with marketplace benefits'
     };
 
-  } catch {
-    // Console statement removed
+  } catch (error) {
+    console.error('Error syncing loyalty NFTs:', error);
     return {
       success: false,
       message: 'Failed to sync loyalty NFTs with marketplace'

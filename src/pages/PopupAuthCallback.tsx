@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { databaseAdapter } from "@/lib/databaseAdapter";
 
 /**
  * Popup callback page that handles OAuth authentication in popup windows
@@ -9,20 +9,18 @@ const PopupAuthCallback = () => {
   useEffect(() => {
     const handleAuthCallback = async () => {
       try {
-        console.log('Popup auth callback started');
+        console.log('Local popup auth callback started');
         
-        // Use the shared Supabase client
-
         // Wait a bit for the OAuth callback to complete
         await new Promise(resolve => setTimeout(resolve, 1000));
 
-        // Handle the OAuth callback
-        const { data, error } = await supabase.auth.getSession();
+        // Handle the OAuth callback using local auth
+        const { data, error } = await databaseAdapter.supabase.getUser();
         
-        console.log('Popup auth session check:', { data, error });
+        console.log('Local popup auth session check:', { data, error });
         
         if (error) {
-          console.error('OAuth callback error:', error);
+          console.error('Local OAuth callback error:', error);
           // Notify parent window of error
           if (window.opener) {
             window.opener.postMessage({ 
@@ -30,23 +28,23 @@ const PopupAuthCallback = () => {
               error: error.message 
             }, window.location.origin);
           }
-        } else if (data.session) {
+        } else if (data?.user) {
           // Authentication successful
-          console.log('OAuth callback successful, user:', data.session.user.email);
+          console.log('Local OAuth callback successful, user:', data.user.email);
           // Notify parent window of success
           if (window.opener) {
             window.opener.postMessage({ 
               type: 'OAUTH_SUCCESS', 
-              session: data.session 
+              session: { user: data.user } 
             }, window.location.origin);
           }
         } else {
-          console.warn('No session found in popup callback');
+          console.warn('No user found in local popup callback');
           // Notify parent window of error
           if (window.opener) {
             window.opener.postMessage({ 
               type: 'OAUTH_ERROR', 
-              error: 'No session found' 
+              error: 'No user found' 
             }, window.location.origin);
           }
         }
@@ -56,7 +54,7 @@ const PopupAuthCallback = () => {
           window.close();
         }, 500);
       } catch (error) {
-        console.error('Popup auth callback error:', error);
+        console.error('Local popup auth callback error:', error);
         // Notify parent window of error
         if (window.opener) {
           window.opener.postMessage({ 

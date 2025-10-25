@@ -1,7 +1,7 @@
 // Web3 Investment Service
 // Handles all Web3 investment operations for asset initiatives
 
-import { supabase } from '@/integrations/supabase/client';
+import { databaseAdapter } from '@/lib/databaseAdapter';
 
 export interface AssetInitiative {
   id: string;

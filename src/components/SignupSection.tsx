@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -7,7 +7,7 @@ import MerchantSignupModal from "./MerchantSignupModal";
 import { CreditCard, Building2 } from "lucide-react";
 import { useSecureAuth } from "@/hooks/useSecureAuth";
 import { useToast } from "@/hooks/use-toast";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 
 /**
  * Signup section component that provides entry points for customer and merchant registration
@@ -23,6 +23,21 @@ const SignupSection = () => {
   const { user, profile, isAdmin } = useSecureAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // Check if we should automatically open the merchant signup modal
+  useEffect(() => {
+    if (location.state?.openMerchantSignup) {
+      console.log('🔧 Auto-opening merchant signup modal from subscription plans page');
+      console.log('🔧 Location state:', location.state);
+      console.log('🔧 Selected plan:', location.state?.selectedPlan);
+      console.log('🔧 Billing cycle:', location.state?.billingCycle);
+      setMerchantModalOpen(true);
+      
+      // Clear the state to prevent reopening on refresh
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+  }, [location.state, navigate, location.pathname]);
 
   /**
    * Handle customer signup button click - check if user is already logged in
@@ -60,9 +75,15 @@ const SignupSection = () => {
   };
 
   /**
-   * Handle merchant signup button click - check if user is already logged in
+   * Handle merchant signup button click - temporarily bypass authentication for testing
    */
   const handleMerchantSignupClick = () => {
+    // Temporarily bypass authentication check for testing merchant signup
+    console.log('🔧 Opening merchant signup modal (authentication bypassed for testing)');
+    setMerchantModalOpen(true);
+    
+    // Original authentication logic (commented out for testing)
+    /*
     if (user) {
       // User is already logged in
       if (profile?.role === 'merchant') {
@@ -92,6 +113,7 @@ const SignupSection = () => {
       // User is not logged in, open merchant signup modal
       setMerchantModalOpen(true);
     }
+    */
   };
 
   /**
@@ -242,7 +264,9 @@ const SignupSection = () => {
         />
         <MerchantSignupModal 
           isOpen={merchantModalOpen} 
-          onClose={() => setMerchantModalOpen(false)} 
+          onClose={() => setMerchantModalOpen(false)}
+          preselectedPlan={location.state?.selectedPlan}
+          preselectedBillingCycle={location.state?.billingCycle}
         />
       </div>
     </section>

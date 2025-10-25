@@ -15,7 +15,6 @@ import {
   EyeOff
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-// import { supabase } from '@/integrations/supabase/client';
 
 // interface MerchantTransactionProcessorProps {
 //   _merchantId: string;

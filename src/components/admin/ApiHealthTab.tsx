@@ -132,7 +132,7 @@ const ApiHealthTab = () => {
       run: async () => {
         const start = performance.now();
         try {
-          const { count, error } = await databaseAdapter.supabase.from(table).select("*", { count: "exact", head: true });
+          const { data, error } = await databaseAdapter.from(table).select("*").limit(1);
           const latencyMs = performance.now() - start;
           if (error) {
             const status: HealthStatus = isNonCriticalTableError(error) ? "warn" : "error";

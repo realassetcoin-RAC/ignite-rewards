@@ -29,7 +29,7 @@ import {
   LogOut,
   Bug
 } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
+import { databaseAdapter } from '@/lib/databaseAdapter';
 import { useToast } from '@/hooks/use-toast';
 import { useSecureAuth } from '@/hooks/useSecureAuth';
 import { format } from 'date-fns';
@@ -103,7 +103,7 @@ const UserDAODashboard = () => {
 
   const checkUserMembership = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { user } } = await databaseAdapter.supabase.auth.getUser();
       if (!user) {
         setAuthLoading(false);
         return;

@@ -143,12 +143,20 @@ export function generateQRCodeURL(secret: string, email: string, issuer: string 
  */
 export async function canUserUseMFA(userId: string): Promise<boolean> {
   try {
-    const { data, error } = await databaseAdapter.supabase.rpc('can_use_mfa', { user_id: userId });
+    // Check if user exists and is active (instead of RPC call)
+    const { data, error } = await databaseAdapter
+      .from('profiles')
+      .select('id, is_active')
+      .eq('id', userId)
+      .single();
+    
     if (error) {
       console.error('Error checking MFA eligibility:', error);
       return false;
     }
-    return data === true;
+    
+    // User can use MFA if they have an active profile
+    return data?.is_active === true;
   } catch (error) {
     console.error('MFA eligibility check failed:', error);
     return false;
@@ -170,7 +178,7 @@ export async function enableMFA(userId: string, totpSecret: string): Promise<{ s
     }
 
     // Get the generated backup codes
-    const { data: profile } = await supabase
+    const { data: profile } = await databaseAdapter.supabase
       .from('profiles')
       .select('backup_codes')
       .eq('id', userId)
@@ -266,7 +274,7 @@ export async function getMFAStatus(userId: string): Promise<{
   try {
     const [canUseMFA, { data: profile }] = await Promise.all([
       canUserUseMFA(userId),
-      supabase
+      databaseAdapter.supabase
         .from('profiles')
         .select('mfa_enabled, backup_codes, mfa_setup_completed_at')
         .eq('id', userId)
@@ -295,7 +303,7 @@ export async function getMFAStatus(userId: string): Promise<{
 export async function verifyTOTPForLogin(userId: string, code: string): Promise<{ success: boolean; error?: string }> {
   try {
     // Get user's TOTP secret
-    const { data: profile, error: profileError } = await supabase
+    const { data: profile, error: profileError } = await databaseAdapter.supabase
       .from('profiles')
       .select('totp_secret')
       .eq('id', userId)

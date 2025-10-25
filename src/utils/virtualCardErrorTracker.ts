@@ -6,7 +6,6 @@
  */
 
 import { logger, log } from './logger';
-// import { supabase } from '@/integrations/supabase/client';
 
 export interface VirtualCardError {
   id: string;

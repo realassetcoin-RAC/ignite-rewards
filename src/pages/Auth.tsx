@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useSecureAuth } from "@/hooks/useSecureAuth";
 import { Sparkles } from "lucide-react";
@@ -41,7 +41,11 @@ const Auth = () => {
 
         <div className="relative z-10 text-center text-white">
           <div className="w-16 h-16 bg-primary rounded-lg flex items-center justify-center mx-auto mb-4">
-            <Sparkles className="h-8 w-8 text-primary-foreground animate-pulse" />
+              <img
+                src="/bridgepoint-logo.jpg"
+                alt="BridgePoint Logo"
+                className="w-16 h-16 rounded-lg object-contain"
+              />
           </div>
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
           <p className={`${isLoaded ? 'animate-fade-in-up' : 'opacity-0'}`}>Checking authentication status...</p>

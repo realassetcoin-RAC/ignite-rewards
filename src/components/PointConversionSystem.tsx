@@ -22,7 +22,7 @@ import {
   type PointBalance 
 } from "@/lib/thirdPartyLoyaltyApi";
 import { getUserLoyaltyLinks } from "@/lib/loyaltyOtp";
-import { supabase } from "@/integrations/supabase/client";
+import { databaseAdapter } from "@/lib/databaseAdapter";
 
 interface UserLoyaltyLink {
   id: string;

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useCallback } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { databaseAdapter } from '@/lib/databaseAdapter';
 import { useToast } from '@/hooks/use-toast';
 
 interface UseInactivityLogoutOptions {
@@ -52,7 +52,7 @@ export const useInactivityLogout = (options: UseInactivityLogoutOptions = {}) =>
     // Set logout timer
     timeoutRef.current = setTimeout(async () => {
       try {
-        await supabase.auth.signOut({
+        await databaseAdapter.supabase.auth.signOut({
           scope: 'local' // This prevents redirect and keeps the sign out local
         });
         toast({

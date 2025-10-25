@@ -26,7 +26,7 @@ import {
   NFTMintingControl,
   NFTRarity
 } from '@/lib/loyaltyNFTService';
-import { supabase } from '@/integrations/supabase/client';
+import { databaseAdapter } from '@/lib/databaseAdapter';
 
 export default function NFTManager() {
   const [nftTypes, setNftTypes] = useState<NFTType[]>([]);

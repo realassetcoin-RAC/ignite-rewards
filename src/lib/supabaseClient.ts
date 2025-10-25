@@ -1,7 +1,10 @@
-// Supabase Client - Uses Database Adapter for Cloud Supabase
-// This client now uses the cloud Supabase database
+// Database Client - Uses Database Adapter for Docker PostgreSQL
+// This client uses Docker PostgreSQL (No Supabase)
 
-// Re-export from database adapter for cloud Supabase
-export { supabase, databaseAdapter as clientInfo } from './databaseAdapter';
+import { databaseAdapter } from './databaseAdapter';
 
-console.log('🌐 CLOUD SUPABASE MODE - Using cloud database');
+// Re-export for backward compatibility
+export { databaseAdapter };
+export const supabase = databaseAdapter;
+
+console.log('🐘 DOCKER POSTGRESQL MODE - Using local Docker database');

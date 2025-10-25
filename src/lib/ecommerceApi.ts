@@ -3,7 +3,7 @@
  * RESTful API endpoints for merchant integrations and third-party ecommerce platforms
  */
 
-import { supabase } from '@/integrations/supabase/client';
+import { databaseAdapter } from '@/lib/databaseAdapter';
 
 interface EcommerceTransaction {
   merchant_id: string;
@@ -418,7 +418,7 @@ export class EcommerceAPI {
     loyaltyNumber?: string
   ): Promise<any> {
     if (email) {
-      const { data: user } = await supabase.auth.admin.getUserByEmail(email);
+      const { data: user } = await databaseAdapter.supabase.auth.admin.getUserByEmail(email);
       if (user) {
         return user;
       }
@@ -481,7 +481,7 @@ export class EcommerceAPI {
     await supabase
       .from('user_loyalty_cards')
       .update({
-        points_balance: supabase.sql`points_balance + ${points}`,
+        points_balance: databaseAdapter.supabase.sql`points_balance + ${points}`,
         updated_at: new Date().toISOString()
       })
       .eq('user_id', userId);
@@ -501,7 +501,7 @@ export class EcommerceAPI {
     await supabase
       .from('merchant_monthly_points')
       .update({
-        points_distributed: supabase.sql`points_distributed + ${pointsUsed}`,
+        points_distributed: databaseAdapter.supabase.sql`points_distributed + ${pointsUsed}`,
         updated_at: new Date().toISOString()
       })
       .eq('merchant_id', merchantId)

@@ -291,7 +291,7 @@ export class SolanaWalletService {
         .from('user_solana_wallets')
         .insert({
           user_id: userId,
-          solana_address: keypair.publicKey.toString(),
+          public_key: keypair.publicKey.toString(),
           seed_phrase_encrypted: seedPhraseEncrypted,
           encryption_iv: iv
         })

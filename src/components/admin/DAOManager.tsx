@@ -10,7 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
+import { databaseAdapter } from '@/lib/databaseAdapter';
 import { 
   Vote, 
   Plus, 
@@ -139,7 +139,7 @@ const DAOManager: React.FC = () => {
 
   const loadOrganizations = async () => {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await databaseAdapter
         .from('dao_organizations')
         .select(`
           *,
@@ -166,7 +166,7 @@ const DAOManager: React.FC = () => {
 
   const loadProposals = async () => {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await databaseAdapter
         .from('dao_proposals')
         .select(`
           *,
@@ -190,7 +190,7 @@ const DAOManager: React.FC = () => {
 
   const loadMembers = async () => {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await databaseAdapter
         .from('dao_members')
         .select(`
           *,

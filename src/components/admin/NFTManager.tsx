@@ -26,7 +26,8 @@ import {
   NFTMintingControl,
   NFTRarity
 } from '@/lib/loyaltyNFTService';
-import { supabase } from '@/integrations/supabase/client';
+import { databaseAdapter } from '@/lib/databaseAdapter';
+import NFTImageUpload from './NFTImageUpload';
 
 export default function NFTManager() {
   const [nftTypes, setNftTypes] = useState<NFTType[]>([]);
@@ -386,25 +387,25 @@ export default function NFTManager() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label className="flex items-center gap-2">
-                      Image URL (PNG/JPG)
-                      <CustomTooltip content="URL for regular loyalty card image (PNG or JPG format)" />
-                    </Label>
-                    <Input
+                    <NFTImageUpload
+                      label="Image (PNG/JPG)"
                       value={formData.image_url}
-                      onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
+                      onChange={(url) => setFormData({ ...formData, image_url: url })}
                       placeholder="https://example.com/image.png"
+                      tooltip="Upload or enter URL for regular loyalty card image (PNG or JPG format)"
+                      acceptedFormats={['image/png', 'image/jpeg', 'image/jpg']}
+                      maxSizeMB={5}
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label className="flex items-center gap-2">
-                      Evolution Image URL (GIF)
-                      <CustomTooltip content="URL for evolved NFT image (animated GIF format)" />
-                    </Label>
-                    <Input
+                    <NFTImageUpload
+                      label="Evolution Image (GIF)"
                       value={formData.evolution_image_url}
-                      onChange={(e) => setFormData({ ...formData, evolution_image_url: e.target.value })}
+                      onChange={(url) => setFormData({ ...formData, evolution_image_url: url })}
                       placeholder="https://example.com/evolution.gif"
+                      tooltip="Upload or enter URL for evolved NFT image (animated GIF format)"
+                      acceptedFormats={['image/gif']}
+                      maxSizeMB={10}
                     />
                   </div>
                 </div>

@@ -1,4 +1,4 @@
-// import { supabase } from '@/integrations/supabase/client';
+import { databaseAdapter } from '@/lib/databaseAdapter';
 
 export class SetupDAOTestData {
   /**
@@ -37,7 +37,7 @@ export class SetupDAOTestData {
       console.log('Creating DAO tables...');
       
       // Test if dao_organizations table exists by trying to select from it
-      const { error: orgError } = await supabase
+      const { error: orgError } = await databaseAdapter
         .from('dao_organizations')
         .select('id')
         .limit(1);
@@ -62,7 +62,7 @@ export class SetupDAOTestData {
       console.log('Clearing existing test data...');
       
       // Clear votes first (due to foreign key constraints)
-      const { error: votesError } = await supabase
+      const { error: votesError } = await databaseAdapter
         .from('dao_votes')
         .delete()
         .neq('id', '00000000-0000-0000-0000-000000000000'); // Delete all
@@ -72,7 +72,7 @@ export class SetupDAOTestData {
       }
       
       // Clear proposals
-      const { error: proposalsError } = await supabase
+      const { error: proposalsError } = await databaseAdapter
         .from('dao_proposals')
         .delete()
         .neq('id', '00000000-0000-0000-0000-000000000000'); // Delete all
@@ -82,7 +82,7 @@ export class SetupDAOTestData {
       }
       
       // Clear members
-      const { error: membersError } = await supabase
+      const { error: membersError } = await databaseAdapter
         .from('dao_members')
         .delete()
         .neq('id', '00000000-0000-0000-0000-000000000000'); // Delete all
@@ -91,14 +91,14 @@ export class SetupDAOTestData {
         console.log('Could not clear members:', membersError.message);
       }
       
-      // Clear organizations
-      const { error: orgsError } = await supabase
+      // Clear organizations (only test ones)
+      const { error: orgsError } = await databaseAdapter
         .from('dao_organizations')
         .delete()
-        .neq('id', '00000000-0000-0000-0000-000000000000'); // Delete all
+        .eq('name', 'RAC Rewards DAO'); // Only delete test org
       
       if (orgsError) {
-        console.log('Could not clear organizations:', orgsError.message);
+        console.log('Could not clear test organization:', orgsError.message);
       }
       
       console.log('Existing test data cleared');
@@ -112,7 +112,7 @@ export class SetupDAOTestData {
    */
   private static async createTestData(): Promise<void> {
     // Create DAO organization
-    const { error: orgError } = await supabase
+    const { error: orgError } = await databaseAdapter
       .from('dao_organizations')
       .insert({
         id: '550e8400-e29b-41d4-a716-446655440000',
@@ -186,7 +186,7 @@ export class SetupDAOTestData {
       }
     ];
 
-    const { error: membersError } = await supabase
+    const { error: membersError } = await databaseAdapter
       .from('dao_members')
       .insert(members);
 
@@ -301,7 +301,7 @@ export class SetupDAOTestData {
       }
     ];
 
-    const { error: proposalsError } = await supabase
+    const { error: proposalsError } = await databaseAdapter
       .from('dao_proposals')
       .insert(proposals);
 
@@ -361,7 +361,7 @@ export class SetupDAOTestData {
       }
     ];
 
-    const { error: votesError } = await supabase
+    const { error: votesError } = await databaseAdapter
       .from('dao_votes')
       .insert(votes);
 
@@ -376,7 +376,7 @@ export class SetupDAOTestData {
   private static async updateWithRealUserIds(): Promise<void> {
     try {
       // Get current user
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { user } } = await databaseAdapter.supabase.auth.getUser();
       
       if (!user) {
         console.log('No authenticated user found, skipping user ID update');
@@ -384,7 +384,7 @@ export class SetupDAOTestData {
       }
 
       // Update the first member to use the current user's ID
-      const { error } = await supabase
+      const { error } = await databaseAdapter
         .from('dao_members')
         .update({ user_id: user.id })
         .eq('id', '650e8400-e29b-41d4-a716-446655440001');
@@ -404,13 +404,12 @@ export class SetupDAOTestData {
    */
   static async checkTestDataExists(): Promise<boolean> {
     try {
-      const { error } = await supabase
+      const { error } = await databaseAdapter
         .from('dao_organizations')
         .select('id')
         .eq('id', '550e8400-e29b-41d4-a716-446655440000')
         .single();
-
-      return !error && !!data;
+      return !error;
     } catch {
       return false;
     }

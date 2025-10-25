@@ -52,7 +52,7 @@ const Footer = () => {
               <li><a href="#how-it-works" className="hover:bg-gradient-to-r hover:from-primary hover:to-purple-500 hover:bg-clip-text hover:text-transparent transition-all duration-300">How It Works</a></li>
               <li><a href="#benefits" className="hover:bg-gradient-to-r hover:from-primary hover:to-purple-500 hover:bg-clip-text hover:text-transparent transition-all duration-300">Why Join Our Loyalty Network</a></li>
               <li><Link to="/partners" className="hover:bg-gradient-to-r hover:from-blue-500 hover:to-primary hover:bg-clip-text hover:text-transparent transition-all duration-300">Partners</Link></li>
-              <li><Link to="/faqs" className="hover:bg-gradient-to-r hover:from-purple-500 hover:to-blue-500 hover:bg-clip-text hover:text-transparent transition-all duration-300">FAQs</Link></li>
+              <li><Link to="/faqs" className="hover:bg-gradient-to-r hover:from-purple-500 hover:to-blue-500 hover:bg-clip-text hover:text-transparent transition-all duration-300" onClick={() => window.scrollTo(0, 0)}>FAQs</Link></li>
             </ul>
           </div>
           

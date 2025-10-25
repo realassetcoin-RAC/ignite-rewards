@@ -2,7 +2,7 @@
 // Ensures all loyalty application behavior changes create DAO records for voting
 // This enforces the rule: "Any changes that change the behavior of the loyalty application must create a DAO record for voting"
 
-import { supabase } from '@/integrations/supabase/client';
+import { databaseAdapter } from '@/lib/databaseAdapter';
 import { log } from '@/lib/logger';
 
 export interface LoyaltyChange {

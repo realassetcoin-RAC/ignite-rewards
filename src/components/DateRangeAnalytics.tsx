@@ -7,7 +7,7 @@ import { EnhancedDatePicker } from '@/components/ui/enhanced-date-picker';
 import { DateRangePickerWithTime } from '@/components/admin/DateRangePicker';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
+import { databaseAdapter } from '@/lib/databaseAdapter';
 import { DateRange } from 'react-day-picker';
 import { 
   Calendar, 

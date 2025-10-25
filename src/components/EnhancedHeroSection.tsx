@@ -162,13 +162,22 @@ const EnhancedHeroSection = () => {
       <div className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-md border-b border-border/50">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-3">
               <img 
-                src="/pointbridge-logo.jpg" 
-                alt="PointBridge Logo" 
-                className="w-8 h-8 rounded-lg object-contain"
+                src="/bridgepoint-logo.jpg" 
+                alt="BridgePoint Logo" 
+                className="w-12 h-12 rounded-lg object-contain"
               />
-              <h1 className="text-xl font-bold text-foreground">PointBridge</h1>
+              <h1 className="text-2xl font-black tracking-wider bg-gradient-to-b from-orange-400 via-yellow-400 to-purple-600 bg-clip-text text-transparent drop-shadow-lg" style={{
+                textShadow: '0 0 20px rgba(255, 165, 0, 0.5), 0 0 40px rgba(147, 51, 234, 0.3)',
+                filter: 'drop-shadow(0 0 8px rgba(255, 165, 0, 0.4))',
+                fontFamily: '"Orbitron", "Briza BC", "Briza", system-ui, -apple-system, sans-serif',
+                letterSpacing: '0.15em',
+                fontWeight: '900',
+                textTransform: 'uppercase'
+              }}>
+                PointBridge
+              </h1>
             </div>
             
             <div className="flex items-center space-x-4">

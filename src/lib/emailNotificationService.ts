@@ -1,4 +1,3 @@
-import { supabase } from '@/integrations/supabase/client';
 import { environment } from '@/config/environment';
 
 export interface EmailTemplate {
@@ -18,7 +17,7 @@ export interface EmailNotification {
   subject: string;
   html_content?: string;
   text_content?: string;
-  variables?: Record<string, unknown>;
+  variables?: Record<string, any>;
   priority: 'low' | 'normal' | 'high';
   status: 'pending' | 'sent' | 'failed' | 'bounced';
   sent_at?: string;
@@ -39,23 +38,23 @@ export class EmailNotificationService {
   static async sendEmail(
     toEmail: string,
     templateName: string,
-    variables: Record<string, unknown> = {},
+    variables: Record<string, any> = {},
     priority: 'low' | 'normal' | 'high' = 'normal'
   ): Promise<EmailResult> {
     try {
       // In development mode, use mock email functionality
       if (environment.isDevelopment) {
-        // Console statement removed
-        // Console statement removed
-        // Console statement removed
-        // Console statement removed
+        console.log(`📧 [MOCK EMAIL] Sending email to ${toEmail}`);
+        console.log(`📧 [MOCK EMAIL] Template: ${templateName}`);
+        console.log(`📧 [MOCK EMAIL] Variables:`, variables);
+        console.log(`📧 [MOCK EMAIL] Priority: ${priority}`);
         
         // Simulate email sending delay
         await new Promise(resolve => setTimeout(resolve, 100));
         
         // Log the email content for testing
-        // Console statement removed
-        // Console statement removed
+        console.log(`📧 [MOCK EMAIL] Email would be sent with subject: ${templateName} notification`);
+        console.log(`📧 [MOCK EMAIL] Recipient: ${toEmail}`);
         
         return { 
           success: true, 
@@ -142,8 +141,8 @@ export class EmailNotificationService {
         };
       }
 
-    } catch {
-      // Console statement removed
+    } catch (error) {
+      console.error('Email sending error:', error);
       return {
         success: false,
         error: 'Failed to send email notification'
@@ -232,7 +231,7 @@ export class EmailNotificationService {
    * Send bulk emails (for campaigns)
    */
   static async sendBulkEmails(
-    recipients: Array<{ email: string; variables: Record<string, unknown> }>,
+    recipients: Array<{ email: string; variables: Record<string, any> }>,
     templateName: string,
     priority: 'low' | 'normal' | 'high' = 'normal'
   ): Promise<{
@@ -263,7 +262,7 @@ export class EmailNotificationService {
 
         // Add delay between emails to avoid rate limiting
         await new Promise(resolve => setTimeout(resolve, 100));
-      } catch {
+      } catch (error) {
         failed++;
         errors.push(`${recipient.email}: ${error instanceof Error ? error.message : 'Unknown error'}`);
       }
@@ -323,8 +322,8 @@ export class EmailNotificationService {
         recentActivity: recentActivity || []
       };
 
-    } catch {
-      // Console statement removed
+    } catch (error) {
+      console.error('Error getting email stats:', error);
       return {
         totalSent: 0,
         totalFailed: 0,
@@ -389,7 +388,7 @@ export class EmailNotificationService {
 
           // Add delay between retries
           await new Promise(resolve => setTimeout(resolve, 200));
-        } catch {
+        } catch (error) {
           errors.push(`${email.to_email}: ${error instanceof Error ? error.message : 'Unknown error'}`);
         }
       }
@@ -400,7 +399,7 @@ export class EmailNotificationService {
         errors
       };
 
-    } catch {
+    } catch (error) {
       // Don't log database connection errors in browser environment as they're expected
       if (error instanceof Error && error.message === 'Database not connected') {
         return {
@@ -412,7 +411,7 @@ export class EmailNotificationService {
       
       // Only log actual errors, not expected database connection issues
       if (error instanceof Error && !error.message.includes('Database not connected')) {
-        // Console statement removed
+        console.error('Error retrying failed emails:', error);
       }
       
       return {
@@ -446,8 +445,8 @@ export class EmailNotificationService {
         success: true,
         template: data
       };
-    } catch {
-      // Console statement removed
+    } catch (error) {
+      console.error('Error upserting email template:', error);
       return {
         success: false,
         error: 'Failed to save email template'
@@ -457,7 +456,7 @@ export class EmailNotificationService {
 
   // Private helper methods
 
-  private static replaceVariables(content: string, variables: Record<string, unknown>): string {
+  private static replaceVariables(content: string, variables: Record<string, any>): string {
     let result = content;
     
     for (const [key, value] of Object.entries(variables)) {
@@ -477,7 +476,6 @@ export class EmailNotificationService {
     try {
       // TODO: Integrate with actual email service (SendGrid, AWS SES, etc.)
       // For now, simulate email sending
-      // eslint-disable-next-line no-console
       console.log('Sending email:', {
         to: emailData.to,
         subject: emailData.subject,
@@ -504,8 +502,8 @@ export class EmailNotificationService {
         success: true,
         messageId: `msg_${Date.now()}`
       };
-    } catch {
-      // Console statement removed
+    } catch (error) {
+      console.error('Email service error:', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Email service error'

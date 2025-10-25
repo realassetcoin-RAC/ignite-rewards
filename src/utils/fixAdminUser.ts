@@ -3,7 +3,6 @@
  * This can be run in the browser console to fix admin user problems
  */
 
-// import { supabase } from '@/integrations/supabase/client';
 
 export async function fixAdminUser(email: string = 'realassetcoin@gmail.com'): Promise<boolean> {
   console.log(`🔧 Attempting to fix admin user: ${email}`);

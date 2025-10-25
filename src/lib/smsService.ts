@@ -3,7 +3,7 @@
  * Real SMS service implementation using Twilio (configurable for other providers)
  */
 
-import { supabase } from '@/integrations/supabase/client';
+import { databaseAdapter } from '@/lib/databaseAdapter';
 
 interface SMSConfig {
   provider: 'twilio' | 'aws-sns' | 'mock';
@@ -70,7 +70,7 @@ export class SMSService {
         .single();
 
       if (dbError) {
-        // Console statement removed
+        console.error('Error storing OTP:', dbError);
         return { success: false, error: 'Failed to generate OTP' };
       }
 
@@ -90,15 +90,15 @@ export class SMSService {
         return smsResult;
       }
 
-      // Console statement removed
+      console.log(`✅ OTP sent to ${phoneNumber} for loyalty linking`);
       return {
         success: true,
         messageId: smsResult.messageId,
         cost: smsResult.cost
       };
 
-    } catch {
-      // Console statement removed
+    } catch (error) {
+      console.error('Error sending loyalty link OTP:', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error'
@@ -167,14 +167,14 @@ export class SMSService {
         })
         .eq('id', otpRecord.id);
 
-      // Console statement removed
+      console.log(`✅ OTP verified for ${phoneNumber}`);
       return { 
         success: true, 
         otpId: otpRecord.id 
       };
 
-    } catch {
-      // Console statement removed
+    } catch (error) {
+      console.error('Error verifying OTP:', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Verification failed'
@@ -193,18 +193,18 @@ export class SMSService {
         return this.sendAWSSMS(phoneNumber, message);
       case 'mock':
       default:
-        return this.sendMockSMS('', '');
+        return this.sendMockSMS(phoneNumber, message);
     }
   }
 
   /**
    * Send SMS via Twilio
    */
-  private static async sendTwilioSMS(): Promise<SMSResult> {
+  private static async sendTwilioSMS(phoneNumber: string, message: string): Promise<SMSResult> {
     try {
       if (!this.config.accountSid || !this.config.authToken || !this.config.fromNumber) {
-        // Console statement removed
-        return this.sendMockSMS('', '');
+        console.warn('Twilio credentials not configured, using mock SMS');
+        return this.sendMockSMS(phoneNumber, message);
       }
 
       // In a real implementation, you would use Twilio SDK here
@@ -216,15 +216,15 @@ export class SMSService {
       // });
 
       // For now, simulate Twilio response
-      // Console statement removed
+      console.log(`📱 [MOCK TWILIO] SMS sent to ${phoneNumber}: ${message}`);
       return {
         success: true,
         messageId: `SM${Date.now()}${Math.random().toString(36).substr(2, 9)}`,
         cost: 0.0075 // Typical Twilio cost
       };
 
-    } catch {
-      // Console statement removed
+    } catch (error) {
+      console.error('Twilio SMS error:', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Twilio SMS failed'
@@ -235,18 +235,18 @@ export class SMSService {
   /**
    * Send SMS via AWS SNS
    */
-  private static async sendAWSSMS(): Promise<SMSResult> {
+  private static async sendAWSSMS(phoneNumber: string, message: string): Promise<SMSResult> {
     try {
       // In a real implementation, you would use AWS SDK here
-      // Console statement removed
+      console.log(`📱 [MOCK AWS SNS] SMS sent to ${phoneNumber}: ${message}`);
       return {
         success: true,
         messageId: `aws-${Date.now()}`,
         cost: 0.006 // Typical AWS SNS cost
       };
 
-    } catch {
-      // Console statement removed
+    } catch (error) {
+      console.error('AWS SNS error:', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'AWS SNS failed'
@@ -257,10 +257,10 @@ export class SMSService {
   /**
    * Mock SMS for development/testing
    */
-  private static async sendMockSMS(): Promise<SMSResult> {
-    // Console statement removed
-    // Console statement removed
-    // Console statement removed
+  private static async sendMockSMS(phoneNumber: string, message: string): Promise<SMSResult> {
+    console.log(`📱 [MOCK SMS] To: ${phoneNumber}`);
+    console.log(`📱 [MOCK SMS] Message: ${message}`);
+    console.log(`📱 [MOCK SMS] Status: Delivered (Mock)`);
     
     // Simulate network delay
     await new Promise(resolve => setTimeout(resolve, 1000));
@@ -285,13 +285,13 @@ export class SMSService {
         .limit(limit);
 
       if (error) {
-        // Console statement removed
+        console.error('Error fetching OTP history:', error);
         return [];
       }
 
       return data || [];
-    } catch {
-      // Console statement removed
+    } catch (error) {
+      console.error('Error in getOTPHistory:', error);
       return [];
     }
   }
@@ -308,15 +308,15 @@ export class SMSService {
         .select('id');
 
       if (error) {
-        // Console statement removed
+        console.error('Error cleaning up expired OTPs:', error);
         return 0;
       }
 
       const deletedCount = data?.length || 0;
-      // Console statement removed
+      console.log(`🧹 Cleaned up ${deletedCount} expired OTP codes`);
       return deletedCount;
-    } catch {
-      // Console statement removed
+    } catch (error) {
+      console.error('Error in cleanupExpiredOTPs:', error);
       return 0;
     }
   }

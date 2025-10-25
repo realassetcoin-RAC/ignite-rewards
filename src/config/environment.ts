@@ -1,28 +1,22 @@
 // Environment Configuration
-// Handles different environments: development (local), UAT (Supabase), production
+// Uses Docker PostgreSQL for ALL operations including OAuth
 
 export const environment = {
-  // Environment detection - Force local database usage
-  isDevelopment: true, // Always use local database
-  isUAT: false, // Disable Supabase
+  // Environment detection - Use local PostgreSQL as per .cursorrules
+  isDevelopment: true, // Use local database for development
+  isUAT: false, // Use local database for UAT
   isProduction: import.meta.env.VITE_APP_ENV === 'production',
 
   // Database configuration
   database: {
-    // Local PostgreSQL (Development)
+    // Local PostgreSQL (Docker) - ALL operations use this
     local: {
-      host: import.meta.env.VITE_DB_HOST,
+      host: import.meta.env.VITE_DB_HOST || 'localhost',
       port: parseInt(import.meta.env.VITE_DB_PORT || '5432'),
-      database: import.meta.env.VITE_DB_NAME,
-      user: import.meta.env.VITE_DB_USER,
-      password: import.meta.env.VITE_DB_PASSWORD,
-      url: import.meta.env.VITE_DATABASE_URL
-    },
-    
-    // Supabase (UAT/Production) - Environment variables only
-    supabase: {
-      url: import.meta.env.VITE_SUPABASE_URL,
-      anonKey: import.meta.env.VITE_SUPABASE_ANON_KEY
+      database: import.meta.env.VITE_DB_NAME || 'ignite_rewards',
+      user: import.meta.env.VITE_DB_USER || 'postgres',
+      password: import.meta.env.VITE_DB_PASSWORD || 'Maegan@200328',
+      url: import.meta.env.VITE_DATABASE_URL || 'postgresql://postgres:Maegan@200328@localhost:5432/ignite_rewards'
     }
   },
 
@@ -40,92 +34,61 @@ export const environment = {
       rpcUrl: import.meta.env.VITE_SOLANA_RPC_URL || 'https://api.devnet.solana.com',
       network: import.meta.env.VITE_SOLANA_NETWORK || 'devnet'
     },
-  },
-
-  // External API configuration
-  apis: {
-    apiNinjas: {
-      key: import.meta.env.VITE_API_NINJAS_KEY
+    ethereum: {
+      rpcUrl: import.meta.env.VITE_ETHEREUM_RPC_URL || 'https://sepolia.infura.io/v3/your-infura-key',
+      network: import.meta.env.VITE_ETHEREUM_NETWORK || 'sepolia'
     }
   },
 
   // Admin configuration
   admin: {
-    email: import.meta.env.VITE_ADMIN_EMAIL,
-    password: import.meta.env.VITE_ADMIN_PASSWORD
+    email: import.meta.env.VITE_ADMIN_EMAIL || 'admin@igniterewards.com',
+    password: import.meta.env.VITE_ADMIN_PASSWORD || 'admin123!'
+  },
+
+  // OAuth configuration - Using local OAuth API server
+  oauth: {
+    google: {
+      clientId: import.meta.env.VITE_GOOGLE_CLIENT_ID || '',
+      clientSecret: import.meta.env.VITE_GOOGLE_CLIENT_SECRET || '',
+      redirectUri: import.meta.env.VITE_GOOGLE_REDIRECT_URI || `${window.location.origin}/auth/callback`
+    },
+    apiBaseUrl: import.meta.env.VITE_OAUTH_API_BASE_URL || 'http://localhost:3000'
+  },
+
+  // API endpoints
+  api: {
+    baseUrl: import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001',
+    port: parseInt(import.meta.env.VITE_API_PORT || '3001'),
+    daoBaseUrl: import.meta.env.VITE_DAO_API_BASE_URL || 'http://localhost:3002/api',
+    daoPort: parseInt(import.meta.env.VITE_DAO_API_PORT || '3002')
   }
 };
 
-// Environment validation
-const validateEnvironment = () => {
-  // For local development, validate local database connection
-  if (environment.isDevelopment) {
-    const required = [
-      'VITE_DB_HOST',
-      'VITE_DB_PORT',
-      'VITE_DB_NAME',
-      'VITE_DB_USER',
-      'VITE_DB_PASSWORD'
-    ];
-    
-    const missing = required.filter(key => !import.meta.env[key]);
-    
-    if (missing.length > 0) {
-      throw new Error(`Missing required local database environment variables: ${missing.join(', ')}`);
-    }
-  } else {
-    // For production/UAT, validate Supabase connection
-    const required = [
-      'VITE_SUPABASE_URL',
-      'VITE_SUPABASE_ANON_KEY'
-    ];
-    
-    const missing = required.filter(key => !import.meta.env[key]);
-    
-    if (missing.length > 0) {
-      throw new Error(`Missing required environment variables: ${missing.join(', ')}`);
-    }
-  }
-  
-  // Validate local database connection
-  if (environment.isDevelopment && environment.database.local.host) {
-    if (!environment.database.local.host.includes('localhost') && !environment.database.local.host.includes('127.0.0.1')) {
-      // eslint-disable-next-line no-console
-      console.warn('⚠️ Warning: Not using localhost for local development');
-    }
-  }
-  
-  // Validate Supabase URL format (only if not in development mode)
-  if (!environment.isDevelopment && environment.database.supabase.url && !environment.database.supabase.url.includes('supabase.co')) {
-    // eslint-disable-next-line no-console
-    console.warn('⚠️ Warning: Supabase URL format may be incorrect');
-  }
-  
-  // Validate JWT token format (only if not in development mode)
-  if (!environment.isDevelopment && environment.database.supabase.anonKey && !environment.database.supabase.anonKey.startsWith('eyJ')) {
-    // eslint-disable-next-line no-console
-    console.warn('⚠️ Warning: Supabase anon key format may be incorrect');
-  }
-};
+// DEBUG: Log raw import.meta.env to see what Vite is actually loading
+console.log('🔍 DEBUG - Raw import.meta.env:', import.meta.env);
+console.log('🔍 DEBUG - All import.meta.env keys:', Object.keys(import.meta.env));
 
-// Call validation
-validateEnvironment();
-
-// Only log in debug mode
-if (environment.app.debug) {
-  // eslint-disable-next-line no-console
-  console.log('🌍 Environment Configuration:', {
-    mode: environment.isDevelopment ? 'Local Development' : 'Cloud Supabase',
-    database: environment.isDevelopment ? 'Local PostgreSQL' : 'Supabase Cloud',
-    localDb: environment.isDevelopment ? {
-      host: environment.database.local.host,
-      port: environment.database.local.port,
-      database: environment.database.local.database,
-      user: environment.database.local.user
-    } : null,
-    supabaseUrl: environment.database.supabase.url,
-    hasAnonKey: !!environment.database.supabase.anonKey
-  });
-}
+// Log current environment
+console.log('🌍 Environment Configuration:', {
+  mode: 'Docker PostgreSQL - No Supabase',
+  database: 'Docker PostgreSQL',
+  debug: environment.app.debug,
+  enableMockAuth: environment.app.enableMockAuth,
+  localDb: {
+    host: environment.database.local.host,
+    port: environment.database.local.port,
+    database: environment.database.local.database,
+    user: environment.database.local.user
+  },
+  oauth: {
+    clientId: environment.oauth.google.clientId ? 'configured' : 'missing',
+    apiBaseUrl: environment.oauth.apiBaseUrl
+  },
+  api: {
+    baseUrl: environment.api.baseUrl,
+    daoBaseUrl: environment.api.daoBaseUrl
+  }
+});
 
 export default environment;

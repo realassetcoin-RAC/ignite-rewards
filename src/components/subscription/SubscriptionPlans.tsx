@@ -3,12 +3,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Check, Star, Zap, Cloud, Rocket } from 'lucide-react';
-import { calculateYearlySavings } from '@/data/subscriptionPlans';
+import { SUBSCRIPTION_PLANS, calculateYearlySavings } from '@/data/subscriptionPlans';
 import { SubscriptionPlan } from '@/types/subscription';
 
 interface SubscriptionPlansProps {
-  plans: SubscriptionPlan[];
-  loading?: boolean;
   onSelectPlan?: (plan: SubscriptionPlan) => void;
   currentPlanId?: string | undefined;
   showYearly?: boolean;
@@ -26,8 +24,6 @@ const planIcons = {
 };
 
 export const SubscriptionPlans: React.FC<SubscriptionPlansProps> = ({
-  plans,
-  loading = false,
   onSelectPlan,
   currentPlanId,
   showYearly = false,
@@ -89,12 +85,7 @@ export const SubscriptionPlans: React.FC<SubscriptionPlansProps> = ({
 
       {/* Plans Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
-        {loading ? (
-          <div className="col-span-full text-center py-8">
-            <div className="text-muted-foreground">Loading subscription plans...</div>
-          </div>
-        ) : (
-          plans.map((plan) => {
+        {SUBSCRIPTION_PLANS.map((plan) => {
           const isCurrentPlan = currentPlanId === plan.id;
           const isPopular = plan.popular;
           
@@ -183,8 +174,7 @@ export const SubscriptionPlans: React.FC<SubscriptionPlansProps> = ({
               </CardContent>
             </Card>
           );
-        })
-        )}
+        })}
       </div>
 
       {/* Additional Info */}

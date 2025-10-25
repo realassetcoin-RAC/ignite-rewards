@@ -5,7 +5,7 @@
  * to diagnose and resolve admin dashboard loading issues permanently.
  */
 
-import { supabase } from '@/integrations/supabase/client';
+import { databaseAdapter } from '@/lib/databaseAdapter';
 
 export interface AdminVerificationResult {
   success: boolean;
@@ -38,7 +38,7 @@ export async function verifyAdminAccess(email?: string): Promise<AdminVerificati
 
   try {
     // Get user information
-    let userId: string;
+    let userId: string | undefined;
     let userEmail: string;
 
     if (email) {
@@ -48,7 +48,7 @@ export async function verifyAdminAccess(email?: string): Promise<AdminVerificati
       result.email = email;
     } else {
       // For current user verification
-      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      const { data: { user }, error: userError } = await databaseAdapter.supabase.auth.getUser();
       if (userError || !user) {
         result.errors.push('No authenticated user found');
         return result;
@@ -63,7 +63,7 @@ export async function verifyAdminAccess(email?: string): Promise<AdminVerificati
 
     // Method 1: Try is_admin RPC function
     try {
-      const { data, error } = await supabase.rpc('is_admin');
+      const { data, error } = await databaseAdapter.supabase.rpc('is_admin');
       if (error) {
         result.errors.push(`is_admin RPC error: ${error.message}`);
         result.methods.rpcIsAdmin = null;
@@ -81,7 +81,7 @@ export async function verifyAdminAccess(email?: string): Promise<AdminVerificati
 
     // Method 2: Try check_admin_access RPC function
     try {
-      const { data, error } = await supabase.rpc('check_admin_access');
+      const { data, error } = await databaseAdapter.supabase.rpc('check_admin_access');
       if (error) {
         result.errors.push(`check_admin_access RPC error: ${error.message}`);
         result.methods.rpcCheckAdminAccess = null;
@@ -100,7 +100,7 @@ export async function verifyAdminAccess(email?: string): Promise<AdminVerificati
     // Method 3: Direct profile query
     if (userId) {
       try {
-        const { data: profile, error: profileError } = await supabase
+        const { data: profile, error: profileError } = await databaseAdapter.supabase
           .from('profiles')
           .select('id, email, role, full_name')
           .eq('id', userId)
@@ -206,7 +206,7 @@ export async function robustAdminCheck(): Promise<boolean> {
   try {
     // First, check known admin emails (fastest and most reliable)
     console.log('Step 1: Checking known admin emails...');
-    const { data: { user } } = await supabase.auth.getUser();
+    const { data: { user } } = await databaseAdapter.supabase.auth.getUser();
     console.log('Current user:', user?.email);
     
     if (user?.email) {

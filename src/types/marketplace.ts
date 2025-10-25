@@ -280,7 +280,7 @@ export interface DAOMarketplaceProposal {
   listing_id?: string;
   title: string;
   description: string;
-  proposed_changes: Record<string, unknown>;
+  proposed_changes: Record<string, any>;
   status: 'pending' | 'approved' | 'rejected' | 'implemented';
   created_by: string;
   created_at: string;
@@ -292,7 +292,7 @@ export interface DAOMarketplaceProposal {
 export interface MarketplaceError {
   code: string;
   message: string;
-  details?: Record<string, unknown>;
+  details?: Record<string, any>;
 }
 
 export interface ValidationError {

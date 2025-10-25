@@ -202,14 +202,14 @@ const WalletManager: React.FC<WalletManagerProps> = ({ userId }) => {
               <label className="text-sm font-medium text-muted-foreground">Wallet Address</label>
               <div className="flex items-center gap-2 mt-1">
                 <Input
-                  value={wallet.solana_address}
+                  value={wallet.public_key}
                   readOnly
                   className="font-mono text-sm"
                 />
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => copyToClipboard(wallet.solana_address, 'Wallet address')}
+                  onClick={() => copyToClipboard(wallet.public_key, 'Wallet address')}
                 >
                   <Copy className="h-4 w-4" />
                 </Button>

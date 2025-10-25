@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 // Removed Tabs import - using custom navigation
 import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
+import { databaseAdapter } from "@/lib/databaseAdapter";
 import { Loader2, Mail, Wallet, UserPlus } from "lucide-react";
 
 /**
@@ -59,7 +59,7 @@ const AdminUserCreator: React.FC = () => {
     try {
       // Create admin user with Supabase Auth Admin API
       // Note: This should ideally be done through a secure backend endpoint
-      const { error } = await supabase.auth.signUp({
+      const { error } = await databaseAdapter.supabase.auth.signUp({
         email: emailForm.email,
         password: emailForm.password,
         options: {
@@ -114,7 +114,7 @@ const AdminUserCreator: React.FC = () => {
 
     try {
       // Call the create_admin_user function
-      const { data, error } = await supabase.rpc('create_admin_user', {
+      const { data, error } = await databaseAdapter.supabase.rpc('create_admin_user', {
         admin_email: walletForm.email,
         admin_wallet_address: walletForm.walletAddress,
         admin_full_name: walletForm.fullName || null

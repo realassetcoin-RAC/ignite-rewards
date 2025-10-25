@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple Auth Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+        .success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .info { background-color: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+        button {
+            background-color: #4285f4;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+        }
+        button:hover { background-color: #3367d6; }
+        button:disabled { background-color: #ccc; cursor: not-allowed; }
+        .log {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+            padding: 15px;
+            margin: 10px 0;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 Simple Auth Test</h1>
+        
+        <div id="status" class="status info">
+            <strong>Status:</strong> Ready to test authentication
+        </div>
+
+        <div>
+            <button onclick="testAuthFlow()">🚀 Test Complete Auth Flow</button>
+            <button onclick="checkAuthState()">🔍 Check Auth State</button>
+            <button onclick="clearAuth()">🗑️ Clear Auth</button>
+            <button onclick="clearLog()">📝 Clear Log</button>
+        </div>
+
+        <div class="log" id="log">
+            <div>Console log will appear here...</div>
+        </div>
+    </div>
+
+    <script>
+        const CLIENT_ID = '965254391266-pi0nuo882g88tjn1hgn9uh7n72macekh.apps.googleusercontent.com';
+
+        function log(message, type = 'info') {
+            const logDiv = document.getElementById('log');
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = document.createElement('div');
+            logEntry.innerHTML = `<strong>[${timestamp}]</strong> ${message}`;
+            logEntry.style.color = type === 'error' ? '#721c24' : type === 'success' ? '#155724' : '#0c5460';
+            logDiv.appendChild(logEntry);
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+
+        function clearLog() {
+            document.getElementById('log').innerHTML = '<div>Console log cleared...</div>';
+        }
+
+        function updateStatus(message, type) {
+            const statusDiv = document.getElementById('status');
+            statusDiv.textContent = message;
+            statusDiv.className = `status ${type}`;
+        }
+
+        async function testAuthFlow() {
+            log('🚀 Starting complete auth flow test...');
+            updateStatus('Testing auth flow...', 'info');
+
+            try {
+                // Step 1: Load Google Identity Services
+                log('📚 Loading Google Identity Services...');
+                await loadGoogleLibrary();
+                log('✅ Google Identity Services loaded', 'success');
+
+                // Step 2: Initialize Google OAuth
+                log('🔧 Initializing Google OAuth...');
+                window.google.accounts.id.initialize({
+                    client_id: CLIENT_ID,
+                    callback: (response) => {
+                        log('🎉 Google OAuth callback received!', 'success');
+                        processAuthResponse(response);
+                    },
+                    auto_select: false,
+                    cancel_on_tap_outside: true,
+                    use_fedcm_for_prompt: false, // Disable FedCM to avoid issues
+                    itp_support: true,
+                    context: 'signin'
+                });
+                log('✅ Google OAuth initialized', 'success');
+
+                // Step 3: Show One Tap prompt
+                log('📱 Showing One Tap prompt...');
+                window.google.accounts.id.prompt();
+                log('✅ One Tap prompt triggered', 'success');
+
+                updateStatus('Waiting for user interaction...', 'info');
+
+            } catch (error) {
+                log(`❌ Auth flow test failed: ${error.message}`, 'error');
+                updateStatus('❌ Auth flow test failed', 'error');
+            }
+        }
+
+        function processAuthResponse(response) {
+            try {
+                log('🔍 Processing auth response...');
+                
+                // Decode JWT
+                const payload = decodeJWT(response.credential);
+                const googleUser = {
+                    id: payload.sub,
+                    email: payload.email,
+                    name: payload.name,
+                    picture: payload.picture,
+                    verified_email: payload.email_verified
+                };
+
+                log(`👤 User: ${googleUser.name} (${googleUser.email})`, 'success');
+
+                // Create session
+                const session = {
+                    user: {
+                        id: googleUser.id,
+                        email: googleUser.email,
+                        user_metadata: {
+                            full_name: googleUser.name,
+                            avatar_url: googleUser.picture,
+                            email_verified: googleUser.verified_email
+                        },
+                        email_confirmed_at: googleUser.verified_email ? new Date().toISOString() : null
+                    },
+                    access_token: response.credential,
+                    expires_at: Date.now() + (3600 * 1000) // 1 hour
+                };
+
+                // Store in localStorage
+                localStorage.setItem('google_user', JSON.stringify(googleUser));
+                localStorage.setItem('google_access_token', response.credential);
+                localStorage.setItem('auth_session', JSON.stringify(session));
+                localStorage.setItem('auth_user', JSON.stringify(session.user));
+
+                log('💾 Session stored in localStorage', 'success');
+
+                // Trigger events
+                window.dispatchEvent(new Event('storage'));
+                window.dispatchEvent(new CustomEvent('auth-state-change', {
+                    detail: { event: 'SIGNED_IN', session }
+                }));
+
+                log('📡 Auth state change events dispatched', 'success');
+                updateStatus('✅ Authentication successful!', 'success');
+
+                // Check auth state after a short delay
+                setTimeout(checkAuthState, 1000);
+
+            } catch (error) {
+                log(`❌ Error processing auth response: ${error.message}`, 'error');
+                updateStatus('❌ Auth processing failed', 'error');
+            }
+        }
+
+        function checkAuthState() {
+            log('🔍 Checking current auth state...');
+            
+            try {
+                const authSession = localStorage.getItem('auth_session');
+                const authUser = localStorage.getItem('auth_user');
+                const googleUser = localStorage.getItem('google_user');
+                const googleToken = localStorage.getItem('google_access_token');
+
+                log(`📊 Auth Session: ${authSession ? '✅ Exists' : '❌ Missing'}`);
+                log(`👤 Auth User: ${authUser ? '✅ Exists' : '❌ Missing'}`);
+                log(`🔗 Google User: ${googleUser ? '✅ Exists' : '❌ Missing'}`);
+                log(`🎫 Google Token: ${googleToken ? '✅ Exists' : '❌ Missing'}`);
+
+                if (authSession && authUser) {
+                    const sessionData = JSON.parse(authSession);
+                    const userData = JSON.parse(authUser);
+                    log(`📧 User Email: ${userData.email}`, 'success');
+                    log(`⏰ Session Expires: ${new Date(sessionData.expires_at).toLocaleString()}`, 'success');
+                    updateStatus('✅ User is authenticated!', 'success');
+                } else {
+                    updateStatus('❌ No active session found', 'error');
+                }
+
+            } catch (error) {
+                log(`❌ Error checking auth state: ${error.message}`, 'error');
+                updateStatus('❌ Auth state check failed', 'error');
+            }
+        }
+
+        function clearAuth() {
+            log('🗑️ Clearing all authentication data...');
+            
+            localStorage.removeItem('auth_session');
+            localStorage.removeItem('auth_user');
+            localStorage.removeItem('google_user');
+            localStorage.removeItem('google_access_token');
+
+            window.dispatchEvent(new Event('storage'));
+            window.dispatchEvent(new CustomEvent('auth-state-change', {
+                detail: { event: 'SIGNED_OUT', session: null }
+            }));
+
+            log('✅ Authentication data cleared', 'success');
+            updateStatus('🧹 Authentication cleared', 'info');
+        }
+
+        function loadGoogleLibrary() {
+            return new Promise((resolve, reject) => {
+                if (window.google?.accounts?.id) {
+                    resolve();
+                    return;
+                }
+
+                const script = document.createElement('script');
+                script.src = 'https://accounts.google.com/gsi/client';
+                script.async = true;
+                script.defer = true;
+
+                script.onload = () => {
+                    log('✅ Google Identity Services library loaded');
+                    resolve();
+                };
+
+                script.onerror = () => {
+                    log('❌ Failed to load Google Identity Services library', 'error');
+                    reject(new Error('Failed to load Google library'));
+                };
+
+                document.head.appendChild(script);
+            });
+        }
+
+        function decodeJWT(token) {
+            const base64Url = token.split('.')[1];
+            const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+            const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+                return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+            }).join(''));
+            return JSON.parse(jsonPayload);
+        }
+
+        // Auto-check auth state on page load
+        window.addEventListener('load', () => {
+            log('🚀 Page loaded, checking initial auth state...');
+            checkAuthState();
+        });
+    </script>
+</body>
+</html>
+

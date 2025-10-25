@@ -143,11 +143,11 @@ export async function getIssueCategories(): Promise<{
   error?: string;
 }> {
   try {
-    const { data, error } = await databaseAdapter.supabase
-      .from('issue_categories')
+    const { data, error } = await databaseAdapter
+      .from('contact_categories')
       .select('*')
       .eq('is_active', true)
-      .order('category_name');
+      .order('name');
 
     if (error) {
       // Don't log database connection errors in browser environment as they're expected

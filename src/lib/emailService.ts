@@ -3,7 +3,7 @@
  * Email service for loyalty transfers, account linking, and other notifications
  */
 
-import { supabase } from '@/integrations/supabase/client';
+import { databaseAdapter } from '@/lib/databaseAdapter';
 
 interface EmailConfig {
   provider: 'resend' | 'sendgrid' | 'ses' | 'mock';

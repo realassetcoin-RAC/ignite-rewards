@@ -15,50 +15,58 @@
 - NFT ownership verification
 
 ## Database Rules
-- **HYBRID DATABASE ARCHITECTURE: Local PostgreSQL for Data + Supabase for Authentication**
-  - **Data Operations**: Use local PostgreSQL database for all data storage and retrieval
-  - **Authentication**: Use Supabase Cloud for user authentication and session management only
+- **CRITICAL: ONLY use Docker PostgreSQL Database** - All database operations must connect to Docker PostgreSQL
 - Always use `public` schema for tables (not `api`)
 - Use UUID for primary keys with `gen_random_uuid()`
 - Follow existing enum patterns: `app_role`, `merchant_status`, `subscription_plan`
 - Use `WHERE NOT EXISTS` instead of `ON CONFLICT` for safe insertions
 - Loyalty card numbers: 8 characters, first character is user's initial (e.g., J0000001)
+- All database operations must use the Docker PostgreSQL instance at `localhost:5432`
+- Use Supabase ONLY for authentication (Google OAuth, social login)
+- Data operations (CRUD, queries) must use Docker PostgreSQL
 
 ## Database Connection Requirements
-- **MANDATORY: Hybrid Database Configuration**
-  - **Local PostgreSQL for Data Operations**:
-    - Host: `localhost` (or `127.0.0.1`)
-    - Port: `5432`
-    - Database: `ignite_rewards`
-    - User: `postgres`
-    - Password: From environment variables
-    - URL: `postgresql://postgres:password@localhost:5432/ignite_rewards`
-  - **Supabase Cloud for Authentication Only**:
-    - URL: `https://wndswqvqogeblksrujpg.supabase.co`
-    - Anon Key: `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InduZHN3cXZxb2dlYmxrc3J1anBnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYzMzEyMTAsImV4cCI6MjA3MTkwNzIxMH0.eOXJEo3XheuB2AK3NlRotSKqPMueqkgPUa896TM-hfA`
-- **Data Operations**: All CRUD operations, queries, and data storage must use local PostgreSQL
-- **Authentication Operations**: User login, registration, session management use Supabase
-- **NEVER mix data operations with authentication operations**
+- **MANDATORY: Use Docker PostgreSQL Database for Data Operations**
+  - Host: `localhost`
+  - Port: `5432`
+  - Database: `ignite_rewards`
+  - User: `postgres`
+  - Password: `Maegan@200328`
+  - Connection String: `postgresql://postgres:Maegan@200328@localhost:5432/ignite_rewards`
+- **Docker Container Information**
+  - Container Name: `rac-rewards-postgres-dev`
+  - Image: `rac-rewards/postgres:dev`
+  - Check status: `docker ps | findstr postgres`
+  - View logs: `docker logs rac-rewards-postgres-dev`
+  - Restart: `docker restart rac-rewards-postgres-dev`
+- **Supabase Cloud for Authentication Only**
+  - URL: `https://wndswqvqogeblksrujpg.supabase.co`
+  - Anon Key: `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InduZHN3cXZxb2dlYmxrc3J1anBnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYzMzEyMTAsImV4cCI6MjA3MTkwNzIxMH0.eOXJEo3XheuB2AK3NlRotSKqPMueqkgPUa896TM-hfA`
+  - Use only for: `auth.signIn()`, `auth.signOut()`, `auth.getSession()`, `auth.onAuthStateChange()`
+- **NEVER mix data operations with authentication**
+- All SQL scripts and database operations must target Docker PostgreSQL
+- When creating tables, functions, or policies, apply directly to Docker PostgreSQL
 
-## Database Management Rules
-- **Local PostgreSQL Management:**
-  - Use direct PostgreSQL connections for data operations
-  - Apply SQL scripts directly to local database using `psql` or database client
-  - Use environment variables for database credentials
-  - Always backup local database before major changes
-- **Supabase Authentication Management:**
-  - Use Supabase CLI only for authentication-related operations
-  - Install Supabase CLI: `npm install -g supabase`
-  - Link to cloud project: `supabase link --project-ref wndswqvqogeblksrujpg`
-  - Use Supabase for user management, OAuth, and session handling
-- **Migration Workflow:**
-  1. For data schema changes: Apply directly to local PostgreSQL
-  2. For authentication changes: Use Supabase CLI and cloud instance
-  3. Always test changes in development environment first
-  4. Document all database changes with clear migration scripts
-- **Project Reference:** `wndswqvqogeblksrujpg` (from Supabase URL)
-- **Migration File Naming:** `YYYYMMDD_description.sql`
+## Docker PostgreSQL Usage Rules
+- **MANDATORY: Use Docker PostgreSQL for All Database Operations**
+  - Start Docker Desktop before development
+  - Ensure container is running: `docker ps | findstr postgres`
+  - Connect via psql: `docker exec -it rac-rewards-postgres-dev psql -U postgres -d ignite_rewards`
+  - Execute SQL files: `docker exec -i rac-rewards-postgres-dev psql -U postgres -d ignite_rewards < script.sql`
+  - Backup database: `docker exec rac-rewards-postgres-dev pg_dump -U postgres ignite_rewards > backup.sql`
+- **Database Migration Workflow:**
+  1. Create SQL migration files in `migrations/` directory
+  2. Test locally in Docker PostgreSQL first
+  3. Apply using: `node scripts/apply-migration.js migration-file.sql`
+  4. Verify changes with: `docker exec -it rac-rewards-postgres-dev psql -U postgres -d ignite_rewards -c "\dt"`
+  5. Always backup before major migrations
+- **Migration File Naming:** `YYYYMMDD_HHMMSS_description.sql`
 - **Always backup before major migrations**
+- **Development Setup:**
+  1. Ensure Docker Desktop is running
+  2. Run `docker-compose up -d` to start all services
+  3. Application connects to Docker PostgreSQL automatically
+  4. PgAdmin available at `http://localhost:8080` (admin@admin.com / admin)
 
 ## Code Style
 - Use TypeScript for all new code
@@ -162,40 +170,15 @@
   - Implement request timeouts and size limits
 
 ### Database Security
-- **HYBRID DATABASE SECURITY: Local PostgreSQL + Supabase Authentication**
-  - **Local PostgreSQL Security**: Implement proper access controls and encryption
-  - **Supabase Authentication Security**: Use cloud authentication with proper session management
-- Use Row Level Security (RLS) policies for all local PostgreSQL tables
-- **Data Operations**: All CRUD operations must use local PostgreSQL with proper security
-- **Authentication Operations**: Use Supabase cloud for secure user authentication
+- **CRITICAL: ONLY use Supabase Cloud Database** - Never connect to local databases
+- Use Row Level Security (RLS) policies for all tables
+- All database operations must use the cloud Supabase instance
 - Never hardcode sensitive data in scripts or code
-- Use environment variables for all database configuration
-- Implement database connection encryption for local PostgreSQL
-- Use parameterized queries exclusively for both databases
+- Use environment variables for all configuration
+- Implement database connection encryption
+- Use parameterized queries exclusively
 - Regular database security audits and updates
-- Implement database access logging and monitoring for local PostgreSQL
-- **NEVER store authentication data in local database**
-- **NEVER store business data in Supabase cloud database**
-
-## Hybrid Database Architecture Guidelines
-
-### Data Flow Separation
-- **Authentication Flow**: User login → Supabase Auth → Session token → Local app
-- **Data Flow**: App operations → Local PostgreSQL → Data storage/retrieval
-- **User Profile Sync**: Supabase user ID → Local PostgreSQL user records
-
-### Implementation Rules
-- **DatabaseAdapter Pattern**: Use the existing DatabaseAdapter class for proper separation
-- **Authentication**: Always use `databaseAdapter.auth` for user authentication
-- **Data Operations**: Always use `databaseAdapter.from(table)` for data operations
-- **Environment Configuration**: Maintain separate configs for local DB and Supabase
-- **Error Handling**: Handle authentication errors separately from data errors
-
-### Security Boundaries
-- **Authentication Boundary**: Supabase handles all user authentication and session management
-- **Data Boundary**: Local PostgreSQL handles all business data and application state
-- **Cross-Boundary Operations**: Use user ID from Supabase auth to link with local data
-- **No Data Mixing**: Never store business data in Supabase or auth data in local PostgreSQL
+- Implement database access logging and monitoring
 
 ### Application Security
 - Implement Content Security Policy (CSP) headers
@@ -276,43 +259,3 @@
 - Test data: comprehensive and realistic
 - Fixes: include rollback instructions when possible
 
-MANDATORY: Pre-Development Checklist
-BEFORE STARTING ANY WORK: Run npm run lint to see current state
-BEFORE COMMITTING: Run npm run lint --fix to auto-fix issues
-BEFORE PUSHING: Ensure ZERO linting errors
-DAILY: Clean up any accumulated linting issues
-WEEKLY: Run comprehensive linting audit
-Code Quality Rules
-NEVER: Use any types - always specify proper TypeScript interfaces
-NEVER: Leave console.log statements in production code
-NEVER: Commit unused imports or variables
-NEVER: Use direct hasOwnProperty access - use Object.prototype.hasOwnProperty.call()
-NEVER: Include unnecessary escape characters in regex patterns
-ALWAYS: Use proper TypeScript types for all function parameters
-ALWAYS: Remove debug code before committing
-ALWAYS: Clean up template code and unused variables
-AI Code Generation Guidelines
-NEVER: Include console.log statements in generated code
-NEVER: Use any types - always specify proper interfaces
-ALWAYS: Remove unused imports after code generation
-ALWAYS: Use proper TypeScript types for all parameters
-ALWAYS: Clean up template code and remove unused variables
-ALWAYS: Review and clean up generated code before committing
-Development Workflow Rules
-Start of Day: Run npm run lint to see current state
-Before Coding: Fix any existing linting issues
-During Coding: Use Cursor's real-time linting features
-Before Commit: Run npm run lint:fix to auto-fix issues
-End of Day: Clean up any accumulated issues
-Code Review: Check for unused imports, console statements, and any types
-Linting Error Prevention
-Unused Variables/Imports: Remove immediately when identified
-TypeScript any Types: Replace with proper interfaces
-Console Statements: Remove before committing (except in test files)
-Regex Escape Issues: Use proper regex patterns without unnecessary escapes
-Prototype Access: Use Object.prototype.hasOwnProperty.call() instead of direct access
-Emergency Cleanup Rules
-If Linting Issues Accumulate: Stop feature development and clean up first
-Priority Order: Fix errors first, then warnings
-Batch Processing: Fix similar issues together (all console statements, all unused imports)
-Verification: Run npm run build after cleanup to ensure no build errors

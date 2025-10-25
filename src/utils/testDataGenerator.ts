@@ -1,4 +1,3 @@
-// import { supabase } from '@/integrations/supabase/client';
 
 interface TestUser {
   id: string;

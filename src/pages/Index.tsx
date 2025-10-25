@@ -2,7 +2,6 @@ import EnhancedHeroSection from "@/components/EnhancedHeroSection";
 import BenefitsSection from "@/components/BenefitsSection";
 import HowItWorksSection from "@/components/HowItWorksSection";
 import PrivacySection from "@/components/PrivacySection";
-import SignupSection from "@/components/SignupSection";
 import Footer from "@/components/Footer";
 import AdminAccess from "@/components/AdminAccess";
 import FloatingMenubar from "@/components/FloatingMenubar";
@@ -18,7 +17,6 @@ const Index = () => {
         <BenefitsSection />
         <HowItWorksSection />
         <PrivacySection />
-        <SignupSection />
       </main>
       <Footer />
       <AdminAccess />

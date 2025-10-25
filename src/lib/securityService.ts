@@ -3,7 +3,7 @@
  * OWASP compliance and security best practices implementation
  */
 
-import { supabase } from '@/integrations/supabase/client';
+import { databaseAdapter } from '@/lib/databaseAdapter';
 
 interface SecurityContext {
   userId: string;
@@ -35,31 +35,17 @@ interface AccessAttempt {
 
 export class SecurityService {
   private static context: SecurityContext | null = null;
-  private static lastInitialization: number = 0;
-  private static readonly INITIALIZATION_COOLDOWN = 5000; // 5 seconds cooldown
 
   /**
    * Initialize security context for current user
    */
   static async initializeSecurityContext(): Promise<SecurityContext | null> {
     try {
-      const now = Date.now();
-      
-      // Check cooldown to prevent excessive initialization
-      if (now - this.lastInitialization < this.INITIALIZATION_COOLDOWN) {
-        return this.context;
-      }
-      
-      const { data: { user }, error } = await supabase.auth.getUser();
+      const { data: { user }, error } = await databaseAdapter.supabase.auth.getUser();
       
       if (error || !user) {
         this.context = null;
         return null;
-      }
-
-      // Check if context is already initialized for this user
-      if (this.context && this.context.userId === user.id) {
-        return this.context;
       }
 
       // Get user profile and role
@@ -87,10 +73,6 @@ export class SecurityService {
         sessionId: user.aud || 'unknown'
       };
 
-      // Update last initialization time
-      this.lastInitialization = now;
-
-      // eslint-disable-next-line no-console
       console.log('🔐 Security context initialized:', {
         userId: user.id,
         role: userRole,
@@ -100,8 +82,8 @@ export class SecurityService {
 
       return this.context;
 
-    } catch {
-      // Console statement removed
+    } catch (error) {
+      console.error('Error initializing security context:', error);
       this.context = null;
       return null;
     }
@@ -112,14 +94,6 @@ export class SecurityService {
    */
   static getSecurityContext(): SecurityContext | null {
     return this.context;
-  }
-
-  /**
-   * Clear security context (useful for logout)
-   */
-  static clearSecurityContext(): void {
-    this.context = null;
-    this.lastInitialization = 0; // Reset cooldown
   }
 
   /**
@@ -411,8 +385,8 @@ export class SecurityService {
           error_message: errorMessage
         });
 
-    } catch {
-      // Console statement removed
+    } catch (error) {
+      console.error('Error logging security event:', error);
     }
   }
 
@@ -433,7 +407,7 @@ export class SecurityService {
    */
   static async validateSensitiveOperation(
     operation: string,
-    additionalChecks?: Record<string, unknown>
+    additionalChecks?: Record<string, any>
   ): Promise<{ allowed: boolean; reason?: string }> {
     const context = await this.getOrInitializeContext();
     
@@ -467,10 +441,8 @@ export class SecurityService {
   /**
    * Validate wallet creation
    */
-  private static validateWalletCreation(): { allowed: boolean; reason?: string } {
+  private static validateWalletCreation(context: SecurityContext): { allowed: boolean; reason?: string } {
     // Users can create their own wallets
-    // Context is available for future validation logic
-    // Console statement removed
     return { allowed: true };
   }
 
@@ -479,7 +451,7 @@ export class SecurityService {
    */
   private static validatePaymentProcessing(
     context: SecurityContext,
-    additionalChecks?: Record<string, unknown>
+    additionalChecks?: Record<string, any>
   ): { allowed: boolean; reason?: string } {
     // Check if payment amount is reasonable
     if (additionalChecks?.amount && additionalChecks.amount > 10000) {
@@ -533,8 +505,8 @@ export class SecurityService {
 
       return data || [];
 
-    } catch {
-      // Console statement removed
+    } catch (error) {
+      console.error('Error fetching security audit logs:', error);
       return [];
     }
   }
@@ -558,7 +530,7 @@ export class SecurityService {
         .limit(5);
 
       if (recentFailures.data && recentFailures.data.length >= 3) {
-        // Console statement removed
+        console.warn('🚨 Suspicious activity detected: Multiple failed login attempts');
         
         await this.logSecurityEvent(
           context.userId,
@@ -569,16 +541,23 @@ export class SecurityService {
         );
       }
 
-    } catch {
-      // Console statement removed
+    } catch (error) {
+      console.error('Error monitoring suspicious activity:', error);
     }
   }
 
+  /**
+   * Clear security context (on logout)
+   */
+  static clearSecurityContext(): void {
+    this.context = null;
+    console.log('🔐 Security context cleared');
+  }
 
   /**
    * Get security summary for admin dashboard
    */
-  static async getSecuritySummary(): Promise<Record<string, unknown>> {
+  static async getSecuritySummary(): Promise<any> {
     try {
       const context = await this.getOrInitializeContext();
       
@@ -592,10 +571,10 @@ export class SecurityService {
         failedLogins,
         suspiciousActivity
       ] = await Promise.all([
-        supabase.from('profiles').select('id', { count: 'exact' }),
-        supabase.from('profiles').select('id', { count: 'exact' }).gte('last_sign_in_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()),
-        supabase.from('security_audit_logs').select('id', { count: 'exact' }).eq('action', 'login_attempt').gte('created_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()),
-        supabase.from('security_audit_logs').select('id', { count: 'exact' }).eq('action', 'suspicious_activity_detected').gte('created_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString())
+        databaseAdapter.from('profiles').select('id', { count: 'exact' }),
+        databaseAdapter.from('profiles').select('id', { count: 'exact' }).gte('last_sign_in_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()),
+        databaseAdapter.from('security_audit_logs').select('id', { count: 'exact' }).eq('action', 'login_attempt').gte('created_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()),
+        databaseAdapter.from('security_audit_logs').select('id', { count: 'exact' }).eq('action', 'suspicious_activity_detected').gte('created_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString())
       ]);
 
       return {
@@ -606,8 +585,8 @@ export class SecurityService {
         security_status: 'healthy' // Would be calculated based on metrics
       };
 
-    } catch {
-      // Console statement removed
+    } catch (error) {
+      console.error('Error getting security summary:', error);
       return {
         total_users: 0,
         active_users_24h: 0,

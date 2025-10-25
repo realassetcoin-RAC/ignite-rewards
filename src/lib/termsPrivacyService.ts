@@ -18,7 +18,7 @@ export class TermsPrivacyService {
    */
   static async getUserAcceptance(userId: string): Promise<TermsPrivacyAcceptance | null> {
     try {
-        const { data, error } = await databaseAdapter.supabase
+        const { data, error } = await databaseAdapter
         .from('terms_privacy_acceptance')
         .select('*')
         .eq('user_id', userId)

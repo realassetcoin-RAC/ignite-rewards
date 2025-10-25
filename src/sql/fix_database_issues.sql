@@ -11,7 +11,7 @@ ADD COLUMN IF NOT EXISTS max_referrals_per_user integer;
 -- Update existing data to use the new columns
 UPDATE public.referral_campaigns 
 SET 
-  name = COALESCE(campaign_name, 'Default Campaign'),
+  name = COALESCE(name, COALESCE(campaign_name, 'Default Campaign')),
   points_per_referral = COALESCE(reward_amount::integer, 100),
   max_referrals_per_user = COALESCE(max_referrals, 10)
 WHERE name IS NULL;

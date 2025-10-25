@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
-import { useSecureAuthFixed as useSecureAuth } from "@/hooks/useSecureAuthFixed";
+import { useSecureAuth } from "@/hooks/useSecureAuth";
+import { useSmartDataRefresh } from "@/hooks/useSmartDataRefresh";
 import { useInactivityTimeout } from "@/hooks/useInactivityTimeout";
-import { useUserType } from "@/hooks/useUserType";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -66,7 +66,7 @@ interface QuickAction {
   id: string;
   title: string;
   description: string;
-  icon: React.ComponentType<Record<string, unknown>>;
+  icon: React.ComponentType<any>;
   gradient: string;
   shadowColor: string;
   count?: number;
@@ -79,8 +79,7 @@ const UserDashboard = () => {
   const logger = createModuleLogger('UserDashboard');
   const { user, profile, signOut } = useSecureAuth();
   const { toast } = useToast();
-  const { userType, isCustodial, isNonCustodial } = useUserType(user?.id);
-  // Removed useSmartDataRefresh to prevent continuous refresh loop
+  useSmartDataRefresh();
   useInactivityTimeout(5);
   
   const [activeSection, setActiveSection] = useState('dashboard');
@@ -142,7 +141,6 @@ const UserDashboard = () => {
     { id: 'marketplace', label: 'Marketplace', icon: Building2, description: 'Invest in tokenized assets' },
     { id: 'loyalty-networks', label: 'Networks', icon: Share2, description: 'Partner loyalty programs' },
     { id: 'dao', label: 'Governance', icon: Vote, description: 'DAO proposals & voting' },
-    { id: 'settings', label: 'Settings', icon: Settings, description: 'Account & security settings' },
   ];
 
   const quickActions: QuickAction[] = [
@@ -255,106 +253,10 @@ const UserDashboard = () => {
         );
       case 'dao':
         return <DAOGovernancePanel />;
-      case 'settings':
-        return (
-          <div className="space-y-8">
-            {/* Security Section */}
-            <div>
-              <h3 className="text-2xl font-bold text-white mb-6 flex items-center">
-                <Shield className="w-6 h-6 mr-3 text-green-400" />
-                Security
-              </h3>
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {user && (
-                  <>
-                    <WalletAddressDisplay 
-                      userId={user.id}
-                    />
-                    <SeedPhraseBackup />
-                  </>
-                )}
-              </div>
-            </div>
-
-            {/* Account Settings Section */}
-            <div>
-              <h3 className="text-2xl font-bold text-white mb-6 flex items-center">
-                <Settings className="w-6 h-6 mr-3 text-blue-400" />
-                Account Settings
-              </h3>
-              <Card className="bg-white/5 backdrop-blur-xl border-white/10">
-                <CardContent className="p-6">
-                  <div className="text-center py-12">
-                    <Settings className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-                    <h4 className="text-lg font-semibold text-white mb-2">Account Configuration</h4>
-                    <p className="text-gray-400">
-                      Additional account settings and preferences will be available here.
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </div>
-        );
       case 'dashboard':
       default:
         return (
           <div className="space-y-8">
-            {/* User Type Information Card */}
-            {userType && (
-              <Card className={`border-2 ${
-                isCustodial 
-                  ? 'bg-green-500/10 border-green-500/30' 
-                  : 'bg-blue-500/10 border-blue-500/30'
-              } backdrop-blur-xl`}>
-                <CardContent className="p-6">
-                  <div className="flex items-start space-x-4">
-                    <div className={`p-3 rounded-full ${
-                      isCustodial ? 'bg-green-500/20' : 'bg-blue-500/20'
-                    }`}>
-                      {isCustodial ? (
-                        <Shield className="w-6 h-6 text-green-400" />
-                      ) : (
-                        <Wallet className="w-6 h-6 text-blue-400" />
-                      )}
-                    </div>
-                    <div className="flex-1">
-                      <h3 className="text-lg font-semibold text-white mb-2">
-                        {isCustodial ? '🔒 Custodial Account' : '🔓 Non-Custodial Account'}
-                      </h3>
-                      <p className={`text-sm mb-3 ${
-                        isCustodial ? 'text-green-200' : 'text-blue-200'
-                      }`}>
-                        {isCustodial 
-                          ? 'Your account uses our secure custodial wallet service. We manage your wallet security while you enjoy all loyalty features.'
-                          : 'You are using an external wallet. You have full control of your assets and can invest directly with crypto.'}
-                      </p>
-                      <div className="space-y-1.5 text-sm">
-                        <div className="flex items-center">
-                          <span className="text-white/70 mr-2">✓</span>
-                          <span className="text-white/90">
-                            {isCustodial ? 'Free Pearl White NFT included' : 'Direct crypto investments (USDT, SOL, ETH, BTC)'}
-                          </span>
-                        </div>
-                        <div className="flex items-center">
-                          <span className="text-white/70 mr-2">✓</span>
-                          <span className="text-white/90">
-                            {isCustodial ? 'NFT upgrade available' : 'All loyalty features available'}
-                          </span>
-                        </div>
-                        <div className="flex items-center">
-                          <span className="text-white/70 mr-2">✓</span>
-                          <span className="text-white/90">
-                            {isCustodial ? 'Invest with RAC tokens' : 'Multi-currency investment support'}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-            
             {/* Your Loyalty Card Section */}
             <div>
               <h3 className="text-2xl font-bold text-white mb-6 flex items-center">
@@ -506,17 +408,20 @@ const UserDashboard = () => {
               </div>
         </div>
 
-            {/* Wallet Section */}
+            {/* Wallet & Security Section */}
                 <div>
               <h3 className="text-2xl font-bold text-white mb-6 flex items-center">
-                <Wallet className="w-6 h-6 mr-3 text-green-400" />
-                Wallet
+                <Shield className="w-6 h-6 mr-3 text-green-400" />
+                Wallet & Security
               </h3>
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {user && (
-                  <WalletAddressDisplay 
-                    userId={user.id}
-                  />
+                  <>
+                    <WalletAddressDisplay 
+                      userId={user.id}
+                    />
+                    <SeedPhraseBackup />
+                  </>
                 )}
                 </div>
               </div>
@@ -577,21 +482,7 @@ const UserDashboard = () => {
                 <p className="font-semibold text-white text-sm">
                   {profile?.full_name || user?.email?.split('@')[0] || 'User'}
                 </p>
-                <div className="flex items-center gap-2">
-                  <p className="text-xs text-gray-400">Gold Member</p>
-                  {userType && (
-                    <Badge 
-                      variant={isCustodial ? "default" : "secondary"} 
-                      className={`text-[10px] px-1.5 py-0.5 ${
-                        isCustodial 
-                          ? 'bg-green-500/20 text-green-300 border-green-500/30' 
-                          : 'bg-blue-500/20 text-blue-300 border-blue-500/30'
-                      }`}
-                    >
-                      {isCustodial ? '🔒 Custodial' : '🔓 Non-Custodial'}
-                    </Badge>
-                  )}
-                </div>
+                <p className="text-xs text-gray-400">Gold Member</p>
                 </div>
               </div>
             <Button
@@ -708,8 +599,8 @@ const UserDashboard = () => {
       <QRScanner
         isOpen={showQRScanner}
         onClose={() => setShowQRScanner(false)}
-        onScanSuccess={() => {
-          // Console statement removed
+        onScanSuccess={(data) => {
+          console.log('QR Code scanned:', data);
           toast({
             title: "QR Code Scanned",
             description: "Transaction data processed successfully!",

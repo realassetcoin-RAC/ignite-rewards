@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useSecureAuthRobust as useSecureAuth } from "@/hooks/useSecureAuthRobust";
+import { useSecureAuth } from "@/hooks/useSecureAuth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -129,6 +129,7 @@ const UserDashboardSimple = () => {
     { id: 'loyalty', label: 'Loyalty Cards', icon: CreditCard, description: 'Manage your loyalty cards' },
     { id: 'rewards', label: 'Rewards', icon: Gift, description: 'Browse & redeem rewards' },
     { id: 'nft-management', label: 'NFT Portfolio', icon: Crown, description: 'Manage NFTs & staking' },
+    { id: 'digital-assets', label: 'Digital Assets', icon: Coins, description: 'View all your digital holdings' },
     { id: 'referrals', label: 'Referrals', icon: Users, description: 'Invite friends & earn' },
     { id: 'marketplace', label: 'Marketplace', icon: Building2, description: 'Invest in tokenized assets' },
     { id: 'loyalty-networks', label: 'Networks', icon: Share2, description: 'Partner loyalty programs' },
@@ -171,6 +172,18 @@ const UserDashboardSimple = () => {
       countLabel: 'NFT owned',
       badge: 'Premium',
       onClick: () => setActiveSection('nft-management')
+    },
+    {
+      id: 'digital-assets',
+      title: 'Digital Assets',
+      description: 'View all your digital holdings and portfolio',
+      icon: Coins,
+      gradient: 'from-yellow-500 to-orange-500',
+      shadowColor: 'shadow-yellow-500/25',
+      count: 5,
+      countLabel: 'assets',
+      badge: 'Portfolio',
+      onClick: () => window.open('/digitalasset', '_blank')
     },
     {
       id: 'referrals',
@@ -259,6 +272,10 @@ const UserDashboardSimple = () => {
         );
       case 'dao':
         return <DAOGovernancePanel />;
+      case 'digital-assets':
+        // Redirect to the digital assets page
+        window.open('/digitalasset', '_blank');
+        return null;
       case 'dashboard':
       default:
         return (
@@ -557,13 +574,20 @@ const UserDashboardSimple = () => {
               >
                 <Menu className="w-5 h-5" />
               </Button>
-              <div>
-                <h1 className="text-xl font-bold text-white">
-                  {navigationItems.find(item => item.id === activeSection)?.label || 'Dashboard'}
-                </h1>
-                <p className="text-sm text-gray-400">
-                  {navigationItems.find(item => item.id === activeSection)?.description || 'Welcome to your dashboard'}
-                </p>
+              <div className="flex items-center space-x-3">
+      <img
+        src="/bridgepoint-logo.jpg"
+        alt="BridgePoint Logo"
+        className="w-12 h-12 rounded-lg object-contain"
+      />
+                <div>
+                  <h1 className="text-xl font-bold text-white">
+                    {navigationItems.find(item => item.id === activeSection)?.label || 'Dashboard'}
+                  </h1>
+                  <p className="text-sm text-gray-400">
+                    {navigationItems.find(item => item.id === activeSection)?.description || 'Welcome to your dashboard'}
+                  </p>
+                </div>
               </div>
             </div>
             

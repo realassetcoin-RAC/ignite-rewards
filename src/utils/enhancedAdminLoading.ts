@@ -39,36 +39,25 @@ export async function verifyAdminAccess(): Promise<LoadingResult<boolean>> {
       };
     }
 
-    // Method 2: Try public.is_admin RPC
+    // Method 2: Check profile role in public schema
     try {
-      const { data: isAdminPublic, error: rpcError } = await databaseAdapter.supabase.rpc('is_admin');
-      if (!rpcError && isAdminPublic === true) {
-        console.log('✅ Admin access verified via public.is_admin');
-        return {
-          success: true,
-          data: true,
-          message: 'Admin access verified',
-          source: 'public.is_admin'
-        };
-      }
-    } catch (error) {
-      console.warn('public.is_admin failed:', error);
-    }
+      const { data: profile, error: profileError } = await databaseAdapter
+        .from('profiles')
+        .select('role')
+        .eq('id', user.id)
+        .single();
 
-    // Method 3: Try is_admin RPC (public schema)
-    try {
-      const { data: isAdminApi, error: rpcError } = await databaseAdapter.supabase.rpc('is_admin');
-      if (!rpcError && isAdminApi === true) {
-        console.log('✅ Admin access verified via is_admin');
+      if (!profileError && profile?.role === 'admin') {
+        console.log('✅ Admin access verified via profile role');
         return {
           success: true,
           data: true,
           message: 'Admin access verified',
-          source: 'is_admin'
+          source: 'profile_role'
         };
       }
     } catch (error) {
-      console.warn('is_admin failed:', error);
+      console.warn('Profile role check failed:', error);
     }
 
     // Method 4: Check profile role directly

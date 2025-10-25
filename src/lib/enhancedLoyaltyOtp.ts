@@ -1,4 +1,4 @@
-import { supabase } from '@/integrations/supabase/client';
+import { databaseAdapter } from '@/lib/databaseAdapter';
 import { EmailNotificationService } from './emailNotificationService';
 
 export interface OTPCode {

@@ -9,7 +9,6 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { useForm } from "react-hook-form";
-import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Plus, Edit2, Trash2, CreditCard, User, Mail, Phone } from "lucide-react";
 
@@ -96,7 +95,7 @@ const UserLoyaltyCardManager = ({ onStatsUpdate }: UserLoyaltyCardManagerProps) 
           `)
           .order('created_at', { ascending: false });
           
-        if (error && error.code !== 'PGRST116') {
+        if (error && (error as any).code !== 'PGRST116') {
           throw error;
         }
         
@@ -106,11 +105,10 @@ const UserLoyaltyCardManager = ({ onStatsUpdate }: UserLoyaltyCardManagerProps) 
         console.warn('Primary schema load failed:', primaryError);
         loadError = primaryError;
         
-        // Try explicit API schema reference
+        // Try alternative loading method
         try {
-          console.log('Loading with explicit api schema reference...');
+          console.log('Loading with alternative method...');
           const { data, error } = await supabase
-            .schema('api')
             .from('user_loyalty_cards')
             .select(`
               *,
@@ -121,12 +119,12 @@ const UserLoyaltyCardManager = ({ onStatsUpdate }: UserLoyaltyCardManagerProps) 
             `)
             .order('created_at', { ascending: false });
             
-          if (error && error.code !== 'PGRST116') {
+          if (error && (error as any).code !== 'PGRST116') {
             throw error;
           }
           
           loyaltyData = data;
-          console.log('Loaded with explicit api schema:', data?.length || 0);
+          console.log('Loaded with alternative method:', data?.length || 0);
         } catch (secondaryError) {
           console.error('All load attempts failed:', secondaryError);
           loadError = secondaryError;
@@ -136,7 +134,7 @@ const UserLoyaltyCardManager = ({ onStatsUpdate }: UserLoyaltyCardManagerProps) 
       // Handle loading results
       if (loyaltyData) {
         setLoyaltyCards(loyaltyData as any || []);
-      } else if (loadError && loadError.code !== 'PGRST116' && loadError.code !== '42501') {
+      } else if (loadError && (loadError as any).code !== 'PGRST116' && (loadError as any).code !== '42501') {
         toast({
           title: "Loading Error",
           description: "Failed to load loyalty cards. Check console for details.",
@@ -217,7 +215,6 @@ const UserLoyaltyCardManager = ({ onStatsUpdate }: UserLoyaltyCardManagerProps) 
           try {
             console.log('Trying explicit api schema reference for update...');
             const { data: updateData, error } = await supabase
-              .schema('api')
               .from("user_loyalty_cards")
               .update(cardData)
               .eq("id", editingCard.id)
@@ -258,7 +255,6 @@ const UserLoyaltyCardManager = ({ onStatsUpdate }: UserLoyaltyCardManagerProps) 
           try {
             console.log('Trying explicit api schema reference for insert...');
             const { data: insertData, error } = await supabase
-              .schema('api')
               .from("user_loyalty_cards")
               .insert([cardData])
               .select()
@@ -272,11 +268,11 @@ const UserLoyaltyCardManager = ({ onStatsUpdate }: UserLoyaltyCardManagerProps) 
             
             // Provide helpful error messages based on error type
             let errorMessage = 'Failed to create loyalty card';
-            if (secondaryError?.code === '42501' || secondaryError?.message?.includes('permission denied')) {
+            if ((secondaryError as any)?.code === '42501' || (secondaryError as any)?.message?.includes('permission denied')) {
               errorMessage = 'Permission denied. Admin may not have rights to create loyalty cards.';
-            } else if (secondaryError?.code === '23505') {
+            } else if ((secondaryError as any)?.code === '23505') {
               errorMessage = 'A loyalty card with this number already exists.';
-            } else if (secondaryError?.code === 'PGRST116') {
+            } else if ((secondaryError as any)?.code === 'PGRST116') {
               errorMessage = 'Loyalty card table not accessible. Please contact system administrator.';
             }
             
@@ -355,7 +351,6 @@ const UserLoyaltyCardManager = ({ onStatsUpdate }: UserLoyaltyCardManagerProps) 
         // Try explicit API schema reference
         try {
           const { error } = await supabase
-            .schema('api')
             .from("user_loyalty_cards")
             .delete()
             .eq("id", id);

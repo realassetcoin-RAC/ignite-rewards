@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 // Removed Tabs import - using custom navigation
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { supabase } from "@/integrations/supabase/client";
+import { databaseAdapter } from "@/lib/databaseAdapter";
 import { useToast } from "@/hooks/use-toast";
 import VirtualCardManager from "@/components/admin/VirtualCardManager";
 import MerchantManager from "@/components/admin/MerchantManager";
@@ -38,7 +38,7 @@ const AdminDashboard = () => {
 
   const checkAuth = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { user } } = await databaseAdapter.supabase.auth.getUser();
       
       if (!user) {
         navigate("/");
@@ -85,9 +85,9 @@ const AdminDashboard = () => {
       };
 
       const [cardsResult, merchantsResult, activeResult] = await Promise.all([
-        supabase.from("virtual_cards").select("id", { count: "exact" }),
-        supabase.from("merchants").select("id", { count: "exact" }),
-        supabase.from("merchants").select("id", { count: "exact" }).eq("status", "active")
+        databaseAdapter.from("virtual_cards").select("id", { count: "exact" }),
+        databaseAdapter.from("merchants").select("id", { count: "exact" }),
+        databaseAdapter.from("merchants").select("id", { count: "exact" }).eq("status", "active")
       ]);
 
       // Update stats only for successful queries
@@ -130,7 +130,7 @@ const AdminDashboard = () => {
   };
 
   const handleSignOut = async () => {
-    await supabase.auth.signOut();
+    await databaseAdapter.supabase.auth.signOut();
     navigate("/");
   };
 

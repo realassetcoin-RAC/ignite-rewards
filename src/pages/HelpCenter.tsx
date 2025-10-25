@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-// import { Input } from "@/components/ui/input";
+import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { 
   ArrowLeft, 
@@ -342,7 +342,7 @@ const HelpCenter = () => {
                   </Link>
                 </Button>
                 <Button asChild variant="outline" className="bg-gradient-to-r from-primary to-purple-500 hover:from-primary/90 hover:to-purple-500/90 transform hover:scale-105 transition-all duration-300 text-white border-0">
-                  <Link to="/faqs">
+                  <Link to="/faqs" onClick={() => window.scrollTo(0, 0)}>
                     <BookOpen className="w-4 h-4 mr-2" />
                     View FAQs
                   </Link>

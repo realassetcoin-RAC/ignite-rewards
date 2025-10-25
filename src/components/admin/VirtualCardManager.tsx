@@ -9,7 +9,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { useForm } from "react-hook-form";
-import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Plus, Edit2, Trash2, CreditCard, ArrowLeft, Save, AlertCircle } from "lucide-react";
 import CustomTooltip from "@/components/ui/custom-tooltip";
@@ -18,8 +17,10 @@ import { virtualCardSchema, validateFormData, useFieldValidation, imageUrlSchema
 
 interface VirtualCard {
   id: string;
-  card_name: string;
-  card_type: string;
+  card_name?: string;
+  card_type?: string;
+  nft_name?: string; // Primary NFT name field
+  display_name?: string;
   description: string;
   image_url: string;
   evolution_image_url?: string; // ✅ IMPLEMENT REQUIREMENT: Evolution system with .gif format
@@ -32,8 +33,8 @@ interface VirtualCard {
   created_at: string;
   // ✅ IMPLEMENT REQUIREMENT: Complete NFT attributes as per specification
   collection?: string; // Collection field
-  display_name?: string;
   buy_price_nft?: number; // Buy Price NFT field (separate from pricing)
+  buy_price_usdt?: number; // Primary pricing field from nft_types
   rarity?: string;
   mint_quantity?: number; // Mint field
   is_upgradeable?: boolean; // Upgrade (Yes/No)
@@ -47,6 +48,7 @@ interface VirtualCard {
   evolution_earnings_ratio?: number; // Evolution Earnings (%)
   passive_income_rate?: number;
   custodial_income_rate?: number;
+  subscription_plan?: string; // Subscription plan field
 }
 
 interface VirtualCardManagerProps {
@@ -89,6 +91,8 @@ const VirtualCardManager = ({ onStatsUpdate }: VirtualCardManagerProps) => {
     defaultValues: {
       card_name: "",
       card_type: "Standard",
+      nft_name: "",
+      display_name: "",
       description: "",
       image_url: "",
       evolution_image_url: "", // ✅ Evolution 3D animated NFT image
@@ -102,8 +106,8 @@ const VirtualCardManager = ({ onStatsUpdate }: VirtualCardManagerProps) => {
       custom_plan: "",
       // ✅ IMPLEMENT REQUIREMENT: Complete NFT form fields
       collection: "Classic", // Default collection
-      display_name: "",
       buy_price_nft: 0, // Buy Price NFT field
+      buy_price_usdt: 0, // Primary pricing field
       rarity: "Common",
       mint_quantity: 1000, // Mint field
       is_upgradeable: false, // Upgrade (Yes/No)
@@ -116,7 +120,8 @@ const VirtualCardManager = ({ onStatsUpdate }: VirtualCardManagerProps) => {
       evolution_min_investment: 0, // Evolution Minimum Investment
       evolution_earnings_ratio: 0, // Evolution Earnings (%)
       passive_income_rate: 0.01,
-      custodial_income_rate: 0
+      custodial_income_rate: 0,
+      subscription_plan: "basic"
     }
   });
 
@@ -176,7 +181,7 @@ const VirtualCardManager = ({ onStatsUpdate }: VirtualCardManagerProps) => {
               is_evolvable: false,
               is_fractional_eligible: false,
               is_custodial: true,
-              auto_staking_duration: 0,
+              auto_staking_duration: "Forever",
               earn_on_spend_ratio: 0.01,
               upgrade_bonus_ratio: 0,
               evolution_min_investment: 0,
@@ -194,41 +199,44 @@ const VirtualCardManager = ({ onStatsUpdate }: VirtualCardManagerProps) => {
       
       // Transform nft_types data to match VirtualCard interface
       const transformedData = (data || []).map((nft: Record<string, unknown>) => ({
-        id: nft.id,
-        card_name: nft.nft_name || nft.display_name,
-        card_type: nft.rarity || "Common",
-        description: nft.description || "",
-        image_url: nft.image_url || "",
-        evolution_image_url: nft.evolution_image_url || "",
-        pricing_type: nft.buy_price_usdt > 0 ? "one_time" : "free",
-        one_time_fee: nft.buy_price_usdt || 0,
+        id: nft.id as string,
+        card_name: (nft.nft_name || nft.display_name) as string,
+        card_type: (nft.rarity || "Common") as string,
+        nft_name: nft.nft_name as string,
+        description: (nft.description || "") as string,
+        image_url: (nft.image_url || "") as string,
+        evolution_image_url: (nft.evolution_image_url || "") as string,
+        pricing_type: (nft.buy_price_usdt && parseFloat(nft.buy_price_usdt as string) > 0) ? "one_time" : "free",
+        one_time_fee: parseFloat(nft.buy_price_usdt as string) || 0,
         monthly_fee: 0,
         annual_fee: 0,
-        features: nft.features || {},
-        is_active: nft.is_active,
-        created_at: nft.created_at,
+        features: (nft.features || {}) as Record<string, boolean>,
+        is_active: nft.is_active as boolean,
+        created_at: nft.created_at as string,
         // NFT fields
-        display_name: nft.display_name,
-        rarity: nft.rarity,
-        mint_quantity: nft.mint_quantity,
-        is_upgradeable: nft.is_upgradeable,
-        is_evolvable: nft.is_evolvable,
-        is_fractional_eligible: nft.is_fractional_eligible,
-        is_custodial: nft.is_custodial,
-        auto_staking_duration: nft.auto_staking_duration,
-        earn_on_spend_ratio: nft.earn_on_spend_ratio,
-        upgrade_bonus_ratio: nft.upgrade_bonus_ratio,
-        evolution_min_investment: nft.evolution_min_investment,
-        evolution_earnings_ratio: nft.evolution_earnings_ratio,
-        passive_income_rate: nft.passive_income_rate,
-        custodial_income_rate: nft.custodial_income_rate
+        display_name: nft.display_name as string,
+        buy_price_usdt: parseFloat(nft.buy_price_usdt as string) || 0,
+        rarity: nft.rarity as string,
+        mint_quantity: nft.mint_quantity as number,
+        is_upgradeable: nft.is_upgradeable as boolean,
+        is_evolvable: nft.is_evolvable as boolean,
+        is_fractional_eligible: nft.is_fractional_eligible as boolean,
+        is_custodial: nft.is_custodial as boolean,
+        auto_staking_duration: (nft.auto_staking_duration || "Forever") as string,
+        earn_on_spend_ratio: parseFloat(nft.earn_on_spend_ratio as string) || 0,
+        upgrade_bonus_ratio: parseFloat(nft.upgrade_bonus_ratio as string) || 0,
+        evolution_min_investment: parseFloat(nft.evolution_min_investment as string) || 0,
+        evolution_earnings_ratio: parseFloat(nft.evolution_earnings_ratio as string) || 0,
+        passive_income_rate: parseFloat(nft.passive_income_rate as string) || 0,
+        custodial_income_rate: parseFloat(nft.custodial_income_rate as string) || 0,
+        subscription_plan: (nft.subscription_plan || "basic") as string
       }));
       
       setCards(transformedData);
       
       // Extract unique card types
       if (data && data.length > 0) {
-        const existingTypes = [...new Set(data.map((nft: any) => nft.rarity).filter(Boolean))];
+        const existingTypes = [...new Set(data.map((nft: any) => nft.rarity).filter(Boolean))] as string[];
         const defaultTypes = ["Common", "Less Common", "Rare", "Very Rare"];
         const allTypes = [...new Set([...defaultTypes, ...existingTypes])].sort();
         setAvailableCardTypes(allTypes);
@@ -357,21 +365,25 @@ const VirtualCardManager = ({ onStatsUpdate }: VirtualCardManagerProps) => {
   const handleEdit = (card: VirtualCard) => {
     setEditingCard(card);
     form.reset({
-      card_name: card.card_name,
-      card_type: card.card_type,
-      description: card.description,
-      image_url: card.image_url,
+      card_name: card.card_name || "",
+      card_type: card.card_type || "Standard",
+      nft_name: card.nft_name || "",
+      display_name: card.display_name || "",
+      description: card.description || "",
+      image_url: card.image_url || "",
       evolution_image_url: card.evolution_image_url || "",
-      pricing_type: card.pricing_type,
-      one_time_fee: card.one_time_fee,
-      monthly_fee: card.monthly_fee,
-      annual_fee: card.annual_fee,
+      pricing_type: card.pricing_type || "free",
+      one_time_fee: card.one_time_fee || 0,
+      monthly_fee: card.monthly_fee || 0,
+      annual_fee: card.annual_fee || 0,
       features: card.features ? JSON.stringify(card.features) : "",
-      is_active: card.is_active,
+      is_active: card.is_active || true,
       custom_card_type: "",
       custom_plan: "",
       // New NFT fields (using defaults for now until migration is applied)
-      display_name: card.display_name || card.card_name,
+      collection: card.collection || "Classic",
+      buy_price_nft: card.buy_price_nft || 0,
+      buy_price_usdt: card.buy_price_usdt || 0,
       rarity: card.rarity || "Common",
       mint_quantity: card.mint_quantity || 1000,
       is_upgradeable: card.is_upgradeable || false,
@@ -384,7 +396,8 @@ const VirtualCardManager = ({ onStatsUpdate }: VirtualCardManagerProps) => {
       evolution_min_investment: card.evolution_min_investment || 0,
       evolution_earnings_ratio: card.evolution_earnings_ratio || 0,
       passive_income_rate: card.passive_income_rate || 0.01,
-      custodial_income_rate: card.custodial_income_rate || 0
+      custodial_income_rate: card.custodial_income_rate || 0,
+      subscription_plan: card.subscription_plan || "basic"
     });
     setShowForm(true);
   };
@@ -418,6 +431,10 @@ const VirtualCardManager = ({ onStatsUpdate }: VirtualCardManagerProps) => {
   };
 
   const getPricingDisplay = (card: VirtualCard) => {
+    // Use buy_price_usdt for NFT pricing display
+    if (card.buy_price_usdt && card.buy_price_usdt > 0) {
+      return `$${card.buy_price_usdt}`;
+    }
     if (card.pricing_type === "free") return "Free";
     if (card.pricing_type === "one_time") return `$${card.one_time_fee}`;
     return `$${card.monthly_fee}/mo`;
@@ -1350,12 +1367,12 @@ const VirtualCardManager = ({ onStatsUpdate }: VirtualCardManagerProps) => {
             <TableBody>
               {cards.map((card) => (
                 <TableRow key={card.id}>
-                  <TableCell className="font-medium">{card.card_name}</TableCell>
+                  <TableCell className="font-medium">{card.nft_name || card.card_name}</TableCell>
                   <TableCell>
-                    <Badge variant="secondary">{card.card_type}</Badge>
+                    <Badge variant="secondary">{card.rarity || card.card_type}</Badge>
                   </TableCell>
                   <TableCell>
-                    <Badge variant="outline">{card.pricing_type}</Badge>
+                    <Badge variant="outline">{card.subscription_plan || card.pricing_type}</Badge>
                   </TableCell>
                   <TableCell>{getPricingDisplay(card)}</TableCell>
                   <TableCell>

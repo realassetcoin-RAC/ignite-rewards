@@ -5,9 +5,9 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 // import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
+// import { databaseAdapter } from "@/lib/databaseAdapter";
 import { createModuleLogger } from "@/utils/consoleReplacer";
-import { Building2, Search, MapPin, Star, Users, Filter, Sparkles, ArrowLeft } from "lucide-react";
+import { Building2, Search, MapPin, Star, Users, Filter, ArrowLeft } from "lucide-react";
 import { Link } from "react-router-dom";
 
 interface Merchant {
@@ -48,15 +48,10 @@ const Partners = () => {
   const loadMerchants = async () => {
     try {
       setLoading(true);
-      const { data, error } = await (supabase as any)
-        .from('merchants')
-        .select('id, business_name, business_type, city, country, industry, logo_url, status')
-        .eq('status', 'active')
-        .order('business_name');
-      if (error) throw error;
-      if (data) setMerchants(data);
+      // Using mock data since we're using Docker PostgreSQL locally
+      setSampleMerchants();
     } catch (error) {
-      logger.error('Error loading merchants', error);
+      logger.error('Error loading merchants', error as Error);
       setSampleMerchants();
     } finally {
       setLoading(false);
@@ -190,9 +185,11 @@ const Partners = () => {
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2">
-              <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-                <Sparkles className="h-5 w-5 text-primary-foreground" />
-              </div>
+              <img
+                src="/bridgepoint-logo.jpg"
+                alt="BridgePoint Logo"
+                className="w-12 h-12 rounded-lg object-contain"
+              />
               <div>
                 <h1 className={`text-2xl font-bold text-foreground ${
                   isLoaded ? 'animate-fade-in-up' : 'opacity-0'

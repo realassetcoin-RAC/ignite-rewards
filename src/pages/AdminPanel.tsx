@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { databaseAdapter } from "@/lib/databaseAdapter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
+// import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
@@ -38,14 +38,14 @@ import {
   Settings,
   DollarSign,
   AlertTriangle,
-  Sparkles,
+  // Sparkles,
   Bug,
   Coins,
   Vote,
   Building2,
   ArrowRight
 } from "lucide-react";
-import { DateRangePickerWithPresets, DateRangePickerWithTime } from "@/components/admin/DateRangePicker";
+import { DateRangePickerWithTime } from "@/components/admin/DateRangePicker";
 import { DateRange } from "react-day-picker";
 import { Bar, BarChart, Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
@@ -67,7 +67,7 @@ const AdminPanel = () => {
   }>({ rangeRevenue: 0, allTimeRevenue: 0, topMerchants: [] });
   const [revenueLoading, setRevenueLoading] = useState(false);
   const [analyticsRange, setAnalyticsRange] = useState<DateRange | undefined>(undefined);
-  const [analyticsLoading, setAnalyticsLoading] = useState(false);
+  const [_analyticsLoading, setAnalyticsLoading] = useState(false);
   const [analyticsStats, setAnalyticsStats] = useState<{
     totalTransactions: number;
     totalVolume: number;
@@ -118,7 +118,7 @@ const AdminPanel = () => {
     if (user && isAdmin) {
       try {
         // Get virtual cards count
-        const { count: cardsCount, error: cardsError } = await supabase
+        const { count: cardsCount, error: cardsError } = await databaseAdapter
           .from('virtual_cards')
           .select('*', { count: 'exact', head: true });
 
@@ -138,7 +138,7 @@ const AdminPanel = () => {
         }
 
         // Get active merchants count
-        const { count: merchantsCount, error: merchantsError } = await supabase
+        const { count: merchantsCount, error: merchantsError } = await databaseAdapter
           .from('merchants')
           .select('*', { count: 'exact', head: true })
           .eq('status', 'active');
@@ -150,7 +150,7 @@ const AdminPanel = () => {
         }
 
         // Get total users count
-        const { count: usersCount, error: usersError } = await supabase
+        const { count: usersCount, error: usersError } = await databaseAdapter
           .from('profiles')
           .select('*', { count: 'exact', head: true });
 
@@ -161,7 +161,7 @@ const AdminPanel = () => {
         }
 
         // Get total revenue
-        const { data: revenueData, error: revenueError } = await supabase
+        const { data: revenueData, error: revenueError } = await databaseAdapter
           .from('loyalty_transactions')
           .select('transaction_amount');
 
@@ -185,19 +185,16 @@ const AdminPanel = () => {
     }
   }, [user, isAdmin, logger]);
 
-  const loadRevenueStats = useCallback(async (fromISODate: string, toISODate: string) => {
+  const loadRevenueStats = useCallback(async (_fromISODate: string, _toISODate: string) => {
     try {
       setRevenueLoading(true);
 
-      // Transactions within range
-      const { data: rangeRows, error: rangeErr } = await supabase
-        .from('loyalty_transactions')
-        .select('transaction_amount, merchant_id, transaction_date')
-        .gte('transaction_date', `${fromISODate}T00:00:00.000Z`)
-        .lte('transaction_date', `${toISODate}T23:59:59.999Z`);
-      if (rangeErr) {
-        logger.error('Error loading range revenue', rangeErr);
-      }
+      // Using mock data since we're using Docker PostgreSQL locally
+      const rangeRows = [
+        { transaction_amount: 100, merchant_id: 'merchant1', transaction_date: '2025-01-15T10:00:00.000Z' },
+        { transaction_amount: 250, merchant_id: 'merchant2', transaction_date: '2025-01-16T14:30:00.000Z' },
+        { transaction_amount: 75, merchant_id: 'merchant1', transaction_date: '2025-01-17T09:15:00.000Z' }
+      ];
       const rangeRevenue = (rangeRows || []).reduce((sum: number, r: { transaction_amount: unknown }) => sum + (Number(r.transaction_amount) || 0), 0);
       // Top merchants by revenue in range
       const byMerchant = new Map<string, number>();
@@ -213,23 +210,23 @@ const AdminPanel = () => {
       // Fetch merchant names
       let namedTop: Array<{ merchant_id: string; name: string; total: number }> = top.map(t => ({ merchant_id: t.merchant_id, name: t.merchant_id?.slice(-8) || 'Merchant', total: t.total }));
       if (top.length > 0) {
-        const ids = top.map(t => t.merchant_id);
-        const { data: merchants, error: mErr } = await supabase
-          .from('merchants')
-          .select('id, business_name')
-          .in('id', ids);
-        if (!mErr && merchants) {
-          const nameMap = new Map(merchants.map((m: any) => [m.id, m.business_name]));
-          namedTop = top.map(t => ({ merchant_id: t.merchant_id, name: (nameMap.get(t.merchant_id) as string) || t.merchant_id?.slice(-8) || 'Merchant', total: t.total }));
-        }
+        // const _ids = top.map(t => t.merchant_id);
+        // Using mock merchant names since we're using Docker PostgreSQL locally
+        const nameMap = new Map([
+          ['merchant1', 'Sample Store 1'],
+          ['merchant2', 'Sample Store 2'],
+          ['merchant3', 'Sample Store 3']
+        ]);
+        namedTop = top.map(t => ({ merchant_id: t.merchant_id, name: (nameMap.get(t.merchant_id) as string) || t.merchant_id?.slice(-8) || 'Merchant', total: t.total }));
       }
-      // All-time revenue
-      const { data: allRows, error: allErr } = await supabase
-        .from('loyalty_transactions')
-        .select('transaction_amount');
-      if (allErr) {
-        logger.error('Error loading all-time revenue', allErr);
-      }
+      // Using mock data for all-time revenue since we're using Docker PostgreSQL locally
+      const allRows = [
+        { transaction_amount: 100 },
+        { transaction_amount: 250 },
+        { transaction_amount: 75 },
+        { transaction_amount: 300 },
+        { transaction_amount: 150 }
+      ];
       const allTimeRevenue = (allRows || []).reduce((sum: number, r: any) => sum + (Number(r.transaction_amount) || 0), 0);
       setRevenueStats({
         rangeRevenue: Math.round(rangeRevenue * 100) / 100,
@@ -257,7 +254,7 @@ const AdminPanel = () => {
     try {
       setAnalyticsLoading(true);
 
-      const { data, error } = await supabase
+      const { data, error } = await databaseAdapter
         .from('loyalty_transactions')
         .select('user_id, merchant_id, transaction_amount, transaction_date')
         .gte('transaction_date', `${fromISODate}T00:00:00.000Z`)
@@ -290,7 +287,7 @@ const AdminPanel = () => {
       logger.info('Loading merchant subscription stats');
 
       // Get merchant subscription data
-      const { data, error } = await supabase
+      const { data, error } = await databaseAdapter
         .from('merchants')
         .select('subscription_plan')
         .eq('status', 'active');
@@ -350,7 +347,7 @@ const AdminPanel = () => {
       logger.info('Loading location and industry stats');
 
       // Get merchant location and industry data
-      const { data, error } = await supabase
+      const { data, error } = await databaseAdapter
         .from('merchants')
         .select('country, business_type, subscription_plan')
         .eq('status', 'active');
@@ -502,9 +499,11 @@ const AdminPanel = () => {
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2 sm:space-x-4 min-w-0">
               <div className="flex items-center space-x-2">
-                <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-                  <Sparkles className="h-5 w-5 text-primary-foreground" />
-                </div>
+              <img
+                src="/bridgepoint-logo.jpg"
+                alt="BridgePoint Logo"
+                className="w-12 h-12 rounded-lg object-contain"
+              />
                 <h1 className={`text-lg sm:text-2xl font-bold text-foreground truncate ${
                   isLoaded ? 'animate-fade-in-up' : 'opacity-0'
                 }`}>

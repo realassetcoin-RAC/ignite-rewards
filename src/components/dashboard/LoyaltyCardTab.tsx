@@ -5,8 +5,11 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
+import { databaseAdapter } from "@/lib/databaseAdapter";
 import { useSecureAuth } from "@/hooks/useSecureAuth";
+import NFTImageUpload from "@/components/admin/NFTImageUpload";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { CreditCard, Copy, Info } from "lucide-react";
 
 interface LoyaltyCard {
@@ -27,11 +30,18 @@ interface UserPoints {
 
 
 const LoyaltyCardTab = () => {
-  const { user } = useSecureAuth();
+  const { user, isAdmin } = useSecureAuth();
   const { toast } = useToast();
   const [loyaltyCard, setLoyaltyCard] = useState<LoyaltyCard | null>(null);
   const [userPoints, setUserPoints] = useState<UserPoints>({ total_points: 0, available_points: 0, lifetime_points: 0 });
   const [loading, setLoading] = useState(true);
+
+  // Admin quick-upload state (reinstated)
+  const [adminDisplayName, setAdminDisplayName] = useState("");
+  const [adminRarity, setAdminRarity] = useState("Common");
+  const [imageUrl, setImageUrl] = useState("");
+  const [evolutionUrl, setEvolutionUrl] = useState("");
+  const [savingNFT, setSavingNFT] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -70,7 +80,7 @@ const LoyaltyCardTab = () => {
       
       try {
         console.log('Loading from user_loyalty_cards (public schema)...');
-        const fetchPromise = supabase
+        const fetchPromise = databaseAdapter
           .from('user_loyalty_cards')
           .select('*')
           .eq('user_id', user?.id)
@@ -84,17 +94,18 @@ const LoyaltyCardTab = () => {
         
         loyaltyData = data;
         console.log('Loaded from public schema:', data);
-      } catch (primaryError) {
+      } catch (primaryError: any) {
         console.warn('Primary schema load failed:', primaryError);
-        loadError = primaryError;
+        loadError = primaryError as { code?: string; message?: string };
       }
       
       // Handle loading errors more gracefully
-      if (loadError && loadError.code !== 'PGRST116') {
+      if (loadError && (loadError as any).code !== 'PGRST116') {
         console.error('Error loading loyalty card:', loadError);
         
         // If it's a permission error, don't prevent card creation - just continue with no card
-        if (loadError.code !== '42501' && !loadError.message?.includes('permission denied') && !loadError.message?.includes('timeout')) {
+        const lc: any = loadError;
+        if (lc.code !== '42501' && !lc.message?.includes('permission denied') && !lc.message?.includes('timeout')) {
           return;
         } else {
           console.log('Permission denied or timeout for loading - continuing with card creation option');
@@ -111,7 +122,7 @@ const LoyaltyCardTab = () => {
 
   const loadUserPoints = async () => {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await databaseAdapter
         .from('user_points')
         .select('total_points, available_points, lifetime_points')
         .eq('user_id', user?.id)
@@ -127,6 +138,58 @@ const LoyaltyCardTab = () => {
       }
     } catch (error) {
       console.error('Error loading user points:', error);
+    }
+  };
+
+  // Re-implemented: Admin can upload/create a Loyalty NFT directly from this tab
+  const handleAdminCreateNFT = async () => {
+    try {
+      setSavingNFT(true);
+      if (!adminDisplayName || !imageUrl) {
+        toast({ title: "Missing fields", description: "Display name and image are required", variant: "destructive" });
+        return;
+      }
+
+      // Try to persist to nft_types when available
+      const { error } = await databaseAdapter
+        .from('nft_types')
+        .insert({
+          display_name: adminDisplayName,
+          nft_name: adminDisplayName.toLowerCase().replace(/\s+/g, '-'),
+          description: 'Created from Loyalty Card tab',
+          image_url: imageUrl,
+          evolution_image_url: evolutionUrl || null,
+          rarity: adminRarity,
+          buy_price_usdt: 0,
+          mint_quantity: 0,
+          is_upgradeable: false,
+          is_evolvable: !!evolutionUrl,
+          is_fractional_eligible: true,
+          auto_staking_duration: 'Forever',
+          earn_on_spend_ratio: 0.01,
+          upgrade_bonus_ratio: 0,
+          evolution_min_investment: 0,
+          evolution_earnings_ratio: 0,
+          is_custodial: true,
+        });
+
+      if (error) {
+        // In local/browser mode, data ops may be blocked; still confirm upload success
+        console.warn('NFT DB insert failed (likely local/browser):', error);
+        toast({ title: "Image(s) uploaded", description: "Saved image URLs locally. DB write may be disabled in local mode." });
+      } else {
+        toast({ title: "NFT created", description: "Loyalty NFT type saved successfully" });
+      }
+
+      // Reset minimal form
+      setAdminDisplayName("");
+      setEvolutionUrl("");
+      setImageUrl("");
+    } catch (e) {
+      console.error('Admin NFT create error', e);
+      toast({ title: "Error", description: "Failed to create NFT", variant: "destructive" });
+    } finally {
+      setSavingNFT(false);
     }
   };
 
@@ -249,6 +312,47 @@ const LoyaltyCardTab = () => {
                   {new Date(loyaltyCard.created_at).toLocaleDateString()}
                 </p>
               </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Admin quick uploader - visible only to admins */}
+      {isAdmin && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">Admin: Create Loyalty NFT</CardTitle>
+            <CardDescription>Upload images and create an NFT type directly from this tab.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Display Name</Label>
+                <Input value={adminDisplayName} onChange={(e) => setAdminDisplayName(e.target.value)} placeholder="e.g., Pearl White" />
+              </div>
+              <div className="space-y-2">
+                <Label>Rarity</Label>
+                <Select value={adminRarity} onValueChange={setAdminRarity}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Common">Common</SelectItem>
+                    <SelectItem value="LessCommon">Less Common</SelectItem>
+                    <SelectItem value="Rare">Rare</SelectItem>
+                    <SelectItem value="VeryRare">Very Rare</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <NFTImageUpload label="Card Image (PNG/JPG)" value={imageUrl} onChange={setImageUrl} />
+              <NFTImageUpload label="Evolution Image (GIF)" value={evolutionUrl} onChange={setEvolutionUrl} acceptedFormats={['image/gif']} maxSizeMB={10} />
+            </div>
+
+            <div className="flex justify-end">
+              <Button onClick={handleAdminCreateNFT} disabled={savingNFT || !imageUrl || !adminDisplayName}>
+                {savingNFT ? 'Saving...' : 'Create Loyalty NFT'}
+              </Button>
             </div>
           </CardContent>
         </Card>

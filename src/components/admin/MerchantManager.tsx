@@ -7,7 +7,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useForm } from "react-hook-form";
-import { supabase } from "@/integrations/supabase/client";
+import { databaseAdapter } from "@/lib/databaseAdapter";
 import { useToast } from "@/hooks/use-toast";
 import { Eye, Edit2, CreditCard, Calendar, Plus, Image as ImageIcon } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -26,6 +26,7 @@ interface Merchant {
   subscription_start_date: string;
   subscription_end_date: string;
   created_at: string;
+  logo_url?: string;
   profiles?: {
     full_name: string;
     email: string;
@@ -65,7 +66,7 @@ const MerchantManager = ({ onStatsUpdate }: MerchantManagerProps) => {
       country: "",
       status: "pending",
       subscription_plan: "none",
-      subscription_start_date: new Date().toISOString().split('T')[0], // ✅ IMPLEMENT REQUIREMENT: Default to current date
+      subscription_start_date: new Date().toISOString().split('T')[0] || "", // ✅ IMPLEMENT REQUIREMENT: Default to current date
       subscription_end_date: "",
       free_trial_months: "0"
     }
@@ -78,11 +79,7 @@ const MerchantManager = ({ onStatsUpdate }: MerchantManagerProps) => {
 
   const loadSubscriptionPlans = async () => {
     try {
-      const { data, error } = await supabase
-        .from('merchant_subscription_plans')
-        .select('*')
-        .eq('is_active', true)
-        .order('plan_number', { ascending: true });
+      const { data, error } = await databaseAdapter.getSubscriptionPlans();
       
       if (error) {
         console.error('Failed to load subscription plans:', error);
@@ -163,7 +160,7 @@ const MerchantManager = ({ onStatsUpdate }: MerchantManagerProps) => {
           subscription_plan: data.subscription_plan === "none" ? null : data.subscription_plan,
         };
 
-        const { error } = await supabase
+        const { error } = await databaseAdapter.supabase
           .from("merchants")
           .insert([merchantData]);
 
@@ -193,7 +190,7 @@ const MerchantManager = ({ onStatsUpdate }: MerchantManagerProps) => {
           subscription_end_date: endDate
         };
 
-        const { error } = await supabase
+        const { error } = await databaseAdapter.supabase
           .from("merchants")
           .update(updateData)
           .eq("id", selectedMerchant.id);
@@ -224,20 +221,21 @@ const MerchantManager = ({ onStatsUpdate }: MerchantManagerProps) => {
     try {
       const file = e.target.files?.[0];
       if (!file || !selectedMerchant) return;
-      const fileExt = file.name.split('.').pop();
-      const path = `merchant-logos/${selectedMerchant.id}-${Date.now()}.${fileExt}`;
-      const { error: uploadError } = await supabase.storage.from('public-assets').upload(path, file, {
-        cacheControl: '3600', upsert: true
-      });
-      if (uploadError) throw uploadError;
-      const { data: urlData } = supabase.storage.from('public-assets').getPublicUrl(path);
-      const publicUrl = urlData?.publicUrl;
-      if (publicUrl) {
-        const { error } = await supabase.from('merchants').update({ logo_url: publicUrl }).eq('id', selectedMerchant.id);
-        if (error) throw error;
-        toast({ title: 'Logo Updated', description: 'Merchant logo uploaded successfully.' });
-        await loadMerchants();
-      }
+      
+      // For local development, create a blob URL instead of uploading to Supabase
+      const blobUrl = URL.createObjectURL(file);
+      const fileName = `merchant-logo-${selectedMerchant.id}-${Date.now()}.${file.name.split('.').pop()}`;
+      const localUrl = `${blobUrl}#${fileName}`;
+      
+      // Update merchant with local URL (in production, this would be a proper file server URL)
+      const { error } = await databaseAdapter
+        .from('merchants')
+        .update({ logo_url: localUrl })
+        .eq('id', selectedMerchant.id);
+        
+      if (error) throw error;
+      toast({ title: 'Logo Updated', description: 'Merchant logo uploaded successfully (local development mode).' });
+      await loadMerchants();
     } catch (err) {
       console.error('Logo upload failed:', err);
       toast({ title: 'Error', description: 'Failed to upload logo', variant: 'destructive' });
@@ -453,7 +451,7 @@ const MerchantManager = ({ onStatsUpdate }: MerchantManagerProps) => {
                         <label className="text-sm font-medium text-muted-foreground">Logo</label>
                         <div className="flex items-center gap-3 mt-1">
                           <div className="w-16 h-16 bg-muted rounded flex items-center justify-center overflow-hidden">
-                            {selectedMerchant.logo_url ? (
+                            {selectedMerchant?.logo_url ? (
                               <img src={selectedMerchant.logo_url} alt={selectedMerchant.business_name} className="w-full h-full object-cover" />
                             ) : (
                               <ImageIcon className="w-6 h-6 text-muted-foreground" />
@@ -467,24 +465,24 @@ const MerchantManager = ({ onStatsUpdate }: MerchantManagerProps) => {
                       </div>
                       <div>
                         <label className="text-sm font-medium text-muted-foreground">Business Name</label>
-                        <div>{selectedMerchant.business_name}</div>
+                        <div>{selectedMerchant?.business_name}</div>
                       </div>
                       <div>
                         <label className="text-sm font-medium text-muted-foreground">Type</label>
-                        <div>{selectedMerchant.business_type || "Not specified"}</div>
+                        <div>{selectedMerchant?.business_type || "Not specified"}</div>
                       </div>
                       <div>
                         <label className="text-sm font-medium text-muted-foreground">Contact</label>
-                        <div>{selectedMerchant.contact_email || "Not specified"}</div>
+                        <div>{selectedMerchant?.contact_email || "Not specified"}</div>
                       </div>
                       <div>
                         <label className="text-sm font-medium text-muted-foreground">Phone</label>
-                        <div>{selectedMerchant.phone || "Not specified"}</div>
+                        <div>{selectedMerchant?.phone || "Not specified"}</div>
                       </div>
                       <div>
                         <label className="text-sm font-medium text-muted-foreground">Location</label>
                         <div>
-                          {selectedMerchant.city && selectedMerchant.country 
+                          {selectedMerchant?.city && selectedMerchant?.country 
                             ? `${selectedMerchant.city}, ${selectedMerchant.country}`
                             : "Not specified"}
                         </div>
@@ -503,15 +501,15 @@ const MerchantManager = ({ onStatsUpdate }: MerchantManagerProps) => {
                       <div>
                         <label className="text-sm font-medium text-muted-foreground">Status</label>
                         <div>
-                          <Badge variant={getStatusColor(selectedMerchant.status)} className="capitalize">
-                            {selectedMerchant.status}
+                          <Badge variant={getStatusColor(selectedMerchant?.status || 'pending')} className="capitalize">
+                            {selectedMerchant?.status}
                           </Badge>
                         </div>
                       </div>
                       <div>
                         <label className="text-sm font-medium text-muted-foreground">Plan</label>
                         <div>
-                          {selectedMerchant.subscription_plan ? (
+                          {selectedMerchant?.subscription_plan ? (
                             <Badge variant={getPlanColor(selectedMerchant.subscription_plan)} className="capitalize">
                               {selectedMerchant.subscription_plan}
                             </Badge>
@@ -523,7 +521,7 @@ const MerchantManager = ({ onStatsUpdate }: MerchantManagerProps) => {
                       <div>
                         <label className="text-sm font-medium text-muted-foreground">Start Date</label>
                         <div>
-                          {selectedMerchant.subscription_start_date 
+                          {selectedMerchant?.subscription_start_date 
                             ? new Date(selectedMerchant.subscription_start_date).toLocaleDateString()
                             : "Not set"}
                         </div>
@@ -531,14 +529,14 @@ const MerchantManager = ({ onStatsUpdate }: MerchantManagerProps) => {
                       <div>
                         <label className="text-sm font-medium text-muted-foreground">End Date</label>
                         <div>
-                          {selectedMerchant.subscription_end_date 
+                          {selectedMerchant?.subscription_end_date 
                             ? new Date(selectedMerchant.subscription_end_date).toLocaleDateString()
                             : "Not set"}
                         </div>
                       </div>
                       <div>
                         <label className="text-sm font-medium text-muted-foreground">Registered</label>
-                        <div>{new Date(selectedMerchant.created_at).toLocaleDateString()}</div>
+                        <div>{selectedMerchant?.created_at ? new Date(selectedMerchant.created_at).toLocaleDateString() : "Unknown"}</div>
                       </div>
                     </CardContent>
                   </Card>

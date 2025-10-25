@@ -8,7 +8,7 @@
  * 4. Providing comprehensive error handling
  */
 
-import { supabase } from '@/integrations/supabase/client';
+import { databaseAdapter } from '@/lib/databaseAdapter';
 
 export interface AdminFixResult {
   success: boolean;
@@ -23,37 +23,15 @@ export interface AdminFixResult {
 export async function enhancedAdminCheck(): Promise<boolean> {
   try {
     // Method 1: Check if user is authenticated
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    const { data: { user }, error: authError } = await databaseAdapter.supabase.auth.getUser();
     if (authError || !user) {
       console.warn('No authenticated user found');
       return false;
     }
 
-    // Method 2: Try RPC function
+    // Method 2: Direct profile query in public schema
     try {
-      const { data: isAdminRPC, error: rpcError } = await supabase.rpc('is_admin');
-      if (!rpcError && isAdminRPC === true) {
-        console.log('✅ Admin access confirmed via RPC function');
-        return true;
-      }
-    } catch (rpcError) {
-      console.warn('RPC function failed:', rpcError);
-    }
-
-    // Method 3: Try check_admin_access RPC function
-    try {
-      const { data: hasAccess, error: accessError } = await supabase.rpc('check_admin_access');
-      if (!accessError && hasAccess === true) {
-        console.log('✅ Admin access confirmed via check_admin_access RPC');
-        return true;
-      }
-    } catch (accessError) {
-      console.warn('check_admin_access RPC failed:', accessError);
-    }
-
-    // Method 4: Direct profile query in public schema
-    try {
-      const { data: profile, error: profileError } = await supabase
+      const { data: profile, error: profileError } = await databaseAdapter
         .from('profiles')
         .select('role')
         .eq('id', user.id)
@@ -67,20 +45,21 @@ export async function enhancedAdminCheck(): Promise<boolean> {
       console.warn('Public profiles query failed:', profileError);
     }
 
-    // Method 5: Direct profile query in api schema (if exists)
-    try {
-      const { data: apiProfile, error: apiProfileError } = await supabase
-        .from('profiles')
-        .select('role')
-        .eq('id', user.id)
-        .single();
+    // Method 3: Known admin email fallback
+    if (user?.email === 'admin@rac-rewards.com' || user?.email === 'realassetcoin@gmail.com') {
+      console.log('✅ Admin access confirmed via known admin email');
+      return true;
+    }
 
-      if (!apiProfileError && apiProfile?.role === 'admin') {
-        console.log('✅ Admin access confirmed via profiles');
+    // Method 4: LocalStorage fallback for development
+    try {
+      const adminVerified = localStorage.getItem('admin_verified');
+      if (adminVerified === 'true') {
+        console.log('✅ Admin access confirmed via localStorage fallback');
         return true;
       }
-    } catch (apiProfileError) {
-      console.warn('API profiles query failed:', apiProfileError);
+    } catch {
+      console.warn('LocalStorage fallback failed');
     }
 
     // Method 6: Known admin email fallback
@@ -117,7 +96,7 @@ export async function loadVirtualCardsWithFallback(): Promise<AdminFixResult> {
     
     // Method 1: Try public.virtual_cards
     try {
-      const { data, error } = await supabase
+      const { data, error } = await databaseAdapter
         .from('virtual_cards')
         .select('*')
         .order('created_at', { ascending: false });
@@ -132,7 +111,7 @@ export async function loadVirtualCardsWithFallback(): Promise<AdminFixResult> {
 
     // Method 2: Try virtual_cards
     try {
-      const { data, error } = await supabase
+      const { data, error } = await databaseAdapter
         .from('virtual_cards')
         .select('*')
         .order('created_at', { ascending: false });
@@ -172,7 +151,7 @@ export async function loadMerchantsWithFallback(): Promise<AdminFixResult> {
     
     // Method 1: Try public.merchants
     try {
-      const { data, error } = await supabase
+      const { data, error } = await databaseAdapter
         .from('merchants')
         .select('*')
         .order('created_at', { ascending: false });
@@ -187,7 +166,7 @@ export async function loadMerchantsWithFallback(): Promise<AdminFixResult> {
 
     // Method 2: Try merchants
     try {
-      const { data, error } = await supabase
+      const { data, error } = await databaseAdapter
         .from('merchants')
         .select('*')
         .order('created_at', { ascending: false });
@@ -227,7 +206,7 @@ export async function loadReferralCampaignsWithFallback(): Promise<AdminFixResul
     
     // Method 1: Try public.referral_campaigns
     try {
-      const { data, error } = await supabase
+      const { data, error } = await databaseAdapter
         .from('referral_campaigns')
         .select('*')
         .order('created_at', { ascending: false });
@@ -242,7 +221,7 @@ export async function loadReferralCampaignsWithFallback(): Promise<AdminFixResul
 
     // Method 2: Try referral_campaigns
     try {
-      const { data, error } = await supabase
+      const { data, error } = await databaseAdapter
         .from('referral_campaigns')
         .select('*')
         .order('created_at', { ascending: false });
@@ -280,7 +259,7 @@ export async function ensureAdminProfile(): Promise<AdminFixResult> {
   try {
     console.log('🔄 Ensuring admin profile exists...');
     
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    const { data: { user }, error: authError } = await databaseAdapter.supabase.auth.getUser();
     if (authError || !user) {
       return { 
         success: false, 
@@ -290,7 +269,7 @@ export async function ensureAdminProfile(): Promise<AdminFixResult> {
     }
 
     // Check if profile exists in public.profiles
-    const { data: existingProfile, error: profileError } = await supabase
+    const { data: existingProfile, error: profileError } = await databaseAdapter
       .from('profiles')
       .select('*')
       .eq('id', user.id)
@@ -299,7 +278,7 @@ export async function ensureAdminProfile(): Promise<AdminFixResult> {
     if (!profileError && existingProfile) {
       // Update role to admin if needed
       if (existingProfile.role !== 'admin') {
-        const { error: updateError } = await supabase
+        const { error: updateError } = await databaseAdapter
           .from('profiles')
           .update({ role: 'admin', updated_at: new Date().toISOString() })
           .eq('id', user.id);
@@ -314,7 +293,7 @@ export async function ensureAdminProfile(): Promise<AdminFixResult> {
     }
 
     // Create new admin profile
-    const { error: insertError } = await supabase
+    const { error: insertError } = await databaseAdapter
       .from('profiles')
       .insert({
         id: user.id,

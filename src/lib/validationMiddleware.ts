@@ -108,7 +108,7 @@ export const validateParams = (schema: z.ZodSchema) => {
  * Sanitize input data to prevent XSS and injection attacks
  */
 export const sanitizeInput = (req: Request, res: Response, next: NextFunction) => {
-  const sanitizeObject = (obj: Record<string, unknown>): Record<string, unknown> => {
+  const sanitizeObject = (obj: any): any => {
     if (typeof obj === 'string') {
       return obj
         .replace(/&/g, '&amp;')
@@ -125,9 +125,9 @@ export const sanitizeInput = (req: Request, res: Response, next: NextFunction) =
     }
     
     if (obj && typeof obj === 'object') {
-      const sanitized: Record<string, unknown> = {};
+      const sanitized: any = {};
       for (const key in obj) {
-        if (Object.prototype.hasOwnProperty.call(obj, key)) {
+        if (obj.hasOwnProperty(key)) {
           sanitized[key] = sanitizeObject(obj[key]);
         }
       }
@@ -177,8 +177,8 @@ export const rateLimit = (maxRequests: number = 100, windowMs: number = 15 * 60 
 /**
  * Error handling middleware
  */
-export const errorHandler = (error: unknown, req: Request, res: Response) => {
-  // Console statement removed
+export const errorHandler = (error: any, req: Request, res: Response, next: NextFunction) => {
+  console.error('API Error:', error);
   
   // Handle validation errors
   if (error instanceof z.ZodError) {
@@ -241,6 +241,5 @@ export const errorHandler = (error: unknown, req: Request, res: Response) => {
     ...(process.env.NODE_ENV === 'development' && { stack: error.stack })
   });
 };
-
 
 

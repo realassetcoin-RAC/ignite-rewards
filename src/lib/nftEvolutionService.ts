@@ -3,19 +3,18 @@
  * Evolution system that unlocks surprise 3D NFTs for users meeting minimum investment criteria
  */
 
-import { databaseAdapter } from './databaseAdapter';
-import { supabase } from '@/integrations/supabase/client';
+import { databaseAdapter } from '@/lib/databaseAdapter';
 
-// interface EvolutionCriteria {
-//   id: string;
-//   nft_type_id: string;
-//   minimum_investment: number;
-//   minimum_staking_amount: number;
-//   minimum_days_staked: number;
-//   minimum_transactions: number;
-//   minimum_referrals: number;
-//   is_active: boolean;
-// }
+interface EvolutionCriteria {
+  id: string;
+  nft_type_id: string;
+  minimum_investment: number;
+  minimum_staking_amount: number;
+  minimum_days_staked: number;
+  minimum_transactions: number;
+  minimum_referrals: number;
+  is_active: boolean;
+}
 
 interface EvolutionNFT {
   id: string;
@@ -67,10 +66,10 @@ export class NFTEvolutionService {
     nftTypeId: string
   ): Promise<EvolutionEligibility> {
     try {
-      // Checking evolution eligibility
+      console.log(`🔍 Checking evolution eligibility for user ${userId}, NFT ${nftTypeId}`);
 
       // Get evolution criteria
-      const { data: criteria, error: criteriaError } = await databaseAdapter
+      const { data: criteria, error: criteriaError } = await supabase
         .from('evolution_criteria')
         .select('*')
         .eq('nft_type_id', nftTypeId)
@@ -156,8 +155,8 @@ export class NFTEvolutionService {
         progress_percentage: Math.round(overallProgress)
       };
 
-    } catch {
-      // Error checking evolution eligibility
+    } catch (error) {
+      console.error('Error checking evolution eligibility:', error);
       return {
         eligible: false,
         criteria_met: {
@@ -181,7 +180,7 @@ export class NFTEvolutionService {
     baseNftId: string
   ): Promise<{ success: boolean; evolvedNft?: EvolutionNFT; error?: string }> {
     try {
-      // Starting NFT evolution
+      console.log(`🎭 Starting NFT evolution for user ${userId}, NFT ${baseNftId}`);
 
       // Check eligibility first
       const eligibility = await this.checkEvolutionEligibility(userId, baseNftId);
@@ -193,7 +192,7 @@ export class NFTEvolutionService {
       }
 
       // Check if NFT is already evolved
-      const { data: existingEvolution } = await databaseAdapter
+      const { data: existingEvolution } = await supabase
         .from('user_evolutions')
         .select('*')
         .eq('user_id', userId)
@@ -208,7 +207,7 @@ export class NFTEvolutionService {
       }
 
       // Get available evolution NFTs for this base NFT
-      const { data: availableEvolutions, error: evolutionError } = await databaseAdapter
+      const { data: availableEvolutions, error: evolutionError } = await supabase
         .from('evolution_nfts')
         .select('*')
         .eq('base_nft_id', baseNftId)
@@ -236,7 +235,7 @@ export class NFTEvolutionService {
       ]);
 
       // Create evolution record
-      const { error: creationError } = await databaseAdapter
+      const { data: evolution, error: creationError } = await supabase
         .from('user_evolutions')
         .insert({
           user_id: userId,
@@ -255,7 +254,7 @@ export class NFTEvolutionService {
         .single();
 
       if (creationError) {
-        // Error creating evolution record
+        console.error('Error creating evolution record:', creationError);
         return {
           success: false,
           error: 'Failed to create evolution record'
@@ -263,7 +262,7 @@ export class NFTEvolutionService {
       }
 
       // Update user's NFT to evolved version
-      await databaseAdapter
+      await supabase
         .from('user_nfts')
         .update({
           nft_id: selectedEvolution.id,
@@ -277,7 +276,7 @@ export class NFTEvolutionService {
       // Send evolution notification email
       try {
         const { EmailService } = await import('@/lib/emailService');
-        const { data: { user } } = await supabase.auth.getUser();
+        const { data: { user } } = await databaseAdapter.supabase.auth.getUser();
         
         if (user?.email) {
           await EmailService.sendEvolutionNotification(
@@ -288,18 +287,18 @@ export class NFTEvolutionService {
             selectedEvolution.evolution_rarity
           );
         }
-      } catch {
-        // Error sending evolution notification
+      } catch (emailError) {
+        console.error('Error sending evolution notification:', emailError);
       }
 
-      // NFT evolution successful
+      console.log(`✅ NFT evolution successful! Evolved to: ${selectedEvolution.evolved_name}`);
       return {
         success: true,
         evolvedNft: selectedEvolution
       };
 
-    } catch {
-      // Error evolving NFT
+    } catch (error) {
+      console.error('Error evolving NFT:', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Evolution failed'
@@ -312,7 +311,7 @@ export class NFTEvolutionService {
    */
   static async getUserEvolvedNFTs(userId: string): Promise<UserEvolution[]> {
     try {
-      const { data, error } = await databaseAdapter
+      const { data, error } = await supabase
         .from('user_evolutions')
         .select(`
           *,
@@ -330,13 +329,13 @@ export class NFTEvolutionService {
         .order('evolution_date', { ascending: false });
 
       if (error) {
-        // Error fetching user evolved NFTs
+        console.error('Error fetching user evolved NFTs:', error);
         return [];
       }
 
       return data || [];
-    } catch {
-      // Error in getUserEvolvedNFTs
+    } catch (error) {
+      console.error('Error in getUserEvolvedNFTs:', error);
       return [];
     }
   }
@@ -350,7 +349,7 @@ export class NFTEvolutionService {
   ): Promise<{ dailyEarnings: number; totalEarnings: number }> {
     try {
       // Get evolution details
-      const { data: evolution, error } = await databaseAdapter
+      const { data: evolution, error } = await supabase
         .from('user_evolutions')
         .select(`
           *,
@@ -377,8 +376,8 @@ export class NFTEvolutionService {
         totalEarnings: Math.round(totalEarnings * 100) / 100
       };
 
-    } catch {
-      // Error calculating evolution earnings
+    } catch (error) {
+      console.error('Error calculating evolution earnings:', error);
       return { dailyEarnings: 0, totalEarnings: 0 };
     }
   }
@@ -401,16 +400,16 @@ export class NFTEvolutionService {
       }
 
       // Add earnings to user's balance
-      await databaseAdapter
+      await supabase
         .from('user_loyalty_cards')
         .update({
-          points_balance: earnings.totalEarnings, // Simplified for now
+          points_balance: databaseAdapter.supabase.sql`points_balance + ${earnings.totalEarnings}`,
           updated_at: new Date().toISOString()
         })
         .eq('user_id', userId);
 
       // Record the claim
-      await databaseAdapter
+      await supabase
         .from('evolution_earnings_claims')
         .insert({
           user_evolution_id: evolutionId,
@@ -418,14 +417,14 @@ export class NFTEvolutionService {
           claimed_at: new Date().toISOString()
         });
 
-      // Evolution earnings claimed
+      console.log(`✅ Evolution earnings claimed: ${earnings.totalEarnings} tokens`);
       return {
         success: true,
         amount: earnings.totalEarnings
       };
 
-    } catch {
-      // Error claiming evolution earnings
+    } catch (error) {
+      console.error('Error claiming evolution earnings:', error);
       return {
         success: false,
         error: 'Failed to claim earnings'
@@ -436,18 +435,14 @@ export class NFTEvolutionService {
   /**
    * Get evolution statistics
    */
-  static async getEvolutionStats(): Promise<{
-    totalEvolutions: number;
-    rarityStats: Record<string, number>;
-    topEvolvers: Array<{ user_id: string; evolution_count: number }>;
-  }> {
+  static async getEvolutionStats(): Promise<any> {
     try {
       const [totalEvolutions, rarityStats, topEvolvers] = await Promise.all([
-        databaseAdapter.from('user_evolutions').select('id', { count: 'exact' }),
-        databaseAdapter.from('user_evolutions').select(`
+        databaseAdapter.supabase.from('user_evolutions').select('id', { count: 'exact' }),
+        databaseAdapter.supabase.from('user_evolutions').select(`
           evolution_nfts (evolution_rarity)
         `),
-        databaseAdapter.from('user_evolutions').select(`
+        databaseAdapter.supabase.from('user_evolutions').select(`
           user_id,
           profiles (full_name)
         `).limit(10)
@@ -463,7 +458,7 @@ export class NFTEvolutionService {
 
       rarityStats.data?.forEach(evolution => {
         const rarity = evolution.evolution_nfts?.evolution_rarity;
-        if (rarity && Object.prototype.hasOwnProperty.call(rarityCount, rarity)) {
+        if (rarity && rarityCount.hasOwnProperty(rarity)) {
           rarityCount[rarity as keyof typeof rarityCount]++;
         }
       });
@@ -474,8 +469,8 @@ export class NFTEvolutionService {
         top_evolvers: topEvolvers.data || []
       };
 
-    } catch {
-      // Error getting evolution stats
+    } catch (error) {
+      console.error('Error getting evolution stats:', error);
       return {
         total_evolutions: 0,
         rarity_distribution: { rare: 0, epic: 0, legendary: 0, mythic: 0 },
@@ -487,8 +482,8 @@ export class NFTEvolutionService {
   /**
    * Helper method to get user investment stats
    */
-  private static async getUserInvestmentStats(userId: string): Promise<{ total_invested: number }> {
-    const { data } = await databaseAdapter
+  private static async getUserInvestmentStats(userId: string): Promise<any> {
+    const { data } = await supabase
       .from('nft_upgrade_payments')
       .select('amount_usdt')
       .eq('user_id', userId)
@@ -501,8 +496,8 @@ export class NFTEvolutionService {
   /**
    * Helper method to get user staking stats
    */
-  private static async getUserStakingStats(userId: string): Promise<Record<string, unknown>> {
-    const { data } = await databaseAdapter
+  private static async getUserStakingStats(userId: string): Promise<any> {
+    const { data } = await supabase
       .from('stake_positions')
       .select('amount_staked, stake_date, unlock_date')
       .eq('user_id', userId);
@@ -521,8 +516,8 @@ export class NFTEvolutionService {
   /**
    * Helper method to get user transaction stats
    */
-  private static async getUserTransactionStats(userId: string): Promise<{ total_transactions: number }> {
-    const { data } = await databaseAdapter
+  private static async getUserTransactionStats(userId: string): Promise<any> {
+    const { data } = await supabase
       .from('transactions')
       .select('id')
       .eq('user_id', userId);
@@ -533,8 +528,8 @@ export class NFTEvolutionService {
   /**
    * Helper method to get user referral stats
    */
-  private static async getUserReferralStats(userId: string): Promise<{ successful_referrals: number }> {
-    const { data } = await databaseAdapter
+  private static async getUserReferralStats(userId: string): Promise<any> {
+    const { data } = await supabase
       .from('referral_settlements')
       .select('id')
       .eq('referrer_id', userId)
@@ -566,7 +561,7 @@ export class NFTEvolutionService {
     for (const item of weightedEvolutions) {
       currentWeight += item.weight;
       if (random <= currentWeight) {
-        // Selected evolution
+        console.log(`🎲 Selected ${item.nft.evolution_rarity} evolution: ${item.nft.evolved_name}`);
         return item.nft;
       }
     }

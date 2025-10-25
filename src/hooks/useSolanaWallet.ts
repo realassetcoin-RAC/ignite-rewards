@@ -1,12 +1,11 @@
 import { useState, useEffect, useCallback } from 'react';
-// import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
 export interface UserWallet {
   id: string;
   user_id: string;
-  solana_address: string;
-  encrypted_seed_phrase: string;
+  public_key: string;
+  seed_phrase_encrypted: string;
   wallet_type: 'generated' | 'connected';
   is_active: boolean;
   created_at: string;
@@ -85,8 +84,8 @@ export const useSolanaWallet = (userId?: string) => {
         .from('user_solana_wallets')
         .insert({
           user_id: userId,
-          solana_address: mockAddress,
-          encrypted_seed_phrase: mockSeedPhrase, // In real implementation, this would be encrypted
+          public_key: mockAddress,
+          seed_phrase_encrypted: mockSeedPhrase, // In real implementation, this would be encrypted
           wallet_type: 'generated',
           is_active: true
         })
@@ -134,8 +133,8 @@ export const useSolanaWallet = (userId?: string) => {
         .from('user_solana_wallets')
         .insert({
           user_id: userId,
-          solana_address: address,
-          encrypted_seed_phrase: seedPhrase || '', // In real implementation, this would be encrypted
+          public_key: address,
+          seed_phrase_encrypted: seedPhrase || '', // In real implementation, this would be encrypted
           wallet_type: 'connected',
           is_active: true
         })

@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Shield, Eye, Lock, Database, UserCheck, FileText, Sparkles, ArrowLeft } from "lucide-react";
+import { Shield, Eye, Lock, Database, UserCheck, FileText, ArrowLeft } from "lucide-react";
 import { Link } from "react-router-dom";
 
 const Privacy = () => {
@@ -34,9 +34,11 @@ const Privacy = () => {
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2">
-              <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-                <Sparkles className="h-5 w-5 text-primary-foreground" />
-              </div>
+              <img
+                src="/bridgepoint-logo.jpg"
+                alt="BridgePoint Logo"
+                className="w-12 h-12 rounded-lg object-contain"
+              />
               <h1 className={`text-2xl font-bold text-foreground ${
                 isLoaded ? 'animate-fade-in-up' : 'opacity-0'
               }`}>

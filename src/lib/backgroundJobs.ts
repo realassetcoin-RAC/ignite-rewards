@@ -6,20 +6,20 @@ import { createModuleLogger } from '@/utils/consoleReplacer';
 const logger = createModuleLogger('BackgroundJobs');
 
 export class BackgroundJobService {
-  private static isRunning = false;
+  private static _isRunning = false;
   private static intervals: NodeJS.Timeout[] = [];
 
   /**
    * Start all background jobs
    */
   static startAllJobs(): void {
-    if (this.isRunning) {
+    if (this._isRunning) {
       logger.warn('Background jobs are already running');
       return;
     }
 
     logger.info('Starting background jobs...');
-    this.isRunning = true;
+    this._isRunning = true;
 
     // Point Release Processing - Every hour
     const pointReleaseInterval = setInterval(async () => {
@@ -40,7 +40,7 @@ export class BackgroundJobService {
             errors: result.errors.length
           });
         } else {
-          logger.error('Point release processing failed', { errors: result.errors });
+          logger.error('Point release processing failed', new Error(result.errors.join(', ')));
         }
       } catch (error) {
         // Don't log errors in browser environment
@@ -48,7 +48,7 @@ export class BackgroundJobService {
           logger.debug('Point release processing error in browser environment - skipping');
           return;
         }
-        logger.error('Point release processing error', error);
+        logger.error('Point release processing error', error instanceof Error ? error : new Error(String(error)));
       }
     }, 60 * 60 * 1000); // Every hour
 
@@ -70,7 +70,7 @@ export class BackgroundJobService {
           logger.debug('OTP cleanup error in browser environment - skipping');
           return;
         }
-        logger.error('OTP cleanup error', error);
+        logger.error('OTP cleanup error', error instanceof Error ? error : new Error(String(error)));
       }
     }, 5 * 60 * 1000); // Every 5 minutes
 
@@ -96,7 +96,7 @@ export class BackgroundJobService {
           if (result.errors.length > 0 && result.errors[0] === 'Database not connected') {
             logger.debug('Email processing skipped - database not connected in browser environment');
           } else {
-            logger.error('Email processing failed', { errors: result.errors });
+            logger.error('Email processing failed', new Error(result.errors.join(', ')));
           }
         }
       } catch (error) {
@@ -105,7 +105,7 @@ export class BackgroundJobService {
           logger.debug('Email processing error in browser environment - skipping');
           return;
         }
-        logger.error('Email processing error', error);
+        logger.error('Email processing error', error instanceof Error ? error : new Error(String(error)));
       }
     }, 60 * 1000); // Every minute
 
@@ -119,14 +119,14 @@ export class BackgroundJobService {
    * Check if background jobs are running
    */
   static isRunning(): boolean {
-    return this.isRunning;
+    return this._isRunning;
   }
 
   /**
    * Stop all background jobs
    */
   static stopAllJobs(): void {
-    if (!this.isRunning) {
+    if (!this._isRunning) {
       logger.warn('Background jobs are not running');
       return;
     }
@@ -138,7 +138,7 @@ export class BackgroundJobService {
     });
     
     this.intervals = [];
-    this.isRunning = false;
+    this._isRunning = false;
     
     logger.info('All background jobs stopped');
   }
@@ -158,7 +158,7 @@ export class BackgroundJobService {
       logger.info('Manual point release processing completed', result);
       return result;
     } catch (error) {
-      logger.error('Manual point release processing error', error);
+      logger.error('Manual point release processing error', error instanceof Error ? error : new Error(String(error)));
       return {
         success: false,
         totalReleased: 0,
@@ -177,7 +177,7 @@ export class BackgroundJobService {
       await EnhancedLoyaltyOtp.cleanupExpiredOTPs();
       logger.info('Manual OTP cleanup completed');
     } catch (error) {
-      logger.error('Manual OTP cleanup error', error);
+      logger.error('Manual OTP cleanup error', error instanceof Error ? error : new Error(String(error)));
     }
   }
 
@@ -195,7 +195,7 @@ export class BackgroundJobService {
       logger.info('Manual email processing completed', result);
       return result;
     } catch (error) {
-      logger.error('Manual email processing error', error);
+      logger.error('Manual email processing error', error instanceof Error ? error : new Error(String(error)));
       return {
         success: false,
         retried: 0,
@@ -213,7 +213,7 @@ export class BackgroundJobService {
     jobTypes: string[];
   } {
     return {
-      isRunning: this.isRunning,
+      isRunning: this._isRunning,
       activeJobs: this.intervals.length,
       jobTypes: [
         'Point Release Processing (hourly)',

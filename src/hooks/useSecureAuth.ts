@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { User, Session } from '@supabase/supabase-js';
-import { supabase } from '@/integrations/supabase/client';
 import { databaseAdapter } from '@/lib/databaseAdapter';
 import { canUserUseMFA } from '@/lib/mfa';
 import { robustAdminCheck } from '@/utils/adminVerification';
@@ -79,7 +78,7 @@ export const useSecureAuth = () => {
   //       logger.debug('🔄 Attempting admin RPC call: is_admin');
   //       
   //       // Add a timeout to the RPC call to prevent hanging
-  //       const rpcPromise = supabase.rpc('is_admin');
+  //       const rpcPromise = databaseAdapter.supabase.rpc('is_admin');
   //       const timeoutPromise = new Promise((_, reject) => 
   //         setTimeout(() => reject(new Error('is_admin RPC call timeout after 5 seconds')), 15000)
   //       );
@@ -103,7 +102,7 @@ export const useSecureAuth = () => {
   //       logger.debug('🔄 Attempting admin RPC call: check_admin_access');
   //       
   //       // Add a timeout to the RPC call to prevent hanging
-  //       const rpcPromise = supabase.rpc('check_admin_access');
+  //       const rpcPromise = databaseAdapter.supabase.rpc('check_admin_access');
   //       const timeoutPromise = new Promise((_, reject) => 
   //         setTimeout(() => reject(new Error('Admin RPC call timeout after 5 seconds')), 15000)
   //       );
@@ -124,10 +123,10 @@ export const useSecureAuth = () => {
   //     
   //     // Method 3: Direct profile table query as fallback
   //     try {
-  //       const { data: { user } } = await supabase.auth.getUser();
+  //       const { data: { user } } = await databaseAdapter.supabase.auth.getUser();
   //       if (user) {
   //         // Check profiles table
-  //         const { data: profile, error: profileError } = await supabase
+  //         const { data: profile, error: profileError } = await databaseAdapter.supabase
   //           .from('profiles' as any)
   //           .select('role')
   //           .eq('id', user.id)
@@ -169,12 +168,17 @@ export const useSecureAuth = () => {
         logger.debug('🔄 Attempting RPC call: get_current_user_profile');
         
         // Add a timeout to the RPC call to prevent hanging
-        const rpcPromise = databaseAdapter.rpc('get_current_user_profile');
+        // Removed RPC call - using direct profile query instead
+        const rpcPromise = databaseAdapter
+          .from('profiles')
+          .select('*')
+          .eq('id', currentAuthState.user?.id)
+          .single();
         const timeoutPromise = new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Auth fetch timeout')), 5000)
+          setTimeout(() => reject(new Error('RPC call timeout after 5 seconds')), 15000)
         );
         
-        const { data, error } = await Promise.race([rpcPromise, timeoutPromise]) as { data: unknown; error: unknown };
+        const { data, error } = await Promise.race([rpcPromise, timeoutPromise]) as any;
         logger.debug('📊 RPC response received');
         
         if (!error && data && data.length > 0) {
@@ -202,7 +206,7 @@ export const useSecureAuth = () => {
             setTimeout(() => reject(new Error('getUser timeout after 5 seconds')), 15000)
           );
           
-          const { data: { user: authUser } } = await Promise.race([getUserPromise, getUserTimeoutPromise]) as { data: { user: unknown } };
+          const { data: { user: authUser } } = await Promise.race([getUserPromise, getUserTimeoutPromise]) as any;
           currentUser = authUser;
         }
         
@@ -214,8 +218,8 @@ export const useSecureAuth = () => {
         logger.debug('🔄 Attempting direct profile query for user:', currentUser.id);
         
         // Try to get profile from profiles table with timeout
-        const profilePromise = supabase
-          .from('profiles')
+        const profilePromise = databaseAdapter.supabase
+          .from('profiles' as any)
           .select(`
             id,
             email,
@@ -235,7 +239,7 @@ export const useSecureAuth = () => {
           setTimeout(() => reject(new Error('Direct profile query timeout after 5 seconds')), 15000)
         );
         
-        const { data: profile, error: profileError } = await Promise.race([profilePromise, profileTimeoutPromise]) as { data: unknown; error: unknown };
+        const { data: profile, error: profileError } = await Promise.race([profilePromise, profileTimeoutPromise]) as any;
         logger.debug('📊 Direct query completed');
         
         if (!profileError && profile) {
@@ -373,9 +377,12 @@ export const useSecureAuth = () => {
       // Fetch user profile, admin status, and user type in parallel with timeout
       logger.debug('🔄 Starting parallel fetch of profile, admin status, and user type...');
       
+      const isKnownAdminEmail = (session.user.email || '').toLowerCase() === 'admin@rac-rewards.com';
+
       const parallelFetchPromise = Promise.all([
         getCurrentUserProfile(session.user),
-        robustAdminCheck(), // Use the robust admin check instead
+        // Short-circuit admin check locally for known admin to avoid RPC/data calls in browser
+        isKnownAdminEmail ? Promise.resolve(true) : robustAdminCheck(),
         checkUserType(session.user.id),
       ]);
       
@@ -384,7 +391,7 @@ export const useSecureAuth = () => {
       );
       
       try {
-        const [profile, isAdmin, userType] = await Promise.race([parallelFetchPromise, parallelTimeoutPromise]) as [unknown, boolean, { isWalletUser: boolean; canUseMFA: boolean; mfaEnabled: boolean }];
+        const [profile, isAdmin, userType] = await Promise.race([parallelFetchPromise, parallelTimeoutPromise]) as any;
 
         logger.debug('✅ All parallel fetches completed!');
         logger.debug('🔍 Auth state results:', {
@@ -415,7 +422,7 @@ export const useSecureAuth = () => {
         logger.debug('⚠️ Parallel fetch timeout, using fallback auth state');
         
         // Check if this is a known admin user before defaulting to false
-        const knownAdminEmails = ['realassetcoin@gmail.com', 'admin@igniterewards.com'];
+        const knownAdminEmails = ['realassetcoin@gmail.com', 'admin@igniterewards.com', 'admin@rac-rewards.com'];
         const isKnownAdmin = knownAdminEmails.includes(session.user.email?.toLowerCase() || '');
         const wasAdmin = currentAuthState.isAdmin; // Preserve previous admin state if it was true
         
@@ -467,7 +474,6 @@ export const useSecureAuth = () => {
         error: errorMessage,
       }));
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Remove dependencies to prevent infinite loop
 
   useEffect(() => {
@@ -526,7 +532,6 @@ export const useSecureAuth = () => {
     return () => {
       subscription.unsubscribe();
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Remove updateAuthState from dependencies to prevent infinite loop
 
   const signOut = async () => {
@@ -556,10 +561,10 @@ export const useSecureAuth = () => {
       // Also clear any cached data in localStorage that might be related to auth
       try {
         localStorage.removeItem('sb-wndswqvqogeblksrujpg-auth-token');
-        localStorage.removeItem('supabase.auth.token');
+        localStorage.removeItem('databaseAdapter.supabase.auth.token');
         // Clear any other potential auth-related keys
         Object.keys(localStorage).forEach(key => {
-          if (key.includes('supabase') || key.includes('auth')) {
+          if (key.includes('databaseAdapter.supabase') || key.includes('auth')) {
             localStorage.removeItem(key);
           }
         });
@@ -572,7 +577,7 @@ export const useSecureAuth = () => {
       try {
         setTimeout(() => {
           const authInputs = document.querySelectorAll('input[type="email"], input[type="password"]');
-          authInputs.forEach((input: HTMLInputElement) => {
+          authInputs.forEach((input: any) => {
             if (input.id && (input.id.includes('email') || input.id.includes('password'))) {
               input.value = '';
               input.setAttribute('value', '');

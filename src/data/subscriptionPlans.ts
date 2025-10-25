@@ -10,11 +10,11 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
     monthlyPoints: 100,
     monthlyTransactions: 100,
     features: [
-      '100 monthly points',
-      '100 monthly transactions',
-      'Basic analytics',
-      'Email support',
-      'Standard templates'
+      '100 Points limit for distribution',
+      '100 Transactions limit for distribution',
+      '1 Email (Registered Signup Email) account can access',
+      'Merchant Dashboard with Standard Analytics',
+      'Email and Chat Support'
     ],
     description: 'Perfect for small businesses just getting started'
   },
@@ -27,12 +27,11 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
     monthlyPoints: 300,
     monthlyTransactions: 300,
     features: [
-      '300 monthly points',
-      '300 monthly transactions',
-      'Advanced analytics',
-      'Priority email support',
-      'Custom templates',
-      'Basic integrations'
+      '300 Points limit for distribution',
+      '300 Transactions limit for distribution',
+      '2 Email (Registered Signup Email + 1) account can access',
+      'Merchant Dashboard with Standard Analytics',
+      'Email and Chat Support'
     ],
     description: 'Ideal for growing businesses with moderate transaction volume'
   },
@@ -45,13 +44,11 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
     monthlyPoints: 600,
     monthlyTransactions: 600,
     features: [
-      '600 monthly points',
-      '600 monthly transactions',
-      'Premium analytics',
-      'Phone & email support',
-      'Custom branding',
-      'Advanced integrations',
-      'API access'
+      '600 Points limit for distribution',
+      '600 Transactions limit for distribution',
+      '3 Email (Registered Signup Email + 2) account can access',
+      'Merchant Dashboard with Advanced Analytics',
+      'Email and Chat Support'
     ],
     description: 'For established businesses with high transaction volume',
     popular: true
@@ -65,14 +62,11 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
     monthlyPoints: 1800,
     monthlyTransactions: 1800,
     features: [
-      '1800 monthly points',
-      '1800 monthly transactions',
-      'Enterprise analytics',
-      'Dedicated account manager',
-      'White-label solution',
-      'Custom integrations',
-      'Full API access',
-      'Priority feature requests'
+      '1800 Points limit for distribution',
+      '1800 Transactions limit for distribution',
+      '5 Email (Registered Signup Email + 4) account can access',
+      'Merchant Dashboard with Advanced Analytics',
+      'Priority Email and Chat Support 24/7'
     ],
     description: 'For large businesses requiring enterprise-level features'
   },
@@ -85,15 +79,11 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
     monthlyPoints: 4000,
     monthlyTransactions: 4000,
     features: [
-      '4000 monthly points',
-      '4000 monthly transactions',
-      'Custom analytics dashboard',
-      '24/7 dedicated support',
-      'Full white-label solution',
-      'Custom development',
-      'Unlimited API access',
-      'Custom SLA',
-      'On-site training'
+      '4000 Points limit for distribution',
+      '4000 Transactions limit for distribution',
+      'Unlimited Email (Registered Signup Email) account can access',
+      'Merchant Dashboard with Custom Analytics',
+      'Dedicated Account Manager, Priority Email and Chat Support 24/7'
     ],
     description: 'For enterprise clients with maximum transaction volume'
   }
@@ -121,7 +111,7 @@ export const getRecommendedPlan = (monthlyTransactions: number): SubscriptionPla
   
   if (suitablePlans.length === 0) {
     // If no plan fits, return the highest plan
-    return SUBSCRIPTION_PLANS[SUBSCRIPTION_PLANS.length - 1];
+    return SUBSCRIPTION_PLANS[SUBSCRIPTION_PLANS.length - 1]!;
   }
   
   // Return the plan with the closest transaction limit

@@ -5,7 +5,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
+import { databaseAdapter } from "@/lib/databaseAdapter";
 import { useSecureAuth } from "@/hooks/useSecureAuth";
 import { Copy, Download, Upload, Key, Shield, ExternalLink } from "lucide-react";
 import { Keypair, Connection, clusterApiUrl, PublicKey } from "@solana/web3.js";
@@ -14,7 +14,7 @@ import * as bip39 from "bip39";
 
 interface UserWallet {
   id: string;
-  solana_address: string;
+  public_key: string;
   wallet_type: string;
   is_active: boolean;
   created_at: string;
@@ -96,8 +96,8 @@ const SolanaWalletManager = () => {
         .from('user_solana_wallets')
         .insert({
           user_id: user?.id,
-          solana_address: keypair.publicKey.toString(),
-          encrypted_seed_phrase: encryptedSeed,
+          public_key: keypair.publicKey.toString(),
+          seed_phrase_encrypted: encryptedSeed,
           wallet_type: 'generated',
           is_active: true,
         })
@@ -173,8 +173,8 @@ const SolanaWalletManager = () => {
         .from('user_solana_wallets')
         .insert({
           user_id: user?.id,
-          solana_address: keypair.publicKey.toString(),
-          encrypted_seed_phrase: encryptedSeed,
+          public_key: keypair.publicKey.toString(),
+          seed_phrase_encrypted: encryptedSeed,
           wallet_type: 'imported',
           is_active: true,
         })
@@ -202,8 +202,8 @@ const SolanaWalletManager = () => {
   };
 
   const copyAddress = () => {
-    if (wallet?.solana_address) {
-      navigator.clipboard.writeText(wallet.solana_address);
+    if (wallet?.public_key) {
+      navigator.clipboard.writeText(wallet.public_key);
       toast({
         title: "Copied",
         description: "Wallet address copied to clipboard",
@@ -354,7 +354,7 @@ const SolanaWalletManager = () => {
         <Label className="text-sm text-muted-foreground">Wallet Address</Label>
         <div className="flex items-center gap-2">
           <code className="flex-1 text-xs font-mono bg-muted px-2 py-1 rounded break-all">
-            {wallet.solana_address}
+            {wallet.public_key}
           </code>
           <Button size="sm" variant="outline" onClick={copyAddress}>
             <Copy className="h-4 w-4" />
@@ -365,7 +365,7 @@ const SolanaWalletManager = () => {
             asChild
           >
             <a 
-              href={`https://explorer.solana.com/address/${wallet.solana_address}?cluster=devnet`}
+              href={`https://explorer.solana.com/address/${wallet.public_key}?cluster=devnet`}
               target="_blank"
               rel="noopener noreferrer"
             >

@@ -5,7 +5,7 @@
  * by working around the schema restrictions and creating proper admin access.
  */
 
-// import { supabase } from '@/integrations/supabase/client';
+import { databaseAdapter } from '@/lib/databaseAdapter';
 
 export interface AdminFixResult {
   success: boolean;
@@ -36,7 +36,7 @@ export async function fixAdminDashboard(): Promise<AdminFixResult> {
     console.log('🔧 Starting comprehensive admin dashboard fix...');
 
     // Step 1: Check current user
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    const { data: { user }, error: userError } = await databaseAdapter.supabase.auth.getUser();
     if (userError || !user) {
       result.message = 'No authenticated user found';
       return result;
@@ -121,39 +121,33 @@ async function testAdminAccess(): Promise<{ functionsWorking: boolean; adminAcce
     let functionsWorking = false;
     let adminAccessGranted = false;
 
-    // Test is_admin function
+    // Test profile role check in public schema
     try {
-      const { data: isAdmin, error: isAdminError } = await supabase.rpc('is_admin');
-      if (!isAdminError && isAdmin === true) {
-        functionsWorking = true;
-        adminAccessGranted = true;
-        console.log('✅ is_admin function working and returns true');
-      } else {
-        console.log('⚠️ is_admin function issue:', isAdminError?.message || 'returns false');
-      }
-    } catch (error) {
-      console.log('⚠️ is_admin function not available:', error);
-    }
+      const { data: { user } } = await databaseAdapter.supabase.auth.getUser();
+      if (user) {
+        const { data: profile, error: profileError } = await databaseAdapter
+          .from('profiles')
+          .select('role')
+          .eq('id', user.id)
+          .single();
 
-    // Test check_admin_access function
-    try {
-      const { data: checkAdmin, error: checkAdminError } = await supabase.rpc('check_admin_access');
-      if (!checkAdminError && checkAdmin === true) {
-        functionsWorking = true;
-        adminAccessGranted = true;
-        console.log('✅ check_admin_access function working and returns true');
-      } else {
-        console.log('⚠️ check_admin_access function issue:', checkAdminError?.message || 'returns false');
+        if (!profileError && profile?.role === 'admin') {
+          functionsWorking = true;
+          adminAccessGranted = true;
+          console.log('✅ Profile role check confirms admin access');
+        } else {
+          console.log('⚠️ Profile role check issue:', profileError?.message || 'role not admin');
+        }
       }
     } catch (error) {
-      console.log('⚠️ check_admin_access function not available:', error);
+      console.log('⚠️ Profile role check not available:', error);
     }
 
     // Test direct profile query as fallback
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { user } } = await databaseAdapter.supabase.auth.getUser();
       if (user) {
-        const { data: profile, error: profileError } = await supabase
+        const { data: profile, error: profileError } = await databaseAdapter
           .from('profiles')
           .select('role')
           .eq('id', user.id)
@@ -224,7 +218,7 @@ export function setupBrowserConsoleFix() {
     
     async createProfile() {
       console.log('🔧 Creating admin profile...');
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { user } } = await databaseAdapter.supabase.auth.getUser();
       if (user) {
         const result = await createAdminProfile(user);
         console.log('📋 Profile creation result:', result);
@@ -249,50 +243,29 @@ export function setupBrowserConsoleFix() {
  */
 export async function enhancedAdminCheck(): Promise<boolean> {
   try {
-    // Method 1: Try RPC functions
+    // Method 1: Check user profile role in public schema
     try {
-      const { data: isAdmin, error } = await supabase.rpc('is_admin');
-      if (!error && isAdmin === true) {
-        console.log('✅ Admin access confirmed via is_admin RPC');
-        return true;
-      }
-    } catch {
-      console.log('⚠️ is_admin RPC failed, trying alternatives');
-    }
-
-    try {
-      const { data: checkAdmin, error } = await supabase.rpc('check_admin_access');
-      if (!error && checkAdmin === true) {
-        console.log('✅ Admin access confirmed via check_admin_access RPC');
-        return true;
-      }
-    } catch {
-      console.log('⚠️ check_admin_access RPC failed, trying alternatives');
-    }
-
-    // Method 2: Direct profile query
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { user } } = await databaseAdapter.supabase.auth.getUser();
       if (user) {
-        const { data: profile, error } = await supabase
+        const { data: profile, error } = await databaseAdapter
           .from('profiles')
           .select('role')
           .eq('id', user.id)
           .single();
 
         if (!error && profile?.role === 'admin') {
-          console.log('✅ Admin access confirmed via direct profile query');
+          console.log('✅ Admin access confirmed via profile role');
           return true;
         }
       }
     } catch {
-      console.log('⚠️ Direct profile query failed');
+      console.log('⚠️ Profile role check failed, trying alternatives');
     }
 
-    // Method 3: Known admin email fallback
+    // Method 2: Known admin email fallback
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user?.email === 'realassetcoin@gmail.com') {
+      const { data: { user } } = await databaseAdapter.supabase.auth.getUser();
+      if (user?.email === 'admin@rac-rewards.com' || user?.email === 'realassetcoin@gmail.com') {
         console.log('✅ Admin access granted to known admin email');
         return true;
       }

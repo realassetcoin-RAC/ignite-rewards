@@ -3,7 +3,7 @@
  * Real payment processing service supporting multiple providers
  */
 
-import { supabase } from '@/integrations/supabase/client';
+import { databaseAdapter } from '@/lib/databaseAdapter';
 
 interface PaymentConfig {
   provider: 'stripe' | 'paypal' | 'square' | 'mock';

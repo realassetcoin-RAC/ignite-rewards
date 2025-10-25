@@ -1,8 +1,7 @@
 // New Loyalty NFT Service (Custodial & Non-Custodial)
 // This service integrates with the updated database schema
 
-import { databaseAdapter } from './databaseAdapter';
-import { solanaNFTService } from './solanaNFTService';
+import { solanaNFTService, CreateNFTParams, UpdateNFTParams } from './solanaNFTService';
 
 // Core NFT Types
 export enum CustodyType {
@@ -53,13 +52,6 @@ export interface UserLoyaltyCard {
   id: string;
   user_id: string;
   nft_type_id?: string;
-  loyalty_number?: string;
-  card_number?: string;
-  full_name?: string;
-  email?: string;
-  phone?: string;
-  points_balance?: number;
-  tier_level?: string;
   is_custodial: boolean;
   token_id?: string;
   is_upgraded: boolean;
@@ -75,9 +67,6 @@ export interface UserLoyaltyCard {
   purchased_at: string;
   upgraded_at?: string;
   evolved_at?: string;
-  is_active?: boolean;
-  created_at?: string;
-  updated_at?: string;
   nft_types?: NFTType;
 }
 
@@ -123,7 +112,7 @@ export interface NFTMintingControl {
 export class LoyaltyNFTService {
   // Get all available NFT types
   static async getAllNFTTypes(): Promise<NFTType[]> {
-    const { data, error } = await databaseAdapter
+    const { data, error } = await supabase
       .from('nft_types')
       .select('*')
       .eq('is_active', true)
@@ -135,7 +124,7 @@ export class LoyaltyNFTService {
 
   // Get NFT types by custody type
   static async getNFTTypesByCustody(isCustodial: boolean): Promise<NFTType[]> {
-    const { data, error } = await databaseAdapter
+    const { data, error } = await supabase
       .from('nft_types')
       .select('*')
       .eq('is_custodial', isCustodial)
@@ -148,7 +137,7 @@ export class LoyaltyNFTService {
 
   // Get user's owned NFTs
   static async getUserNFTs(userId: string): Promise<UserLoyaltyCard[]> {
-    const { data, error } = await databaseAdapter
+    const { data, error } = await supabase
       .from('user_loyalty_cards')
       .select(`
         *,
@@ -164,7 +153,7 @@ export class LoyaltyNFTService {
 
   // Get NFT type details by ID
   static async getNFTTypeById(nftTypeId: string): Promise<NFTType | null> {
-    const { data, error } = await databaseAdapter
+    const { data, error } = await supabase
       .from('nft_types')
       .select('*')
       .eq('id', nftTypeId)
@@ -176,7 +165,7 @@ export class LoyaltyNFTService {
 
   // Check if user owns a specific NFT type
   static async checkUserOwnership(userId: string, nftTypeId: string): Promise<UserLoyaltyCard | null> {
-    const { data, error } = await databaseAdapter
+    const { data, error } = await supabase
       .from('user_loyalty_cards')
       .select(`
         *,
@@ -294,7 +283,7 @@ export class LoyaltyNFTService {
 
   // Get minting status for an NFT type
   static async getMintingStatus(nftTypeId: string): Promise<NFTMintingControl | null> {
-    const { data, error } = await databaseAdapter
+    const { data, error } = await supabase
       .from('nft_minting_control')
       .select(`
         *,
@@ -309,7 +298,7 @@ export class LoyaltyNFTService {
 
   // Get user's evolution history
   static async getUserEvolutionHistory(userId: string): Promise<NFTEvolutionHistory[]> {
-    const { data, error } = await databaseAdapter
+    const { data, error } = await supabase
       .from('nft_evolution_history')
       .select(`
         *,
@@ -325,7 +314,7 @@ export class LoyaltyNFTService {
 
   // Get user's upgrade history
   static async getUserUpgradeHistory(userId: string): Promise<NFTUpgradeHistory[]> {
-    const { data, error } = await databaseAdapter
+    const { data, error } = await supabase
       .from('nft_upgrade_history')
       .select(`
         *,
@@ -359,7 +348,7 @@ export class LoyaltyNFTService {
       throw new Error('Maximum supply reached for this NFT type');
     }
 
-    const { data, error } = await databaseAdapter
+    const { data, error } = await supabase
       .from('user_loyalty_cards')
       .insert({
         user_id: userId,
@@ -380,7 +369,7 @@ export class LoyaltyNFTService {
     if (error) throw error;
 
     // Update minting count
-    await databaseAdapter
+    await supabase
       .from('nft_minting_control')
       .update({ total_minted: mintingStatus.total_minted + 1 })
       .eq('nft_type_id', nftTypeId);
@@ -402,7 +391,7 @@ export class LoyaltyNFTService {
     const newRatio = originalRatio + upgradeBonus;
 
     // Update user loyalty card
-    const { error: updateError } = await databaseAdapter
+    const { error: updateError } = await supabase
       .from('user_loyalty_cards')
       .update({
         is_upgraded: true,
@@ -413,7 +402,7 @@ export class LoyaltyNFTService {
     if (updateError) throw updateError;
 
     // Create upgrade history record
-    const { data, error } = await databaseAdapter
+    const { data, error } = await supabase
       .from('nft_upgrade_history')
       .insert({
         user_id: userId,
@@ -446,7 +435,7 @@ export class LoyaltyNFTService {
       throw new Error('Auto-staking is already enabled');
     }
 
-    const { data, error } = await databaseAdapter
+    const { data, error } = await supabase
       .from('user_loyalty_cards')
       .update({
         auto_staking_enabled: true,
@@ -479,7 +468,7 @@ export class LoyaltyNFTService {
     }
 
     // Update user loyalty card
-    const { error: updateError } = await databaseAdapter
+    const { error: updateError } = await supabase
       .from('user_loyalty_cards')
       .update({
         is_evolved: true,
@@ -492,7 +481,7 @@ export class LoyaltyNFTService {
     if (updateError) throw updateError;
 
     // Create evolution history record
-    const { data, error } = await databaseAdapter
+    const { data, error } = await supabase
       .from('nft_evolution_history')
       .insert({
         user_id: userId,
@@ -525,7 +514,7 @@ export class LoyaltyNFTService {
       throw new Error('Cannot verify custodial NFT');
     }
 
-    const { data, error } = await databaseAdapter
+    const { data, error } = await supabase
       .from('user_loyalty_cards')
       .update({
         is_verified: true,
@@ -549,7 +538,7 @@ export class LoyaltyNFTService {
    * Create a new NFT type in the database
    */
   static async createNFTType(nftData: Partial<NFTType>): Promise<NFTType> {
-    const { data, error } = await databaseAdapter
+    const { data, error } = await supabase
       .from('nft_types')
       .insert({
         collection_id: nftData.collection_id,
@@ -589,7 +578,7 @@ export class LoyaltyNFTService {
    * Update an existing NFT type in the database
    */
   static async updateNFTType(nftId: string, updates: Partial<NFTType>): Promise<NFTType> {
-    const { data, error } = await databaseAdapter
+    const { data, error } = await supabase
       .from('nft_types')
       .update({
         ...updates,
@@ -607,7 +596,7 @@ export class LoyaltyNFTService {
    * Delete an NFT type from the database
    */
   static async deleteNFTType(nftId: string): Promise<boolean> {
-    const { error } = await databaseAdapter
+    const { error } = await supabase
       .from('nft_types')
       .delete()
       .eq('id', nftId);
@@ -622,44 +611,58 @@ export class LoyaltyNFTService {
    * Create NFT on both database and Solana
    */
   static async createNFTWithSolanaSync(nftData: Partial<NFTType>): Promise<NFTType> {
-    // First create in database
-    const dbNFT = await this.createNFTType(nftData);
-    
-    // Then try to create on Solana (if dependencies are available)
     try {
-      // Note: You'll need to implement wallet connection for this to work
-      // const transaction = await solanaNFTService.createNFT(solanaParams, wallet);
+      // First create in database
+      const dbNFT = await this.createNFTType(nftData);
       
-      // Console statement removed
-      // Console statement removed
-    } catch {
-      // Console statement removed
-      // Continue with database-only creation
+      // Then try to create on Solana (if dependencies are available)
+      try {
+        const solanaParams: CreateNFTParams = solanaNFTService.convertDatabaseToSolana(dbNFT);
+        
+        // Note: You'll need to implement wallet connection for this to work
+        // const transaction = await solanaNFTService.createNFT(solanaParams, wallet);
+        
+        console.log('NFT created in database:', dbNFT.id);
+        console.log('Solana transaction would be created with params:', solanaParams);
+      } catch (solanaError) {
+        console.warn('Solana sync failed, but database creation succeeded:', solanaError);
+        // Continue with database-only creation
+      }
+      
+      return dbNFT;
+    } catch (error) {
+      console.error('Error creating NFT with Solana sync:', error);
+      throw error;
     }
-    
-    return dbNFT;
   }
 
   /**
    * Update NFT on both database and Solana
    */
   static async updateNFTWithSolanaSync(nftId: string, updates: Partial<NFTType>): Promise<NFTType> {
-    // First update in database
-    const dbNFT = await this.updateNFTType(nftId, updates);
-    
-    // Then try to update on Solana (if dependencies are available)
     try {
-      // Note: You'll need to implement wallet connection for this to work
-      // const transaction = await solanaNFTService.updateNFT(solanaParams, wallet);
+      // First update in database
+      const dbNFT = await this.updateNFTType(nftId, updates);
       
-      // Console statement removed
-      // Console statement removed
-    } catch {
-      // Console statement removed
-      // Continue with database-only update
+      // Then try to update on Solana (if dependencies are available)
+      try {
+        const solanaParams: UpdateNFTParams = solanaNFTService.convertDatabaseToSolana(dbNFT);
+        
+        // Note: You'll need to implement wallet connection for this to work
+        // const transaction = await solanaNFTService.updateNFT(solanaParams, wallet);
+        
+        console.log('NFT updated in database:', dbNFT.id);
+        console.log('Solana transaction would be created with params:', solanaParams);
+      } catch (solanaError) {
+        console.warn('Solana sync failed, but database update succeeded:', solanaError);
+        // Continue with database-only update
+      }
+      
+      return dbNFT;
+    } catch (error) {
+      console.error('Error updating NFT with Solana sync:', error);
+      throw error;
     }
-    
-    return dbNFT;
   }
 
   /**
@@ -669,8 +672,8 @@ export class LoyaltyNFTService {
     try {
       const success = await solanaNFTService.syncNFTToDatabase(nftName, symbol);
       return success;
-    } catch {
-      // Console statement removed
+    } catch (error) {
+      console.error('Error syncing NFT from Solana:', error);
       return false;
     }
   }
@@ -682,8 +685,8 @@ export class LoyaltyNFTService {
     try {
       const result = await solanaNFTService.syncAllNFTsToDatabase();
       return result;
-    } catch {
-      // Console statement removed
+    } catch (error) {
+      console.error('Error syncing all NFTs from Solana:', error);
       return { success: 0, failed: 0 };
     }
   }
@@ -695,8 +698,8 @@ export class LoyaltyNFTService {
     try {
       const solanaNFT = await solanaNFTService.getNFT(nftName, symbol);
       return solanaNFT;
-    } catch {
-      // Console statement removed
+    } catch (error) {
+      console.error('Error getting NFT from Solana:', error);
       return null;
     }
   }
@@ -706,7 +709,7 @@ export class LoyaltyNFTService {
    */
   static async compareNFTData(nftId: string): Promise<{
     database: NFTType | null;
-    solana: Record<string, unknown> | null;
+    solana: any;
     differences: string[];
   }> {
     try {
@@ -715,7 +718,7 @@ export class LoyaltyNFTService {
         return { database: null, solana: null, differences: ['NFT not found in database'] };
       }
 
-      const solanaNFT = await solanaNFTService.getNFT(dbNFT.nft_name, 'NFT');
+      const solanaNFT = await solanaNFTService.getNFT(dbNFT.nft_name, dbNFT.symbol || 'NFT');
       if (!solanaNFT) {
         return { database: dbNFT, solana: null, differences: ['NFT not found on Solana'] };
       }
@@ -759,11 +762,11 @@ export class LoyaltyNFTService {
 
       return {
         database: dbNFT,
-        solana: solanaNFT as unknown as Record<string, unknown>,
+        solana: solanaNFT,
         differences
       };
-    } catch {
-      // Console statement removed
+    } catch (error) {
+      console.error('Error comparing NFT data:', error);
       return { database: null, solana: null, differences: ['Error comparing data'] };
     }
   }

@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { databaseAdapter } from '@/lib/databaseAdapter';
 import { useToast } from '@/hooks/use-toast';
 import { 
   DAOProposal, 
@@ -49,7 +49,7 @@ export const useDAOIntegration = (options: DAOIntegrationOptions = {}) => {
     try {
       setLoading(true);
 
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { user } } = await databaseAdapter.supabase.auth.getUser();
       if (!user) {
         throw new Error('User not authenticated');
       }
@@ -196,7 +196,7 @@ export const useDAOIntegration = (options: DAOIntegrationOptions = {}) => {
         requiresDAOApproval: needsApproval,
         currentValue,
         proposedValue,
-        createdBy: (await supabase.auth.getUser()).data.user?.id || ''
+        createdBy: (await databaseAdapter.supabase.auth.getUser()).data.user?.id || ''
       });
 
       return proposal;
@@ -305,7 +305,7 @@ export const useDAOIntegration = (options: DAOIntegrationOptions = {}) => {
       requiresDAOApproval: requiresApproval,
       currentValue: metadata?.currentValue,
       proposedValue: metadata?.proposedValue,
-      createdBy: (await supabase.auth.getUser()).data.user?.id || 'system'
+      createdBy: (await databaseAdapter.supabase.auth.getUser()).data.user?.id || 'system'
     };
 
     return await handleLoyaltyChange(changeRequest);

@@ -1,4 +1,4 @@
-import { supabase } from '@/integrations/supabase/client';
+import { databaseAdapter } from '@/lib/databaseAdapter';
 import { EmailNotificationService } from './emailNotificationService';
 
 export interface ReferralCampaign {
@@ -47,7 +47,7 @@ export class ReferralService {
     try {
       // Get active campaign if not provided
       if (!campaignId) {
-        const { data: campaign } = await supabase
+        const { data: campaign } = await databaseAdapter.supabase
           .from('referral_campaigns')
           .select('id')
           .eq('is_active', true)
@@ -60,7 +60,7 @@ export class ReferralService {
       }
 
       // Check if user already has a referral code
-      const { data: existingCode } = await supabase
+      const { data: existingCode } = await databaseAdapter.supabase
         .from('referral_codes')
         .select('code')
         .eq('referrer_id', userId)
@@ -75,7 +75,7 @@ export class ReferralService {
       const code = await this.generateUniqueCode();
       
       // Insert referral code
-      const { error } = await supabase
+      const { error } = await databaseAdapter.supabase
         .from('referral_codes')
         .insert({
           code,
@@ -90,8 +90,8 @@ export class ReferralService {
       }
 
       return code;
-    } catch {
-      // Console statement removed
+    } catch (error) {
+      console.error('Error generating referral code:', error);
       return null;
     }
   }
@@ -101,145 +101,156 @@ export class ReferralService {
    */
   static async processReferralSignup(referralCode: string, newUserId: string): Promise<ReferralSignupResult> {
     try {
-      // Find the referral code
-      const { data: referralCodeData, error: codeError } = await supabase
+      const normalizedCode = referralCode.trim().toUpperCase();
+
+      // First try to find the referral code in referral_codes table
+      const { data: referralCodeData, error: codeError } = await databaseAdapter.supabase
         .from('referral_codes')
         .select(`
           *,
           referral_campaigns!inner(*)
         `)
-        .eq('code', referralCode.toUpperCase())
+        .eq('code', normalizedCode)
         .eq('is_used', false)
         .eq('referral_campaigns.is_active', true)
-        .single();
+        .maybeSingle();
 
-      if (codeError || !referralCodeData) {
-        return {
-          success: false,
-          error: 'Invalid or expired referral code'
-        };
+      // If not found in referral_codes, try resolving as loyalty_number directly
+      let resolvedReferrerId: string | null = null;
+      let campaignId: string | null = null;
+      let pointsPerReferral = 0;
+      let referralCodeId: string | null = null;
+
+      if (referralCodeData) {
+        resolvedReferrerId = referralCodeData.referrer_id;
+        campaignId = referralCodeData.campaign_id;
+        pointsPerReferral = referralCodeData.referral_campaigns.points_per_referral;
+        referralCodeId = referralCodeData.id;
+      } else {
+        // Resolve via profiles.loyalty_number
+        const { data: refProfile } = await databaseAdapter.supabase
+          .from('profiles')
+          .select('id')
+          .eq('loyalty_number', normalizedCode)
+          .maybeSingle();
+
+        if (!refProfile) {
+          return { success: false, error: 'Invalid or expired referral code' };
+        }
+
+        resolvedReferrerId = refProfile.id;
+
+        // Get active campaign for loyalty-number-based referrals
+        const { data: activeCampaign } = await databaseAdapter.supabase
+          .from('referral_campaigns')
+          .select('id, points_per_referral, max_referrals_per_user')
+          .eq('is_active', true)
+          .maybeSingle();
+
+        if (!activeCampaign) {
+          return { success: false, error: 'No active referral campaign found' };
+        }
+
+        campaignId = activeCampaign.id;
+        pointsPerReferral = activeCampaign.points_per_referral || 100;
       }
 
-      // Check if user is trying to refer themselves
-      if (referralCodeData.referrer_id === newUserId) {
-        return {
-          success: false,
-          error: 'Cannot use your own referral code'
-        };
+      // Prevent self referral
+      if (resolvedReferrerId === newUserId) {
+        return { success: false, error: 'Cannot use your own referral code' };
       }
 
-      // Check campaign limits
-      const { data: existingReferrals } = await supabase
+      // Check campaign caps
+      const { data: existingReferrals } = await databaseAdapter.supabase
         .from('referral_settlements')
         .select('id')
-        .eq('referrer_id', referralCodeData.referrer_id)
-        .eq('campaign_id', referralCodeData.campaign_id)
+        .eq('referrer_id', resolvedReferrerId)
+        .eq('campaign_id', campaignId)
         .eq('status', 'completed');
 
       const referralCount = existingReferrals?.length || 0;
-      const maxReferrals = referralCodeData.referral_campaigns.max_referrals_per_user;
-
+      const maxReferrals = referralCodeData?.referral_campaigns?.max_referrals_per_user ?? 10;
       if (referralCount >= maxReferrals) {
-        return {
-          success: false,
-          error: 'Referrer has reached maximum referral limit'
-        };
+        return { success: false, error: 'Referrer has reached maximum referral limit' };
       }
 
-      // Mark referral code as used
-      const { error: updateError } = await supabase
-        .from('referral_codes')
-        .update({
-          is_used: true,
-          used_by: newUserId,
-          used_at: new Date().toISOString()
-        })
-        .eq('id', referralCodeData.id);
-
-      if (updateError) {
-        throw updateError;
+      // Mark referral code as used if it exists
+      if (referralCodeId) {
+        const { error: updateError } = await databaseAdapter.supabase
+          .from('referral_codes')
+          .update({ is_used: true, used_by: newUserId, used_at: new Date().toISOString() })
+          .eq('id', referralCodeId);
+        if (updateError) throw updateError;
       }
 
-      // Create settlement record
-      const { data: settlement, error: settlementError } = await supabase
+      // Create referral settlement
+      const { data: settlement, error: settlementError } = await databaseAdapter.supabase
         .from('referral_settlements')
         .insert({
-          referrer_id: referralCodeData.referrer_id,
+          referrer_id: resolvedReferrerId,
           referred_user_id: newUserId,
-          campaign_id: referralCodeData.campaign_id,
-          points_awarded: referralCodeData.referral_campaigns.points_per_referral,
+          campaign_id: campaignId,
+          points_awarded: pointsPerReferral,
           status: 'pending'
         })
         .select()
         .single();
-
-      if (settlementError) {
-        throw settlementError;
-      }
+      if (settlementError) throw settlementError;
 
       // Award points to referrer
-      const { error: pointsError } = await supabase
+      const { error: pointsError } = await databaseAdapter.supabase
         .from('loyalty_points')
         .insert({
-          user_id: referralCodeData.referrer_id,
-          points: referralCodeData.referral_campaigns.points_per_referral,
+          user_id: resolvedReferrerId,
+          points: pointsPerReferral,
           source: 'referral',
-          description: `Referral bonus for ${referralCode}`,
+          description: `Referral bonus for ${normalizedCode}`,
           transaction_id: settlement.id
         });
 
       if (pointsError) {
-        // Console statement removed
+        console.error('Error awarding referral points:', pointsError);
         // Don't fail the entire process for points error
       }
 
-      // Update settlement status
-      await supabase
+      // Complete settlement
+      await databaseAdapter.supabase
         .from('referral_settlements')
-        .update({
-          status: 'completed',
-          settlement_date: new Date().toISOString()
-        })
+        .update({ status: 'completed', settlement_date: new Date().toISOString() })
         .eq('id', settlement.id);
 
-      // Send email notification to referrer
+      // Send email notification to referrer (best effort)
       try {
-        const { data: referrerProfile } = await supabase
+        const { data: referrerProfile } = await databaseAdapter.supabase
           .from('profiles')
           .select('email, full_name')
-          .eq('id', referralCodeData.referrer_id)
+          .eq('id', resolvedReferrerId)
           .single();
 
-        const { data: newUserProfile } = await supabase
+        const { data: newUserProfile } = await databaseAdapter.supabase
           .from('profiles')
           .select('email, full_name')
           .eq('id', newUserId)
           .single();
 
         if (referrerProfile?.email) {
+          // Import and send email notification
+          const { EmailNotificationService } = await import('./emailNotificationService');
           await EmailNotificationService.sendReferralWelcomeEmail(
             referrerProfile.email,
             newUserProfile?.full_name || newUserProfile?.email || 'New User',
-            referralCodeData.referral_campaigns.points_per_referral
+            pointsPerReferral
           );
         }
-      } catch {
-        // Console statement removed
+      } catch (emailError) {
+        console.error('Error sending referral email notification:', emailError);
         // Don't fail the referral process for email errors
       }
 
-      return {
-        success: true,
-        pointsAwarded: referralCodeData.referral_campaigns.points_per_referral,
-        settlementId: settlement.id
-      };
-
-    } catch {
-      // Console statement removed
-      return {
-        success: false,
-        error: 'Failed to process referral code'
-      };
+      return { success: true, pointsAwarded: pointsPerReferral, settlementId: settlement.id };
+    } catch (error) {
+      console.error('Error processing referral signup:', error);
+      return { success: false, error: 'Failed to process referral code' };
     }
   }
 
@@ -250,11 +261,11 @@ export class ReferralService {
     totalReferrals: number;
     totalPointsEarned: number;
     referralCode: string | null;
-    recentReferrals: Record<string, unknown>[];
+    recentReferrals: any[];
   }> {
     try {
       // Get user's referral code
-      const { data: referralCode } = await supabase
+      const { data: referralCode } = await databaseAdapter.supabase
         .from('referral_codes')
         .select('code')
         .eq('referrer_id', userId)
@@ -262,7 +273,7 @@ export class ReferralService {
         .single();
 
       // Get referral statistics
-      const { data: settlements } = await supabase
+      const { data: settlements } = await databaseAdapter.supabase
         .from('referral_settlements')
         .select(`
           *,
@@ -281,8 +292,8 @@ export class ReferralService {
         referralCode: referralCode?.code || null,
         recentReferrals: settlements?.slice(0, 5) || []
       };
-    } catch {
-      // Console statement removed
+    } catch (error) {
+      console.error('Error getting referral stats:', error);
       return {
         totalReferrals: 0,
         totalPointsEarned: 0,
@@ -297,7 +308,7 @@ export class ReferralService {
    */
   static async getActiveCampaigns(): Promise<ReferralCampaign[]> {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await databaseAdapter.supabase
         .from('referral_campaigns')
         .select('*')
         .eq('is_active', true)
@@ -308,8 +319,8 @@ export class ReferralService {
       }
 
       return data || [];
-    } catch {
-      // Console statement removed
+    } catch (error) {
+      console.error('Error getting active campaigns:', error);
       return [];
     }
   }
@@ -326,7 +337,7 @@ export class ReferralService {
     }
 
     // Check if code already exists
-    const { data: existing } = await supabase
+    const { data: existing } = await databaseAdapter.supabase
       .from('referral_codes')
       .select('id')
       .eq('code', code)

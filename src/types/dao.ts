@@ -108,7 +108,7 @@ export interface DAOProposal {
   // Metadata
   tags: string[];
   external_links?: Record<string, string>;
-  attachments?: Record<string, unknown>;
+  attachments?: Record<string, any>;
   
   // Timestamps
   created_at: string;
@@ -399,7 +399,7 @@ export interface MemberSortOptions {
 export interface DAOError {
   code: string;
   message: string;
-  details?: Record<string, unknown>;
+  details?: any;
 }
 
 export interface ValidationError {
