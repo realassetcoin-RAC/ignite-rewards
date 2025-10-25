@@ -7,7 +7,7 @@ import {
   ArrowRight,
   CheckCircle,
   Star,
-  Building2,
+  Building2
 } from 'lucide-react';
 
 interface CarouselSlide {
@@ -89,35 +89,27 @@ const HomePageCarousel: React.FC<HomePageCarouselProps> = ({
 
   return (
     <div className="w-full max-w-6xl mx-auto">
-      {/* 3-CARD LAYOUT */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {/* 3-Card Grid Layout with Dark Background */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-6">
         {slides.map((slide) => (
-          <Card key={slide.id} className="group cursor-pointer border-2 hover:border-primary/50 transition-all duration-300 hover:shadow-lg overflow-hidden w-full h-[28rem] bg-gradient-to-br from-background to-primary/5">
+          <Card key={slide.id} className="group cursor-pointer border-2 hover:border-primary/50 transition-all duration-300 hover:shadow-lg overflow-hidden w-full h-[28rem] bg-gradient-to-br from-background to-primary/5 hover:shadow-xl">
             <CardContent className="p-6 h-full flex flex-col justify-between relative">
-              {/* Badge - Top Right Corner */}
               {slide.badge && (
                 <Badge variant="secondary" className="absolute top-4 right-4 bg-primary/10 text-primary border-primary/20 text-xs">
                   {slide.badge}
                 </Badge>
               )}
-              
               <div className="flex flex-col pt-2">
-                {/* Header */}
                 <div className="text-center space-y-4 mb-6">
-                  {/* Icon */}
                   <div className={`w-16 h-16 rounded-full bg-gradient-to-r ${slide.color} flex items-center justify-center shadow-lg mx-auto group-hover:scale-110 transition-transform`}>
                     <slide.icon className="w-8 h-8 text-white" />
                   </div>
-                  
-                  {/* Title and Description */}
                   <div>
-                    <h3 className="text-xl font-bold mb-1 text-primary">{slide.title}</h3>
+                    <h3 className="text-xl font-bold mb-1">{slide.title}</h3>
                     <p className="text-sm text-muted-foreground mb-3">{slide.subtitle}</p>
                     <p className="text-sm text-muted-foreground">{slide.description}</p>
                   </div>
                 </div>
-
-                {/* Features */}
                 <div className="space-y-2">
                   {slide.features.map((feature, featureIndex) => (
                     <div key={featureIndex} className="flex items-center text-sm">
@@ -127,10 +119,8 @@ const HomePageCarousel: React.FC<HomePageCarouselProps> = ({
                   ))}
                 </div>
               </div>
-
-              {/* CTA Button */}
-              <Button 
-                className={`w-full bg-gradient-to-r ${slide.color} hover:opacity-90 transition-all duration-300 transform hover:scale-105 ring-2 ring-primary/20`}
+              <Button
+                className={`w-full bg-gradient-to-r ${slide.color} hover:opacity-90 transition-all duration-300 transform hover:scale-105`}
                 onClick={slide.ctaAction}
               >
                 {slide.ctaText}
