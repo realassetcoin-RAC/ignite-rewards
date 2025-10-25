@@ -131,6 +131,7 @@ export const LoginPopup: React.FC<LoginPopupProps> = ({
   };
 
   return (
+    <>
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-sm p-0 border-0 shadow-none bg-transparent">
         <DialogTitle className="sr-only">Sign In to RAC Rewards</DialogTitle>
@@ -268,13 +269,6 @@ export const LoginPopup: React.FC<LoginPopupProps> = ({
         </div>
       </DialogContent>
 
-      {/* Seed Phrase Login Modal */}
-      <SeedPhraseLoginModal
-        isOpen={showSeedPhraseModal}
-        onClose={() => setShowSeedPhraseModal(false)}
-        onSuccess={handleSeedPhraseSuccess}
-      />
-
       {/* Wallet Selector Modal */}
       <WalletSelector
         isOpen={showWalletSelector}
@@ -282,6 +276,14 @@ export const LoginPopup: React.FC<LoginPopupProps> = ({
         onWalletConnected={handleWalletConnected}
       />
     </Dialog>
+
+    {/* Seed Phrase Login Modal - Outside main dialog to avoid z-index conflicts */}
+    <SeedPhraseLoginModal
+      isOpen={showSeedPhraseModal}
+      onClose={() => setShowSeedPhraseModal(false)}
+      onSuccess={handleSeedPhraseSuccess}
+    />
+  </>
   );
 };
 
