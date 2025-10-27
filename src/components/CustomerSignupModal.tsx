@@ -207,8 +207,8 @@ const CustomerSignupModal: React.FC<CustomerSignupModalProps> = ({ isOpen, onClo
             full_name: customerForm.name,
             phone: customerForm.phone,
             city: customerForm.city,
-            selected_card: selectedCardData.id,
-            card_price: selectedCardData.price
+            selected_card: selectedCardData?.id,
+            card_price: selectedCardData?.price
           },
           emailRedirectTo: `${window.location.origin}/dashboard`
         }
@@ -236,7 +236,7 @@ const CustomerSignupModal: React.FC<CustomerSignupModalProps> = ({ isOpen, onClo
       const walletAddress = `wallet_${Date.now()}_${Math.random().toString(36).substr(2, 8)}`;
       
       // Create user wallet
-      const { error: walletError } = await supabase
+      const { error: walletError } = await databaseAdapter.supabase
         .from('user_solana_wallets')
         .insert({
           user_id: authData.user.id,
@@ -294,7 +294,7 @@ const CustomerSignupModal: React.FC<CustomerSignupModalProps> = ({ isOpen, onClo
             console.log('✅ Referral processed successfully');
             toast({
               title: "Referral Bonus Applied!",
-              description: `You've been referred by ${referralResult.referrerName || 'another user'}. Both of you will receive bonus points!`,
+              description: `You've been referred by ${(referralResult as any).referrerName || 'another user'}. Both of you will receive bonus points!`,
             });
           } else {
             console.log('⚠️ Referral processing failed:', referralResult.error);
@@ -311,7 +311,7 @@ const CustomerSignupModal: React.FC<CustomerSignupModalProps> = ({ isOpen, onClo
         }
       }
 
-      if (selectedCardData.price === 0) {
+      if (selectedCardData?.price === 0) {
         // ✅ IMPLEMENT REQUIREMENT: Email notification for new user welcome
         try {
           const { EmailService } = await import('@/lib/emailService');
@@ -341,7 +341,7 @@ const CustomerSignupModal: React.FC<CustomerSignupModalProps> = ({ isOpen, onClo
         // Paid card - will need payment after email verification
         toast({
           title: "Account Created Successfully!",
-          description: `Please check your email to verify your account. Your loyalty number is ${loyaltyNumber}. After verification, you'll be able to purchase your ${selectedCardData.name} ($${selectedCardData.price}).`,
+          description: `Please check your email to verify your account. Your loyalty number is ${loyaltyNumber}. After verification, you'll be able to purchase your ${selectedCardData?.name} ($${selectedCardData?.price}).`,
         });
         // Here you would integrate with your payment system (Stripe, etc.) after email verification
         // Add a small delay to ensure user sees the success message
@@ -384,8 +384,8 @@ const CustomerSignupModal: React.FC<CustomerSignupModalProps> = ({ isOpen, onClo
               <Card className="p-6 card-gradient card-shadow border-0">
                 <div className="relative">
                   <img 
-                    src={virtualCards[selectedCard].image}
-                    alt={virtualCards[selectedCard].name}
+                    src={virtualCards[selectedCard]?.image}
+                    alt={virtualCards[selectedCard]?.name}
                     className="w-full h-48 object-cover rounded-lg mb-4"
                   />
                   
@@ -415,13 +415,13 @@ const CustomerSignupModal: React.FC<CustomerSignupModalProps> = ({ isOpen, onClo
                 {/* Card details */}
                 <div className="text-center">
                   <h4 className="text-xl font-bold mb-2">
-                    {virtualCards[selectedCard].name}
+                    {virtualCards[selectedCard]?.name}
                   </h4>
                   <div className="text-2xl font-bold text-primary mb-4">
-                    {virtualCards[selectedCard].price === 0 ? "Free" : `$${virtualCards[selectedCard].price}`}
+                    {virtualCards[selectedCard]?.price === 0 ? "Free" : `$${virtualCards[selectedCard]?.price}`}
                   </div>
                   <div className="space-y-2">
-                    {virtualCards[selectedCard].features.map((feature, index) => (
+                    {virtualCards[selectedCard]?.features.map((feature, index) => (
                       <div key={index} className="flex items-center justify-center">
                         <Check className="w-4 h-4 text-primary mr-2" />
                         <span className="text-muted-foreground">{feature}</span>
@@ -448,7 +448,7 @@ const CustomerSignupModal: React.FC<CustomerSignupModalProps> = ({ isOpen, onClo
           <div className="space-y-6">
             <div className="text-center">
               <Badge variant="outline" className="mb-2">
-                Selected: {virtualCards[selectedCard].name}
+                Selected: {virtualCards[selectedCard]?.name}
               </Badge>
               <h3 className="text-xl font-semibold mb-2">Complete Your Registration</h3>
               <p className="text-muted-foreground">Fill in your details to create your account</p>
@@ -651,9 +651,9 @@ const CustomerSignupModal: React.FC<CustomerSignupModalProps> = ({ isOpen, onClo
                   variant="hero"
                 >
                   {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  {virtualCards[selectedCard].price === 0 
+                  {virtualCards[selectedCard]?.price === 0 
                     ? "Create Account" 
-                    : `Continue - $${virtualCards[selectedCard].price}`
+                    : `Continue - $${virtualCards[selectedCard]?.price}`
                   }
                 </Button>
               </div>
