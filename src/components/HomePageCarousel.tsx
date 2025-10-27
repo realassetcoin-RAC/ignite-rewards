@@ -1,7 +1,14 @@
-import React from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from '@/components/ui/carousel';
 import {
   Wallet,
   ArrowRight,
@@ -34,6 +41,16 @@ const HomePageCarousel: React.FC<HomePageCarouselProps> = ({
   onJoinMerchant,
   onLearnMoreBenefits
 }) => {
+  const [api, setApi] = useState<any>(null);
+  const [current, setCurrent] = useState(0);
+  const [isPlaying, setIsPlaying] = useState(true);
+  const currentRef = useRef(0);
+
+  // Update ref when current changes
+  useEffect(() => {
+    currentRef.current = current;
+  }, [current]);
+
   const slides: CarouselSlide[] = [
     {
       id: 'rewards',
@@ -84,50 +101,136 @@ const HomePageCarousel: React.FC<HomePageCarouselProps> = ({
       ],
       ctaText: 'Learn More',
       ctaAction: onLearnMoreBenefits || onStartEarning
+    },
+    {
+      id: 'nft',
+      title: 'NFT Rewards',
+      subtitle: 'Digital Collectibles',
+      description: 'Earn unique NFT rewards and digital collectibles as part of your loyalty journey.',
+      icon: Star,
+      color: 'from-orange-500 to-red-500',
+      features: [
+        'Exclusive NFT collections',
+        'Rare digital rewards',
+        'Tradable on marketplace',
+        'Limited edition drops'
+      ],
+      ctaText: 'Explore NFTs',
+      ctaAction: onStartEarning,
+      badge: 'Coming Soon'
     }
   ];
 
+  // Auto-play functionality
+  useEffect(() => {
+    if (!api || !isPlaying) return;
+    
+    const interval = setInterval(() => {
+      if (api) {
+        const nextSlide = (currentRef.current + 1) % slides.length;
+        api.scrollTo(nextSlide);
+      }
+    }, 4000); // Change slide every 4 seconds
+
+    return () => {
+      clearInterval(interval);
+    };
+  }, [api, isPlaying]);
+
+  // Track current slide
+  useEffect(() => {
+    if (!api) return;
+    
+    const onSelect = () => {
+      setCurrent(api.selectedScrollSnap());
+    };
+
+    api.on('select', onSelect);
+    onSelect(); // Set initial state
+
+    return () => {
+      api.off('select', onSelect);
+    };
+  }, [api]);
+
   return (
     <div className="w-full max-w-6xl mx-auto">
-      {/* 3-Card Grid Layout with Dark Background */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-6">
-        {slides.map((slide) => (
-          <Card key={slide.id} className="group cursor-pointer border-2 hover:border-primary/50 transition-all duration-300 hover:shadow-lg overflow-hidden w-full h-[28rem] bg-gradient-to-br from-background to-primary/5 hover:shadow-xl">
-            <CardContent className="p-6 h-full flex flex-col justify-between relative">
-              {slide.badge && (
-                <Badge variant="secondary" className="absolute top-4 right-4 bg-primary/10 text-primary border-primary/20 text-xs">
-                  {slide.badge}
-                </Badge>
-              )}
-              <div className="flex flex-col pt-2">
-                <div className="text-center space-y-4 mb-6">
-                  <div className={`w-16 h-16 rounded-full bg-gradient-to-r ${slide.color} flex items-center justify-center shadow-lg mx-auto group-hover:scale-110 transition-transform`}>
-                    <slide.icon className="w-8 h-8 text-white" />
-                  </div>
-                  <div>
-                    <h3 className="text-xl font-bold mb-1">{slide.title}</h3>
-                    <p className="text-sm text-muted-foreground mb-3">{slide.subtitle}</p>
-                    <p className="text-sm text-muted-foreground">{slide.description}</p>
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  {slide.features.map((feature, featureIndex) => (
-                    <div key={featureIndex} className="flex items-center text-sm">
-                      <CheckCircle className="w-4 h-4 text-green-500 mr-2 flex-shrink-0" />
-                      <span>{feature}</span>
+      <div 
+        className="relative"
+        onMouseEnter={() => setIsPlaying(false)}
+        onMouseLeave={() => setIsPlaying(true)}
+      >
+        <Carousel
+          setApi={setApi}
+          opts={{
+            align: "start",
+            loop: true,
+            skipSnaps: false,
+            dragFree: false,
+            containScroll: "trimSnaps",
+            slidesToScroll: 1,
+          }}
+          className="w-full"
+        >
+          <CarouselContent className="-ml-2 md:-ml-4">
+            {slides.map((slide) => (
+              <CarouselItem key={slide.id} className="pl-2 md:pl-4 basis-full md:basis-1/2 lg:basis-1/3">
+                <Card className="group cursor-pointer border-2 hover:border-primary/50 transition-all duration-300 hover:shadow-lg overflow-hidden w-full h-[28rem] bg-gradient-to-br from-background to-primary/5 hover:shadow-xl">
+                  <CardContent className="p-6 h-full flex flex-col justify-between relative">
+                    {slide.badge && (
+                      <Badge variant="secondary" className="absolute top-4 right-4 bg-primary/10 text-primary border-primary/20 text-xs">
+                        {slide.badge}
+                      </Badge>
+                    )}
+                    <div className="flex flex-col pt-2">
+                      <div className="text-center space-y-4 mb-6">
+                        <div className={`w-16 h-16 rounded-full bg-gradient-to-r ${slide.color} flex items-center justify-center shadow-lg mx-auto group-hover:scale-110 transition-transform`}>
+                          <slide.icon className="w-8 h-8 text-white" />
+                        </div>
+                        <div>
+                          <h3 className="text-xl font-bold mb-1">{slide.title}</h3>
+                          <p className="text-sm text-muted-foreground mb-3">{slide.subtitle}</p>
+                          <p className="text-sm text-muted-foreground">{slide.description}</p>
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        {slide.features.map((feature, featureIndex) => (
+                          <div key={featureIndex} className="flex items-center text-sm">
+                            <CheckCircle className="w-4 h-4 text-green-500 mr-2 flex-shrink-0" />
+                            <span>{feature}</span>
+                          </div>
+                        ))}
+                      </div>
                     </div>
-                  ))}
-                </div>
-              </div>
-              <Button
-                className={`w-full bg-gradient-to-r ${slide.color} hover:opacity-90 transition-all duration-300 transform hover:scale-105`}
-                onClick={slide.ctaAction}
-              >
-                {slide.ctaText}
-                <ArrowRight className="w-4 h-4 ml-2" />
-              </Button>
-            </CardContent>
-          </Card>
+                    <Button
+                      className={`w-full bg-gradient-to-r ${slide.color} hover:opacity-90 transition-all duration-300 transform hover:scale-105`}
+                      onClick={slide.ctaAction}
+                    >
+                      {slide.ctaText}
+                      <ArrowRight className="w-4 h-4 ml-2" />
+                    </Button>
+                  </CardContent>
+                </Card>
+              </CarouselItem>
+            ))}
+          </CarouselContent>
+          
+          {/* Navigation arrows inside carousel component */}
+          <CarouselPrevious className="absolute -left-12 top-1/2 -translate-y-1/2 z-10 bg-background/90 hover:bg-background border-2 shadow-lg" />
+          <CarouselNext className="absolute -right-12 top-1/2 -translate-y-1/2 z-10 bg-background/90 hover:bg-background border-2 shadow-lg" />
+        </Carousel>
+      </div>
+      
+      {/* Dots indicator */}
+      <div className="flex justify-center mt-6 space-x-2">
+        {slides.map((_, index) => (
+          <button
+            key={index}
+            className={`w-2 h-2 rounded-full transition-all duration-300 ${
+              current === index ? 'bg-primary w-8' : 'bg-muted-foreground/30'
+            }`}
+            onClick={() => api?.scrollTo(index)}
+          />
         ))}
       </div>
     </div>

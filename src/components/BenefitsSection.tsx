@@ -68,15 +68,15 @@ const BenefitsSection = () => {
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
           {benefits.map((benefit, index) => (
             <Card key={index} className="group p-8 bg-gradient-to-br from-background/60 to-background/30 backdrop-blur-md border border-primary/20 hover:border-primary/40 transition-all duration-500 transform hover:scale-105 hover:shadow-xl">
-              <div className="mb-6">
-                <div className="w-16 h-16 rounded-full bg-gradient-to-r from-primary to-purple-500 flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all duration-300">
+              <div className="flex items-center space-x-6 mb-6">
+                <div className="w-16 h-16 rounded-full bg-gradient-to-r from-primary to-purple-500 flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all duration-300 flex-shrink-0">
                   <benefit.icon className="w-8 h-8 text-white group-hover:animate-pulse" />
                 </div>
+                
+                <h3 className="text-2xl font-bold text-foreground group-hover:bg-gradient-to-r group-hover:from-primary group-hover:to-purple-500 group-hover:bg-clip-text group-hover:text-transparent transition-all duration-300">
+                  {benefit.title}
+                </h3>
               </div>
-              
-              <h3 className="text-2xl font-bold mb-4 text-foreground group-hover:bg-gradient-to-r group-hover:from-primary group-hover:to-purple-500 group-hover:bg-clip-text group-hover:text-transparent transition-all duration-300">
-                {benefit.title}
-              </h3>
               
               <p className="text-muted-foreground leading-relaxed">
                 {benefit.description}
