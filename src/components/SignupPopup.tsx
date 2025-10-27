@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
-import { LogoIcon } from '@/components/logo';
+// import { LogoIcon } from '@/components/logo';
 import { SeedPhraseLoginModal } from '@/components/SeedPhraseLoginModal';
 import WalletSelector from '@/components/WalletSelector';
 import { useToast } from '@/hooks/use-toast';
@@ -190,7 +190,11 @@ export const SignupPopup: React.FC<SignupPopupProps> = ({
             <div className="p-4">
               <div>
                 <div className="mb-3">
-                  <LogoIcon size="md" />
+                  <img 
+                    src="/bridgepoint-logo.jpg" 
+                    alt="PointBridge Logo" 
+                    className="w-8 h-8 rounded-lg object-contain"
+                  />
                 </div>
                 <h1 className="mb-1 text-lg font-semibold text-gray-900">Create Your Account</h1>
                 <p className="text-sm text-gray-700">Join RAC Rewards and start earning today</p>

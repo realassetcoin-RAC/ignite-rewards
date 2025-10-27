@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useSecureAuth } from "@/hooks/useSecureAuth";
-import { Sparkles } from "lucide-react";
+// import { Sparkles } from "lucide-react";
 
 const Auth = () => {
   const { user, loading } = useSecureAuth();
@@ -70,7 +70,11 @@ const Auth = () => {
 
       <div className="relative z-10 text-center text-white max-w-md mx-auto p-6 card-gradient border-primary/20 backdrop-blur-md rounded-lg">
         <div className="w-16 h-16 bg-primary rounded-lg flex items-center justify-center mx-auto mb-4">
-          <Sparkles className="h-8 w-8 text-primary-foreground" />
+          <img 
+            src="/bridgepoint-logo.jpg" 
+            alt="PointBridge Logo" 
+            className="h-8 w-8 rounded-lg object-contain"
+          />
         </div>
         <h1 className={`text-2xl font-bold mb-4 ${
           isLoaded ? 'animate-fade-in-up animation-delay-200' : 'opacity-0'

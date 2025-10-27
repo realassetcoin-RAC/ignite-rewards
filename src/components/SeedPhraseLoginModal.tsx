@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
@@ -20,6 +21,52 @@ export const SeedPhraseLoginModal: React.FC<SeedPhraseLoginModalProps> = ({
   const [loading, setLoading] = useState(false);
   const [seedWords, setSeedWords] = useState<string[]>(Array(12).fill(''));
   const [showSeedPhrase, setShowSeedPhrase] = useState(false);
+  const modalRef = useRef<HTMLDivElement>(null);
+  const firstInputRef = useRef<HTMLInputElement>(null);
+
+  // Focus management and ensure modal is immediately interactive
+  useEffect(() => {
+    if (isOpen) {
+      // Prevent body scroll when modal is open
+      document.body.style.overflow = 'hidden';
+      
+      // Small delay to ensure modal is fully rendered
+      const timer = setTimeout(() => {
+        // Focus the first input field
+        firstInputRef.current?.focus();
+        
+        // Ensure the modal container can receive focus
+        modalRef.current?.focus();
+        
+        // Force focus on modal container to ensure it's interactive
+        if (modalRef.current) {
+          modalRef.current.focus();
+        }
+      }, 50);
+
+      return () => {
+        clearTimeout(timer);
+        // Restore body scroll when modal closes
+        document.body.style.overflow = 'unset';
+      };
+    }
+    return undefined;
+  }, [isOpen]);
+
+  // Handle escape key to close modal
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isOpen) {
+        handleClose();
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener('keydown', handleEscape);
+      return () => document.removeEventListener('keydown', handleEscape);
+    }
+    return undefined;
+  }, [isOpen]);
 
   const handleWordChange = (index: number, value: string) => {
     const newWords = [...seedWords];
@@ -148,12 +195,33 @@ export const SeedPhraseLoginModal: React.FC<SeedPhraseLoginModalProps> = ({
 
   if (!isOpen) return null;
 
-  return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60] p-4">
-      <div className="w-full max-w-md bg-gray-900 rounded-lg shadow-lg p-6 border border-gray-700">
+  // Render modal in a portal to ensure it's always on top
+  return createPortal(
+    <div 
+      className="fixed inset-0 bg-black/50 flex items-center justify-center z-[9999] p-4"
+      onClick={(e) => {
+        // Close modal when clicking on backdrop
+        if (e.target === e.currentTarget) {
+          handleClose();
+        }
+      }}
+    >
+      <div 
+        ref={modalRef}
+        className="w-full max-w-md bg-gray-900 rounded-lg shadow-lg p-6 border border-gray-700 focus:outline-none"
+        tabIndex={-1}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="seed-phrase-title"
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          pointerEvents: 'auto',
+          zIndex: 10000
+        }}
+      >
         <div className="mb-4 flex justify-between items-start">
           <div>
-            <h2 className="text-lg font-semibold flex items-center gap-2 text-white">
+            <h2 id="seed-phrase-title" className="text-lg font-semibold flex items-center gap-2 text-white">
               <Key className="h-5 w-5" />
               Seed Phrase Login
             </h2>
@@ -162,8 +230,15 @@ export const SeedPhraseLoginModal: React.FC<SeedPhraseLoginModalProps> = ({
             </p>
           </div>
           <button
-            onClick={handleClose}
-            className="text-gray-400 hover:text-gray-200 text-xl font-bold"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              handleClose();
+            }}
+            className="text-gray-400 hover:text-gray-200 text-xl font-bold focus:outline-none focus:ring-2 focus:ring-blue-500 rounded p-1"
+            type="button"
+            aria-label="Close modal"
+            style={{ pointerEvents: 'auto' }}
           >
             ×
           </button>
@@ -171,8 +246,8 @@ export const SeedPhraseLoginModal: React.FC<SeedPhraseLoginModalProps> = ({
         
         <div className="space-y-4">
           <div className="bg-yellow-900/20 border border-yellow-600/30 rounded-md p-3">
-            <p className="text-sm text-yellow-300">
-              This login method is only available for accounts that have disabled Google authentication.
+            <p className="text-xs text-yellow-300 text-left">
+              This login method is strictly for security contingency use. By proceeding, you confirm your standard email/Google login method is presumed compromised. Using this option will automatically disable your ability to log in with your email/Google account.
             </p>
           </div>
 
@@ -201,6 +276,7 @@ export const SeedPhraseLoginModal: React.FC<SeedPhraseLoginModalProps> = ({
                     {index + 1}
                   </span>
                   <input
+                    ref={index === 0 ? firstInputRef : undefined}
                     id={`seed-word-${index}`}
                     type={showSeedPhrase ? "text" : "password"}
                     placeholder={`Word ${index + 1}`}
@@ -217,37 +293,49 @@ export const SeedPhraseLoginModal: React.FC<SeedPhraseLoginModalProps> = ({
                     }}
                     autoComplete="off"
                     spellCheck="false"
-                    autoFocus={index === 0}
                     disabled={loading}
                   />
                 </div>
               ))}
             </div>
             
-            <p className="text-xs text-gray-400 mt-2">
+            <p className="text-xs text-gray-400 mt-4">
               Enter your 12-word seed phrase in the correct order. Each word should be entered in its corresponding numbered field.
             </p>
           </div>
 
           <div className="flex gap-3 pt-4">
             <Button
-              onClick={handleSeedPhraseLogin}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                handleSeedPhraseLogin();
+              }}
               disabled={loading}
-              className="flex-1 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white border-0"
+              className="flex-1 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white border-0 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              type="button"
+              style={{ pointerEvents: 'auto' }}
             >
               {loading ? "Logging in..." : "Login with Seed Phrase"}
             </Button>
             
             <Button 
               variant="outline" 
-              onClick={handleClose}
-              className="border-gray-600 text-gray-300 hover:bg-gray-800 hover:text-white"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                handleClose();
+              }}
+              className="border-gray-600 text-gray-300 hover:bg-gray-800 hover:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              type="button"
+              style={{ pointerEvents: 'auto' }}
             >
               Cancel
             </Button>
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };

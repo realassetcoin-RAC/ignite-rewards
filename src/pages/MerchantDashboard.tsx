@@ -674,7 +674,11 @@ const MerchantDashboard = () => {
         <Card className="relative z-10 w-full max-w-md card-gradient border-primary/20 backdrop-blur-md">
           <CardContent className="p-6 text-center">
             <div className="w-16 h-16 bg-primary rounded-lg flex items-center justify-center mx-auto mb-4">
-              <Sparkles className="h-8 w-8 text-primary-foreground animate-spin" />
+              <img 
+                src="/bridgepoint-logo.jpg" 
+                alt="PointBridge Logo" 
+                className="h-8 w-8 rounded-lg object-contain animate-spin"
+              />
             </div>
             <h2 className="text-xl font-semibold text-foreground mb-2">
               Loading Dashboard
@@ -704,7 +708,11 @@ const MerchantDashboard = () => {
         <Card className="relative z-10 w-full max-w-md card-gradient border-primary/20 backdrop-blur-md">
           <CardContent className="p-6 text-center">
             <div className="w-16 h-16 bg-primary rounded-lg flex items-center justify-center mx-auto mb-4">
-              <Sparkles className="h-8 w-8 text-primary-foreground" />
+              <img 
+                src="/bridgepoint-logo.jpg" 
+                alt="PointBridge Logo" 
+                className="h-8 w-8 rounded-lg object-contain"
+              />
             </div>
             <h2 className={`text-xl font-semibold text-foreground mb-2 ${
               isLoaded ? 'animate-fade-in-up' : 'opacity-0'

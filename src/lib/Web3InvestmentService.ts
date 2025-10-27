@@ -7,7 +7,7 @@ export interface AssetInitiative {
   id: string;
   name: string;
   description: string;
-  category: string;
+  category: 'environmental' | 'social' | 'governance' | 'technology' | 'healthcare' | 'education' | 'economic' | 'health';
   impact_score: number;
   risk_level: 'low' | 'medium' | 'high';
   expected_return: number;
@@ -15,14 +15,19 @@ export interface AssetInitiative {
   max_investment: number;
   current_funding: number;
   target_funding: number;
-  multi_sig_wallet_address: string;
-  multi_sig_threshold: number;
-  multi_sig_signers: string[];
-  blockchain_network: string;
-  supported_currencies: string[];
-  hot_wallet_address: string;
-  cold_wallet_address: string;
-  is_web3_enabled: boolean;
+  is_active: boolean;
+  image_url?: string;
+  website_url?: string;
+  // Web3 specific fields
+  multi_sig_wallet_address?: string;
+  multi_sig_threshold?: number;
+  multi_sig_signers?: string[];
+  blockchain_network?: string;
+  supported_currencies?: string[];
+  hot_wallet_address?: string;
+  cold_wallet_address?: string;
+  is_web3_enabled?: boolean;
+  created_at: string;
 }
 
 export interface UserWallet {
@@ -31,9 +36,15 @@ export interface UserWallet {
   wallet_address: string;
   wallet_type: 'metamask' | 'phantom' | 'trust_wallet' | 'hardware' | 'custodial';
   blockchain_network: 'ethereum' | 'solana' | 'bitcoin' | 'polygon';
+  connection_method: 'signature' | 'transaction' | 'api';
   verification_status: 'pending' | 'verified' | 'failed';
+  verification_data?: any;
   is_primary: boolean;
   is_active: boolean;
+  connected_at: string;
+  verified_at?: string;
+  last_used_at?: string;
+  created_at: string;
 }
 
 export interface InvestmentTransaction {
@@ -44,15 +55,18 @@ export interface InvestmentTransaction {
   currency_type: 'USDT' | 'SOL' | 'ETH' | 'BTC' | 'RAC';
   investment_type: 'direct_web3' | 'rac_conversion' | 'custodial';
   transaction_hash?: string;
-  blockchain_network: string;
-  from_wallet_address: string;
-  to_wallet_address: string;
+  blockchain_network?: string;
+  from_wallet_address?: string;
+  to_wallet_address?: string;
+  wallet_address: string; // This matches the database column
   status: 'pending' | 'confirmed' | 'failed' | 'cancelled';
-  current_value: number;
-  total_returns: number;
-  return_percentage: number;
-  invested_at: string;
+  current_value?: number;
+  total_returns?: number;
+  return_percentage?: number;
+  invested_at?: string;
   confirmed_at?: string;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface RACConversion {
@@ -67,12 +81,13 @@ export interface RACConversion {
   status: 'pending' | 'completed' | 'failed';
   converted_at: string;
   completed_at?: string;
+  created_at: string;
 }
 
 export class Web3InvestmentService {
   // Get all available asset initiatives
   static async getAssetInitiatives(): Promise<AssetInitiative[]> {
-    const { data, error } = await supabase
+    const { data, error } = await databaseAdapter
       .from('asset_initiatives')
       .select('*')
       .eq('is_active', true)
@@ -88,7 +103,7 @@ export class Web3InvestmentService {
 
   // Get user's connected wallets
   static async getUserWallets(userId: string): Promise<UserWallet[]> {
-    const { data, error } = await supabase
+    const { data, error } = await databaseAdapter
       .from('user_wallet_connections')
       .select('*')
       .eq('user_id', userId)
@@ -111,7 +126,7 @@ export class Web3InvestmentService {
     verificationData: any
   ): Promise<boolean> {
     try {
-      const { data, error } = await supabase.rpc('verify_wallet_ownership', {
+      const { data, error } = await databaseAdapter.supabase.rpc('verify_wallet_ownership', {
         p_user_id: userId,
         p_wallet_address: walletAddress,
         p_wallet_type: walletType,
@@ -132,12 +147,13 @@ export class Web3InvestmentService {
 
   // Get wallet balance for a specific currency
   static async getWalletBalance(
-    walletAddress: string,
+    _walletAddress: string,
     currency: string,
-    blockchainNetwork: string
+    _blockchainNetwork: string
   ): Promise<number> {
     try {
       // This would integrate with actual blockchain APIs
+      // Parameters would be used to query specific wallet and network
       // For now, return mock data
       const mockBalances: Record<string, number> = {
         'USDT': 1000.00,
@@ -171,7 +187,7 @@ export class Web3InvestmentService {
       const mockTransactionHash = `0x${Math.random().toString(16).substr(2, 64)}`;
 
       // Create investment record
-      const { data, error } = await supabase.rpc('create_asset_investment', {
+      const { data: _data, error } = await databaseAdapter.supabase.rpc('create_asset_investment', {
         p_user_id: userId,
         p_asset_initiative_id: assetInitiativeId,
         p_investment_amount: investmentAmount,
@@ -200,7 +216,7 @@ export class Web3InvestmentService {
     transactionHash: string
   ): Promise<boolean> {
     try {
-      const { data, error } = await supabase.rpc('confirm_asset_investment', {
+      const { data, error } = await databaseAdapter.supabase.rpc('confirm_asset_investment', {
         p_investment_id: investmentId,
         p_transaction_hash: transactionHash
       });
@@ -218,7 +234,7 @@ export class Web3InvestmentService {
 
   // Get user's investment portfolio
   static async getUserPortfolio(userId: string): Promise<InvestmentTransaction[]> {
-    const { data, error } = await supabase
+    const { data, error } = await databaseAdapter
       .from('asset_investments')
       .select(`
         *,
@@ -260,7 +276,7 @@ export class Web3InvestmentService {
       const convertedAmount = racAmount * exchangeRate;
 
       // Create conversion record
-      const { data, error } = await supabase
+      const { data, error } = await databaseAdapter
         .from('rac_conversions')
         .insert({
           user_id: userId,
@@ -282,7 +298,7 @@ export class Web3InvestmentService {
       const mockTransactionHash = `0x${Math.random().toString(16).substr(2, 64)}`;
 
       // Update conversion with transaction hash
-      const { data: updatedData, error: updateError } = await supabase
+      const { data: updatedData, error: updateError } = await databaseAdapter
         .from('rac_conversions')
         .update({
           transaction_hash: mockTransactionHash,
@@ -306,7 +322,7 @@ export class Web3InvestmentService {
 
   // Get investment returns
   static async getInvestmentReturns(investmentId: string): Promise<any[]> {
-    const { data, error } = await supabase
+    const { data, error } = await databaseAdapter
       .from('investment_returns')
       .select('*')
       .eq('investment_id', investmentId)
@@ -371,7 +387,7 @@ export class Web3InvestmentService {
       };
     }
 
-    if (!assetInitiative.supported_currencies.includes(currency)) {
+    if (!assetInitiative.supported_currencies?.includes(currency)) {
       return { 
         isValid: false, 
         error: `Currency ${currency} is not supported for this asset initiative` 

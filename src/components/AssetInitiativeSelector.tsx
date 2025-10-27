@@ -10,7 +10,7 @@ interface AssetInitiative {
   id: string;
   name: string;
   description: string;
-  category: 'environmental' | 'social' | 'governance' | 'technology' | 'healthcare' | 'education';
+  category: 'environmental' | 'social' | 'governance' | 'technology' | 'healthcare' | 'education' | 'economic' | 'health';
   impact_score: number; // 1-10 scale
   risk_level: 'low' | 'medium' | 'high';
   expected_return: number; // percentage
@@ -21,6 +21,15 @@ interface AssetInitiative {
   is_active: boolean;
   image_url?: string;
   website_url?: string;
+  // Web3 specific fields
+  multi_sig_wallet_address?: string;
+  multi_sig_threshold?: number;
+  multi_sig_signers?: string[];
+  blockchain_network?: string;
+  supported_currencies?: string[];
+  is_web3_enabled?: boolean;
+  hot_wallet_address?: string;
+  cold_wallet_address?: string;
   created_at: string;
 }
 
@@ -48,7 +57,7 @@ export const AssetInitiativeSelector: React.FC<AssetInitiativeSelectorProps> = (
 
   const loadAssets = async () => {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await databaseAdapter
         .from('asset_initiatives')
         .select('*')
         .eq('is_active', true)
@@ -73,7 +82,7 @@ export const AssetInitiativeSelector: React.FC<AssetInitiativeSelectorProps> = (
 
   const loadUserSelection = async () => {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await databaseAdapter
         .from('user_asset_selections')
         .select('*')
         .eq('user_id', userId)
@@ -85,7 +94,7 @@ export const AssetInitiativeSelector: React.FC<AssetInitiativeSelectorProps> = (
 
       if (data && data.asset_initiative_id) {
         // Load the asset initiative details separately
-        const { data: assetData } = await supabase
+        const { data: assetData } = await databaseAdapter
           .from('asset_initiatives')
           .select('*')
           .eq('id', data.asset_initiative_id)
@@ -117,13 +126,13 @@ export const AssetInitiativeSelector: React.FC<AssetInitiativeSelectorProps> = (
     try {
       if (asset) {
         // Deactivate current selection
-        await supabase
+        await databaseAdapter
           .from('user_asset_selections')
           .update({ is_active: false })
           .eq('user_id', userId);
 
         // Create new selection
-        const { error } = await supabase
+        const { error } = await databaseAdapter
           .from('user_asset_selections')
           .insert({
             user_id: userId,
@@ -146,7 +155,7 @@ export const AssetInitiativeSelector: React.FC<AssetInitiativeSelectorProps> = (
         });
       } else {
         // Deactivate current selection
-        const { error } = await supabase
+        const { error } = await databaseAdapter
           .from('user_asset_selections')
           .update({ is_active: false })
           .eq('user_id', userId);
