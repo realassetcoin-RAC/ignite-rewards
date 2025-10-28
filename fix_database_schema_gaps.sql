@@ -418,3 +418,5 @@ BEGIN
     RAISE NOTICE '  RAC conversions table: %', rac_conversions_exists;
     RAISE NOTICE '  Investment returns table: %', investment_returns_exists;
 END $$;
+
+

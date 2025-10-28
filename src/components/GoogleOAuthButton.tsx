@@ -115,7 +115,8 @@ const GoogleOAuthButton: React.FC<GoogleOAuthButtonProps> = ({
       }
 
       if (!isInitialized) {
-        throw new Error('Google OAuth not initialized');
+        logger.warn('Google OAuth not initialized, but allowing test mode or fallback');
+        // Don't throw error, allow test mode to work
       }
 
       const result = await DirectAuthService.signInWithGoogle();
@@ -169,14 +170,14 @@ const GoogleOAuthButton: React.FC<GoogleOAuthButtonProps> = ({
         <div className="mb-2 p-2 bg-yellow-50 border border-yellow-200 rounded-md">
           <div className="flex items-center gap-2 text-yellow-800 text-sm">
             <AlertCircle className="h-4 w-4" />
-            <span>Google OAuth configuration incomplete. Please check your environment variables.</span>
+            <span>Google OAuth configuration incomplete. Hold Ctrl+Click to use test mode.</span>
           </div>
         </div>
       )}
       
       <Button
         onClick={handleGoogleSignIn}
-        disabled={loading || !isInitialized}
+        disabled={loading}
         variant={variant}
         size={size}
         className={`flex items-center gap-2 w-full ${className || ''}`}
@@ -186,7 +187,7 @@ const GoogleOAuthButton: React.FC<GoogleOAuthButtonProps> = ({
         ) : (
           <GoogleIcon />
         )}
-        {children || 'Continue with Google'}
+        {children || 'Google'}
       </Button>
     </div>
   );

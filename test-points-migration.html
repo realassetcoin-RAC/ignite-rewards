@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Points Migration Test - RAC Rewards</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .success { background-color: #d4edda; border-color: #c3e6cb; }
+        .error { background-color: #f8d7da; border-color: #f5c6cb; }
+        .info { background-color: #d1ecf1; border-color: #bee5eb; }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover { background-color: #0056b3; }
+        button:disabled { background-color: #6c757d; cursor: not-allowed; }
+        .log {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+            padding: 10px;
+            margin: 10px 0;
+            font-family: monospace;
+            white-space: pre-wrap;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .migration-form {
+            display: grid;
+            gap: 15px;
+            max-width: 400px;
+        }
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+        .form-group label {
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        .form-group input, .form-group select {
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .verification-section {
+            display: none;
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+        .otp-input {
+            width: 200px;
+            padding: 12px;
+            font-size: 18px;
+            text-align: center;
+            letter-spacing: 4px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔄 Points Migration Test</h1>
+        <p>Test the user-initiated points migration with SMS OTP verification.</p>
+        
+        <div class="test-section info">
+            <h3>📋 Migration Status</h3>
+            <div id="migration-status">Ready to start migration...</div>
+        </div>
+
+        <div class="test-section">
+            <h3>🔄 Start Points Migration</h3>
+            <form id="migration-form" class="migration-form">
+                <div class="form-group">
+                    <label for="source-platform">Source Platform:</label>
+                    <select id="source-platform" required>
+                        <option value="">Select Platform</option>
+                        <option value="Loyalty Program A">Loyalty Program A</option>
+                        <option value="Rewards Club B">Rewards Club B</option>
+                        <option value="Points System C">Points System C</option>
+                        <option value="Other Platform">Other Platform</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="source-username">Source Username:</label>
+                    <input type="text" id="source-username" placeholder="Your username on the platform" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="points-amount">Points Amount:</label>
+                    <input type="number" id="points-amount" placeholder="1000" min="1" step="0.01" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="user-phone">Your Phone Number:</label>
+                    <input type="tel" id="user-phone" placeholder="+1234567890" required>
+                </div>
+                
+                <button type="submit">Start Migration</button>
+            </form>
+        </div>
+
+        <div id="verification-section" class="verification-section">
+            <h3>📱 Verify Migration</h3>
+            <div id="migration-details"></div>
+            <p>We've sent a verification code to your phone. Please enter it below:</p>
+            <input type="text" id="otp-input" class="otp-input" placeholder="123456" maxlength="6">
+            <br>
+            <button onclick="verifyMigration()" id="verify-btn">Verify & Complete Migration</button>
+            <button onclick="cancelMigration()" id="cancel-btn">Cancel Migration</button>
+            <div id="resend-section">
+                <button onclick="resendOTP()" id="resend-btn">Resend Code</button>
+                <span id="countdown"></span>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h3>📝 Migration Log</h3>
+            <div id="migration-log" class="log">Ready to test migration...\n</div>
+        </div>
+    </div>
+
+    <div id="recaptcha-container"></div>
+
+    <script type="module">
+        // Import migration service
+        import { MigrationOTPService } from './src/lib/migrationOTPService.js';
+        
+        let currentMigrationId = '';
+        let currentVerificationId = '';
+        let countdownTimer = null;
+        let countdownSeconds = 60;
+
+        function log(message, type = 'info') {
+            const logElement = document.getElementById('migration-log');
+            const timestamp = new Date().toLocaleTimeString();
+            const logMessage = `[${timestamp}] ${message}\n`;
+            logElement.textContent += logMessage;
+            logElement.scrollTop = logElement.scrollHeight;
+            
+            console.log(message);
+        }
+
+        function updateStatus(message) {
+            document.getElementById('migration-status').textContent = message;
+        }
+
+        function generateMigrationId() {
+            return 'mig_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        }
+
+        function startCountdown() {
+            countdownSeconds = 60;
+            const countdownElement = document.getElementById('countdown');
+            const resendBtn = document.getElementById('resend-btn');
+            
+            resendBtn.disabled = true;
+            
+            countdownTimer = setInterval(() => {
+                countdownElement.textContent = `Resend available in ${countdownSeconds}s`;
+                countdownSeconds--;
+                
+                if (countdownSeconds < 0) {
+                    clearInterval(countdownTimer);
+                    resendBtn.disabled = false;
+                    countdownElement.textContent = '';
+                }
+            }, 1000);
+        }
+
+        // Handle form submission
+        document.getElementById('migration-form').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const sourcePlatform = document.getElementById('source-platform').value;
+            const sourceUsername = document.getElementById('source-username').value;
+            const pointsAmount = parseFloat(document.getElementById('points-amount').value);
+            const userPhone = document.getElementById('user-phone').value;
+            
+            if (!sourcePlatform || !sourceUsername || !pointsAmount || !userPhone) {
+                log('❌ Please fill in all fields', 'error');
+                return;
+            }
+
+            try {
+                log('🔄 Starting points migration...');
+                updateStatus('Starting migration...');
+                
+                // Generate migration ID
+                currentMigrationId = generateMigrationId();
+                
+                // For testing, use a dummy user ID
+                const userId = 'test-user-id';
+                
+                // Send OTP for migration verification
+                const result = await MigrationOTPService.sendMigrationOTP(
+                    userPhone,
+                    currentMigrationId,
+                    userId,
+                    sourcePlatform,
+                    pointsAmount
+                );
+                
+                if (result.success) {
+                    currentVerificationId = result.verificationId || '';
+                    
+                    // Show verification section
+                    document.getElementById('verification-section').style.display = 'block';
+                    document.getElementById('migration-details').innerHTML = `
+                        <div style="background: #e9ecef; padding: 15px; border-radius: 5px; margin-bottom: 15px;">
+                            <strong>Migration Details:</strong><br>
+                            <strong>Source Platform:</strong> ${sourcePlatform}<br>
+                            <strong>Username:</strong> ${sourceUsername}<br>
+                            <strong>Points Amount:</strong> ${pointsAmount.toLocaleString()}<br>
+                            <strong>Phone:</strong> ${userPhone}
+                        </div>
+                    `;
+                    
+                    // Start countdown
+                    startCountdown();
+                    
+                    log('✅ Migration OTP sent successfully! Check your phone.', 'success');
+                    updateStatus('OTP sent - waiting for verification...');
+                } else {
+                    log(`❌ Failed to send migration OTP: ${result.error}`, 'error');
+                    updateStatus('Migration failed - could not send OTP');
+                }
+            } catch (error) {
+                log(`❌ Migration error: ${error.message}`, 'error');
+                updateStatus('Migration failed - unexpected error');
+            }
+        });
+
+        window.verifyMigration = async function() {
+            const otpCode = document.getElementById('otp-input').value;
+            
+            if (!otpCode || otpCode.length !== 6) {
+                log('❌ Please enter a valid 6-digit code', 'error');
+                return;
+            }
+
+            if (!currentVerificationId) {
+                log('❌ No verification ID found. Please start migration again.', 'error');
+                return;
+            }
+
+            try {
+                log('🔐 Verifying migration OTP...');
+                updateStatus('Verifying OTP...');
+                
+                const result = await MigrationOTPService.verifyMigrationOTP(
+                    currentVerificationId,
+                    otpCode,
+                    currentMigrationId
+                );
+                
+                if (result.success) {
+                    log('✅ OTP verification successful! Processing migration...', 'success');
+                    
+                    // Process the migration
+                    const processResult = await MigrationOTPService.processPointsMigration(currentMigrationId);
+                    
+                    if (processResult.success) {
+                        log('🎉 Points migration completed successfully!', 'success');
+                        updateStatus('Migration completed successfully!');
+                        
+                        // Hide verification section
+                        document.getElementById('verification-section').style.display = 'none';
+                        
+                        // Reset form
+                        document.getElementById('migration-form').reset();
+                    } else {
+                        log(`❌ Migration processing failed: ${processResult.error}`, 'error');
+                        updateStatus('Migration failed during processing');
+                    }
+                } else {
+                    log(`❌ OTP verification failed: ${result.error}`, 'error');
+                    updateStatus('OTP verification failed');
+                }
+            } catch (error) {
+                log(`❌ Verification error: ${error.message}`, 'error');
+                updateStatus('Verification failed - unexpected error');
+            }
+        };
+
+        window.cancelMigration = function() {
+            log('❌ Migration cancelled by user');
+            updateStatus('Migration cancelled');
+            
+            // Hide verification section
+            document.getElementById('verification-section').style.display = 'none';
+            
+            // Clear countdown
+            if (countdownTimer) {
+                clearInterval(countdownTimer);
+            }
+            
+            // Reset form
+            document.getElementById('migration-form').reset();
+        };
+
+        window.resendOTP = async function() {
+            if (countdownSeconds > 0) return;
+            
+            const userPhone = document.getElementById('user-phone').value;
+            const sourcePlatform = document.getElementById('source-platform').value;
+            const pointsAmount = parseFloat(document.getElementById('points-amount').value);
+            
+            if (!userPhone || !sourcePlatform || !pointsAmount) {
+                log('❌ Please fill in all fields first', 'error');
+                return;
+            }
+
+            try {
+                log('📱 Resending OTP...');
+                
+                const result = await MigrationOTPService.sendMigrationOTP(
+                    userPhone,
+                    currentMigrationId,
+                    'test-user-id',
+                    sourcePlatform,
+                    pointsAmount
+                );
+                
+                if (result.success) {
+                    currentVerificationId = result.verificationId || '';
+                    startCountdown();
+                    log('✅ OTP resent successfully!', 'success');
+                } else {
+                    log(`❌ Failed to resend OTP: ${result.error}`, 'error');
+                }
+            } catch (error) {
+                log(`❌ Resend error: ${error.message}`, 'error');
+            }
+        };
+
+        // Auto-format phone number input
+        document.getElementById('user-phone').addEventListener('input', function(e) {
+            let value = e.target.value.replace(/\D/g, '');
+            if (value.length > 0 && !value.startsWith('+')) {
+                value = '+' + value;
+            }
+            e.target.value = value;
+        });
+
+        // Auto-format OTP input
+        document.getElementById('otp-input').addEventListener('input', function(e) {
+            e.target.value = e.target.value.replace(/\D/g, '').slice(0, 6);
+        });
+
+        // Initialize
+        log('🚀 Points Migration Test Page Loaded');
+        log('Fill in the form above to test points migration with SMS OTP verification');
+    </script>
+</body>
+</html>

@@ -13,6 +13,7 @@ if (typeof window === 'undefined') {
 
 // import { createClient } from '@supabase/supabase-js'; // Not used in current implementation
 import { environment } from '@/config/environment';
+import { localAuthClient } from './localAuthClient';
 
 interface CacheEntry {
   data: any;
@@ -680,223 +681,159 @@ class DatabaseAdapter {
   }
 
   private getAuthObject() {
-    const oauthApiUrl = environment.oauth?.apiBaseUrl || 'http://localhost:3000';
-    
     return {
-      signIn: async (credentials: any) => {
-        const response = await fetch(`${oauthApiUrl}/api/auth/signin`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(credentials)
-        });
-        return response.json();
-      },
+      // Local PostgreSQL-based authentication methods
       signInWithPassword: async ({ email, password }: { email: string; password: string }) => {
         try {
-          console.log('🔧 Mock sign in with password:', { email, password: '***' });
+          console.log('🔧 Local sign in with password:', { email, password: '***' });
           
-          // Check for known admin credentials
-          if (email === 'admin@igniterewards.com' && password === 'admin123!') {
-            const mockUser = {
-              id: '00000000-0000-0000-0000-000000000001',
-              email: 'admin@igniterewards.com',
-              role: 'admin',
-              aud: 'authenticated',
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString()
-            };
-            
-            const mockSession = {
-              user: mockUser,
-              access_token: 'mock-admin-token-' + Date.now(),
-              refresh_token: 'mock-admin-refresh-' + Date.now(),
-              expires_at: Date.now() + (24 * 60 * 60 * 1000), // 24 hours
-              expires_in: 3600,
-              token_type: 'bearer'
-            };
-            
-            // Store in localStorage
-            localStorage.setItem('auth_session', JSON.stringify(mockSession));
-            localStorage.setItem('auth_user', JSON.stringify(mockUser));
-            
-            console.log('✅ Mock admin sign in successful');
-            
+          const result = await localAuthClient.signInWithPassword({ email, password });
+          
+          if (result.error) {
             return {
-              data: {
-                user: mockUser,
-                session: mockSession
-              },
-              error: null
+              data: null,
+              error: { message: result.error.message || 'Sign in failed' }
             };
           }
-          
-          // Check for other known test credentials
-          if ((email === 'admin@rac-rewards.com' && password === 'admin123!') ||
-              (email === 'merchant@test.com' && password === 'merchant123!') ||
-              (email === 'customer@test.com' && password === 'customer123!')) {
-            const mockUser = {
-              id: 'test-user-' + Date.now(),
-              email: email,
-              role: email.includes('merchant') ? 'merchant' : 'customer',
-              aud: 'authenticated',
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString()
-            };
-            
-            const mockSession = {
-              user: mockUser,
-              access_token: 'mock-token-' + Date.now(),
-              refresh_token: 'mock-refresh-' + Date.now(),
-              expires_at: Date.now() + (24 * 60 * 60 * 1000),
-              expires_in: 3600,
-              token_type: 'bearer'
-            };
-            
-            localStorage.setItem('auth_session', JSON.stringify(mockSession));
-            localStorage.setItem('auth_user', JSON.stringify(mockUser));
-            
-            console.log('✅ Mock test user sign in successful');
-            
-            return {
-              data: {
-                user: mockUser,
-                session: mockSession
-              },
-              error: null
-            };
+
+          // Store in localStorage for compatibility
+          if (result.data.session) {
+            localStorage.setItem('auth_session', JSON.stringify(result.data.session));
+            localStorage.setItem('auth_user', JSON.stringify(result.data.user));
           }
           
-          // Invalid credentials
-          console.log('❌ Invalid credentials');
-          return {
-            data: null,
-            error: {
-              message: 'Invalid login credentials'
-            }
-          };
+          console.log('✅ Local sign in successful');
+          
+          return result;
         } catch (error) {
-          console.error('❌ Mock sign in failed:', error);
+          console.error('❌ Local sign in error:', error);
           return {
             data: null,
-            error: {
-              message: 'Sign in failed: ' + (error as Error).message
-            }
+            error: { message: 'Sign in failed' }
           };
         }
       },
       signUp: async (credentials: any) => {
         try {
-          console.log('🔧 Mock merchant signup with credentials:', credentials);
+          console.log('🔧 Local signup with credentials:', { email: credentials.email });
           
-          // For now, create a mock successful signup response
-          // TODO: Implement actual merchant signup with Docker PostgreSQL
-          const mockUser = {
-            id: 'merchant-' + Date.now(),
+          const result = await localAuthClient.signUp({
             email: credentials.email,
-            user_metadata: {
-              business_name: credentials.business_name,
-              contact_name: credentials.contact_name,
-              phone: credentials.phone,
-              website: credentials.website,
-              industry: credentials.industry,
-              city: credentials.city,
-              country: credentials.country,
-              role: 'merchant'
+            password: credentials.password,
+            options: {
+              data: {
+                role: credentials.role || 'customer',
+                business_name: credentials.business_name,
+                contact_name: credentials.contact_name,
+                phone: credentials.phone,
+                website: credentials.website,
+                industry: credentials.industry,
+                city: credentials.city,
+                country: credentials.country
+              }
             }
-          };
+          });
           
-          // Store the mock session in localStorage
-          const mockSession = {
-            user: mockUser,
-            access_token: 'mock-token-' + Date.now(),
-            refresh_token: 'mock-refresh-' + Date.now(),
-            expires_at: Date.now() + (24 * 60 * 60 * 1000) // 24 hours
-          };
+          if (result.error) {
+            return {
+              data: null,
+              error: { message: result.error.message || 'Sign up failed' }
+            };
+          }
+
+          // Store in localStorage for compatibility
+          if (result.data.session) {
+            localStorage.setItem('auth_session', JSON.stringify(result.data.session));
+            localStorage.setItem('auth_user', JSON.stringify(result.data.user));
+          }
           
-          localStorage.setItem('auth_session', JSON.stringify(mockSession));
+          console.log('✅ Local signup successful');
           
-          console.log('✅ Mock merchant signup successful:', mockUser);
-          
-          return {
-            data: {
-              user: mockUser,
-              session: mockSession
-            },
-            error: null
-          };
+          return result;
         } catch (error) {
-          console.error('❌ Mock merchant signup failed:', error);
+          console.error('❌ Local signup error:', error);
           return {
             data: null,
-            error: {
-              message: 'Merchant signup failed: ' + (error as Error).message
-            }
+            error: { message: 'Sign up failed' }
           };
         }
       },
-      signOut: async (options?: any) => {
-        const response = await fetch(`${oauthApiUrl}/api/auth/signout`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(options || {})
-        });
-        const result = await response.json();
-        return { error: result.error || null };
+      signOut: async () => {
+        try {
+          console.log('🔧 Local sign out');
+          
+          const result = await localAuthClient.signOut();
+          
+          // Clear localStorage
+          localStorage.removeItem('auth_session');
+          localStorage.removeItem('auth_user');
+          localStorage.removeItem('local-auth-session');
+          
+          if (result.error) {
+            return {
+              error: { message: result.error.message || 'Sign out failed' }
+            };
+          }
+          
+          console.log('✅ Local sign out successful');
+          
+          return {
+            error: null
+          };
+        } catch (error) {
+          console.error('❌ Local sign out error:', error);
+          return {
+            error: { message: 'Sign out failed' }
+          };
+        }
       },
       getSession: async () => {
         try {
-          // Check localStorage for session
-          const storedSession = localStorage.getItem('auth_session');
-          return { 
-            data: { 
-              session: storedSession ? JSON.parse(storedSession) : null 
-            }, 
-            error: null 
-          };
+          const result = await localAuthClient.getSession();
+          
+          if (result.error) {
+            return {
+              data: { session: null },
+              error: result.error
+            };
+          }
+
+          return result;
         } catch (error) {
-          return { 
-            data: { session: null }, 
-            error: null  // Don't throw error, just return null session
+          console.error('❌ Local get session error:', error);
+          return {
+            data: { session: null },
+            error: { message: 'Failed to get session' }
           };
         }
       },
       getUser: async () => {
         try {
-          // Check localStorage for user
-          const storedUser = localStorage.getItem('auth_user');
-          return { 
-            data: { 
-              user: storedUser ? JSON.parse(storedUser) : null 
-            }, 
-            error: null 
-          };
+          const result = await localAuthClient.getUser();
+          
+          if (result.error) {
+            return {
+              data: { user: null },
+              error: result.error
+            };
+          }
+
+          return result;
         } catch (error) {
-          return { 
-            data: { user: null }, 
-            error: null  // Don't throw error, just return null user
+          console.error('❌ Local get user error:', error);
+          return {
+            data: { user: null },
+            error: { message: 'Failed to get user' }
           };
         }
       },
       onAuthStateChange: (callback: (event: string, session: any) => void) => {
-        // Listen for auth state changes via custom event
-        const handleAuthChange = (event: Event) => {
-          const customEvent = event as CustomEvent;
-          const { event: authEvent, session } = customEvent.detail;
-          callback(authEvent, session);
-        };
-
-        window.addEventListener('auth-state-change', handleAuthChange);
-
-        const subscription = {
-          unsubscribe: () => {
-            console.log('🔌 Auth state change listener unsubscribed');
-            window.removeEventListener('auth-state-change', handleAuthChange);
-          }
-        };
+        // Use local auth state change listener
+        const result = localAuthClient.onAuthStateChange(callback);
         
         return {
           data: {
-            subscription
+            subscription: result.data.subscription
           }
         };
       }

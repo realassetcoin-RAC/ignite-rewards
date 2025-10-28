@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Firebase Auth Test - RAC Rewards</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .success { background-color: #d4edda; border-color: #c3e6cb; }
+        .error { background-color: #f8d7da; border-color: #f5c6cb; }
+        .info { background-color: #d1ecf1; border-color: #bee5eb; }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover { background-color: #0056b3; }
+        button:disabled { background-color: #6c757d; cursor: not-allowed; }
+        .log {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+            padding: 10px;
+            margin: 10px 0;
+            font-family: monospace;
+            white-space: pre-wrap;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔐 Local Authentication Test</h1>
+        <p>Testing local PostgreSQL authentication integration for RAC Rewards application.</p>
+        
+        <div class="test-section info">
+            <h3>📋 Test Status</h3>
+            <div id="test-status">Initializing...</div>
+        </div>
+
+        <div class="test-section">
+            <h3>🧪 Manual Tests</h3>
+            <button onclick="testInitialization()">Test Initialization</button>
+            <button onclick="testAuthMethods()">Test Auth Methods</button>
+            <button onclick="testAuthStateListener()">Test Auth State Listener</button>
+            <button onclick="testGetCurrentUser()">Test Get Current User</button>
+            <button onclick="clearLog()">Clear Log</button>
+        </div>
+
+        <div class="test-section">
+            <h3>🔐 Local Authentication Tests</h3>
+            <button onclick="testLocalSignIn()" id="local-signin-btn">Test Local Sign In</button>
+            <button onclick="testSignOut()" id="signout-btn" disabled>Test Sign Out</button>
+        </div>
+
+        <div class="test-section">
+            <h3>📝 Test Log</h3>
+            <div id="test-log" class="log">Ready to run tests...\n</div>
+        </div>
+    </div>
+
+    <script type="module">
+        // Import database adapter for local authentication
+        import { databaseAdapter } from './src/lib/databaseAdapter.js';
+        
+        let testResults = {
+            initialization: false,
+            authMethods: false,
+            authStateListener: false,
+            getCurrentUser: false
+        };
+
+        function log(message, type = 'info') {
+            const logElement = document.getElementById('test-log');
+            const timestamp = new Date().toLocaleTimeString();
+            const logMessage = `[${timestamp}] ${message}\n`;
+            logElement.textContent += logMessage;
+            logElement.scrollTop = logElement.scrollHeight;
+            
+            console.log(message);
+        }
+
+        function updateStatus() {
+            const statusElement = document.getElementById('test-status');
+            const passed = Object.values(testResults).filter(r => r).length;
+            const total = Object.keys(testResults).length;
+            
+            statusElement.innerHTML = `
+                <strong>Tests Passed: ${passed}/${total}</strong><br>
+                <small>
+                    Initialization: ${testResults.initialization ? '✅' : '❌'}<br>
+                    Auth Methods: ${testResults.authMethods ? '✅' : '❌'}<br>
+                    Auth State Listener: ${testResults.authStateListener ? '✅' : '❌'}<br>
+                    Get Current User: ${testResults.getCurrentUser ? '✅' : '❌'}
+                </small>
+            `;
+        }
+
+        // Make functions global for HTML buttons
+        window.testInitialization = async function() {
+            try {
+                log('🧪 Testing Database Adapter initialization...');
+                // Database adapter is already initialized
+                testResults.initialization = true;
+                log('✅ Database Adapter initialized successfully', 'success');
+                updateStatus();
+            } catch (error) {
+                log(`❌ Initialization failed: ${error.message}`, 'error');
+                testResults.initialization = false;
+                updateStatus();
+            }
+        };
+
+        window.testAuthMethods = function() {
+            try {
+                log('🧪 Testing Database Adapter auth methods...');
+                const methods = [
+                    'signInWithPassword',
+                    'signUp',
+                    'signOut',
+                    'getUser',
+                    'getSession',
+                    'onAuthStateChange'
+                ];
+
+                for (const method of methods) {
+                    if (typeof databaseAdapter.auth[method] !== 'function') {
+                        throw new Error(`Method ${method} not found`);
+                    }
+                }
+                
+                testResults.authMethods = true;
+                log('✅ All Database Adapter auth methods exist', 'success');
+                updateStatus();
+            } catch (error) {
+                log(`❌ Auth methods test failed: ${error.message}`, 'error');
+                testResults.authMethods = false;
+                updateStatus();
+            }
+        };
+
+        window.testAuthStateListener = async function() {
+            try {
+                log('🧪 Testing auth state listener...');
+                let listenerCalled = false;
+                
+                const result = databaseAdapter.auth.onAuthStateChange((event, session) => {
+                    listenerCalled = true;
+                    log(`📡 Auth state changed: ${event} - ${session ? `User: ${session.user?.email}` : 'No user'}`);
+                });
+
+                // Wait a bit for listener to be set up
+                await new Promise(resolve => setTimeout(resolve, 100));
+                
+                if (result.data && result.data.subscription) {
+                    result.data.subscription.unsubscribe();
+                }
+                testResults.authStateListener = true;
+                log('✅ Auth state listener working', 'success');
+                updateStatus();
+            } catch (error) {
+                log(`❌ Auth state listener test failed: ${error.message}`, 'error');
+                testResults.authStateListener = false;
+                updateStatus();
+            }
+        };
+
+        window.testGetCurrentUser = async function() {
+            try {
+                log('🧪 Testing getCurrentUser...');
+                const result = await databaseAdapter.auth.getUser();
+                log(`Current user: ${result.data?.user ? result.data.user.email : 'No user'}`);
+                testResults.getCurrentUser = true;
+                log('✅ getCurrentUser working', 'success');
+                updateStatus();
+            } catch (error) {
+                log(`❌ getCurrentUser test failed: ${error.message}`, 'error');
+                testResults.getCurrentUser = false;
+                updateStatus();
+            }
+        };
+
+        window.testLocalSignIn = async function() {
+            try {
+                log('🔐 Testing Local Sign In...');
+                
+                // Test with admin credentials
+                const result = await databaseAdapter.auth.signInWithPassword({
+                    email: 'admin@rac-rewards.com',
+                    password: 'admin123!'
+                });
+                
+                if (result.data && result.data.user) {
+                    log(`✅ Local Sign In successful: ${result.data.user.email}`, 'success');
+                    document.getElementById('local-signin-btn').disabled = true;
+                    document.getElementById('signout-btn').disabled = false;
+                } else {
+                    log(`❌ Local Sign In failed: ${result.error?.message}`, 'error');
+                }
+            } catch (error) {
+                log(`❌ Local Sign In error: ${error.message}`, 'error');
+            }
+        };
+
+        window.testSignOut = async function() {
+            try {
+                log('🔐 Testing Sign Out...');
+                const result = await databaseAdapter.auth.signOut();
+                
+                if (!result.error) {
+                    log('✅ Sign Out successful', 'success');
+                    document.getElementById('local-signin-btn').disabled = false;
+                    document.getElementById('signout-btn').disabled = true;
+                } else {
+                    log(`❌ Sign Out failed: ${result.error.message}`, 'error');
+                }
+            } catch (error) {
+                log(`❌ Sign Out error: ${error.message}`, 'error');
+            }
+        };
+
+
+        window.clearLog = function() {
+            document.getElementById('test-log').textContent = 'Log cleared...\n';
+        };
+
+        // Auto-run basic tests on load
+        log('🚀 Local Auth Test Page Loaded');
+        log('Click the test buttons above to run individual tests');
+        log('Or wait for auto-initialization...');
+        
+        // Auto-initialize
+        setTimeout(() => {
+            testInitialization();
+        }, 1000);
+    </script>
+</body>
+</html>

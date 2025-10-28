@@ -1,8 +1,8 @@
 // Local Authentication Service
 // Handles Google OAuth and Wallet Connect with local PostgreSQL database
-// Following .cursorrules: Data Operations → Local PostgreSQL, Authentication → Supabase Cloud
+// Following .cursorrules: Data Operations → Local PostgreSQL, Authentication → Firebase
 
-import { createClient } from '@supabase/supabase-js';
+import { FirebaseAuthService } from './firebaseAuthService';
 import { databaseAdapter } from './databaseAdapter';
 
 interface AuthUser {
@@ -24,11 +24,10 @@ interface WalletConnection {
 
 class LocalAuthService {
   private static instance: LocalAuthService | null = null;
-  private supabase: any;
   private isInitialized = false;
 
   private constructor() {
-    this.initializeSupabase();
+    this.initializeFirebase();
   }
 
   public static getInstance(): LocalAuthService {
@@ -38,26 +37,14 @@ class LocalAuthService {
     return LocalAuthService.instance;
   }
 
-  private initializeSupabase() {
+  private initializeFirebase() {
     if (this.isInitialized) return;
 
     try {
-      // Use Supabase cloud for authentication only
-      const supabaseUrl = 'https://wndswqvqogeblksrujpg.supabase.co';
-      const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InduZHN3cXZxb2dlYmxrc3J1anBnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYzMzEyMTAsImV4cCI6MjA3MTkwNzIxMH0.eOXJEo3XheuB2AK3NlRotSKqPMueqkgPUa896TM-hfA';
-
-      this.supabase = createClient(supabaseUrl, supabaseKey, {
-        auth: {
-          storage: localStorage,
-          persistSession: true,
-          autoRefreshToken: true,
-          detectSessionInUrl: true,
-          flowType: 'pkce'
-        }
-      });
-
+      // Initialize Firebase Auth Service
+      FirebaseAuthService.initialize();
       this.isInitialized = true;
-      console.log('✅ LocalAuthService initialized with Supabase cloud for authentication');
+      console.log('✅ LocalAuthService initialized with Firebase for authentication');
     } catch (error) {
       console.error('❌ Failed to initialize LocalAuthService:', error);
       throw error;
@@ -69,25 +56,25 @@ class LocalAuthService {
     try {
       console.log('🔐 Starting Google OAuth sign in...');
 
-      const { data, error } = await this.supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
-          skipBrowserRedirect: false,
-          queryParams: {
-            access_type: 'offline',
-            prompt: 'select_account'
-          }
-        }
-      });
-
-      if (error) {
-        console.error('❌ Google OAuth error:', error);
-        return { user: null, error: error.message };
+      const result = await FirebaseAuthService.signInWithGoogle();
+      
+      if (!result.success || !result.user) {
+        return { user: null, error: result.error || 'Google OAuth failed' };
       }
 
-      console.log('✅ Google OAuth initiated successfully');
-      return { user: null, error: null };
+      // Convert Firebase user to local AuthUser format
+      const localUser: AuthUser = {
+        id: result.user.id,
+        email: result.user.email,
+        name: result.user.name,
+        avatar_url: result.user.picture || '',
+        provider: 'google',
+        created_at: result.user.created_at || new Date().toISOString(),
+        updated_at: result.user.updated_at || new Date().toISOString()
+      };
+
+      console.log('✅ Google OAuth successful');
+      return { user: localUser, error: null };
     } catch (error) {
       console.error('❌ Google OAuth exception:', error);
       return { user: null, error: 'Failed to initiate Google OAuth' };
@@ -128,7 +115,7 @@ class LocalAuthService {
           expires_at: Date.now() + (24 * 60 * 60 * 1000) // 24 hours
         };
 
-        localStorage.setItem('sb-wndswqvqogeblksrujpg-auth-token', JSON.stringify(sessionData));
+        localStorage.setItem('wallet-auth-session', JSON.stringify(sessionData));
         
         console.log('✅ Wallet authentication successful');
         return { user, error: null };
@@ -159,7 +146,7 @@ class LocalAuthService {
   private async createOrGetWalletUser(walletConnection: WalletConnection): Promise<AuthUser | null> {
     try {
       // Use databaseAdapter to interact with local PostgreSQL
-      const { data: existingUser, error: fetchError } = await databaseAdapter.localDb
+      const { data: existingUser, error: fetchError } = await databaseAdapter
         .from('users')
         .select('*')
         .eq('wallet_address', walletConnection.address)
@@ -187,7 +174,7 @@ class LocalAuthService {
         updated_at: new Date().toISOString()
       };
 
-      const { data: createdUser, error: createError } = await databaseAdapter.localDb
+      const { data: createdUser, error: createError } = await databaseAdapter
         .from('users')
         .insert([newUser])
         .select()
@@ -209,41 +196,36 @@ class LocalAuthService {
   // Get current user
   async getCurrentUser(): Promise<AuthUser | null> {
     try {
-      // Check Supabase session first
-      const { data: { session }, error } = await this.supabase.auth.getSession();
+      // Check Firebase user first
+      const firebaseUser = FirebaseAuthService.getCurrentUser();
       
-      if (error) {
-        console.error('❌ Error getting session:', error);
-        return null;
-      }
-
-      if (session?.user) {
-        // Google OAuth user
+      if (firebaseUser) {
+        // Google OAuth user from Firebase
         return {
-          id: session.user.id,
-          email: session.user.email || '',
-          name: session.user.user_metadata?.full_name,
-          avatar_url: session.user.user_metadata?.avatar_url,
+          id: firebaseUser.id,
+          email: firebaseUser.email,
+          name: firebaseUser.name,
+          avatar_url: firebaseUser.picture || '',
           provider: 'google',
-          created_at: session.user.created_at,
-          updated_at: session.user.updated_at
+          created_at: firebaseUser.created_at || new Date().toISOString(),
+          updated_at: firebaseUser.updated_at || new Date().toISOString()
         };
       }
 
       // Check localStorage for wallet user
-      const walletSession = localStorage.getItem('sb-wndswqvqogeblksrujpg-auth-token');
+      const walletSession = localStorage.getItem('wallet-auth-session');
       if (walletSession) {
         try {
           const sessionData = JSON.parse(walletSession);
-          if (sessionData.user?.user_metadata?.provider === 'wallet') {
+          if (sessionData.user?.provider === 'wallet') {
             return {
               id: sessionData.user.id,
               email: sessionData.user.email,
-              name: sessionData.user.user_metadata.full_name,
+              name: sessionData.user.name,
               provider: 'wallet',
-              wallet_address: sessionData.user.user_metadata.wallet_address,
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString()
+              wallet_address: sessionData.user.wallet_address,
+              created_at: sessionData.user.created_at,
+              updated_at: sessionData.user.updated_at
             };
           }
         } catch (parseError) {
@@ -261,16 +243,16 @@ class LocalAuthService {
   // Sign out
   async signOut(): Promise<{ error: string | null }> {
     try {
-      // Sign out from Supabase
-      const { error: supabaseError } = await this.supabase.auth.signOut();
+      // Sign out from Firebase
+      const result = await FirebaseAuthService.signOut();
       
       // Clear localStorage
-      localStorage.removeItem('sb-wndswqvqogeblksrujpg-auth-token');
-      localStorage.removeItem('supabase.auth.token');
+      localStorage.removeItem('wallet-auth-session');
+      localStorage.removeItem('firebase-auth-session');
       
-      if (supabaseError) {
-        console.error('❌ Supabase sign out error:', supabaseError);
-        return { error: supabaseError.message };
+      if (!result.success) {
+        console.error('❌ Firebase sign out error:', result.error);
+        return { error: result.error || 'Sign out failed' };
       }
 
       console.log('✅ Sign out successful');
@@ -283,16 +265,16 @@ class LocalAuthService {
 
   // Listen to auth state changes
   onAuthStateChange(callback: (user: AuthUser | null) => void) {
-    return this.supabase.auth.onAuthStateChange((event: string, session: any) => {
-      if (session?.user) {
+    return FirebaseAuthService.onAuthStateChange((firebaseUser) => {
+      if (firebaseUser) {
         const user: AuthUser = {
-          id: session.user.id,
-          email: session.user.email || '',
-          name: session.user.user_metadata?.full_name,
-          avatar_url: session.user.user_metadata?.avatar_url,
+          id: firebaseUser.id,
+          email: firebaseUser.email,
+          name: firebaseUser.name,
+          avatar_url: firebaseUser.picture || '',
           provider: 'google',
-          created_at: session.user.created_at,
-          updated_at: session.user.updated_at
+          created_at: firebaseUser.created_at || new Date().toISOString(),
+          updated_at: firebaseUser.updated_at || new Date().toISOString()
         };
         callback(user);
       } else {

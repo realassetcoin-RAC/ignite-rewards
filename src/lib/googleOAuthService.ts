@@ -1,6 +1,7 @@
 import { databaseAdapter } from './databaseAdapter';
 import { createModuleLogger } from '@/utils/consoleReplacer';
 import { environment } from '@/config/environment';
+import { FirebaseAuthService } from './firebaseAuthService';
 
 const logger = createModuleLogger('GoogleOAuthService');
 
@@ -128,7 +129,47 @@ export class GoogleOAuthService {
   }
 
   /**
-   * Sign in with Google using direct Google Identity Services
+   * Sign in with Google using Firebase (recommended method)
+   */
+  static async signInWithFirebase(): Promise<OAuthResult> {
+    try {
+      logger.info('Starting Firebase Google OAuth');
+      
+      const result = await FirebaseAuthService.signInWithGoogle();
+      
+      if (!result.success || !result.user) {
+        return {
+          success: false,
+          error: result.error || 'Firebase Google OAuth failed'
+        };
+      }
+
+      // Convert Firebase user to GoogleUser format
+      const googleUser: GoogleUser = {
+        id: result.user.id,
+        email: result.user.email,
+        name: result.user.name,
+        picture: result.user.picture || '',
+        verified_email: result.user.email_verified || false
+      };
+
+      logger.info('Firebase Google OAuth successful');
+      return {
+        success: true,
+        user: googleUser,
+        accessToken: 'firebase-token' // Firebase handles token management internally
+      };
+    } catch (error: unknown) {
+      logger.error('Firebase Google OAuth error:', error instanceof Error ? error : new Error(String(error)));
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Firebase Google OAuth failed'
+      };
+    }
+  }
+
+  /**
+   * Sign in with Google using direct Google Identity Services (fallback)
    */
   static async signInWithGoogle(): Promise<OAuthResult> {
     try {
