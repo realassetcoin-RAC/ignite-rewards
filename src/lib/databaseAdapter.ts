@@ -5,15 +5,16 @@
 let pg: any = null;
 if (typeof window === 'undefined') {
   try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     pg = require('pg');
-  } catch (e) {
+  } catch {
     console.warn('pg library not available in browser environment');
   }
 }
 
 // import { createClient } from '@supabase/supabase-js'; // Not used in current implementation
 import { environment } from '@/config/environment';
-import { localAuthClient } from './localAuthClient';
+import { FirebaseAuthService } from './firebaseAuthService';
 
 interface CacheEntry {
   data: any;
@@ -93,7 +94,7 @@ class DatabaseAdapter {
         limit: (count: number) => buildChain({ ...state, limit: count }),
         single: async () => this.resolveMockQuery(table, state, true),
         maybeSingle: async () => this.resolveMockQuery(table, state, true),
-        select: (_columns: string = '*') => buildChain({ ...state })
+        select: () => buildChain({ ...state })
       } as any;
       return chain;
     };
@@ -126,23 +127,25 @@ class DatabaseAdapter {
       console.log(`🔧 Executing mock RPC: ${functionName}`, params);
       
       switch (functionName) {
-        case 'is_admin':
+        case 'is_admin': {
           // Mock admin check - return true for test users
           const userEmail = params?.user_email || params?.email;
           if (userEmail && (userEmail.includes('admin') || userEmail.includes('test'))) {
             return { data: true, error: null };
           }
           return { data: false, error: null };
+        }
           
-        case 'check_admin_access':
+        case 'check_admin_access': {
           // Mock admin access check
           const accessEmail = params?.user_email || params?.email;
           if (accessEmail && (accessEmail.includes('admin') || accessEmail.includes('test'))) {
             return { data: { is_admin: true, admin_level: 'super' }, error: null };
           }
           return { data: { is_admin: false, admin_level: null }, error: null };
+        }
           
-        case 'get_merchant_stats':
+        case 'get_merchant_stats': {
           // Mock merchant statistics
           return { 
             data: { 
@@ -153,8 +156,9 @@ class DatabaseAdapter {
             }, 
             error: null 
           };
+        }
           
-        case 'get_user_profile':
+        case 'get_user_profile': {
           // Mock user profile lookup
           const profileEmail = params?.user_email || params?.email;
           if (profileEmail) {
@@ -170,6 +174,7 @@ class DatabaseAdapter {
             };
           }
           return { data: null, error: null };
+        }
           
         default:
           console.warn(`⚠️ Unknown RPC function: ${functionName}`);
@@ -443,7 +448,7 @@ class DatabaseAdapter {
 
     // If in browser, use API endpoint
     if (typeof window !== 'undefined') {
-      return this.executeApiQuery(table, operation, query, params, cacheKey);
+      return this.executeApiQuery(table, operation, query, params);
     }
 
     // Direct database execution (Node.js environment)
@@ -584,8 +589,7 @@ class DatabaseAdapter {
     table: string,
     operation: string,
     query: string,
-    params: any[],
-    _cacheKey: string
+    params: any[]
   ): Promise<{ data: any; error: any }> {
     return this.executeApiQueryForTable(table, operation, query, params);
   }
@@ -682,31 +686,58 @@ class DatabaseAdapter {
 
   private getAuthObject() {
     return {
-      // Local PostgreSQL-based authentication methods
+      // Firebase-based authentication methods
       signInWithPassword: async ({ email, password }: { email: string; password: string }) => {
         try {
-          console.log('🔧 Local sign in with password:', { email, password: '***' });
+          console.log('🔧 Firebase sign in with password:', { email, password: '***' });
           
-          const result = await localAuthClient.signInWithPassword({ email, password });
+          const result = await FirebaseAuthService.signInWithEmailAndPassword(email, password);
           
-          if (result.error) {
+          if (!result.success || !result.user) {
             return {
               data: null,
-              error: { message: result.error.message || 'Sign in failed' }
+              error: { message: result.error || 'Sign in failed' }
             };
           }
 
+          // Convert Firebase user to Supabase-compatible format
+          const supabaseUser = {
+            id: result.user.id,
+            email: result.user.email,
+            role: result.user.role,
+            aud: 'authenticated',
+            created_at: result.user.created_at,
+            updated_at: result.user.updated_at,
+            user_metadata: {
+              full_name: result.user.name,
+              avatar_url: result.user.picture
+            }
+          };
+
+          const session = {
+            user: supabaseUser,
+            access_token: 'firebase-token-' + Date.now(),
+            refresh_token: 'firebase-refresh-' + Date.now(),
+            expires_at: Date.now() + (24 * 60 * 60 * 1000), // 24 hours
+            expires_in: 3600,
+            token_type: 'bearer'
+          };
+
           // Store in localStorage for compatibility
-          if (result.data.session) {
-            localStorage.setItem('auth_session', JSON.stringify(result.data.session));
-            localStorage.setItem('auth_user', JSON.stringify(result.data.user));
-          }
+          localStorage.setItem('auth_session', JSON.stringify(session));
+          localStorage.setItem('auth_user', JSON.stringify(supabaseUser));
           
-          console.log('✅ Local sign in successful');
+          console.log('✅ Firebase sign in successful');
           
-          return result;
+          return {
+            data: {
+              user: supabaseUser,
+              session: session
+            },
+            error: null
+          };
         } catch (error) {
-          console.error('❌ Local sign in error:', error);
+          console.error('❌ Firebase sign in error:', error);
           return {
             data: null,
             error: { message: 'Sign in failed' }
@@ -715,43 +746,69 @@ class DatabaseAdapter {
       },
       signUp: async (credentials: any) => {
         try {
-          console.log('🔧 Local signup with credentials:', { email: credentials.email });
+          console.log('🔧 Firebase signup with credentials:', { email: credentials.email });
           
-          const result = await localAuthClient.signUp({
-            email: credentials.email,
-            password: credentials.password,
-            options: {
-              data: {
-                role: credentials.role || 'customer',
-                business_name: credentials.business_name,
-                contact_name: credentials.contact_name,
-                phone: credentials.phone,
-                website: credentials.website,
-                industry: credentials.industry,
-                city: credentials.city,
-                country: credentials.country
-              }
+          const result = await FirebaseAuthService.signUpWithEmailAndPassword(
+            credentials.email, 
+            credentials.password, 
+            {
+              role: credentials.role || 'customer',
+              name: credentials.contact_name || credentials.business_name
             }
-          });
+          );
           
-          if (result.error) {
+          if (!result.success || !result.user) {
             return {
               data: null,
-              error: { message: result.error.message || 'Sign up failed' }
+              error: { message: result.error || 'Sign up failed' }
             };
           }
 
+          // Convert Firebase user to Supabase-compatible format
+          const supabaseUser = {
+            id: result.user.id,
+            email: result.user.email,
+            role: result.user.role,
+            aud: 'authenticated',
+            created_at: result.user.created_at,
+            updated_at: result.user.updated_at,
+            user_metadata: {
+              full_name: result.user.name,
+              avatar_url: result.user.picture,
+              business_name: credentials.business_name,
+              contact_name: credentials.contact_name,
+              phone: credentials.phone,
+              website: credentials.website,
+              industry: credentials.industry,
+              city: credentials.city,
+              country: credentials.country
+            }
+          };
+
+          const session = {
+            user: supabaseUser,
+            access_token: 'firebase-token-' + Date.now(),
+            refresh_token: 'firebase-refresh-' + Date.now(),
+            expires_at: Date.now() + (24 * 60 * 60 * 1000), // 24 hours
+            expires_in: 3600,
+            token_type: 'bearer'
+          };
+
           // Store in localStorage for compatibility
-          if (result.data.session) {
-            localStorage.setItem('auth_session', JSON.stringify(result.data.session));
-            localStorage.setItem('auth_user', JSON.stringify(result.data.user));
-          }
+          localStorage.setItem('auth_session', JSON.stringify(session));
+          localStorage.setItem('auth_user', JSON.stringify(supabaseUser));
           
-          console.log('✅ Local signup successful');
+          console.log('✅ Firebase signup successful');
           
-          return result;
+          return {
+            data: {
+              user: supabaseUser,
+              session: session
+            },
+            error: null
+          };
         } catch (error) {
-          console.error('❌ Local signup error:', error);
+          console.error('❌ Firebase signup error:', error);
           return {
             data: null,
             error: { message: 'Sign up failed' }
@@ -760,28 +817,27 @@ class DatabaseAdapter {
       },
       signOut: async () => {
         try {
-          console.log('🔧 Local sign out');
+          console.log('🔧 Firebase sign out');
           
-          const result = await localAuthClient.signOut();
+          const result = await FirebaseAuthService.signOut();
           
           // Clear localStorage
           localStorage.removeItem('auth_session');
           localStorage.removeItem('auth_user');
-          localStorage.removeItem('local-auth-session');
           
-          if (result.error) {
+          if (!result.success) {
             return {
-              error: { message: result.error.message || 'Sign out failed' }
+              error: { message: result.error || 'Sign out failed' }
             };
           }
           
-          console.log('✅ Local sign out successful');
+          console.log('✅ Firebase sign out successful');
           
           return {
             error: null
           };
         } catch (error) {
-          console.error('❌ Local sign out error:', error);
+          console.error('❌ Firebase sign out error:', error);
           return {
             error: { message: 'Sign out failed' }
           };
@@ -789,18 +845,44 @@ class DatabaseAdapter {
       },
       getSession: async () => {
         try {
-          const result = await localAuthClient.getSession();
+          const firebaseUser = FirebaseAuthService.getCurrentUser();
           
-          if (result.error) {
+          if (firebaseUser) {
+            // Convert Firebase user to Supabase-compatible format
+            const supabaseUser = {
+              id: firebaseUser.id,
+              email: firebaseUser.email,
+              role: firebaseUser.role,
+              aud: 'authenticated',
+              created_at: firebaseUser.created_at,
+              updated_at: firebaseUser.updated_at,
+              user_metadata: {
+                full_name: firebaseUser.name,
+                avatar_url: firebaseUser.picture
+              }
+            };
+
+            const session = {
+              user: supabaseUser,
+              access_token: 'firebase-token-' + Date.now(),
+              refresh_token: 'firebase-refresh-' + Date.now(),
+              expires_at: Date.now() + (24 * 60 * 60 * 1000), // 24 hours
+              expires_in: 3600,
+              token_type: 'bearer'
+            };
+            
             return {
-              data: { session: null },
-              error: result.error
+              data: { session },
+              error: null
             };
           }
-
-          return result;
+          
+          return {
+            data: { session: null },
+            error: null
+          };
         } catch (error) {
-          console.error('❌ Local get session error:', error);
+          console.error('❌ Firebase get session error:', error);
           return {
             data: { session: null },
             error: { message: 'Failed to get session' }
@@ -809,18 +891,35 @@ class DatabaseAdapter {
       },
       getUser: async () => {
         try {
-          const result = await localAuthClient.getUser();
+          const firebaseUser = FirebaseAuthService.getCurrentUser();
           
-          if (result.error) {
+          if (firebaseUser) {
+            // Convert Firebase user to Supabase-compatible format
+            const supabaseUser = {
+              id: firebaseUser.id,
+              email: firebaseUser.email,
+              role: firebaseUser.role,
+              aud: 'authenticated',
+              created_at: firebaseUser.created_at,
+              updated_at: firebaseUser.updated_at,
+              user_metadata: {
+                full_name: firebaseUser.name,
+                avatar_url: firebaseUser.picture
+              }
+            };
+            
             return {
-              data: { user: null },
-              error: result.error
+              data: { user: supabaseUser },
+              error: null
             };
           }
-
-          return result;
+          
+          return {
+            data: { user: null },
+            error: null
+          };
         } catch (error) {
-          console.error('❌ Local get user error:', error);
+          console.error('❌ Firebase get user error:', error);
           return {
             data: { user: null },
             error: { message: 'Failed to get user' }
@@ -828,12 +927,48 @@ class DatabaseAdapter {
         }
       },
       onAuthStateChange: (callback: (event: string, session: any) => void) => {
-        // Use local auth state change listener
-        const result = localAuthClient.onAuthStateChange(callback);
+        // Use Firebase auth state change listener
+        const unsubscribe = FirebaseAuthService.onAuthStateChange((firebaseUser) => {
+          if (firebaseUser) {
+            // Convert Firebase user to Supabase-compatible format
+            const supabaseUser = {
+              id: firebaseUser.id,
+              email: firebaseUser.email,
+              role: firebaseUser.role,
+              aud: 'authenticated',
+              created_at: firebaseUser.created_at,
+              updated_at: firebaseUser.updated_at,
+              user_metadata: {
+                full_name: firebaseUser.name,
+                avatar_url: firebaseUser.picture
+              }
+            };
+
+            const session = {
+              user: supabaseUser,
+              access_token: 'firebase-token-' + Date.now(),
+              refresh_token: 'firebase-refresh-' + Date.now(),
+              expires_at: Date.now() + (24 * 60 * 60 * 1000), // 24 hours
+              expires_in: 3600,
+              token_type: 'bearer'
+            };
+            
+            callback('SIGNED_IN', session);
+          } else {
+            callback('SIGNED_OUT', null);
+          }
+        });
+
+        const subscription = {
+          unsubscribe: () => {
+            console.log('🔌 Firebase auth state change listener unsubscribed');
+            unsubscribe();
+          }
+        };
         
         return {
           data: {
-            subscription: result.data.subscription
+            subscription
           }
         };
       }

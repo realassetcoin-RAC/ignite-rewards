@@ -53,8 +53,8 @@
 </head>
 <body>
     <div class="container">
-        <h1>🔐 Local Authentication Test</h1>
-        <p>Testing local PostgreSQL authentication integration for RAC Rewards application.</p>
+        <h1>🔥 Firebase Authentication Test</h1>
+        <p>Testing Firebase authentication integration for RAC Rewards application.</p>
         
         <div class="test-section info">
             <h3>📋 Test Status</h3>
@@ -71,8 +71,8 @@
         </div>
 
         <div class="test-section">
-            <h3>🔐 Local Authentication Tests</h3>
-            <button onclick="testLocalSignIn()" id="local-signin-btn">Test Local Sign In</button>
+            <h3>🔐 Firebase Authentication Tests</h3>
+            <button onclick="testGoogleSignIn()" id="google-signin-btn">Test Google Sign In</button>
             <button onclick="testSignOut()" id="signout-btn" disabled>Test Sign Out</button>
         </div>
 
@@ -83,8 +83,8 @@
     </div>
 
     <script type="module">
-        // Import database adapter for local authentication
-        import { databaseAdapter } from './src/lib/databaseAdapter.js';
+        // Import Firebase configuration
+        import { FirebaseAuthService } from './src/lib/firebaseAuthService.js';
         
         let testResults = {
             initialization: false,
@@ -122,10 +122,10 @@
         // Make functions global for HTML buttons
         window.testInitialization = async function() {
             try {
-                log('🧪 Testing Database Adapter initialization...');
-                // Database adapter is already initialized
+                log('🧪 Testing Firebase Auth initialization...');
+                FirebaseAuthService.initialize();
                 testResults.initialization = true;
-                log('✅ Database Adapter initialized successfully', 'success');
+                log('✅ Firebase Auth initialized successfully', 'success');
                 updateStatus();
             } catch (error) {
                 log(`❌ Initialization failed: ${error.message}`, 'error');
@@ -136,24 +136,24 @@
 
         window.testAuthMethods = function() {
             try {
-                log('🧪 Testing Database Adapter auth methods...');
+                log('🧪 Testing Firebase Auth methods...');
                 const methods = [
-                    'signInWithPassword',
-                    'signUp',
+                    'signInWithGoogle',
+                    'signInWithEmailAndPassword',
+                    'signUpWithEmailAndPassword',
                     'signOut',
-                    'getUser',
-                    'getSession',
+                    'getCurrentUser',
                     'onAuthStateChange'
                 ];
 
                 for (const method of methods) {
-                    if (typeof databaseAdapter.auth[method] !== 'function') {
+                    if (typeof FirebaseAuthService[method] !== 'function') {
                         throw new Error(`Method ${method} not found`);
                     }
                 }
                 
                 testResults.authMethods = true;
-                log('✅ All Database Adapter auth methods exist', 'success');
+                log('✅ All Firebase Auth methods exist', 'success');
                 updateStatus();
             } catch (error) {
                 log(`❌ Auth methods test failed: ${error.message}`, 'error');
@@ -167,17 +167,15 @@
                 log('🧪 Testing auth state listener...');
                 let listenerCalled = false;
                 
-                const result = databaseAdapter.auth.onAuthStateChange((event, session) => {
+                const unsubscribe = FirebaseAuthService.onAuthStateChange((user) => {
                     listenerCalled = true;
-                    log(`📡 Auth state changed: ${event} - ${session ? `User: ${session.user?.email}` : 'No user'}`);
+                    log(`📡 Auth state changed: ${user ? `User: ${user.email}` : 'No user'}`);
                 });
 
                 // Wait a bit for listener to be set up
                 await new Promise(resolve => setTimeout(resolve, 100));
                 
-                if (result.data && result.data.subscription) {
-                    result.data.subscription.unsubscribe();
-                }
+                unsubscribe();
                 testResults.authStateListener = true;
                 log('✅ Auth state listener working', 'success');
                 updateStatus();
@@ -188,11 +186,11 @@
             }
         };
 
-        window.testGetCurrentUser = async function() {
+        window.testGetCurrentUser = function() {
             try {
                 log('🧪 Testing getCurrentUser...');
-                const result = await databaseAdapter.auth.getUser();
-                log(`Current user: ${result.data?.user ? result.data.user.email : 'No user'}`);
+                const currentUser = FirebaseAuthService.getCurrentUser();
+                log(`Current user: ${currentUser ? currentUser.email : 'No user'}`);
                 testResults.getCurrentUser = true;
                 log('✅ getCurrentUser working', 'success');
                 updateStatus();
@@ -203,39 +201,34 @@
             }
         };
 
-        window.testLocalSignIn = async function() {
+        window.testGoogleSignIn = async function() {
             try {
-                log('🔐 Testing Local Sign In...');
+                log('🔐 Testing Google Sign In...');
+                const result = await FirebaseAuthService.signInWithGoogle();
                 
-                // Test with admin credentials
-                const result = await databaseAdapter.auth.signInWithPassword({
-                    email: 'admin@rac-rewards.com',
-                    password: 'admin123!'
-                });
-                
-                if (result.data && result.data.user) {
-                    log(`✅ Local Sign In successful: ${result.data.user.email}`, 'success');
-                    document.getElementById('local-signin-btn').disabled = true;
+                if (result.success) {
+                    log(`✅ Google Sign In successful: ${result.user?.email}`, 'success');
+                    document.getElementById('google-signin-btn').disabled = true;
                     document.getElementById('signout-btn').disabled = false;
                 } else {
-                    log(`❌ Local Sign In failed: ${result.error?.message}`, 'error');
+                    log(`❌ Google Sign In failed: ${result.error}`, 'error');
                 }
             } catch (error) {
-                log(`❌ Local Sign In error: ${error.message}`, 'error');
+                log(`❌ Google Sign In error: ${error.message}`, 'error');
             }
         };
 
         window.testSignOut = async function() {
             try {
                 log('🔐 Testing Sign Out...');
-                const result = await databaseAdapter.auth.signOut();
+                const result = await FirebaseAuthService.signOut();
                 
-                if (!result.error) {
+                if (result.success) {
                     log('✅ Sign Out successful', 'success');
-                    document.getElementById('local-signin-btn').disabled = false;
+                    document.getElementById('google-signin-btn').disabled = false;
                     document.getElementById('signout-btn').disabled = true;
                 } else {
-                    log(`❌ Sign Out failed: ${result.error.message}`, 'error');
+                    log(`❌ Sign Out failed: ${result.error}`, 'error');
                 }
             } catch (error) {
                 log(`❌ Sign Out error: ${error.message}`, 'error');
@@ -248,7 +241,7 @@
         };
 
         // Auto-run basic tests on load
-        log('🚀 Local Auth Test Page Loaded');
+        log('🚀 Firebase Auth Test Page Loaded');
         log('Click the test buttons above to run individual tests');
         log('Or wait for auto-initialization...');
         

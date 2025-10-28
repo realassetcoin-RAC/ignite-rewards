@@ -265,7 +265,7 @@ export class FirebaseAuthService {
       if (profile?.role) {
         role = profile.role as 'customer' | 'merchant' | 'admin';
       }
-    } catch (error) {
+    } catch {
       console.warn('Could not fetch user role from database, defaulting to customer');
     }
 
